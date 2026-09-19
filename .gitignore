@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build & Bundling Outputs
+dist/
+dist-electron/
+dist-ssr/
+release/
+out/
+
+# Caches & Tooling Output
+.vite/
+.cache/
+*.tsbuildinfo
+.eslintcache
+.biome/
+
+# Environment & Local Configuration
+.env
+.env.*
+!.env.example
+*.local
+
+# Application Runtime State
+app-config.json
+window-state.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Test & Coverage
+coverage/
+.nyc_output/
+
+# IDE & Editor Directories
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+*.code-workspace
+
+.idea/
+
+# Editor temporary & swap files
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw[p-z]
+*.swp
+*.swo
+*~
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+[Tt]humbs.db
+[Ee]hthumbs.db
+[Dd]esktop.ini

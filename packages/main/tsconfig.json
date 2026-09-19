@@ -1,0 +1,12 @@
+{
+  "extends": "@app/tsconfig/node.json",
+  "compilerOptions": {
+    "types": ["node", "vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@app/preload": ["../preload"],
+      "@app/shared": ["../shared/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*"]
+}

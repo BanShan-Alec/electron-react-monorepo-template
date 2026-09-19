@@ -1,0 +1,32 @@
+name: Setup boilerplate
+description: Setup boilerplate
+inputs:
+  renderer-template:
+    description: "Define what vite template should be used to create renderer in case if renderer package doesn't exist"
+    required: false
+    default: ''
+
+
+runs:
+  using: "composite"
+  steps:
+    - if: ${{ runner.os == 'Linux' }}
+      shell: bash
+      run: |
+        Xvfb :99 -screen 0 1280x960x24 &
+        echo "DISPLAY=:99" >> $GITHUB_ENV
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10.34.5
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'pnpm'
+
+    - name: Install Dependencies
+      run: pnpm install --frozen-lockfile
+      shell: bash
