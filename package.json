@@ -3,6 +3,10 @@
   "productName": "Electron React Template",
   "description": "Type-safe Electron monorepo template powered by Vite, React and ContextBridge IPC",
   "version": "1.0.0",
+  "author": {
+    "name": "BanShan-Alec",
+    "email": "627649674@qq.com"
+  },
   "private": true,
   "packageManager": "pnpm@10.34.5",
   "main": "packages/main/dist/index.cjs",

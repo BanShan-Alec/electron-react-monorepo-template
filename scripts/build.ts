@@ -13,7 +13,7 @@ const { values } = parseArgs({
     linux: { type: 'boolean', default: false },
     x64: { type: 'boolean' },
     arm64: { type: 'boolean' },
-    publish: { type: 'string', short: 'p' },
+    publish: { type: 'string', short: 'p', default: 'never' },
     config: { type: 'string', short: 'c', default: 'build/electron-builder.ts' },
     'skip-build': { type: 'boolean', default: false },
   },
@@ -32,6 +32,7 @@ async function runBuild() {
   const buildOptions: CliOptions = {
     config: typeof values.config === 'string' ? values.config : 'build/electron-builder.ts',
     dir: Boolean(values.dir),
+    publish: (values.publish as CliOptions['publish']) || 'never',
   };
 
   if (values.win) buildOptions.win = [];
@@ -39,9 +40,6 @@ async function runBuild() {
   if (values.linux) buildOptions.linux = [];
   if (values.x64) buildOptions.x64 = true;
   if (values.arm64) buildOptions.arm64 = true;
-  if (typeof values.publish === 'string') {
-    buildOptions.publish = values.publish as CliOptions['publish'];
-  }
 
   // 3. Trigger packaging
   console.log('🚀 Packaging Electron application with electron-builder...');
