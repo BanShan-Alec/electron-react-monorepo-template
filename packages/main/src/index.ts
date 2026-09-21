@@ -83,7 +83,7 @@ initApp({
         },
 
   preload: {
-    path: require.resolve('@app/preload/exposed.js'),
+    path: require.resolve('@app/preload'),
   },
 }).catch((error) => {
   handleFatalCrash('initAppFailed', error);

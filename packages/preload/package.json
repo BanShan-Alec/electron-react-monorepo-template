@@ -1,25 +1,21 @@
 {
   "name": "@app/preload",
-  "scripts": {
-    "build": "vite build",
-    "typecheck": "tsc --noEmit"
-  },
+  "main": "./dist/index.cjs",
   "exports": {
     ".": {
       "types": "./src/index.ts",
-      "default": "./dist/_virtual_browser.js"
-    },
-    "./exposed.js": {
-      "types": "./src/exposed.d.ts",
-      "default": "./dist/exposed.js"
+      "default": "./dist/index.cjs"
     }
+  },
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@app/shared": "workspace:*"
   },
   "devDependencies": {
     "@app/tsconfig": "workspace:*",
-    "mlly": "1.8.2",
     "typescript": "catalog:",
     "vite": "catalog:"
   }
