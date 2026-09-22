@@ -93,24 +93,27 @@ pnpm run build:linux
 
 ### 1. 共享层定义契约 (`packages/shared`)
 ```ts
-// packages/shared/src/ipc/channels.ts
+// packages/shared/src/constants/ipc-channels.ts
 export const IPC_CHANNELS = {
   SYSTEM_GET_INFO: 'system:get-info',
 } as const;
 
-// packages/shared/src/ipc/types.ts
+// packages/shared/src/types/api.ts
 export interface ElectronApi {
   system: {
-    getSystemInfo: () => Promise<ApiResponse<SystemInfo>>;
+    getSystemInfo: () => Promise<Result<SystemInfo>>;
   };
 }
 ```
 
+> 注：`@app/shared` 无根入口，消费方按需从子路径导入（如 `@app/shared/constants/ipc-channels`、`@app/shared/types/api`），详见 [packages/shared/README.md](packages/shared/README.md)。
+
 ### 2. Preload 暴露安全桥接 (`packages/preload`)
 ```ts
-// packages/preload/src/exposed.ts
+// packages/preload/src/index.ts
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_CHANNELS, type ElectronApi } from '@app/shared';
+import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
+import type { ElectronApi } from '@app/shared/types/api';
 
 export const apiBridge: ElectronApi = {
   system: {
@@ -137,6 +140,7 @@ const info = await window.api.system.getSystemInfo();
   pnpm run lint:fix   # 自动修复可修复的格式与 Lint 问题
   pnpm run typecheck  # 执行全项目 TypeScript 类型检查
   ```
+- **模块导入**：全库默认禁止桶文件（barrel），跨模块一律直达具体文件；详见 [CONTRIBUTING.md](CONTRIBUTING.md) 的桶文件禁令。
 - **提交规范**：遵循 Conventional Commits 规范，提交信息必须包含简体中文说明。详情参见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ---

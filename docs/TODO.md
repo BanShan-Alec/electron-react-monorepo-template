@@ -262,7 +262,7 @@
 #### 14. 国际化 (i18n) 伪多语言与 HTML 语义脱节 (Accessibility & i18n)
 - **状态**：`[ ] 待修复 (Pending)`
 - **参考规范**：`specs/frontend/components.md`（语义化与 a11y 无障碍规范）
-- **涉及文件**：[`packages/renderer/index.html`](../packages/renderer/index.html)、[`packages/renderer/src/App.tsx`](../packages/renderer/src/App.tsx)、[`packages/shared/src/index.ts`](../packages/shared/src/index.ts)、`packages/renderer/src/locales/`
+- **涉及文件**：[`packages/renderer/index.html`](../packages/renderer/index.html)、[`packages/renderer/src/App.tsx`](../packages/renderer/src/App.tsx)、[`packages/shared/src/schemas/config.ts`](../packages/shared/src/schemas/config.ts)、`packages/renderer/src/locales/`
 - **痛点**：根据“维度 7：无障碍与国际化”审查，`index.html` 硬编码 `<html lang="en">`，但 UI 界面硬编码全中文文本；配置表虽有 `language` 字段，但前端无任何多语言解析方案，缺少面向多语种桌面端的基本扩展能力。
 - **修复方案与落地细节**：
   - [ ] 接入轻量国际化方案，建立 `src/locales/`（`zh-CN.json`, `en-US.json`）语言包管理机制；
