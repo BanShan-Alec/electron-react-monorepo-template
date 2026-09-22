@@ -23,8 +23,7 @@
     "react-dom": "catalog:",
     "tailwindcss": "^3.4.19",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "zod": "catalog:"
+    "vite": "catalog:"
   },
   "main": "./dist/index.html",
   "exports": {

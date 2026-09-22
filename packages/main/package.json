@@ -20,7 +20,6 @@
   },
   "devDependencies": {
     "@app/tsconfig": "workspace:*",
-    "electron-devtools-installer": "4.0.0",
     "typescript": "catalog:",
     "vite": "catalog:",
     "zod": "catalog:"

@@ -1,6 +1,5 @@
 export * from './auto-terminate.module';
 export * from './auto-updater.module';
-export * from './chrome-devtools.module';
 export * from './config.module';
 export * from './hardware-acceleration.module';
 export * from './ipc.module';
