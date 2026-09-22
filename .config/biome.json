@@ -34,12 +34,17 @@
       "correctness": {
         "noUnusedVariables": "warn"
       },
+      "performance": {
+        "noBarrelFile": "error",
+        "noReExportAll": "error"
+      },
       "style": {
         "noNonNullAssertion": "off"
       },
       "suspicious": {
         "noConfusingVoidType": "off",
         "noExplicitAny": "warn",
+        "noImportCycles": "error",
         "noThenProperty": "off",
         "noUnknownAtRules": "off"
       }
