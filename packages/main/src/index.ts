@@ -5,14 +5,15 @@ import type { AppInitConfig } from './AppInitConfig';
 import { createModuleRunner } from './ModuleRunner';
 import { terminateAppOnLastWindowClose } from './modules/auto-terminate.module';
 import { autoUpdater } from './modules/auto-updater.module';
-import { createConfigModule, getAppConfigStore } from './modules/config.module';
+import { createConfigModule } from './modules/config.module';
 import { hardwareAccelerationMode } from './modules/hardware-acceleration.module';
 import { createIPCModule } from './modules/ipc.module';
-import { createLogModule, getLogManager } from './modules/log.module';
-import { allowExternalUrls, allowInternalOrigins } from './modules/security/index.module';
+import { createLogModule } from './modules/log.module';
+import { allowInternalOrigins } from './modules/security/block-origins';
+import { allowExternalUrls } from './modules/security/external-urls';
 import { disallowMultipleAppInstance } from './modules/single-instance.module';
 import { createTrayModule } from './modules/tray.module';
-import { createWindowManagerModule, WindowStateKeeper } from './modules/window/index.module';
+import { createWindowManagerModule } from './modules/window/index.module';
 
 /**
  * 致命错误同步落盘与系统原生弹窗告警 (跨全生命周期，包括生产打包态)
@@ -44,8 +45,6 @@ function handleFatalCrash(type: string, error: unknown): void {
 // 全生命周期监听未捕获异常与未处理 Promise 拒绝
 process.on('uncaughtException', (err) => handleFatalCrash('uncaughtException', err));
 process.on('unhandledRejection', (reason) => handleFatalCrash('unhandledRejection', reason));
-
-export { getAppConfigStore, getLogManager, WindowStateKeeper };
 
 export async function initApp(initConfig: AppInitConfig) {
   const isDev = process.env.NODE_ENV !== 'production';

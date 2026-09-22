@@ -1,5 +1,5 @@
 import type { AppModule } from '../AppModule';
-import { registerAllControllers } from '../controllers/index';
+import { registerAllControllers } from '../controllers';
 import type { ModuleContext } from '../ModuleContext';
 import { getLogManager } from './log.module';
 
