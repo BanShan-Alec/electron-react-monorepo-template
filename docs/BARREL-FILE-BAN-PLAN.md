@@ -52,7 +52,7 @@
 2. 删除 4 个 index.ts：`shared/src/index.ts`、`constants/index.ts`、`schemas/index.ts`、`types/index.ts`。
 3. 重写全部 17 个 `@app/shared` 消费方（7 controllers + config.module + 7 services + preload + env.d.ts）：值从子路径导入（`@app/shared/schemas/calculator`、`@app/shared/constants/ipc-channels`、`@app/shared/constants/error-codes`），类型从 `@app/shared/types/*` 导入并显式 `import type`（`verbatimModuleSyntax`）。
 4. preload 的运行时依赖收敛为仅 `constants/ipc-channels`（现状会经根桶把 schemas→zod 拖进 CJS require 链）。
-5. 新增 `packages/shared/src/types/router.ts` 定义 `AppRouter`；`ArchitectureView.tsx` 改从 `@app/shared/types/router` 导入，消除坏引用与越包引用。
+5. ~~新增 `packages/shared/src/types/router.ts` 定义 `AppRouter`；`ArchitectureView.tsx` 改从 `@app/shared/types/router` 导入~~ **【取消】**：执行前复核时发现，`ArchitectureView.tsx` 中的 `@app/main/router` 是组件内展示“反例”的模板字符串文本（第 97 行的代码块演示），并非真实 import——既无坏引用，也无越包引用，无需处理。
 6. **验证**：`pnpm typecheck` Exit 0。
 
 ## Phase 2：renderer 去桶化
@@ -103,3 +103,26 @@
 ## 工作量与风险
 
 改动集中在 4 个提交：shared（约 18 文件）、renderer（约 11 文件）、main（3 文件 + 删 2 桶）、配置（1 文件）。最大风险是漏改 import，由 `pnpm typecheck` 全包类型检查兜底；次风险是 `noImportCycles` 暴露既有循环（预案见 Phase 4）；全部为可静态验证的结构改动，无运行时行为变化（除 preload 加载图瘦身）。
+
+---
+
+## 落地记录（2026-09-22 执行完毕）
+
+**分支**：`chore/ban-barrel-files`，共 4 个提交：
+
+| 提交 | 内容 |
+| :--- | :--- |
+| `7ec0171` | shared 去桶化：删 4 个 index.ts，package.json 改子路径 exports（`./constants/*`、`./schemas/*`、`./types/*`），17 个消费方 + `types/api.ts` 内部导入全部直达 |
+| `74d72f1` | renderer 去桶化：删 16 桶，App.tsx 8 条 barrel 导入展开为直达，9 个 ui 消费方与 Header.tsx 改具体文件导入 |
+| `7e7c86f` | main 清理：删 `modules/index.ts`（零消费者）与 `security/index.module.ts`，删入口 3 个零消费者再导出，security 与 controllers 改直达 |
+| `45f2ddb` | `.config/biome.json` 开启 `noBarrelFile/noReExportAll/noImportCycles` 三条 error，清理重写过程引入的 2 处冗余导入 |
+
+**验收结果**：
+- `pnpm typecheck` ✅ 全 5 包通过；`pnpm lint` ✅ 0 告警（三条新规则 error 级生效）；`pnpm build` ✅ 全包通过。
+- 结构核验：`index.ts` 残留恰好 3 个（`preload/src/index.ts` 入口本体、`main/src/index.ts` 入口本体、`main/src/controllers/index.ts` 装配点，均非纯重导出）；全库 `export *` 归零（基线 64 处）。
+- 产物对比（改造前 → 改造后）：renderer JS 251,486 B → 251,486 B；main `index.cjs` 984.81 kB → 986.55 kB（噪声级）。**产物体积基本不变，符合调研结论**——桶的成本在 dev/test 的模块图建图，而非生产包体积。
+- `noImportCycles` 启用后未暴露既有循环。
+
+**遗留事项**：Electron GUI 冒烟（`pnpm start` 验证界面与 IPC）未在本环境执行，需接管人在桌面环境补做一次。
+
+**Phase 5 完成项**：specs-electron-fullstack 仓库 [renderer/directory-structure.md](file:///H:/specs-electron-fullstack/renderer/directory-structure.md) 已反向修订（废止“index.ts 唯一公开出口”，改为默认禁止 + 再引入流程）；本仓 CONTRIBUTING.md 已补禁令条款与流程链接。
