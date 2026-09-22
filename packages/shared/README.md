@@ -11,13 +11,12 @@
 ```
 packages/shared/
 ├── README.md                # 架构规范与开发守则文档
-├── package.json
+├── package.json             # exports 子路径映射（无根入口，无桶文件）
 ├── tsconfig.json
 └── src/
     ├── constants/           # 系统级常量与枚举
     │   ├── error-codes.ts   # 统一语义化错误码 (SCREAMING_SNAKE_CASE)
-    │   ├── ipc-channels.ts  # IPC 通信通道常量定义
-    │   └── index.ts         # 聚合导出
+    │   └── ipc-channels.ts  # IPC 通信通道常量定义
     │
     ├── types/               # 纯 TypeScript 接口定义（零运行时体积）
     │   ├── result.ts        # 全栈通用 Result<T> 响应包装器
@@ -26,19 +25,15 @@ packages/shared/
     │   ├── counter.ts       # 计数器领域返回接口
     │   ├── calculator.ts    # 计算器领域返回接口
     │   ├── diagnostics.ts   # 诊断与行为返回接口
-    │   ├── dialog.ts        # 原生对话框返回接口
-    │   └── index.ts         # 聚合导出
+    │   └── dialog.ts        # 原生对话框返回接口
     │
-    ├── schemas/             # Zod 运行时数据校验模型及派生输入类型
-    │   ├── counter.ts       # 计数器输入 Schema 与 StepInput
-    │   ├── calculator.ts    # 计算器入参 Schema 与 CalculateInput
-    │   ├── config.ts        # 应用配置 Schema、类型及默认值 DEFAULT_CONFIG
-    │   ├── diagnostics.ts   # 日志与操作入参 Schema 及推导类型
-    │   ├── dialog.ts        # 原生文件/目录对话框配置入参 Schema
-    │   ├── shell.ts         # Shell 唤起入参 Schema 及类型
-    │   └── index.ts         # 聚合导出
-    │
-    └── index.ts             # 顶层统一入口（聚合 re-export 所有模块）
+    └── schemas/             # Zod 运行时数据校验模型及派生输入类型
+        ├── counter.ts       # 计数器输入 Schema 与 StepInput
+        ├── calculator.ts    # 计算器入参 Schema 与 CalculateInput
+        ├── config.ts        # 应用配置 Schema、类型及默认值 DEFAULT_CONFIG
+        ├── diagnostics.ts   # 日志与操作入参 Schema 及推导类型
+        ├── dialog.ts        # 原生文件/目录对话框配置入参 Schema
+        └── shell.ts         # Shell 唤起入参 Schema 及类型
 ```
 
 ---
@@ -58,13 +53,22 @@ packages/shared/
 - **系统级/跨域常量**（如 `ErrorCode`、`IPC_CHANNELS`）：维护在 `constants/` 目录下。
 - **领域特定默认值**（如 `DEFAULT_CONFIG`）：与领域 Schema 强相关，就近维护在对应的 `schemas/*.ts` 文件内。
 
-### 2.4 统一单入口与向后兼容
-- 内部物理拆分，顶层通过 `src/index.ts` 全量 re-export。
-- 消费端（`main`、`preload`、`renderer`）统一使用：
-  ```ts
-  import { calculateInputSchema, type CalculateResult, IPC_CHANNELS } from '@app/shared';
+### 2.4 子路径直出与桶文件禁令
+- 内部物理拆分，**不设顶层统一入口**：`package.json` 通过子路径 `exports` 直出具体文件：
+  ```json
+  "exports": {
+    "./constants/*": "./src/constants/*.ts",
+    "./schemas/*": "./src/schemas/*.ts",
+    "./types/*": "./src/types/*.ts"
+  }
   ```
-  外部调用完全解耦内部物理结构变化，平滑升级无破坏性变更。
+- 消费端（`main`、`preload`、`renderer`）按需直达具体文件。主进程与 preload 为 CJS 出包、无 tree-shaking，根入口会把整张契约图（含 schemas→zod）拖进 require 链，故取消根桶：
+  ```ts
+  import { ErrorCode } from '@app/shared/constants/error-codes';
+  import { calculateInputSchema } from '@app/shared/schemas/calculator';
+  import type { CalculateResult } from '@app/shared/types/calculator';
+  ```
+- **严禁桶文件**：不得新增任何 `index.ts` 聚合导出，不得使用 `export *`（由 Biome `performance.noBarrelFile` / `noReExportAll` 强制）。确需引入桶文件的唯一合法流程见 [CONTRIBUTING.md](../../CONTRIBUTING.md)。
 
 ---
 
@@ -95,10 +99,7 @@ export const createNoteInputSchema = z.object({
 
 export type CreateNoteInput = z.infer<typeof createNoteInputSchema>;
 ```
-并在 `src/schemas/index.ts` 导出：
-```ts
-export * from './notes';
-```
+无需在任何聚合文件中登记；消费方直接从 `@app/shared/schemas/notes` 导入。
 
 ### 步骤 2：定义纯返回接口（如有）
 在 `src/types/notes.ts` 中创建：
@@ -110,10 +111,7 @@ export interface NoteItem {
   createdAt: number;
 }
 ```
-并在 `src/types/index.ts` 导出：
-```ts
-export * from './notes';
-```
+同样无需登记；消费方直接从 `@app/shared/types/notes` 导入。
 
 ### 步骤 3：注册 IPC 通道
 在 `src/constants/ipc-channels.ts` 中追加：
