@@ -1,10 +1,7 @@
-import {
-  type AppConfig,
-  ErrorCode,
-  IPC_CHANNELS,
-  type Result,
-  updateConfigInputSchema,
-} from '@app/shared';
+import { ErrorCode } from '@app/shared/constants/error-codes';
+import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
+import { type AppConfig, updateConfigInputSchema } from '@app/shared/schemas/config';
+import type { Result } from '@app/shared/types/result';
 import { ipcMain } from 'electron';
 import { configService } from '../services/config.service';
 import { catchToResult, failResult, successResult } from './utils';

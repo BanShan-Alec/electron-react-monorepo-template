@@ -1,6 +1,6 @@
 ﻿import os from 'node:os';
 import process from 'node:process';
-import type { PingResult, SystemInfo } from '@app/shared';
+import type { PingResult, SystemInfo } from '@app/shared/types/system';
 
 export class SystemService {
   getPing(): PingResult {

@@ -1,16 +1,11 @@
-import {
-  type CalculateInput,
-  type ElectronApi,
-  IPC_CHANNELS,
-  type LogInput,
-  type OpenDirectoryInput,
-  type OpenFileInput,
-  type PerformActionInput,
-  type SaveFileInput,
-  type ShowItemInFolderInput,
-  type StepInput,
-  type UpdateConfigInput,
-} from '@app/shared';
+import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
+import type { CalculateInput } from '@app/shared/schemas/calculator';
+import type { UpdateConfigInput } from '@app/shared/schemas/config';
+import type { StepInput } from '@app/shared/schemas/counter';
+import type { LogInput, PerformActionInput } from '@app/shared/schemas/diagnostics';
+import type { OpenDirectoryInput, OpenFileInput, SaveFileInput } from '@app/shared/schemas/dialog';
+import type { ShowItemInFolderInput } from '@app/shared/schemas/shell';
+import type { ElectronApi } from '@app/shared/types/api';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
 
 export const apiBridge: ElectronApi = {

@@ -1,14 +1,13 @@
+import { ErrorCode } from '@app/shared/constants/error-codes';
+import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import {
-  ErrorCode,
-  type FileDialogResult,
-  IPC_CHANNELS,
   openDirectoryInputSchema,
   openFileInputSchema,
-  type Result,
-  type SaveFileDialogResult,
   saveFileInputSchema,
-  showItemInFolderInputSchema,
-} from '@app/shared';
+} from '@app/shared/schemas/dialog';
+import { showItemInFolderInputSchema } from '@app/shared/schemas/shell';
+import type { FileDialogResult, SaveFileDialogResult } from '@app/shared/types/dialog';
+import type { Result } from '@app/shared/types/result';
 import { ipcMain } from 'electron';
 import { dialogService } from '../services/dialog.service';
 import { catchToResult, failResult, successResult } from './utils';

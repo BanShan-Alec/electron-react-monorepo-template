@@ -1,4 +1,4 @@
-import type { CounterResult } from '@app/shared';
+import type { CounterResult } from '@app/shared/types/counter';
 import { getAppConfigStore } from '../modules/config.module';
 
 export class CounterService {

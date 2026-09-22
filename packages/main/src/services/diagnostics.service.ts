@@ -1,4 +1,6 @@
-import { type ActionResult, ErrorCode, type LogInput, type PerformActionInput } from '@app/shared';
+import { ErrorCode } from '@app/shared/constants/error-codes';
+import type { LogInput, PerformActionInput } from '@app/shared/schemas/diagnostics';
+import type { ActionResult } from '@app/shared/types/diagnostics';
 import { BrowserWindow, shell } from 'electron';
 import { AppError } from '../errors/AppError';
 import { getLogManager } from '../modules/log.module';

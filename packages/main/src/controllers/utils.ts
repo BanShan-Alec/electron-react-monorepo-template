@@ -1,4 +1,5 @@
-import { ErrorCode, type Result } from '@app/shared';
+import { ErrorCode } from '@app/shared/constants/error-codes';
+import type { Result } from '@app/shared/types/result';
 import { AppError } from '../errors/AppError';
 
 export function failResult(error: string, code: string = ErrorCode.INTERNAL_ERROR): Result<never> {

@@ -1,12 +1,13 @@
+import { ErrorCode } from '@app/shared/constants/error-codes';
+import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import {
-  type ActionResult,
-  ErrorCode,
-  IPC_CHANNELS,
+  type LogInput,
   logInputSchema,
-  type OpenLogFolderResult,
+  type PerformActionInput,
   performActionInputSchema,
-  type Result,
-} from '@app/shared';
+} from '@app/shared/schemas/diagnostics';
+import type { ActionResult, OpenLogFolderResult } from '@app/shared/types/diagnostics';
+import type { Result } from '@app/shared/types/result';
 import { ipcMain } from 'electron';
 import { diagnosticsService } from '../services/diagnostics.service';
 import { catchToResult, failResult, successResult } from './utils';

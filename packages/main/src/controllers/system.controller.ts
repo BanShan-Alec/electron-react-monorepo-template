@@ -1,4 +1,6 @@
-import { IPC_CHANNELS, type PingResult, type Result, type SystemInfo } from '@app/shared';
+import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
+import type { Result } from '@app/shared/types/result';
+import type { PingResult, SystemInfo } from '@app/shared/types/system';
 import { ipcMain } from 'electron';
 import { systemService } from '../services/system.service';
 import { catchToResult, successResult } from './utils';

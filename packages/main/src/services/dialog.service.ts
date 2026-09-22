@@ -1,10 +1,5 @@
-﻿import type {
-  FileDialogResult,
-  OpenDirectoryInput,
-  OpenFileInput,
-  SaveFileDialogResult,
-  SaveFileInput,
-} from '@app/shared';
+﻿import type { OpenDirectoryInput, OpenFileInput, SaveFileInput } from '@app/shared/schemas/dialog';
+import type { FileDialogResult, SaveFileDialogResult } from '@app/shared/types/dialog';
 import { BrowserWindow, dialog, shell } from 'electron';
 
 export class DialogService {

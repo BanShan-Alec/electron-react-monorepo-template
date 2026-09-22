@@ -1,10 +1,8 @@
-import {
-  type CounterResult,
-  ErrorCode,
-  IPC_CHANNELS,
-  type Result,
-  stepInputSchema,
-} from '@app/shared';
+import { ErrorCode } from '@app/shared/constants/error-codes';
+import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
+import { stepInputSchema } from '@app/shared/schemas/counter';
+import type { CounterResult } from '@app/shared/types/counter';
+import type { Result } from '@app/shared/types/result';
 import { ipcMain } from 'electron';
 import { counterService } from '../services/counter.service';
 import { catchToResult, failResult, successResult } from './utils';

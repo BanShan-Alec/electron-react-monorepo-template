@@ -1,4 +1,4 @@
-import type { AppConfig, UpdateConfigInput } from '@app/shared';
+import type { AppConfig, UpdateConfigInput } from '@app/shared/schemas/config';
 import { getAppConfigStore } from '../modules/config.module';
 import { getLogManager } from '../modules/log.module';
 

@@ -1,4 +1,6 @@
-import { type CalculateInput, type CalculateResult, ErrorCode } from '@app/shared';
+import { ErrorCode } from '@app/shared/constants/error-codes';
+import type { CalculateInput } from '@app/shared/schemas/calculator';
+import type { CalculateResult } from '@app/shared/types/calculator';
 import { AppError } from '../errors/AppError';
 
 export class CalculatorService {

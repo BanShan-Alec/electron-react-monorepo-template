@@ -1,15 +1,9 @@
-import type {
-  AppConfig,
-  CalculateInput,
-  LogInput,
-  OpenDirectoryInput,
-  OpenFileInput,
-  PerformActionInput,
-  SaveFileInput,
-  ShowItemInFolderInput,
-  StepInput,
-  UpdateConfigInput,
-} from '../schemas';
+import type { CalculateInput } from '../schemas/calculator';
+import type { AppConfig, UpdateConfigInput } from '../schemas/config';
+import type { StepInput } from '../schemas/counter';
+import type { LogInput, PerformActionInput } from '../schemas/diagnostics';
+import type { OpenDirectoryInput, OpenFileInput, SaveFileInput } from '../schemas/dialog';
+import type { ShowItemInFolderInput } from '../schemas/shell';
 import type { CalculateResult } from './calculator';
 import type { CounterResult } from './counter';
 import type { ActionResult, OpenLogFolderResult } from './diagnostics';

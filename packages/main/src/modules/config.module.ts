@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { type AppConfig, DEFAULT_CONFIG } from '@app/shared';
+import { type AppConfig, DEFAULT_CONFIG } from '@app/shared/schemas/config';
 import { app } from 'electron';
 import type { AppModule } from '../AppModule';
 import type { ModuleContext } from '../ModuleContext';

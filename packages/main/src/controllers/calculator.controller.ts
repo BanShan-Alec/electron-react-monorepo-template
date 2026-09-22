@@ -1,10 +1,8 @@
-import {
-  type CalculateResult,
-  calculateInputSchema,
-  ErrorCode,
-  IPC_CHANNELS,
-  type Result,
-} from '@app/shared';
+import { ErrorCode } from '@app/shared/constants/error-codes';
+import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
+import { type CalculateInput, calculateInputSchema } from '@app/shared/schemas/calculator';
+import type { CalculateResult } from '@app/shared/types/calculator';
+import type { Result } from '@app/shared/types/result';
 import { ipcMain } from 'electron';
 import { calculatorService } from '../services/calculator.service';
 import { catchToResult, failResult, successResult } from './utils';
