@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Badge } from '../ui';
+import { Badge } from '../ui/Badge';
 
 export interface HeaderProps {
   activeTab: 'dashboard' | 'architecture';

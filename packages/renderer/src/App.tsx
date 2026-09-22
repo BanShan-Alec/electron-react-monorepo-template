@@ -1,12 +1,20 @@
 import { useState } from 'react';
-import { Header } from './components/layout';
-import { ArchitectureView } from './features/architecture';
-import { CalculatorCard, useCalculator } from './features/calculator';
-import { CounterCard, useCounter } from './features/counter';
-import { DevToolsCard, LoggingCard, useDiagnostics } from './features/diagnostics';
-import { DialogCard, useNativeDialogs } from './features/native-dialogs';
-import { SettingsCard, useAppConfig } from './features/settings';
-import { PingCard, SystemInfoCard, useSystemInfo } from './features/system-info';
+import { Header } from './components/layout/Header';
+import { ArchitectureView } from './features/architecture/components/ArchitectureView';
+import { CalculatorCard } from './features/calculator/components/CalculatorCard';
+import { useCalculator } from './features/calculator/hooks/useCalculator';
+import { CounterCard } from './features/counter/components/CounterCard';
+import { useCounter } from './features/counter/hooks/useCounter';
+import { DevToolsCard } from './features/diagnostics/components/DevToolsCard';
+import { LoggingCard } from './features/diagnostics/components/LoggingCard';
+import { useDiagnostics } from './features/diagnostics/hooks/useDiagnostics';
+import { DialogCard } from './features/native-dialogs/components/DialogCard';
+import { useNativeDialogs } from './features/native-dialogs/hooks/useNativeDialogs';
+import { SettingsCard } from './features/settings/components/SettingsCard';
+import { useAppConfig } from './features/settings/hooks/useAppConfig';
+import { PingCard } from './features/system-info/components/PingCard';
+import { SystemInfoCard } from './features/system-info/components/SystemInfoCard';
+import { useSystemInfo } from './features/system-info/hooks/useSystemInfo';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'architecture'>('dashboard');

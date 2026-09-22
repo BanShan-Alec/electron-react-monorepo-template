@@ -1,5 +1,6 @@
 import type React from 'react';
-import { Button, Card } from '../../../components/ui';
+import { Button } from '../../../components/ui/Button';
+import { Card } from '../../../components/ui/Card';
 import type { SystemInfo } from '../types';
 
 interface SystemInfoCardProps {

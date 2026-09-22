@@ -1,5 +1,6 @@
 import type React from 'react';
-import { Badge, Card } from '../../../components/ui';
+import { Badge } from '../../../components/ui/Badge';
+import { Card } from '../../../components/ui/Card';
 
 export const ArchitectureView: React.FC = () => {
   return (

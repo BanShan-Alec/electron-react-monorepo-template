@@ -1,5 +1,7 @@
 import type React from 'react';
-import { Badge, Button, Card } from '../../../components/ui';
+import { Badge } from '../../../components/ui/Badge';
+import { Button } from '../../../components/ui/Button';
+import { Card } from '../../../components/ui/Card';
 
 interface PingCardProps {
   latency: number | null;
