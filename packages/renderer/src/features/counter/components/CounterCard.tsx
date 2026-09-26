@@ -1,33 +1,43 @@
-import type React from 'react';
-import { Button } from '../../../components/ui/Button';
-import { Card } from '../../../components/ui/Card';
+import { Button, Card, Select } from 'antd';
+import { memo } from 'react';
+import { CardTitle } from '@/components/ui/CardTitle';
 
-interface CounterCardProps {
-  count: number;
-  step: number;
-  onStepChange: (step: number) => void;
-  isUpdating: boolean;
-  onIncrement: () => void;
-  onDecrement: () => void;
-  onReset: () => void;
+// 私有常量
+const STEP_OPTIONS = [1, 5, 10, 50];
+
+// 可抽离的逻辑处理函数/组件
+function toSelectOptions(steps: number[]) {
+  return steps.map((step) => ({ label: String(step), value: step }));
 }
 
-export const CounterCard: React.FC<CounterCardProps> = ({
-  count,
-  step,
-  onStepChange,
-  isUpdating,
-  onIncrement,
-  onDecrement,
-  onReset,
-}) => {
+const _CounterCard = (props: ICounterCardProps) => {
+  // 变量声明、解构
+  const { count, step, onStepChange, isUpdating, onIncrement, onDecrement, onReset } = props;
+
+  // 组件状态
+
+  // 网络IO
+
+  // 数据转换
+  const selectOptions = toSelectOptions(STEP_OPTIONS);
+
+  // 逻辑处理函数
+
+  // 组件Effect
+
+  // 组件渲染
   return (
     <Card
-      title="持久化计数器 (ConfigStore)"
-      subtitle="端到端状态变更与本地 JSON 原子防损持久化"
-      icon="🔢"
+      className="glass-card transition-all duration-200 hover:border-border/80"
+      title={
+        <CardTitle
+          icon="🔢"
+          title="持久化计数器 (ConfigStore)"
+          subtitle="端到端状态变更与本地 JSON 原子防损持久化"
+        />
+      }
     >
-      <div className="flex flex-col items-center justify-center p-4 bg-background-secondary/40 rounded-xl border border-border gap-4">
+      <div className="flex flex-col items-center justify-center p-4 bg-background-secondary rounded-lg border border-border gap-4">
         <div className="flex flex-col items-center">
           <span className="text-xs text-foreground-secondary font-medium">当前持久化数值</span>
           <span className="text-4xl font-extrabold text-primary font-mono mt-1">{count}</span>
@@ -40,39 +50,23 @@ export const CounterCard: React.FC<CounterCardProps> = ({
           >
             步长:
           </label>
-          <select
+          <Select
             id="step-select"
+            className="flex-1"
             value={step}
-            onChange={(e) => onStepChange(Number(e.target.value))}
-            className="bg-background-secondary border border-border rounded-lg px-2.5 py-1 text-xs text-foreground focus-ring flex-1"
-          >
-            <option value={1}>1</option>
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={50}>50</option>
-          </select>
+            options={selectOptions}
+            onChange={onStepChange}
+          />
         </div>
 
         <div className="flex items-center gap-2.5 w-full justify-center">
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={onDecrement}
-            isLoading={isUpdating}
-            className="flex-1 max-w-[100px]"
-          >
+          <Button size="small" loading={isUpdating} onClick={onDecrement}>
             - {step}
           </Button>
-          <Button
-            size="sm"
-            variant="primary"
-            onClick={onIncrement}
-            isLoading={isUpdating}
-            className="flex-1 max-w-[100px]"
-          >
+          <Button size="small" type="primary" loading={isUpdating} onClick={onIncrement}>
             + {step}
           </Button>
-          <Button size="sm" variant="outline" onClick={onReset} isLoading={isUpdating}>
+          <Button size="small" loading={isUpdating} onClick={onReset}>
             重置 0
           </Button>
         </div>
@@ -80,3 +74,19 @@ export const CounterCard: React.FC<CounterCardProps> = ({
     </Card>
   );
 };
+
+// props 类型定义
+interface ICounterCardProps {
+  count: number;
+  step: number;
+  onStepChange: (step: number) => void;
+  isUpdating: boolean;
+  onIncrement: () => void;
+  onDecrement: () => void;
+  onReset: () => void;
+}
+
+const CounterCard = memo(_CounterCard);
+
+export { CounterCard };
+export default CounterCard;

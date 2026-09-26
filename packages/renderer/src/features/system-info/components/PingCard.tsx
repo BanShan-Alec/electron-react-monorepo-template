@@ -1,23 +1,49 @@
-import type React from 'react';
-import { Badge } from '../../../components/ui/Badge';
-import { Button } from '../../../components/ui/Button';
-import { Card } from '../../../components/ui/Card';
+import { Button, Card, Tag } from 'antd';
+import { memo } from 'react';
+import { CardTitle } from '@/components/ui/CardTitle';
 
-interface PingCardProps {
-  latency: number | null;
-  serverTime: string;
-  isPinging: boolean;
-  onPing: () => void;
+// 私有常量
+const FAST_LATENCY_MS = 5;
+const NORMAL_LATENCY_MS = 15;
+
+// 可抽离的逻辑处理函数/组件
+function renderLatencyTag(latency: number) {
+  if (latency < FAST_LATENCY_MS) {
+    return <Tag color="success">极速</Tag>;
+  }
+  if (latency < NORMAL_LATENCY_MS) {
+    return <Tag color="processing">正常</Tag>;
+  }
+  return <Tag color="warning">延迟稍高</Tag>;
 }
 
-export const PingCard: React.FC<PingCardProps> = ({ latency, serverTime, isPinging, onPing }) => {
+const _PingCard = (props: IPingCardProps) => {
+  // 变量声明、解构
+  const { latency, serverTime, isPinging, onPing } = props;
+
+  // 组件状态
+
+  // 网络IO
+
+  // 数据转换
+
+  // 逻辑处理函数
+
+  // 组件Effect
+
+  // 组件渲染
   return (
     <Card
-      title="进程间通信 (IPC Ping)"
-      subtitle="Electron ContextBridge & window.api 延迟测量"
-      icon="📡"
+      className="glass-card transition-all duration-200 hover:border-border/80"
+      title={
+        <CardTitle
+          icon="📡"
+          title="进程间通信 (IPC Ping)"
+          subtitle="Electron ContextBridge & window.api 延迟测量"
+        />
+      }
     >
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-background-secondary/40 rounded-xl border border-border">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-background-secondary rounded-lg border border-border">
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <div className="flex flex-col">
             <span className="text-xs text-foreground-secondary font-medium">IPC 通信往返延迟</span>
@@ -26,14 +52,7 @@ export const PingCard: React.FC<PingCardProps> = ({ latency, serverTime, isPingi
                 {latency !== null ? `${latency}` : '--'}
               </span>
               <span className="text-xs text-foreground-muted font-mono">ms</span>
-              {latency !== null && (
-                <Badge
-                  variant={latency < 5 ? 'success' : latency < 15 ? 'primary' : 'warning'}
-                  size="sm"
-                >
-                  {latency < 5 ? '极速' : latency < 15 ? '正常' : '延迟稍高'}
-                </Badge>
-              )}
+              {latency !== null && renderLatencyTag(latency)}
             </div>
           </div>
         </div>
@@ -44,7 +63,7 @@ export const PingCard: React.FC<PingCardProps> = ({ latency, serverTime, isPingi
               主进程时间: {serverTime}
             </span>
           )}
-          <Button onClick={onPing} isLoading={isPinging} size="sm">
+          <Button type="primary" size="small" loading={isPinging} onClick={onPing}>
             ⚡ 测速 Ping
           </Button>
         </div>
@@ -52,3 +71,16 @@ export const PingCard: React.FC<PingCardProps> = ({ latency, serverTime, isPingi
     </Card>
   );
 };
+
+// props 类型定义
+interface IPingCardProps {
+  latency: number | null;
+  serverTime: string;
+  isPinging: boolean;
+  onPing: () => void;
+}
+
+const PingCard = memo(_PingCard);
+
+export { PingCard };
+export default PingCard;

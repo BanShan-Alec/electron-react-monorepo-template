@@ -1,6 +1,8 @@
+export type CalcOperator = 'add' | 'subtract' | 'multiply' | 'divide';
+
 export interface CalculateResult {
   a: number;
   b: number;
-  op: 'add' | 'subtract' | 'multiply' | 'divide';
+  op: CalcOperator;
   result: number;
 }
