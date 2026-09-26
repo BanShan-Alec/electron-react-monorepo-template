@@ -1,7 +1,8 @@
-import type { SystemInfo } from '@shared/types/system';
 import { App } from 'antd';
 import { useEffect } from 'react';
+import { useIpc } from '@/hooks/useIpc';
 import { useManualRequest } from '@/hooks/useManualRequest';
+import { callIpc } from '@/lib/ipc';
 
 // 私有常量
 interface PingMeasurement {
@@ -11,38 +12,28 @@ interface PingMeasurement {
 
 // 可抽离的逻辑处理函数/组件
 async function pingWithLatency(): Promise<PingMeasurement> {
+  // ping 需要在 api 返回前后夹一段本地计时，故 service 自行拼装而非直接用 useIpc
   const start = performance.now();
-  const res = await window.api.system.ping();
+  const data = await callIpc('system.ping', window.api.system.ping, []);
   const latency = Math.round((performance.now() - start) * 10) / 10;
-  if (!res.success) {
-    throw new Error(res.error);
-  }
-  return { latency, serverTime: res.data.serverTime };
+  return { latency, serverTime: data.serverTime };
 }
 
 export function useSystemInfo() {
   const { message } = App.useApp();
 
   // 网络IO（显式挂载触发）—— 系统信息挂载拉取 + 手动刷新
+  // useIpc 从 api 函数签名推导 data 类型，无需手写 Result 解构与类型断言
   const {
     data: systemInfo,
     loading: isFetchingInfo,
     refresh: fetchSystemInfo,
     run: fetchSystemInfoRun,
-  } = useManualRequest(
-    async () => {
-      const res = await window.api.system.getSystemInfo();
-      if (!res.success) {
-        throw new Error(res.error);
-      }
-      return res.data as SystemInfo;
+  } = useIpc('system.getSystemInfo', window.api.system.getSystemInfo, {
+    onError: (err) => {
+      message.error(`获取系统信息失败: ${err.message}`);
     },
-    {
-      onError: (err) => {
-        message.error(`获取系统信息失败: ${err.message}`);
-      },
-    },
-  );
+  });
 
   // 显式挂载触发：初次拉取系统信息（run 引用稳定，不会自触循环）
   useEffect(() => {

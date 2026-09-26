@@ -2,6 +2,7 @@ import type { PerformActionInput } from '@shared/schemas/diagnostics';
 import { App } from 'antd';
 import { useState } from 'react';
 import { useManualRequest } from '@/hooks/useManualRequest';
+import { callIpc } from '@/lib/ipc';
 
 // 私有常量
 type LogLevel = 'info' | 'warn' | 'error';
@@ -19,21 +20,21 @@ export function useDiagnostics() {
   const { runAsync: runLogAction, loading: isLoading } = useManualRequest(
     async (action: { kind: DiagnosticsAction; level: LogLevel }) => {
       if (action.kind === 'log') {
-        const res = await window.api.diagnostics.log({
-          level: action.level,
-          message: `测试 ${action.level.toUpperCase()} 日志沉淀来自 Renderer`,
-          meta: { timestamp: Date.now() },
-        });
-        if (!res.success) {
-          throw new Error(res.error);
-        }
+        await callIpc('diagnostics.log', window.api.diagnostics.log, [
+          {
+            level: action.level,
+            message: `测试 ${action.level.toUpperCase()} 日志沉淀来自 Renderer`,
+            meta: { timestamp: Date.now() },
+          },
+        ]);
         return `✅ 已发送 ${action.level.toUpperCase()} 日志到 renderer.log`;
       }
-      const res = await window.api.diagnostics.openLogFolder();
-      if (!res.success) {
-        throw new Error(res.error);
-      }
-      return `📂 已打开日志目录: ${res.data.path}`;
+      const data = await callIpc(
+        'diagnostics.openLogFolder',
+        window.api.diagnostics.openLogFolder,
+        [],
+      );
+      return `📂 已打开日志目录: ${data.path}`;
     },
     {
       onSuccess: (status) => {
@@ -52,11 +53,12 @@ export function useDiagnostics() {
         action.kind === 'toggleDevTools'
           ? { action: 'toggleDevTools' }
           : { action: 'openUrl', url: 'https://github.com' };
-      const res = await window.api.diagnostics.performAction(input);
-      if (!res.success) {
-        throw new Error(res.error);
-      }
-      return res.data.message;
+      const data = await callIpc(
+        'diagnostics.performAction',
+        window.api.diagnostics.performAction,
+        [input],
+      );
+      return data.message;
     },
     {
       onSuccess: (msg) => {

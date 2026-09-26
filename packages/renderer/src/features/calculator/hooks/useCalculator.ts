@@ -1,8 +1,7 @@
-import type { CalculateInput } from '@shared/schemas/calculator';
-import type { CalcOperator, CalculateResult } from '@shared/types/calculator';
+import type { CalcOperator } from '@shared/types/calculator';
 import { App } from 'antd';
 import { useState } from 'react';
-import { useManualRequest } from '@/hooks/useManualRequest';
+import { useIpc } from '@/hooks/useIpc';
 
 // 私有常量
 const DEFAULT_OPERAND_A = 10;
@@ -18,25 +17,17 @@ export function useCalculator() {
   const [op, setOp] = useState<CalcOperator>(DEFAULT_OPERATOR);
 
   // 网络IO（显式触发）—— 用户点击触发的 IPC 计算（过期响应自动丢弃）
+  // useIpc 从 api 函数签名推导 data 类型，无需手写 Result 解构与类型断言
   const {
     data: result,
     error,
     loading: isLoading,
     runAsync: calculateAsync,
-  } = useManualRequest(
-    async (input: CalculateInput) => {
-      const res = await window.api.calculator.calculate(input);
-      if (!res.success) {
-        throw new Error(res.error);
-      }
-      return (res.data as CalculateResult).result;
+  } = useIpc('calculator.calculate', window.api.calculator.calculate, {
+    onError: (err) => {
+      message.error(`计算失败: ${err.message}`);
     },
-    {
-      onError: (err) => {
-        message.error(`计算失败: ${err.message}`);
-      },
-    },
-  );
+  });
 
   // 逻辑处理函数
   const calculate = () => {
@@ -52,7 +43,7 @@ export function useCalculator() {
     setB,
     op,
     setOp,
-    result: result ?? null,
+    result: result?.result ?? null,
     error: error?.message ?? null,
     isLoading,
     calculate,

@@ -1,26 +1,22 @@
 import type { CounterResult } from '@shared/types/counter';
-import type { Result } from '@shared/types/result';
 import { App } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 import { useManualRequest } from '@/hooks/useManualRequest';
+import { callIpc } from '@/lib/ipc';
 
 // 私有常量
 type CounterAction = 'increment' | 'decrement' | 'reset';
 
 // 可抽离的逻辑处理函数/组件
 async function runCounterAction(action: CounterAction, step: number): Promise<CounterResult> {
-  let res: Result<CounterResult>;
+  // 多 channel 编排：service 内部逐个 callIpc，保留统一解构与日志
   if (action === 'increment') {
-    res = await window.api.counter.increment({ step });
-  } else if (action === 'decrement') {
-    res = await window.api.counter.decrement({ step });
-  } else {
-    res = await window.api.counter.reset();
+    return callIpc('counter.increment', window.api.counter.increment, [{ step }]);
   }
-  if (!res.success) {
-    throw new Error(res.error);
+  if (action === 'decrement') {
+    return callIpc('counter.decrement', window.api.counter.decrement, [{ step }]);
   }
-  return res.data;
+  return callIpc('counter.reset', window.api.counter.reset, []);
 }
 
 export function useCounter() {
@@ -41,11 +37,7 @@ export function useCounter() {
       if (action) {
         return runCounterAction(action, step);
       }
-      const res = await window.api.counter.get();
-      if (!res.success) {
-        throw new Error(res.error);
-      }
-      return res.data;
+      return callIpc('counter.get', window.api.counter.get, []);
     },
     {
       onError: (err, [action]) => {
@@ -54,6 +46,7 @@ export function useCounter() {
     },
   );
 
+  // 组件Effect
   // 显式挂载触发：初次拉取（run 引用稳定，不会自触循环）
   useEffect(() => {
     fetchCounter();

@@ -1,7 +1,7 @@
 import type { AppConfig } from '@shared/schemas/config';
 import { App } from 'antd';
 import { useEffect } from 'react';
-import { useManualRequest } from '@/hooks/useManualRequest';
+import { useIpc } from '@/hooks/useIpc';
 import { useAppStore } from '@/stores/useAppStore';
 
 // 私有常量
@@ -18,23 +18,14 @@ export function useAppConfig() {
     loading: isFetching,
     refresh: fetchConfig,
     run: fetchConfigRun,
-  } = useManualRequest(
-    async () => {
-      const res = await window.api.config.get();
-      if (!res.success) {
-        throw new Error(res.error);
-      }
-      return res.data;
+  } = useIpc('config.get', window.api.config.get, {
+    onSuccess: (data) => {
+      setThemeMode(data.theme);
     },
-    {
-      onSuccess: (data) => {
-        setThemeMode(data.theme);
-      },
-      onError: (err) => {
-        message.error(`读取偏好设置失败: ${err.message}`);
-      },
+    onError: (err) => {
+      message.error(`读取偏好设置失败: ${err.message}`);
     },
-  );
+  });
 
   // 显式挂载触发：初次拉取（run 引用稳定，不会自触循环）
   useEffect(() => {
@@ -42,30 +33,16 @@ export function useAppConfig() {
   }, [fetchConfigRun]);
 
   // 网络IO（显式触发）—— 局部更新后回填
-  const { runAsync: updateConfigAsync } = useManualRequest(
-    async (partial: Partial<AppConfig>) => {
-      const res = await window.api.config.update(partial);
-      if (!res.success) {
-        throw new Error(res.error);
-      }
-      return res.data;
+  const { runAsync: updateConfigAsync } = useIpc('config.update', window.api.config.update, {
+    onError: (err) => {
+      message.error(`更新偏好设置失败: ${err.message}`);
     },
-    {
-      onError: (err) => {
-        message.error(`更新偏好设置失败: ${err.message}`);
-      },
-    },
-  );
+  });
 
   // 网络IO（显式触发）—— 恢复默认值后回填
-  const { runAsync: resetConfigAsync, loading: isResetting } = useManualRequest(
-    async () => {
-      const res = await window.api.config.reset();
-      if (!res.success) {
-        throw new Error(res.error);
-      }
-      return res.data;
-    },
+  const { runAsync: resetConfigAsync, loading: isResetting } = useIpc(
+    'config.reset',
+    window.api.config.reset,
     {
       onSuccess: (data) => {
         setThemeMode(data.theme);
