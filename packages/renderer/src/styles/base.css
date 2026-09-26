@@ -41,26 +41,7 @@
   padding-left: 80px;
 }
 
-/* Scrollbar styling & stable gutter */
+/* Scrollbar gutter stability (仅预留槽位防布局抖动，滚动条绘制交给平台原生实现，随 nativeTheme/system 外观变化) */
 .stable-scrollbar {
   scrollbar-gutter: stable;
-}
-
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.2);
-  border-radius: 4px;
-  transition: background 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.4);
 }

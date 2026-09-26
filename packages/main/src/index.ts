@@ -9,6 +9,7 @@ import { createConfigModule } from './modules/config.module';
 import { hardwareAccelerationMode } from './modules/hardware-acceleration.module';
 import { createIPCModule } from './modules/ipc.module';
 import { createLogModule } from './modules/log.module';
+import { createNativeThemeModule } from './modules/native-theme.module';
 import { allowInternalOrigins } from './modules/security/block-origins';
 import { allowExternalUrls } from './modules/security/external-urls';
 import { disallowMultipleAppInstance } from './modules/single-instance.module';
@@ -51,8 +52,9 @@ export async function initApp(initConfig: AppInitConfig) {
   const moduleRunner = createModuleRunner()
     .init(createLogModule())
     .init(createConfigModule())
+    .init(createNativeThemeModule())
     .init(createIPCModule())
-    .init(createWindowManagerModule({ initConfig, openDevTools: isDev }))
+    .init(createWindowManagerModule({ initConfig }))
     .init(createTrayModule())
     .init(disallowMultipleAppInstance())
     .init(terminateAppOnLastWindowClose())
