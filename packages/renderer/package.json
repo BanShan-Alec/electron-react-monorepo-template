@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@sentry/react": "^11.0.0",
     "ahooks": "^3.10.0",
     "antd": "^6.6.5",
     "clsx": "^2.1.1",
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@app/shared": "workspace:*",
     "@app/tsconfig": "workspace:*",
+    "@sentry/vite-plugin": "^5.4.0",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "^6.0.1",

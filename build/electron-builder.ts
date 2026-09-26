@@ -26,7 +26,13 @@ const config: Configuration = {
    */
   // biome-ignore lint/suspicious/noTemplateCurlyInString: electron-builder placeholder template
   artifactName: '${productName}-${version}-${os}-${arch}.${ext}',
-  files: ['LICENSE*', pkg.main, '!node_modules/@app/**', ...getListOfFilesFromEachWorkspace()],
+  files: [
+    'LICENSE*',
+    pkg.main,
+    '!node_modules/@app/**',
+    ...getListOfFilesFromEachWorkspace(),
+    '!**/*.map', // 严禁将 SourceMap 源码映射文件打包进 asar，彻底防止源码泄露
+  ],
 };
 
 export default config;
