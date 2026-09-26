@@ -6,8 +6,8 @@ import type { ModuleContext } from '../ModuleContext';
 import { getLogManager } from './log.module';
 
 export class TrayManager implements AppModule {
-  #tray: Tray | null = null;
-  readonly #logger = getLogManager().scoped(this);
+  private tray: Tray | null = null;
+  private readonly logger = getLogManager().scoped(this);
   static isQuitting = false;
 
   public enable({ app: electronApp }: ModuleContext): void {
@@ -21,10 +21,10 @@ export class TrayManager implements AppModule {
   }
 
   public initTray(): Tray | null {
-    if (this.#tray) return this.#tray;
+    if (this.tray) return this.tray;
 
     try {
-      const iconPath = this.#resolveIconPath();
+      const iconPath = this.resolveIconPath();
       let icon = iconPath ? nativeImage.createFromPath(iconPath) : nativeImage.createEmpty();
       if (icon.isEmpty()) {
         icon = nativeImage.createEmpty();
@@ -35,8 +35,8 @@ export class TrayManager implements AppModule {
         icon = icon.resize({ width: 16, height: 16 });
       }
 
-      this.#tray = new Tray(icon);
-      this.#tray.setToolTip(`${app.getName()} - 桌面客户端`);
+      this.tray = new Tray(icon);
+      this.tray.setToolTip(`${app.getName()} - 桌面客户端`);
 
       const contextMenu = Menu.buildFromTemplate([
         {
@@ -46,7 +46,7 @@ export class TrayManager implements AppModule {
         {
           label: '检查更新',
           click: () => {
-            this.#logger.info('User requested update check');
+            this.logger.info('User requested update check');
             this.restoreMainWindow();
           },
         },
@@ -60,20 +60,20 @@ export class TrayManager implements AppModule {
         },
       ]);
 
-      this.#tray.setContextMenu(contextMenu);
+      this.tray.setContextMenu(contextMenu);
 
       // 单击/双击托盘图标切换窗口显示或隐藏
-      this.#tray.on('click', () => {
+      this.tray.on('click', () => {
         this.toggleMainWindow();
       });
 
-      this.#tray.on('double-click', () => {
+      this.tray.on('double-click', () => {
         this.restoreMainWindow();
       });
 
-      return this.#tray;
+      return this.tray;
     } catch (err) {
-      this.#logger.error('Failed to initialize tray:', err);
+      this.logger.error('Failed to initialize tray:', err);
       return null;
     }
   }
@@ -102,7 +102,7 @@ export class TrayManager implements AppModule {
     }
   }
 
-  #resolveIconPath(): string {
+  private resolveIconPath(): string {
     const isWin = process.platform === 'win32';
     const isMac = process.platform === 'darwin';
 
@@ -136,9 +136,9 @@ export class TrayManager implements AppModule {
   }
 
   public destroy(): void {
-    if (this.#tray) {
-      this.#tray.destroy();
-      this.#tray = null;
+    if (this.tray) {
+      this.tray.destroy();
+      this.tray = null;
     }
   }
 }

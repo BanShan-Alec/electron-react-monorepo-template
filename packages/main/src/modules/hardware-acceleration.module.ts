@@ -2,14 +2,14 @@ import type { AppModule } from '../AppModule';
 import type { ModuleContext } from '../ModuleContext';
 
 export class HardwareAccelerationModule implements AppModule {
-  readonly #shouldBeDisabled: boolean;
+  private readonly shouldBeDisabled: boolean;
 
   constructor({ enable }: { enable: boolean }) {
-    this.#shouldBeDisabled = !enable;
+    this.shouldBeDisabled = !enable;
   }
 
   enable({ app }: ModuleContext): Promise<void> | void {
-    if (this.#shouldBeDisabled) {
+    if (this.shouldBeDisabled) {
       app.disableHardwareAcceleration();
     }
   }

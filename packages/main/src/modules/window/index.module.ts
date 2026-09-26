@@ -14,24 +14,24 @@ export interface WindowManagerOptions {
 }
 
 export class WindowManager implements AppModule {
-  readonly #preload: { path: string };
-  readonly #renderer: { path: string } | URL;
-  readonly #openDevTools: boolean;
-  readonly #keepState: boolean;
-  readonly #windowStateKeeper: WindowStateKeeper | null;
+  private readonly preload: { path: string };
+  private readonly renderer: { path: string } | URL;
+  private readonly openDevTools: boolean;
+  private readonly keepState: boolean;
+  private readonly windowStateKeeper: WindowStateKeeper | null;
 
   constructor({ initConfig, openDevTools = false, keepState = true }: WindowManagerOptions) {
-    this.#preload = initConfig.preload;
-    this.#renderer = initConfig.renderer;
-    this.#openDevTools = openDevTools;
-    this.#keepState = keepState;
-    this.#windowStateKeeper = keepState ? new WindowStateKeeper() : null;
+    this.preload = initConfig.preload;
+    this.renderer = initConfig.renderer;
+    this.openDevTools = openDevTools;
+    this.keepState = keepState;
+    this.windowStateKeeper = keepState ? new WindowStateKeeper() : null;
   }
 
   async enable({ app }: ModuleContext): Promise<void> {
     await app.whenReady();
-    if (this.#keepState && this.#windowStateKeeper) {
-      this.#windowStateKeeper.validateWithDisplays();
+    if (this.keepState && this.windowStateKeeper) {
+      this.windowStateKeeper.validateWithDisplays();
     }
     await this.restoreOrCreateWindow(true);
     app.on('second-instance', () => this.restoreOrCreateWindow(true));
@@ -40,8 +40,8 @@ export class WindowManager implements AppModule {
 
   async createWindow(): Promise<BrowserWindow> {
     const savedState: WindowState =
-      this.#keepState && this.#windowStateKeeper
-        ? this.#windowStateKeeper.getState()
+      this.keepState && this.windowStateKeeper
+        ? this.windowStateKeeper.getState()
         : DEFAULT_WINDOW_STATE;
 
     const logger = getLogManager().scoped('WindowManager');
@@ -59,13 +59,13 @@ export class WindowManager implements AppModule {
         contextIsolation: true,
         sandbox: true,
         webviewTag: false,
-        preload: this.#preload.path,
+        preload: this.preload.path,
       },
     });
 
     // 绑定窗口尺寸/位置状态跟踪（若开启）
-    if (this.#keepState && this.#windowStateKeeper) {
-      this.#windowStateKeeper.track(browserWindow);
+    if (this.keepState && this.windowStateKeeper) {
+      this.windowStateKeeper.track(browserWindow);
     }
 
     browserWindow.once('ready-to-show', () => {
@@ -73,7 +73,7 @@ export class WindowManager implements AppModule {
         browserWindow.maximize();
       }
       browserWindow.show();
-      if (this.#openDevTools) {
+      if (this.openDevTools) {
         browserWindow.webContents.openDevTools();
       }
       logger.info('Window displayed successfully');
@@ -104,10 +104,10 @@ export class WindowManager implements AppModule {
       }
     });
 
-    if (this.#renderer instanceof URL) {
-      await browserWindow.loadURL(this.#renderer.href);
+    if (this.renderer instanceof URL) {
+      await browserWindow.loadURL(this.renderer.href);
     } else {
-      await browserWindow.loadFile(this.#renderer.path);
+      await browserWindow.loadFile(this.renderer.path);
     }
 
     return browserWindow;

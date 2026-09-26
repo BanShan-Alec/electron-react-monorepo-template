@@ -10,27 +10,27 @@ export type { AppConfig };
 export { DEFAULT_CONFIG };
 
 export class ConfigStore implements AppModule {
-  readonly #configFilePath: string;
-  #config: AppConfig;
+  private readonly configFilePath: string;
+  private config: AppConfig;
 
   constructor(customDir?: string) {
     const dir = customDir ?? (app ? app.getPath('userData') : os.tmpdir());
-    this.#configFilePath = path.join(dir, 'app-config.json');
-    this.#config = this.#loadConfig();
+    this.configFilePath = path.join(dir, 'app-config.json');
+    this.config = this.loadConfig();
   }
 
   enable({ app }: ModuleContext): void {
     // 应用启动生命周期：预热加载配置并监听退出保障落盘
-    this.#loadConfig();
+    this.loadConfig();
     app.on('before-quit', () => {
-      this.#persist();
+      this.persist();
     });
   }
 
-  #loadConfig(): AppConfig {
+  private loadConfig(): AppConfig {
     try {
-      if (fs.existsSync(this.#configFilePath)) {
-        const raw = fs.readFileSync(this.#configFilePath, 'utf-8');
+      if (fs.existsSync(this.configFilePath)) {
+        const raw = fs.readFileSync(this.configFilePath, 'utf-8');
         const parsed = JSON.parse(raw);
         return { ...DEFAULT_CONFIG, ...parsed };
       }
@@ -40,20 +40,20 @@ export class ConfigStore implements AppModule {
     return { ...DEFAULT_CONFIG };
   }
 
-  #persist(): void {
+  private persist(): void {
     try {
-      const dir = path.dirname(this.#configFilePath);
+      const dir = path.dirname(this.configFilePath);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
-      const tempPath = `${this.#configFilePath}.${Date.now()}.tmp`;
-      const data = JSON.stringify(this.#config, null, 2);
+      const tempPath = `${this.configFilePath}.${Date.now()}.tmp`;
+      const data = JSON.stringify(this.config, null, 2);
       fs.writeFileSync(tempPath, data, 'utf-8');
-      fs.renameSync(tempPath, this.#configFilePath);
+      fs.renameSync(tempPath, this.configFilePath);
     } catch {
       // 降级使用普通写入
       try {
-        fs.writeFileSync(this.#configFilePath, JSON.stringify(this.#config, null, 2), 'utf-8');
+        fs.writeFileSync(this.configFilePath, JSON.stringify(this.config, null, 2), 'utf-8');
       } catch {
         // 静默处理磁盘异常
       }
@@ -61,26 +61,26 @@ export class ConfigStore implements AppModule {
   }
 
   public getAll(): AppConfig {
-    return { ...this.#config };
+    return { ...this.config };
   }
 
   public get<K extends keyof AppConfig>(key: K): AppConfig[K] {
-    return this.#config[key];
+    return this.config[key];
   }
 
   public set(partial: Partial<AppConfig>): AppConfig {
-    this.#config = {
-      ...this.#config,
+    this.config = {
+      ...this.config,
       ...partial,
     };
-    this.#persist();
-    return { ...this.#config };
+    this.persist();
+    return { ...this.config };
   }
 
   public reset(): AppConfig {
-    this.#config = { ...DEFAULT_CONFIG };
-    this.#persist();
-    return { ...this.#config };
+    this.config = { ...DEFAULT_CONFIG };
+    this.persist();
+    return { ...this.config };
   }
 }
 

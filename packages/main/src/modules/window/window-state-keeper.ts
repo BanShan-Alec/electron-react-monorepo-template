@@ -50,21 +50,21 @@ export function validateWindowState(
 }
 
 export class WindowStateKeeper {
-  readonly #stateFilePath: string;
-  #state: WindowState;
-  #saveTimer: NodeJS.Timeout | null = null;
+  private readonly stateFilePath: string;
+  private state: WindowState;
+  private saveTimer: NodeJS.Timeout | null = null;
 
   constructor(customPath?: string) {
     const dir = customPath ?? (app ? app.getPath('userData') : os.tmpdir());
-    this.#stateFilePath = path.join(dir, 'window-state.json');
-    this.#state = this.loadState();
+    this.stateFilePath = path.join(dir, 'window-state.json');
+    this.state = this.loadState();
   }
 
   public getState(): WindowState {
     if (app?.isReady()) {
       this.validateWithDisplays();
     }
-    return { ...this.#state };
+    return { ...this.state };
   }
 
   /**
@@ -75,19 +75,19 @@ export class WindowStateKeeper {
       try {
         const displays = screen.getAllDisplays();
         if (displays.length > 0) {
-          this.#state = validateWindowState(this.#state, displays);
+          this.state = validateWindowState(this.state, displays);
         }
       } catch {
         // screen getAllDisplays safety fallback
       }
     }
-    return { ...this.#state };
+    return { ...this.state };
   }
 
   public loadState(): WindowState {
     try {
-      if (fs.existsSync(this.#stateFilePath)) {
-        const raw = fs.readFileSync(this.#stateFilePath, 'utf-8');
+      if (fs.existsSync(this.stateFilePath)) {
+        const raw = fs.readFileSync(this.stateFilePath, 'utf-8');
         const parsed = JSON.parse(raw);
         if (app?.isReady() && screen?.getAllDisplays) {
           try {
@@ -115,26 +115,26 @@ export class WindowStateKeeper {
   }
 
   public saveStateSync(): void {
-    if (this.#saveTimer) {
-      clearTimeout(this.#saveTimer);
-      this.#saveTimer = null;
+    if (this.saveTimer) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
     }
     try {
-      const dir = path.dirname(this.#stateFilePath);
+      const dir = path.dirname(this.stateFilePath);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
-      fs.writeFileSync(this.#stateFilePath, JSON.stringify(this.#state, null, 2), 'utf-8');
+      fs.writeFileSync(this.stateFilePath, JSON.stringify(this.state, null, 2), 'utf-8');
     } catch {
       // 写入失败降级处理
     }
   }
 
   public scheduleSave(): void {
-    if (this.#saveTimer) {
-      clearTimeout(this.#saveTimer);
+    if (this.saveTimer) {
+      clearTimeout(this.saveTimer);
     }
-    this.#saveTimer = setTimeout(() => {
+    this.saveTimer = setTimeout(() => {
       this.saveStateSync();
     }, 500);
   }
@@ -144,8 +144,8 @@ export class WindowStateKeeper {
       if (browserWindow.isDestroyed()) return;
       if (!browserWindow.isMaximized() && !browserWindow.isMinimized()) {
         const bounds = browserWindow.getBounds();
-        this.#state = {
-          ...this.#state,
+        this.state = {
+          ...this.state,
           ...bounds,
           isMaximized: false,
         };
@@ -157,20 +157,20 @@ export class WindowStateKeeper {
     browserWindow.on('move', updateBounds);
 
     browserWindow.on('maximize', () => {
-      this.#state.isMaximized = true;
+      this.state.isMaximized = true;
       this.scheduleSave();
     });
 
     browserWindow.on('unmaximize', () => {
-      this.#state.isMaximized = false;
+      this.state.isMaximized = false;
       this.scheduleSave();
     });
 
     browserWindow.on('close', () => {
       if (!browserWindow.isDestroyed() && !browserWindow.isMaximized()) {
         const bounds = browserWindow.getBounds();
-        this.#state = {
-          ...this.#state,
+        this.state = {
+          ...this.state,
           ...bounds,
         };
       }

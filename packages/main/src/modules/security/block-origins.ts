@@ -12,25 +12,25 @@ import { AbstractSecurityRule } from './abstract-security';
  * @see https://www.electronjs.org/docs/latest/tutorial/security#13-disable-or-limit-navigation
  */
 export class BlockNotAllowedOrigins extends AbstractSecurityRule {
-  readonly #allowedOrigins: Set<string>;
-  readonly #logger = getLogManager().scoped('BlockOrigins');
+  private readonly allowedOrigins: Set<string>;
+  private readonly logger = getLogManager().scoped('BlockOrigins');
 
   constructor(allowedOrigins: Set<string> = new Set()) {
     super();
-    this.#allowedOrigins = structuredClone(allowedOrigins);
+    this.allowedOrigins = structuredClone(allowedOrigins);
   }
 
   applyRule(contents: Electron.WebContents): Promise<void> | void {
     contents.on('will-navigate', (event, url) => {
       const { origin } = new URL(url);
-      if (this.#allowedOrigins.has(origin)) {
+      if (this.allowedOrigins.has(origin)) {
         return;
       }
 
       // Prevent navigation
       event.preventDefault();
 
-      this.#logger.warn(`Blocked navigating to disallowed origin: ${origin}`);
+      this.logger.warn(`Blocked navigating to disallowed origin: ${origin}`);
     });
   }
 }

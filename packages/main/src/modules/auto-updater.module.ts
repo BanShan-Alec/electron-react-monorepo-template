@@ -5,15 +5,15 @@ import { getLogManager } from './log.module';
 type DownloadNotification = Parameters<AppUpdater['checkForUpdatesAndNotify']>[0];
 
 export class AutoUpdater implements AppModule {
-  readonly #logger = getLogManager().scoped(this);
-  readonly #notification: DownloadNotification;
+  private readonly logger = getLogManager().scoped(this);
+  private readonly notification: DownloadNotification;
 
   constructor({
     downloadNotification = undefined,
   }: {
     downloadNotification?: DownloadNotification;
   } = {}) {
-    this.#notification = downloadNotification;
+    this.notification = downloadNotification;
   }
 
   async enable(): Promise<void> {
@@ -34,16 +34,16 @@ export class AutoUpdater implements AppModule {
 
     const updater = this.getAutoUpdater();
     try {
-      updater.logger = this.#logger;
+      updater.logger = this.logger;
       updater.fullChangelog = true;
 
       if (process.env.VITE_DISTRIBUTION_CHANNEL) {
         updater.channel = process.env.VITE_DISTRIBUTION_CHANNEL;
       }
 
-      return await updater.checkForUpdatesAndNotify(this.#notification);
+      return await updater.checkForUpdatesAndNotify(this.notification);
     } catch (error) {
-      this.#logger.warn('Failed to check for updates:', error);
+      this.logger.warn('Failed to check for updates:', error);
       return null;
     }
   }

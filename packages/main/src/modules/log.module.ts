@@ -19,10 +19,10 @@ export class LogManager implements AppModule {
   public readonly rendererLogger = log.create({ logId: 'renderer' });
 
   constructor() {
-    this.#setupLoggers();
+    this.setupLoggers();
   }
 
-  #setupLoggers(): void {
+  private setupLoggers(): void {
     // 5MB 轮转上限
     const MAX_SIZE = 5 * 1024 * 1024;
 
