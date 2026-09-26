@@ -4,11 +4,11 @@ import type { ModuleContext } from '../ModuleContext';
 import { getLogManager } from './log.module';
 
 export class IPCModule implements AppModule {
+  readonly #logger = getLogManager().scoped(this);
+
   enable(_context: ModuleContext): void {
-    const logger = getLogManager().mainLogger;
-    logger.info('[IPCModule] Registering all controllers according to fullstack specs...');
     registerAllControllers();
-    logger.info('[IPCModule] All IPC controllers registered successfully.');
+    this.#logger.info('Registered all controllers successfully');
   }
 }
 

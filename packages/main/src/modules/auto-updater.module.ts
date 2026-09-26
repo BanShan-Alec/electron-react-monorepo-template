@@ -1,20 +1,18 @@
-import electronUpdater, { type AppUpdater, type Logger } from 'electron-updater';
+import electronUpdater, { type AppUpdater } from 'electron-updater';
 import type { AppModule } from '../AppModule';
+import { getLogManager } from './log.module';
 
 type DownloadNotification = Parameters<AppUpdater['checkForUpdatesAndNotify']>[0];
 
 export class AutoUpdater implements AppModule {
-  readonly #logger: Logger | null;
+  readonly #logger = getLogManager().scoped(this);
   readonly #notification: DownloadNotification;
 
   constructor({
-    logger = null,
     downloadNotification = undefined,
   }: {
-    logger?: Logger | null | undefined;
     downloadNotification?: DownloadNotification;
   } = {}) {
-    this.#logger = logger;
     this.#notification = downloadNotification;
   }
 
@@ -36,7 +34,7 @@ export class AutoUpdater implements AppModule {
 
     const updater = this.getAutoUpdater();
     try {
-      updater.logger = this.#logger || null;
+      updater.logger = this.#logger;
       updater.fullChangelog = true;
 
       if (process.env.VITE_DISTRIBUTION_CHANNEL) {
@@ -45,7 +43,7 @@ export class AutoUpdater implements AppModule {
 
       return await updater.checkForUpdatesAndNotify(this.#notification);
     } catch (error) {
-      console.warn('AutoUpdater failed to check for updates:', error);
+      this.#logger.warn('Failed to check for updates:', error);
       return null;
     }
   }

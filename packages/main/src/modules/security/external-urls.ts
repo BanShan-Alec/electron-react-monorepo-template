@@ -6,14 +6,13 @@ import { getLogManager } from '../log.module';
 
 export class ExternalUrls implements AppModule {
   readonly #externalUrls: Set<string>;
+  readonly #logger = getLogManager().scoped(this);
 
   constructor(externalUrls: Set<string>) {
     this.#externalUrls = externalUrls;
   }
 
   enable({ app }: ModuleContext): Promise<void> | void {
-    const isDev = process.env.NODE_ENV !== 'production';
-
     app.on('web-contents-created', (_, contents) => {
       contents.setWindowOpenHandler(({ url }) => {
         try {
@@ -21,26 +20,21 @@ export class ExternalUrls implements AppModule {
 
           // 仅允许安全的网络协议
           if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-            if (isDev) {
-              console.warn(`[ExternalUrls] Blocked non-http(s) protocol navigation: ${url}`);
-            }
+            this.#logger.warn(`Blocked non-http(s) protocol navigation: ${url}`);
             return { action: 'deny' };
           }
 
           if (this.#externalUrls.has(parsedUrl.origin)) {
             shell.openExternal(url).catch((err) => {
-              getLogManager().mainLogger.error('[ExternalUrls] Failed to open external URL:', err);
+              this.#logger.error('Failed to open external URL:', err);
             });
-          } else if (isDev) {
-            console.warn(
-              `Blocked the opening of a disallowed external origin: ${parsedUrl.origin}`,
+          } else {
+            this.#logger.warn(
+              `Blocked opening of a disallowed external origin: ${parsedUrl.origin}`,
             );
           }
         } catch (err) {
-          getLogManager().mainLogger.warn(
-            `[ExternalUrls] Malformed or invalid URL received: ${url}`,
-            err,
-          );
+          this.#logger.warn(`Malformed or invalid URL received: ${url}`, err);
         }
 
         // Prevent creating a new window.

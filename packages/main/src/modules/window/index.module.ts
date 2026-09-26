@@ -44,9 +44,9 @@ export class WindowManager implements AppModule {
         ? this.#windowStateKeeper.getState()
         : DEFAULT_WINDOW_STATE;
 
-    const logger = getLogManager().mainLogger;
+    const logger = getLogManager().scoped('WindowManager');
 
-    logger.info('[WindowManager] Creating browser window with state:', savedState);
+    logger.info('Creating browser window with state:', savedState);
 
     const browserWindow = new BrowserWindow({
       show: false, // Use the 'ready-to-show' event to show the instantiated BrowserWindow.
@@ -76,20 +76,18 @@ export class WindowManager implements AppModule {
       if (this.#openDevTools) {
         browserWindow.webContents.openDevTools();
       }
-      logger.info('[WindowManager] Window displayed successfully');
+      logger.info('Window displayed successfully');
     });
 
     browserWindow.webContents.on(
       'did-fail-load',
       (_event, errorCode, errorDescription, validatedURL) => {
-        logger.error(
-          `[WindowManager] Failed to load URL "${validatedURL}": (${errorCode}) ${errorDescription}`,
-        );
+        logger.error(`Failed to load URL "${validatedURL}": (${errorCode}) ${errorDescription}`);
       },
     );
 
     browserWindow.webContents.on('preload-error', (_event, preloadPath, error) => {
-      logger.error(`[WindowManager] Preload script failed to load at "${preloadPath}":`, error);
+      logger.error(`Preload script failed to load at "${preloadPath}":`, error);
     });
 
     // 支持点击关闭按钮最小化到系统托盘
@@ -100,9 +98,9 @@ export class WindowManager implements AppModule {
       if (!TrayManager.isQuitting && shouldMinimizeToTray) {
         event.preventDefault();
         browserWindow.hide();
-        logger.info('[WindowManager] Window closed event intercepted -> minimized to tray');
+        logger.info('Window closed event intercepted -> minimized to tray');
       } else {
-        logger.info('[WindowManager] Window is closing and exiting');
+        logger.info('Window is closing and exiting');
       }
     });
 

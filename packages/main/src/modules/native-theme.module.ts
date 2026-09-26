@@ -14,12 +14,14 @@ import { getLogManager } from './log.module';
 // 私有常量
 
 // 可抽离的逻辑处理函数/组件
+const logger = getLogManager().scoped('NativeTheme');
+
 export function applyNativeThemeSource(theme: AppConfig['theme']): void {
   try {
     nativeTheme.themeSource = theme;
-    getLogManager().mainLogger.info(`[NativeTheme] themeSource synced -> ${theme}`);
+    logger.info(`themeSource synced -> ${theme}`);
   } catch (err) {
-    getLogManager().mainLogger.error('[NativeTheme] Failed to sync themeSource:', err);
+    logger.error('Failed to sync themeSource:', err);
   }
 }
 
@@ -30,9 +32,7 @@ export class NativeThemeModule implements AppModule {
       applyNativeThemeSource(getAppConfigStore().get('theme'));
 
       nativeTheme.on('updated', () => {
-        getLogManager().mainLogger.info(
-          `[NativeTheme] Updated, shouldUseDarkColors=${nativeTheme.shouldUseDarkColors}`,
-        );
+        logger.info(`Updated, shouldUseDarkColors=${nativeTheme.shouldUseDarkColors}`);
       });
     });
   }

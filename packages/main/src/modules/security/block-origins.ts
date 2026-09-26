@@ -1,5 +1,6 @@
 import { URL } from 'node:url';
 import type * as Electron from 'electron';
+import { getLogManager } from '../log.module';
 import { AbstractSecurityRule } from './abstract-security';
 
 /**
@@ -12,6 +13,7 @@ import { AbstractSecurityRule } from './abstract-security';
  */
 export class BlockNotAllowedOrigins extends AbstractSecurityRule {
   readonly #allowedOrigins: Set<string>;
+  readonly #logger = getLogManager().scoped('BlockOrigins');
 
   constructor(allowedOrigins: Set<string> = new Set()) {
     super();
@@ -28,9 +30,7 @@ export class BlockNotAllowedOrigins extends AbstractSecurityRule {
       // Prevent navigation
       event.preventDefault();
 
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn(`Blocked navigating to disallowed origin: ${origin}`);
-      }
+      this.#logger.warn(`Blocked navigating to disallowed origin: ${origin}`);
     });
   }
 }

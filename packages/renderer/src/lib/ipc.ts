@@ -25,7 +25,9 @@ const IPC_LOG_PREFIX = '[ipc]';
 function logIpc(channel: string, ok: boolean, durationMs: number, error?: unknown) {
   const cost = `${durationMs.toFixed(1)}ms`;
   if (ok) {
-    console.info(`${IPC_LOG_PREFIX} ${channel} ok ${cost}`);
+    if (import.meta.env.DEV) {
+      console.info(`${IPC_LOG_PREFIX} ${channel} ok ${cost}`);
+    }
     return;
   }
   const line = `${IPC_LOG_PREFIX} ${channel} failed ${cost}`;

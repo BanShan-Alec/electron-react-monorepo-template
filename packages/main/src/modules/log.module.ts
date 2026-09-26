@@ -7,6 +7,13 @@ import type { ModuleContext } from '../ModuleContext';
 
 export type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
+export interface IScopedLogger {
+  info: (message: string, ...args: unknown[]) => void;
+  warn: (message: string, ...args: unknown[]) => void;
+  error: (message: string, ...args: unknown[]) => void;
+  debug: (message: string, ...args: unknown[]) => void;
+}
+
 export class LogManager implements AppModule {
   public readonly mainLogger = log;
   public readonly rendererLogger = log.create({ logId: 'renderer' });
@@ -92,8 +99,28 @@ export class LogManager implements AppModule {
         }
       }
     } catch (err) {
-      this.mainLogger.warn('Failed to clean old logs:', err);
+      this.mainLogger.warn('[LogManager] Failed to clean old logs:', err);
     }
+  }
+
+  /**
+   * 自动生成带 [Module] 前缀的作用域子 Logger
+   * @param target 字符串（如 'WindowManager'）或直接传对象/实例 `this`（自动提取 Class 名）
+   */
+  public scoped(target: string | object): IScopedLogger {
+    const tag = typeof target === 'string' ? target : target.constructor.name;
+    const prefix = `[${tag}]`;
+
+    return {
+      info: (message: string, ...args: unknown[]) =>
+        this.mainLogger.info(`${prefix} ${message}`, ...args),
+      warn: (message: string, ...args: unknown[]) =>
+        this.mainLogger.warn(`${prefix} ${message}`, ...args),
+      error: (message: string, ...args: unknown[]) =>
+        this.mainLogger.error(`${prefix} ${message}`, ...args),
+      debug: (message: string, ...args: unknown[]) =>
+        this.mainLogger.debug(`${prefix} ${message}`, ...args),
+    };
   }
 
   public getLogDirectory(): string {

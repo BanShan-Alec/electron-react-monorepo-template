@@ -7,6 +7,7 @@ import { getLogManager } from './log.module';
 
 export class TrayManager implements AppModule {
   #tray: Tray | null = null;
+  readonly #logger = getLogManager().scoped(this);
   static isQuitting = false;
 
   public enable({ app: electronApp }: ModuleContext): void {
@@ -45,7 +46,7 @@ export class TrayManager implements AppModule {
         {
           label: '检查更新',
           click: () => {
-            getLogManager().mainLogger.info('[Tray] User requested update check');
+            this.#logger.info('User requested update check');
             this.restoreMainWindow();
           },
         },
@@ -72,7 +73,7 @@ export class TrayManager implements AppModule {
 
       return this.#tray;
     } catch (err) {
-      getLogManager().mainLogger.error('Failed to initialize tray:', err);
+      this.#logger.error('Failed to initialize tray:', err);
       return null;
     }
   }
