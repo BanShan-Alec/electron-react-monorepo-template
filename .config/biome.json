@@ -39,7 +39,18 @@
         "noReExportAll": "error"
       },
       "style": {
-        "noNonNullAssertion": "off"
+        "noNonNullAssertion": "off",
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "ahooks": {
+                "message": "禁用直接引用 ahooks useRequest；请求一律使用 src/hooks/useManualRequest.ts",
+                "importNames": ["useRequest"]
+              }
+            }
+          }
+        }
       },
       "suspicious": {
         "noConfusingVoidType": "off",
@@ -70,5 +81,17 @@
         "organizeImports": "on"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["packages/renderer/src/hooks/useManualRequest.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": "off"
+          }
+        }
+      }
+    }
+  ]
 }
