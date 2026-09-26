@@ -5,8 +5,10 @@ import { Header, type HeaderTab } from '@/components/layout/Header';
 import { ArchitectureFeature } from '@/features/architecture';
 import { CalculatorFeature } from '@/features/calculator';
 import { CounterFeature } from '@/features/counter';
-import { DiagnosticsFeature } from '@/features/diagnostics';
+import { DevToolsFeature } from '@/features/devtools';
+import { LoggingFeature } from '@/features/logging';
 import { NativeDialogsFeature } from '@/features/native-dialogs';
+import { PingFeature } from '@/features/ping';
 import { SettingsFeature } from '@/features/settings';
 import { SystemInfoFeature } from '@/features/system-info';
 import { useTheme } from '@/hooks/useTheme';
@@ -54,12 +56,14 @@ const _App = (_props: IProps) => {
               <div
                 className={`grid grid-cols-1 lg:grid-cols-2 gap-5${isDashboard ? '' : ' hidden'}`}
               >
+                <PingFeature />
                 <SystemInfoFeature />
                 <CounterFeature />
                 <CalculatorFeature />
                 <SettingsFeature />
                 <NativeDialogsFeature />
-                <DiagnosticsFeature />
+                <LoggingFeature />
+                <DevToolsFeature />
               </div>
 
               <div className={isDashboard ? 'hidden' : undefined}>
