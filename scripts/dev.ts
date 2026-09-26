@@ -68,7 +68,7 @@ function createElectronLauncherPlugin(): Plugin {
       /** Spawn a new electron process */
       const args = buildElectronArgs();
 
-      // --remote-debugging-port 暴露 renderer CDP，供 scripts/debug.ts 连接驱动
+      // --remote-debugging-port 暴露 renderer CDP，供外部 CDP 客户端连接驱动
       electronApp = spawn(String(electronPath), [...args, '.'], { stdio: 'inherit' });
 
       /** Stops the watch script when the application has been quit */

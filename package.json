@@ -22,8 +22,6 @@
     "build:mac": "node scripts/build.ts --mac",
     "build:linux": "node scripts/build.ts --linux",
     "start": "node scripts/dev.ts",
-    "debug": "node scripts/debug.ts",
-    "debug:smoke": "node scripts/debug.ts assert scroll",
     "typecheck": "tsc -p scripts/tsconfig.json --noEmit && pnpm -r run typecheck",
     "lint": "biome check --config-path=.config .",
     "lint:fix": "biome check --write --config-path=.config .",
@@ -51,7 +49,6 @@
     "electron-builder": "26.8.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.5.0",
-    "playwright": "^1.63.0",
     "typescript": "catalog:",
     "vite": "catalog:"
   },
