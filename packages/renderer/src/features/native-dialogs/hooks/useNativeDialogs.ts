@@ -1,93 +1,98 @@
 import { useState } from 'react';
+import { useManualRequest } from '@/hooks/useManualRequest';
 
-export function useNativeDialogs() {
-  const [selectedPath, setSelectedPath] = useState<string>('');
-  const [statusMessage, setStatusMessage] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(false);
+// 私有常量
+type DialogAction = 'openFile' | 'openDirectory' | 'saveFile' | 'showInFolder';
 
-  const handleOpenFile = async () => {
-    setIsLoading(true);
-    try {
-      const res = await window.api.dialog.openFile({
-        title: '选择测试文件',
-      });
-      if (res.success) {
-        if (!res.data.canceled && res.data.filePaths.length > 0) {
-          setSelectedPath(res.data.filePaths[0]);
-          setStatusMessage(`已选择文件: ${res.data.filePaths[0]}`);
-        } else {
-          setStatusMessage('用户取消了选择');
-        }
-      } else {
-        setStatusMessage(`打开失败: ${res.error}`);
+interface DialogDescriptor {
+  statusMessage: string;
+  path?: string;
+}
+
+// 可抽离的逻辑处理函数/组件
+async function runDialogAction(
+  action: DialogAction,
+  selectedPath: string,
+): Promise<DialogDescriptor> {
+  switch (action) {
+    case 'openFile': {
+      const res = await window.api.dialog.openFile({ title: '选择测试文件' });
+      if (!res.success) {
+        return { statusMessage: `打开失败: ${res.error}` };
       }
-    } catch (err) {
-      setStatusMessage(`打开失败: ${String(err)}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleOpenDirectory = async () => {
-    setIsLoading(true);
-    try {
-      const res = await window.api.dialog.openDirectory({
-        title: '选择测试文件夹',
-      });
-      if (res.success) {
-        if (!res.data.canceled && res.data.filePaths.length > 0) {
-          setSelectedPath(res.data.filePaths[0]);
-          setStatusMessage(`已选择文件夹: ${res.data.filePaths[0]}`);
-        } else {
-          setStatusMessage('用户取消了选择');
-        }
-      } else {
-        setStatusMessage(`打开失败: ${res.error}`);
+      if (!res.data.canceled && res.data.filePaths.length > 0) {
+        const path = res.data.filePaths[0];
+        return { statusMessage: `已选择文件: ${path}`, path };
       }
-    } catch (err) {
-      setStatusMessage(`打开失败: ${String(err)}`);
-    } finally {
-      setIsLoading(false);
+      return { statusMessage: '用户取消了选择' };
     }
-  };
-
-  const handleSaveFile = async () => {
-    setIsLoading(true);
-    try {
+    case 'openDirectory': {
+      const res = await window.api.dialog.openDirectory({ title: '选择测试文件夹' });
+      if (!res.success) {
+        return { statusMessage: `打开失败: ${res.error}` };
+      }
+      if (!res.data.canceled && res.data.filePaths.length > 0) {
+        const path = res.data.filePaths[0];
+        return { statusMessage: `已选择文件夹: ${path}`, path };
+      }
+      return { statusMessage: '用户取消了选择' };
+    }
+    case 'saveFile': {
       const res = await window.api.dialog.saveFile({
         title: '另存为示例',
         defaultPath: 'example.txt',
       });
-      if (res.success) {
-        if (!res.data.canceled && res.data.filePath) {
-          setSelectedPath(res.data.filePath);
-          setStatusMessage(`保存路径已选定: ${res.data.filePath}`);
-        } else {
-          setStatusMessage('用户取消了保存');
-        }
-      } else {
-        setStatusMessage(`保存失败: ${res.error}`);
+      if (!res.success) {
+        return { statusMessage: `保存失败: ${res.error}` };
       }
-    } catch (err) {
-      setStatusMessage(`保存失败: ${String(err)}`);
-    } finally {
-      setIsLoading(false);
+      if (!res.data.canceled && res.data.filePath) {
+        return {
+          statusMessage: `保存路径已选定: ${res.data.filePath}`,
+          path: res.data.filePath,
+        };
+      }
+      return { statusMessage: '用户取消了保存' };
+    }
+    case 'showInFolder': {
+      const res = await window.api.shell.showItemInFolder({ path: selectedPath });
+      if (!res.success) {
+        return { statusMessage: `定位失败: ${res.error}` };
+      }
+      return {
+        statusMessage: `已在资源管理器中定位: ${selectedPath}`,
+        path: selectedPath,
+      };
+    }
+  }
+}
+
+export function useNativeDialogs() {
+  const [selectedPath, setSelectedPath] = useState<string>('');
+  const [statusMessage, setStatusMessage] = useState<string>('');
+
+  // 网络IO（显式触发）—— 单一动作通道；失败以状态框反馈（对话框流程的内嵌反馈渠道），并发时仅最后一次生效
+  const { runAsync: runDialog, loading: isLoading } = useManualRequest(
+    (action: DialogAction) => runDialogAction(action, selectedPath),
+    {},
+  );
+
+  // 逻辑处理函数
+  const runAction = async (action: DialogAction) => {
+    try {
+      const descriptor = await runDialog(action);
+      setStatusMessage(descriptor.statusMessage);
+      if (descriptor.path) {
+        setSelectedPath(descriptor.path);
+      }
+    } catch {
+      // 过期响应 CancelledError 已丢弃；业务失败已由 descriptor 反馈，此处防止未处理拒绝
     }
   };
 
-  const handleShowInFolder = async () => {
-    if (!selectedPath) return;
-    try {
-      const res = await window.api.shell.showItemInFolder({ path: selectedPath });
-      if (res.success) {
-        setStatusMessage(`已在资源管理器中定位: ${selectedPath}`);
-      } else {
-        setStatusMessage(`定位失败: ${res.error}`);
-      }
-    } catch (err) {
-      setStatusMessage(`定位失败: ${String(err)}`);
-    }
-  };
+  const handleOpenFile = () => void runAction('openFile');
+  const handleOpenDirectory = () => void runAction('openDirectory');
+  const handleSaveFile = () => void runAction('saveFile');
+  const handleShowInFolder = () => void runAction('showInFolder');
 
   return {
     selectedPath,

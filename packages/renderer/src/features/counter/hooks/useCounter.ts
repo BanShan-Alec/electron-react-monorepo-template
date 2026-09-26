@@ -1,69 +1,85 @@
+import type { CounterResult } from '@shared/types/counter';
+import type { Result } from '@shared/types/result';
+import { App } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
+import { useManualRequest } from '@/hooks/useManualRequest';
+
+// 私有常量
+type CounterAction = 'increment' | 'decrement' | 'reset';
+
+// 可抽离的逻辑处理函数/组件
+async function runCounterAction(action: CounterAction, step: number): Promise<CounterResult> {
+  let res: Result<CounterResult>;
+  if (action === 'increment') {
+    res = await window.api.counter.increment({ step });
+  } else if (action === 'decrement') {
+    res = await window.api.counter.decrement({ step });
+  } else {
+    res = await window.api.counter.reset();
+  }
+  if (!res.success) {
+    throw new Error(res.error);
+  }
+  return res.data;
+}
 
 export function useCounter() {
-  const [count, setCount] = useState<number>(0);
+  const { message } = App.useApp();
   const [step, setStep] = useState<number>(1);
-  const [isUpdating, setIsUpdating] = useState(false);
 
-  const refreshCounter = useCallback(async () => {
-    try {
+  // 网络IO（manual-only）—— 单一 useManualRequest 通道，触发点全部显式：
+  // useEffect 内 run() 为挂载拉取，runCounterOp(action) 为用户操作。
+  // 操作响应直接汇入同一份 data 驱动显示；ahooks 内建 take-latest 丢弃过期响应，连点不产生数据倒流。
+  const {
+    data: counter,
+    loading,
+    refresh: refreshCounter,
+    run: fetchCounter,
+    runAsync: runCounterOp,
+  } = useManualRequest(
+    async (action?: CounterAction): Promise<CounterResult> => {
+      if (action) {
+        return runCounterAction(action, step);
+      }
       const res = await window.api.counter.get();
-      if (res.success) {
-        setCount(res.data.count);
+      if (!res.success) {
+        throw new Error(res.error);
       }
-    } catch (err) {
-      console.error('Failed to get counter:', err);
-    }
-  }, []);
+      return res.data;
+    },
+    {
+      onError: (err, [action]) => {
+        message.error(action ? `计数器操作失败: ${err.message}` : `读取计数器失败: ${err.message}`);
+      },
+    },
+  );
 
-  const handleIncrement = async () => {
-    setIsUpdating(true);
-    try {
-      const res = await window.api.counter.increment({ step });
-      if (res.success) {
-        setCount(res.data.count);
-      }
-    } catch (err) {
-      console.error('Increment failed:', err);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleDecrement = async () => {
-    setIsUpdating(true);
-    try {
-      const res = await window.api.counter.decrement({ step });
-      if (res.success) {
-        setCount(res.data.count);
-      }
-    } catch (err) {
-      console.error('Decrement failed:', err);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleReset = async () => {
-    setIsUpdating(true);
-    try {
-      const res = await window.api.counter.reset();
-      if (res.success) {
-        setCount(res.data.count);
-      }
-    } catch (err) {
-      console.error('Reset failed:', err);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
+  // 显式挂载触发：初次拉取（run 引用稳定，不会自触循环）
   useEffect(() => {
-    refreshCounter();
-  }, [refreshCounter]);
+    fetchCounter();
+  }, [fetchCounter]);
+
+  // 数据转换
+  // 已有数据后的 loading 才是操作在途；首次拉取期间不显示按钮加载态
+  const isUpdating = loading && counter !== undefined;
+
+  // 逻辑处理函数
+  const handleIncrement = useCallback(() => {
+    void runCounterOp('increment').catch(() => {
+      // 过期响应 CancelledError 与业务异常均已丢弃/提示，此处防止未处理拒绝
+    });
+  }, [runCounterOp]);
+
+  const handleDecrement = useCallback(() => {
+    void runCounterOp('decrement').catch(() => {});
+  }, [runCounterOp]);
+
+  const handleReset = useCallback(() => {
+    void runCounterOp('reset').catch(() => {});
+  }, [runCounterOp]);
 
   return {
-    count,
+    count: counter?.count ?? 0,
     step,
     setStep,
     isUpdating,
