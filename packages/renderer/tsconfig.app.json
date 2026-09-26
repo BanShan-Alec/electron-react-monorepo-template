@@ -1,5 +1,5 @@
 {
-  "extends": "@app/tsconfig/react.json",
+  "extends": ["@app/tsconfig/react.json", "../../tsconfig.json"],
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "allowImportingTsExtensions": true,

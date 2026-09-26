@@ -47,6 +47,8 @@ coverage/
 *.code-workspace
 
 .idea/
+.pi/
+.zcode/
 
 # Editor temporary & swap files
 *.suo

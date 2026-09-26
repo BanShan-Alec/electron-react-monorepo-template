@@ -5,12 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build --base ./",
+    "build": "tsc -b && vite build --configLoader bundle",
     "typecheck": "tsc -b",
     "lint": "biome check .",
     "preview": "vite preview"
   },
-  "dependencies": {},
+  "dependencies": {
+    "ahooks": "^3.10.0",
+    "antd": "^6.6.5",
+    "clsx": "^2.1.1",
+    "zustand": "^5.0.15"
+  },
   "devDependencies": {
     "@app/shared": "workspace:*",
     "@app/tsconfig": "workspace:*",
