@@ -33,6 +33,13 @@ npm run format
 
 确需引入桶文件的唯一合法流程（评审 + 单条 override 豁免 + 显式命名导出 + 台账登记）详见 [docs/BARREL-FILE-BAN-PLAN.md](docs/BARREL-FILE-BAN-PLAN.md) 的“桶文件再引入流程”。
 
+### 4. 请求 Hook 约束（manual-only）
+渲染层异步数据请求一律使用 [`packages/renderer/src/hooks/useManualRequest.ts`](packages/renderer/src/hooks/useManualRequest.ts)（ahooks `useRequest` 的 manual-only 封装）：`manual` 已写死 `true`，请求发起只能是显式的 `run()/runAsync()`。
+
+**一切自动触发能力一律禁止**：挂载自动触发、`refreshDeps` 依赖变化触发、`pollingInterval` 轮询、`refreshOnWindowFocus` 聚焦刷新、`ready` 门控、防抖/节流自动触发。触发点必须写在明处——事件处理器，或显式 `useEffect(() => run(...), [deps])`；挂载即拉取的语义保留。防抖用 `useDebounceFn`、轮询用 `useInterval`、聚焦刷新用 `useEventListener` 等 ahools/React 组合实现，范式见 [docs/MANUAL-REQUEST-PLAN.md](docs/MANUAL-REQUEST-PLAN.md) 的“禁用能力替代方案矩阵”。
+
+三层强制：类型层（封装 `Omit` 掉全部自动触发键，传了即编译错误）、Lint 层（`noRestrictedImports` 禁止直连 `ahooks` `useRequest`，仅豁免封装文件）、评审层。
+
 ---
 
 ## 二、Git Commit 提交规范 (Conventional Commits)
@@ -127,4 +134,42 @@ npm run release:major   # 主版本升级（如 3.1.0 -> 4.0.0）
 - [`build/electron-builder.ts`](build/electron-builder.ts)：Electron 生产环境打包配置与过滤规则
 - [`build/resources/`](build/resources)：打包资源（应用图标、签名 entitlements 等），经 `extraResources` 复制进安装包
 
+---
 
+## 六、依赖管理与安装规范 (pnpm Workspace)
+
+本项目为 pnpm monorepo（`packageManager: pnpm@10.34.5`），子包位于 `packages/{main,preload,renderer,shared,tsconfig}`，`pnpm-workspace.yaml` 的 `catalog:` 段统一收敛跨包共享依赖版本，依赖实体统一落在根 `node_modules/.pnpm`。以下命令均在**根目录**执行。
+
+### 1. 常用命令速查
+
+| 场景 | 命令 |
+| :--- | :--- |
+| 全量安装 / 同步 lockfile | `pnpm install` |
+| 根 package.json 加 dev 依赖 | `pnpm add -Dw <包名>` |
+| 根 package.json 加生产依赖 | `pnpm add -w <包名>` |
+| 指定子包装依赖 | `pnpm -F @app/renderer add <包名>` |
+| 写死版本、不走 catalog | `pnpm add -Dw <包名>@<版本>` |
+
+### 2. 常用缩写与安装位置规则
+
+`-w`（`--workspace-root`，装到 workspace 根）、`-D`（`--save-dev`）、`-P`（`--save-prod`，默认）、`-E`（`--save-exact`，锁精确版本）、`-O`（`--save-optional`）、`-F`（`--filter`，指定子包，如 `-F @app/renderer`）、`-r`（`--recursive`）。
+
+`pnpm add` 默认写入**当前目录所属**的 `package.json`：根目录执行即落在根；子包目录下执行则落在该子包。消除歧义——装到根统一加 `-w`，装到子包统一 `pnpm -F <包名> add`，无需 cd 进子包。
+
+### 3. catalog 版本收敛
+
+安装的包命中 `pnpm-workspace.yaml` 的 `catalog:`（如 `typescript` / `vite` / `zod` / `react`）时，`pnpm add` 自动使用 `catalog:` 协议，真实版本收敛到 workspace 根。需在 `package.json` 写死版本、不跟随 catalog 时，指定与 catalog 不同的版本即可（catalog 中没有的包自然写成普通 semver 区间）：
+
+```bash
+pnpm add -Dw zod@4.7.1
+```
+
+### 4. 升级与卸载
+
+```bash
+pnpm up -wri                       # 交互式升级（-w 根，-r 递归，-i 交互）
+pnpm up -w zod@latest              # 升级指定包
+pnpm -F @app/main up electron-log  # 子包升级
+pnpm remove -w <包名>             # 卸载（-F 同理卸载子包依赖）
+pnpm -F @app/renderer remove <包名>
+```

@@ -53,7 +53,7 @@ pnpm install
 ```
 
 > [!NOTE]
-> 本项目根目录已预设 `.npmrc`，内置国内淘宝镜像加速源与 hoisted 软链策略。
+> 本项目根目录已预设 `.npmrc`，内置国内淘宝镜像加速源与 pnpm 隔离布局（`node-linker=isolated`）策略。
 
 ### 2. 启动本地开发
 ```bash
@@ -62,6 +62,24 @@ pnpm start
 npm start
 ```
 执行后将自动启动 Vite Dev Server 并唤起 Electron 窗口。主进程代码改动将自动增量编译并重启应用；前端页面改动享受即时 HMR。
+
+> [!NOTE]
+> dev server 固定端口 `5173`（strictPort）：重复执行 `pnpm start` 会检测到端口已占用并直接复用运行中的实例，不会重复拉起 Electron。 Electron 同时开放 renderer CDP 端点 `9222`（主进程 inspect 为 `9229`，互不干扰）。
+
+### 2.1 渲染层调试驱动（断言优先，视觉按需）
+```bash
+node scripts/debug.ts targets                # 列出 CDP 页面
+node scripts/debug.ts assert theme           # 主题令牌断言
+node scripts/debug.ts assert scroll          # 主滚动区可滚动断言
+node scripts/debug.ts assert layout          # 外壳高度 / 水平溢出断言
+node scripts/debug.ts assert dom             # 组件挂载探针
+node scripts/debug.ts eval "document.title"  # 任意表达式求值
+node scripts/debug.ts screenshot --out smoke.png  # 仅在需要视觉判断时截图
+```
+验收默认走 `assert` 断言（快、可复现、退出码可判定）；仅当改动涉及配色 / 布局重构或需要人工查看时才使用 `screenshot`。调试驱动基于 Playwright `connectOverCDP` 复用 Electron 自带 Chromium，不下载 playwright 自带浏览器。
+
+> [!NOTE]
+> `playwright` 为 devDependency，其 postinstall（自带浏览器下载）已被 pnpm 脚本白名单机制默认拦截——**请勿将 `playwright` 加入 `onlyBuiltDependencies`**，否则会拉取约 300MB 用不到的浏览器。将来若要在本仓库引入真实 e2e 测试，再按需放行。
 
 ---
 
