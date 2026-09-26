@@ -8,7 +8,7 @@ import tailwindConfig from './tailwind.config.ts';
 export default defineConfig({
   base: './',
   plugins: [react()],
-  // 路径别名单一事实源：根 tsconfig.json + Vite 官方原生 tsconfigPaths（零插件，对齐 core/pnpm-build-setup.md 方案 A）
+  // 路径别名单一事实源：根 tsconfig.json + Vite 官方原生 tsconfigPaths（零插件）
   tsconfig: '../../tsconfig.json',
   resolve: {
     tsconfigPaths: true,

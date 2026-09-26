@@ -31,12 +31,12 @@ npm run format
 ### 3. 桶文件禁令（Barrel Files Ban）
 本仓库**默认禁止桶文件**（只做重导出的 `index.ts` / `index.module.ts`），由 Biome `performance.noBarrelFile: "error"` 全库强制，不设白名单；配套 `noReExportAll` / `noImportCycles` 同为 error。跨模块一律直达具体文件导入。
 
-确需引入桶文件的唯一合法流程（评审 + 单条 override 豁免 + 显式命名导出 + 台账登记）详见 [docs/BARREL-FILE-BAN-PLAN.md](docs/BARREL-FILE-BAN-PLAN.md) 的“桶文件再引入流程”。
+确需引入桶文件的唯一合法流程：评审 + 单条 override 豁免 + 显式命名导出 + 台账登记。
 
 ### 4. 请求 Hook 约束（manual-only）
 渲染层异步数据请求一律使用 [`packages/renderer/src/hooks/useManualRequest.ts`](packages/renderer/src/hooks/useManualRequest.ts)（ahooks `useRequest` 的 manual-only 封装）：`manual` 已写死 `true`，请求发起只能是显式的 `run()/runAsync()`。
 
-**一切自动触发能力一律禁止**：挂载自动触发、`refreshDeps` 依赖变化触发、`pollingInterval` 轮询、`refreshOnWindowFocus` 聚焦刷新、`ready` 门控、防抖/节流自动触发。触发点必须写在明处——事件处理器，或显式 `useEffect(() => run(...), [deps])`；挂载即拉取的语义保留。防抖用 `useDebounceFn`、轮询用 `useInterval`、聚焦刷新用 `useEventListener` 等 ahools/React 组合实现，范式见 [docs/MANUAL-REQUEST-PLAN.md](docs/MANUAL-REQUEST-PLAN.md) 的“禁用能力替代方案矩阵”。
+**一切自动触发能力一律禁止**：挂载自动触发、`refreshDeps` 依赖变化触发、`pollingInterval` 轮询、`refreshOnWindowFocus` 聚焦刷新、`ready` 门控、防抖/节流自动触发。触发点必须写在明处——事件处理器，或显式 `useEffect(() => run(...), [deps])`；挂载即拉取的语义保留。防抖用 `useDebounceFn`、轮询用 `useInterval`、聚焦刷新用 `useEventListener` 等 ahooks/React 组合实现。
 
 三层强制：类型层（封装 `Omit` 掉全部自动触发键，传了即编译错误）、Lint 层（`noRestrictedImports` 禁止直连 `ahooks` `useRequest`，仅豁免封装文件）、评审层。
 

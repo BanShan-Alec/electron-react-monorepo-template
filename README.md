@@ -22,9 +22,6 @@
 electron-react-monorepo-template/
 ├── .config/                  # 工程工具链配置（Biome、Commitlint、changelogen）
 ├── build/                    # 打包配置与原生静态资源（图标、entitlements 等）
-├── docs/                     # 架构文档与开发规范
-│   ├── MODULE_RUNNER_ARCHITECTURE.md # 📖 ModuleRunner 模块化主进程架构说明
-│   └── CODE_SIGNING_GUIDE.md        # 📖 应用签名与发布指南
 ├── packages/
 │   ├── main/                 # [主进程] 窗口管理、原生系统交互、IPC 监听与模块生命周期
 │   ├── preload/              # [Preload] 安全桥接、暴露 window.api 契约
@@ -146,8 +143,3 @@ const info = await window.api.system.getSystemInfo();
 - **模块导入**：全库默认禁止桶文件（barrel），跨模块一律直达具体文件；详见 [CONTRIBUTING.md](CONTRIBUTING.md) 的桶文件禁令。
 - **提交规范**：遵循 Conventional Commits 规范，提交信息必须包含简体中文说明。详情参见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
----
-
-## 📄 License
-
-本项目采用 [MIT License](LICENSE) 开源协议。
