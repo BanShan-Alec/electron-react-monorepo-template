@@ -5,7 +5,6 @@ import type { AppInitConfig } from './AppInitConfig';
 import { createModuleRunner } from './ModuleRunner';
 import { terminateAppOnLastWindowClose } from './modules/auto-terminate.module';
 import { createConfigModule } from './modules/config.module';
-import { hardwareAccelerationMode } from './modules/hardware-acceleration.module';
 import { createIPCModule } from './modules/ipc.module';
 import { createLogModule } from './modules/log.module';
 import { createNativeThemeModule } from './modules/native-theme.module';
@@ -58,7 +57,6 @@ export async function initApp(initConfig: AppInitConfig) {
     .init(createTrayModule())
     .init(disallowMultipleAppInstance())
     .init(terminateAppOnLastWindowClose())
-    .init(hardwareAccelerationMode({ enable: false }))
 
     // Security
     .init(
