@@ -134,9 +134,12 @@ export class WindowManager implements AppModule {
             getUpdaterWindowModule().hide();
           } catch {}
           if (Notification.isSupported()) {
+            const isZh = configStore.get('language') === 'zh-CN';
             new Notification({
               title: app.getName(),
-              body: '应用已关闭，正在后台下载更新...',
+              body: isZh
+                ? '应用已关闭，正在后台下载更新...'
+                : 'Application closed. Downloading update in background...',
             }).show();
           }
           updaterService.startOrphanWatchdog();

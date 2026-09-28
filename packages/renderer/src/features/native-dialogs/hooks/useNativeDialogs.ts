@@ -1,3 +1,4 @@
+import { t } from '@lingui/core/macro';
 import { useState } from 'react';
 import { useManualRequest } from '@/hooks/useManualRequest';
 import { callIpc } from '@/lib/ipc';
@@ -5,13 +6,17 @@ import { callIpc } from '@/lib/ipc';
 // 私有常量
 type DialogAction = 'openFile' | 'openDirectory' | 'saveFile' | 'showInFolder';
 
-/** 对话框中失败时的状态框前缀（保持与原有一致的用户可见文案） */
-const FAILURE_PREFIX: Record<DialogAction, string> = {
-  openFile: '打开失败',
-  openDirectory: '打开失败',
-  saveFile: '保存失败',
-  showInFolder: '定位失败',
-};
+function getFailurePrefix(action: DialogAction): string {
+  switch (action) {
+    case 'openFile':
+    case 'openDirectory':
+      return t`打开失败`;
+    case 'saveFile':
+      return t`保存失败`;
+    case 'showInFolder':
+      return t`定位失败`;
+  }
+}
 
 interface DialogDescriptor {
   statusMessage: string;
@@ -30,45 +35,46 @@ async function runDialogAction(
     switch (action) {
       case 'openFile': {
         const data = await callIpc('dialog.openFile', window.api.dialog.openFile, [
-          { title: '选择测试文件' },
+          { title: t`选择测试文件` },
         ]);
         if (!data.canceled && data.filePaths.length > 0) {
           const path = data.filePaths[0];
-          return { statusMessage: `已选择文件: ${path}`, path };
+          return { statusMessage: t`已选择文件: ${path}`, path };
         }
-        return { statusMessage: '用户取消了选择' };
+        return { statusMessage: t`用户取消了选择` };
       }
       case 'openDirectory': {
         const data = await callIpc('dialog.openDirectory', window.api.dialog.openDirectory, [
-          { title: '选择测试文件夹' },
+          { title: t`选择测试文件夹` },
         ]);
         if (!data.canceled && data.filePaths.length > 0) {
           const path = data.filePaths[0];
-          return { statusMessage: `已选择文件夹: ${path}`, path };
+          return { statusMessage: t`已选择文件夹: ${path}`, path };
         }
-        return { statusMessage: '用户取消了选择' };
+        return { statusMessage: t`用户取消了选择` };
       }
       case 'saveFile': {
         const data = await callIpc('dialog.saveFile', window.api.dialog.saveFile, [
-          { title: '另存为示例', defaultPath: 'example.txt' },
+          { title: t`另存为示例`, defaultPath: 'example.txt' },
         ]);
         if (!data.canceled && data.filePath) {
-          return { statusMessage: `保存路径已选定: ${data.filePath}`, path: data.filePath };
+          const filePath = data.filePath;
+          return { statusMessage: t`保存路径已选定: ${filePath}`, path: filePath };
         }
-        return { statusMessage: '用户取消了保存' };
+        return { statusMessage: t`用户取消了保存` };
       }
       default: {
         await callIpc('shell.showItemInFolder', window.api.shell.showItemInFolder, [
           { path: selectedPath },
         ]);
         return {
-          statusMessage: `已在资源管理器中定位: ${selectedPath}`,
+          statusMessage: t`已在资源管理器中定位: ${selectedPath}`,
           path: selectedPath,
         };
       }
     }
   } catch (error) {
-    return { statusMessage: `${FAILURE_PREFIX[action]}: ${(error as Error).message}` };
+    return { statusMessage: `${getFailurePrefix(action)}: ${(error as Error).message}` };
   }
 }
 

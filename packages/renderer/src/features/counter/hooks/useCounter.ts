@@ -1,3 +1,4 @@
+import { t } from '@lingui/core/macro';
 import type { CounterResult } from '@shared/types/counter';
 import { App } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
@@ -41,7 +42,9 @@ export function useCounter() {
     },
     {
       onError: (err, [action]) => {
-        message.error(action ? `计数器操作失败: ${err.message}` : `读取计数器失败: ${err.message}`);
+        message.error(
+          action ? t`计数器操作失败: ${err.message}` : t`读取计数器失败: ${err.message}`,
+        );
       },
     },
   );

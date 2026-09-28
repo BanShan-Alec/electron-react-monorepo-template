@@ -1,3 +1,4 @@
+import { t } from '@lingui/core/macro';
 import { App } from 'antd';
 import { useState } from 'react';
 import { useManualRequest } from '@/hooks/useManualRequest';
@@ -19,29 +20,30 @@ export function useLogging() {
   // 网络IO（显式触发）—— 单一动作通道
   const { runAsync: runLogAction, loading: isLoading } = useManualRequest(
     async (action: { kind: LoggingAction; level: LogLevel }) => {
+      const levelUpper = action.level.toUpperCase();
       if (action.kind === 'log') {
         await callIpc('diagnostics.log', window.api.diagnostics.log, [
           {
             level: action.level,
-            message: `测试 ${action.level.toUpperCase()} 日志沉淀来自 Renderer`,
+            message: `Test ${levelUpper} log emitted from Renderer`,
             meta: { timestamp: Date.now() },
           },
         ]);
-        return `✅ 已发送 ${action.level.toUpperCase()} 日志到 renderer.log`;
+        return t`✅ 已发送 ${levelUpper} 日志到 renderer.log`;
       }
       const data = await callIpc(
         'diagnostics.openLogFolder',
         window.api.diagnostics.openLogFolder,
         [],
       );
-      return `📂 已打开日志目录: ${data.path}`;
+      return t`📂 已打开日志目录: ${data.path}`;
     },
     {
       onSuccess: (status) => {
         setLogStatus(status);
       },
       onError: (err) => {
-        message.error(`日志操作失败: ${err.message}`);
+        message.error(t`日志操作失败: ${err.message}`);
       },
     },
   );

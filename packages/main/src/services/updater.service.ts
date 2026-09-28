@@ -10,6 +10,7 @@ import type {
 import { app, Notification } from 'electron';
 import electronUpdater, { type AppUpdater, CancellationToken } from 'electron-updater';
 import { AppError } from '../errors/AppError';
+import { getAppConfigStore } from '../modules/config.module';
 import { getLogManager } from '../modules/log.module';
 import { getWindow, sendToWindow } from '../modules/window/window-registry';
 
@@ -322,9 +323,12 @@ export class UpdaterService {
         this.cancellationToken = null;
       }
       if (Notification.isSupported()) {
+        const isZh = getAppConfigStore().get('language') === 'zh-CN';
         new Notification({
           title: app.getName(),
-          body: '后台更新下载超时，已中止任务。',
+          body: isZh
+            ? '后台更新下载超时，已中止任务。'
+            : 'Background update download timed out. Task aborted.',
         }).show();
       }
       app.quit();

@@ -1,3 +1,4 @@
+import { t } from '@lingui/core/macro';
 import { App } from 'antd';
 import { useEffect } from 'react';
 import { useIpc } from '@/hooks/useIpc';
@@ -21,7 +22,7 @@ export function useSystemInfo() {
     run: fetchSystemInfoRun,
   } = useIpc('system.getSystemInfo', window.api.system.getSystemInfo, {
     onError: (err) => {
-      message.error(`获取系统信息失败: ${err.message}`);
+      message.error(t`获取系统信息失败: ${err.message}`);
     },
   });
 

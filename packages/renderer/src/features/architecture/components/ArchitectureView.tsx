@@ -1,3 +1,5 @@
+import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import { Card, Tag } from 'antd';
 import { memo } from 'react';
 import { CardTitle } from '@/components/ui/CardTitle';
@@ -8,7 +10,7 @@ const STEP_CARD_CLASS =
 const CODE_BLOCK_CLASS =
   'text-[11px] font-mono text-foreground-secondary bg-background/80 p-3 rounded-lg overflow-x-auto stable-scrollbar leading-relaxed flex-1';
 
-const LEGACY_CODE = `// 1. 渲染端强行引用主进程类型 (打破物理隔离)
+const LEGACY_CODE_ZH = `// 1. 渲染端强行引用主进程类型 (打破物理隔离)
 import type { AppRouter } from '@app/main/router';
 
 // 2. 纯数字状态码或裸抛异常 (易造成前端崩溃)
@@ -17,12 +19,32 @@ throw new TRPCError({ code: 'BAD_REQUEST' });
 // 3. 缺乏标准 Result 包装
 // 前端无法统一判定 res.success 与语义化 code`;
 
-const STANDARD_CODE = `// 1. Controller 执行 Zod 防御校验并封装 Result
+const LEGACY_CODE_EN = `// 1. Renderer directly imports main process types (breaks physical isolation)
+import type { AppRouter } from '@app/main/router';
+
+// 2. Raw numeric status code or bare thrown exception (prone to UI crashes)
+throw new TRPCError({ code: 'BAD_REQUEST' });
+
+// 3. Lack of standard Result envelope
+// Frontend cannot uniformly evaluate res.success and semantic error code`;
+
+const STANDARD_CODE_ZH = `// 1. Controller 执行 Zod 防御校验并封装 Result
 const res = await systemService.getSystemInfo();
 return { success: true, data: res };
 
 // 2. 语义化字符串错误码 (如 DIVIDE_BY_ZERO)
 // 3. 渲染端通过 window.api 纯净消费
+const res = await window.api.system.getSystemInfo();
+if (res.success) {
+  console.log(res.data.cpuModel);
+}`;
+
+const STANDARD_CODE_EN = `// 1. Controller executes Zod defensive validation and encapsulates Result
+const res = await systemService.getSystemInfo();
+return { success: true, data: res };
+
+// 2. Semantic string error codes (e.g. DIVIDE_BY_ZERO)
+// 3. Pure consumption in Renderer via window.api
 const res = await window.api.system.getSystemInfo();
 if (res.success) {
   console.log(res.data.cpuModel);
@@ -52,17 +74,10 @@ function StepItem({
 }
 
 const _ArchitectureView = (_props: IProps) => {
-  // 变量声明、解构
-
-  // 组件状态
-
-  // 网络IO
-
-  // 数据转换
-
-  // 逻辑处理函数
-
-  // 组件Effect
+  const { i18n } = useLingui();
+  const isZh = i18n.locale === 'zh-CN';
+  const legacyCode = isZh ? LEGACY_CODE_ZH : LEGACY_CODE_EN;
+  const standardCode = isZh ? STANDARD_CODE_ZH : STANDARD_CODE_EN;
 
   // 组件渲染
   return (
@@ -73,31 +88,31 @@ const _ArchitectureView = (_props: IProps) => {
         title={
           <CardTitle
             icon="💡"
-            title="Fullstack 经典分层通信架构全流程"
-            subtitle="遵循 specs-electron-fullstack 规范：Controller -> Service -> Result 契约"
+            title={t`Fullstack 经典分层通信架构全流程`}
+            subtitle={t`遵循 specs-electron-fullstack 规范：Controller -> Service -> Result 契约`}
           />
         }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
           <StepItem
             step={1}
-            title="@app/shared 共享契约单一事实源"
-            description="使用 Zod Schema 定义入参校验规则，派生跨端统一 TypeScript 类型与标准 Result<T> 响应契约。"
+            title={t`@app/shared 共享契约单一事实源`}
+            description={t`使用 Zod Schema 定义入参校验规则，派生跨端统一 TypeScript 类型与标准 Result<T> 响应契约。`}
           />
           <StepItem
             step={2}
-            title="Main 进程 Controller -> Service 分层"
-            description="Controller 执行 Zod 防御性参数校验与顶层异常包装，Service 专注核心业务逻辑，杜绝 Procedure 称谓混淆。"
+            title={t`Main 进程 Controller -> Service 分层`}
+            description={t`Controller 执行 Zod 防御性参数校验与顶层异常包装，Service 专注核心业务逻辑，杜绝 Procedure 称谓混淆。`}
           />
           <StepItem
             step={3}
-            title="Preload 精准白名单桥接"
-            description="使用 contextBridge.exposeInMainWorld('api', apiBridge) 暴露受限安全 API 与 webUtils，杜绝渲染端渗透。"
+            title={t`Preload 精准白名单桥接`}
+            description={t`使用 contextBridge.exposeInMainWorld('api', apiBridge) 暴露受限安全 API 与 webUtils，杜绝渲染端渗透。`}
           />
           <StepItem
             step={4}
-            title="Renderer 进程纯净消费"
-            description="统一通过 window.api 消费 Result 契约，享受完备 IDE 智能提示，与主进程实现 100% 物理代码隔离。"
+            title={t`Renderer 进程纯净消费`}
+            description={t`统一通过 window.api 消费 Result 契约，享受完备 IDE 智能提示，与主进程实现 100% 物理代码隔离。`}
           />
         </div>
       </Card>
@@ -107,19 +122,19 @@ const _ArchitectureView = (_props: IProps) => {
         {/* Legacy / Coupled */}
         <div className="glass-card rounded-lg p-4 border border-danger/30 flex flex-col">
           <div className="flex items-center justify-between pb-2 mb-3 border-b border-danger/20">
-            <span className="text-xs font-bold text-foreground">❌ 传统散装 / 进程穿透方式</span>
-            <Tag color="error">代码耦合 & 契约混乱</Tag>
+            <span className="text-xs font-bold text-foreground">{t`❌ 传统散装 / 进程穿透方式`}</span>
+            <Tag color="error">{t`代码耦合 & 契约混乱`}</Tag>
           </div>
-          <pre className={CODE_BLOCK_CLASS}>{LEGACY_CODE}</pre>
+          <pre className={CODE_BLOCK_CLASS}>{legacyCode}</pre>
         </div>
 
         {/* Fullstack Standard */}
         <div className="glass-card rounded-lg p-4 border border-success/30 flex flex-col">
           <div className="flex items-center justify-between pb-2 mb-3 border-b border-success/20">
-            <span className="text-xs font-bold text-foreground">✨ Fullstack 规范分层方式</span>
-            <Tag color="success">物理隔离 & Result 契约</Tag>
+            <span className="text-xs font-bold text-foreground">{t`✨ Fullstack 规范分层方式`}</span>
+            <Tag color="success">{t`物理隔离 & Result 契约`}</Tag>
           </div>
-          <pre className={CODE_BLOCK_CLASS}>{STANDARD_CODE}</pre>
+          <pre className={CODE_BLOCK_CLASS}>{standardCode}</pre>
         </div>
       </div>
     </div>

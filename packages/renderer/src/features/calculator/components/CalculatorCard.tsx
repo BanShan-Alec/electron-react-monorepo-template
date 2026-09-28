@@ -1,3 +1,5 @@
+import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import type { CalcOperator } from '@shared/types/calculator';
 import { Alert, Button, Card, Input, Select, Tag } from 'antd';
 import { memo } from 'react';
@@ -14,6 +16,7 @@ const OPERATOR_OPTIONS: { label: string; value: CalcOperator }[] = [
 // 可抽离的逻辑处理函数/组件
 
 const _CalculatorCard = (props: ICalculatorCardProps) => {
+  useLingui();
   // 变量声明、解构
   const { a, b, op, onAChange, onBChange, onOpChange, result, error, isLoading, onCalculate } =
     props;
@@ -35,8 +38,8 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
       title={
         <CardTitle
           icon="🧮"
-          title="安全计算器 (IPC 错误处理)"
-          subtitle="Zod 严格模式入参校验与语义化错误码 Result 契约"
+          title={t`安全计算器 (IPC 错误处理)`}
+          subtitle={t`Zod 严格模式入参校验与语义化错误码 Result 契约`}
         />
       }
     >
@@ -46,7 +49,7 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
             type="number"
             value={a}
             onChange={(e) => onAChange(Number(e.target.value))}
-            placeholder="操作数 A"
+            placeholder={t`操作数 A`}
             className="font-mono text-center"
           />
 
@@ -61,7 +64,7 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
             type="number"
             value={b}
             onChange={(e) => onBChange(Number(e.target.value))}
-            placeholder="操作数 B"
+            placeholder={t`操作数 B`}
             className="font-mono text-center"
           />
 
@@ -72,7 +75,7 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
 
         {result !== null && (
           <div className="p-3 bg-success/10 border border-success/30 rounded-lg flex items-center justify-between">
-            <span className="text-xs text-foreground-secondary font-medium">计算结果:</span>
+            <span className="text-xs text-foreground-secondary font-medium">{t`计算结果:`}</span>
             <span className="text-base font-bold text-success font-mono">{result}</span>
           </div>
         )}
@@ -80,8 +83,8 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
         {error && <Alert type="error" showIcon message={error} />}
 
         <div className="flex items-center justify-between text-[11px] text-foreground-muted mt-1 pt-2 border-t border-border/40">
-          <span>提示：尝试输入 B = 0 并选择除法 (÷) 触发服务端异常拦截</span>
-          <Tag>Zod 校验</Tag>
+          <span>{t`提示：尝试输入 B = 0 并选择除法 (÷) 触发服务端异常拦截`}</span>
+          <Tag>{t`Zod 校验`}</Tag>
         </div>
       </div>
     </Card>

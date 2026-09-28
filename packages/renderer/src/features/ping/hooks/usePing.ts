@@ -1,3 +1,4 @@
+import { t } from '@lingui/core/macro';
 import { App } from 'antd';
 import { useEffect } from 'react';
 import { useManualRequest } from '@/hooks/useManualRequest';
@@ -32,7 +33,7 @@ export function usePing() {
     run: pingRun,
   } = useManualRequest(pingWithLatency, {
     onError: (err) => {
-      message.error(`Ping 失败: ${err.message}`);
+      message.error(t`Ping 失败: ${err.message}`);
     },
   });
 

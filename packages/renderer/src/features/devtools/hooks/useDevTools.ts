@@ -1,3 +1,4 @@
+import { t } from '@lingui/core/macro';
 import type { PerformActionInput } from '@shared/schemas/diagnostics';
 import { App } from 'antd';
 import { useState } from 'react';
@@ -28,6 +29,15 @@ export function useDevTools() {
         window.api.diagnostics.performAction,
         [input],
       );
+      if (data.message === 'DevTools opened') {
+        return t`已开启 DevTools`;
+      }
+      if (data.message === 'DevTools closed') {
+        return t`已关闭 DevTools`;
+      }
+      if (data.message.startsWith('Opened ')) {
+        return t`已在默认浏览器中打开外部页面: https://github.com`;
+      }
       return data.message;
     },
     {
@@ -35,7 +45,7 @@ export function useDevTools() {
         setActionMessage(msg);
       },
       onError: (err) => {
-        message.error(`操作失败: ${err.message}`);
+        message.error(t`操作失败: ${err.message}`);
       },
     },
   );

@@ -1,3 +1,5 @@
+import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import type { SystemInfo } from '@shared/types/system';
 import { Button, Card, Skeleton } from 'antd';
 import { memo } from 'react';
@@ -18,6 +20,7 @@ function InfoCell({ label, value }: { label: string; value: string }) {
 }
 
 const _SystemInfoCard = (props: ISystemInfoCardProps) => {
+  useLingui();
   // 变量声明、解构
   const { systemInfo, isLoading, onRefresh } = props;
 
@@ -27,6 +30,10 @@ const _SystemInfoCard = (props: ISystemInfoCardProps) => {
 
   // 数据转换
   const showSkeleton = isLoading && systemInfo === null;
+  const cpuCores = systemInfo?.cpuCores ?? 0;
+  const cpuModel = systemInfo?.cpuModel ?? '';
+  const uptimeMinutes = systemInfo ? Math.floor(systemInfo.uptimeSeconds / 60) : 0;
+  const uptimeSeconds = systemInfo?.uptimeSeconds ?? 0;
 
   // 逻辑处理函数
 
@@ -37,11 +44,15 @@ const _SystemInfoCard = (props: ISystemInfoCardProps) => {
     <Card
       className="glass-card transition-all duration-200 hover:border-border/80"
       title={
-        <CardTitle icon="💻" title="系统与运行环境" subtitle="Electron & Node.js 原生底层探针" />
+        <CardTitle
+          icon="💻"
+          title={t`系统与运行环境`}
+          subtitle={t`Electron & Node.js 原生底层探针`}
+        />
       }
       extra={
         <Button size="small" loading={isLoading} onClick={onRefresh}>
-          🔄 刷新
+          {t`🔄 刷新`}
         </Button>
       }
     >
@@ -49,31 +60,28 @@ const _SystemInfoCard = (props: ISystemInfoCardProps) => {
         <Skeleton active paragraph={{ rows: 4 }} />
       ) : systemInfo ? (
         <div className={INFO_GRID_CLASS}>
-          <InfoCell label="平台架构" value={`${systemInfo.platform} (${systemInfo.arch})`} />
-          <InfoCell label="Electron 版本" value={`v${systemInfo.electronVersion}`} />
-          <InfoCell label="Node.js 版本" value={`v${systemInfo.nodeVersion}`} />
-          <InfoCell label="Chromium 版本" value={`v${systemInfo.chromeVersion}`} />
+          <InfoCell label={t`平台架构`} value={`${systemInfo.platform} (${systemInfo.arch})`} />
+          <InfoCell label={t`Electron 版本`} value={`v${systemInfo.electronVersion}`} />
+          <InfoCell label={t`Node.js 版本`} value={`v${systemInfo.nodeVersion}`} />
+          <InfoCell label={t`Chromium 版本`} value={`v${systemInfo.chromeVersion}`} />
+          <InfoCell label={t`CPU 核心 / 架构`} value={t`${cpuCores} 核 (${cpuModel})`} />
           <InfoCell
-            label="CPU 核心 / 架构"
-            value={`${systemInfo.cpuCores} 核 (${systemInfo.cpuModel})`}
-          />
-          <InfoCell
-            label="可用内存 / 总内存"
+            label={t`可用内存 / 总内存`}
             value={`${systemInfo.freeMemoryMB} MB / ${systemInfo.totalMemoryMB} MB`}
           />
           <InfoCell
-            label="主进程堆内存占用"
+            label={t`主进程堆内存占用`}
             value={`${systemInfo.heapUsedMB} MB / ${systemInfo.heapTotalMB} MB`}
           />
           <InfoCell
-            label="系统运行时间"
-            value={`${Math.floor(systemInfo.uptimeSeconds / 60)} 分钟 (${systemInfo.uptimeSeconds} 秒)`}
+            label={t`系统运行时间`}
+            value={t`${uptimeMinutes} 分钟 (${uptimeSeconds} 秒)`}
           />
-          <InfoCell label="V8 引擎版本" value={`v${systemInfo.v8Version}`} />
+          <InfoCell label={t`V8 引擎版本`} value={`v${systemInfo.v8Version}`} />
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center p-6 text-foreground-muted text-xs">
-          正在探测系统运行环境...
+          {t`正在探测系统运行环境...`}
         </div>
       )}
     </Card>

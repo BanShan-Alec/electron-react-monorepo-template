@@ -126,7 +126,7 @@ const _SettingsCard = (props: ISettingsCardProps) => {
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center p-6 text-foreground-muted text-xs">
-          正在读取偏好设置...
+          {t`正在读取偏好设置...`}
         </div>
       )}
     </Card>

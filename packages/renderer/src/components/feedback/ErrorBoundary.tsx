@@ -1,3 +1,5 @@
+import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import * as Sentry from '@sentry/react';
 import { Button, Empty } from 'antd';
 import type { ReactNode } from 'react';
@@ -8,7 +10,6 @@ import type { ReactNode } from 'react';
  */
 
 // 私有常量
-const DEFAULT_ERROR_DESC = '页面出错啦~';
 
 interface IErrorBoundaryProps {
   children: ReactNode;
@@ -21,10 +22,11 @@ interface IFallbackProps {
 
 // 可抽离的逻辑处理函数/组件
 function FallbackView({ error, resetError }: IFallbackProps) {
+  useLingui();
   const errorMessage = error instanceof Error ? error.message : String(error || '');
   const description = import.meta.env.DEV
-    ? errorMessage || '渲染进程发生未捕获错误'
-    : DEFAULT_ERROR_DESC;
+    ? errorMessage || t`渲染进程发生未捕获错误`
+    : t`页面出错啦~`;
 
   const handleReload = (): void => {
     if (resetError) {
@@ -37,7 +39,7 @@ function FallbackView({ error, resetError }: IFallbackProps) {
     <div className="h-full min-h-[360px] w-full flex flex-col items-center justify-center gap-6 p-6">
       <Empty image={Empty.PRESENTED_IMAGE_DEFAULT} description={description} />
       <Button type="primary" onClick={handleReload}>
-        刷新重试
+        {t`刷新重试`}
       </Button>
     </div>
   );

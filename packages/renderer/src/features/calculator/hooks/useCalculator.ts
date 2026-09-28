@@ -1,3 +1,4 @@
+import { t } from '@lingui/core/macro';
 import type { CalcOperator } from '@shared/types/calculator';
 import { App } from 'antd';
 import { useState } from 'react';
@@ -25,7 +26,7 @@ export function useCalculator() {
     runAsync: calculateAsync,
   } = useIpc('calculator.calculate', window.api.calculator.calculate, {
     onError: (err) => {
-      message.error(`计算失败: ${err.message}`);
+      message.error(t`计算失败: ${err.message}`);
     },
   });
 

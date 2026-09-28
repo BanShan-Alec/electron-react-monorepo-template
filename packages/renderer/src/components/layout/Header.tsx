@@ -45,7 +45,7 @@ const _Header = (props: IHeaderProps) => {
             <Badge count={APP_VERSION} color="var(--color-primary)" />
           </div>
           <p className="text-xs text-foreground-secondary mt-0.5">
-            企业级端到端类型安全桌面客户端脚手架
+            {t`企业级端到端类型安全桌面客户端脚手架`}
           </p>
         </div>
       </div>

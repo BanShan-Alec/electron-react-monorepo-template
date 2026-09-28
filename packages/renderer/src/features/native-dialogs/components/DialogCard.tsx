@@ -1,3 +1,5 @@
+import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import { Button, Card } from 'antd';
 import { memo } from 'react';
 import { CardTitle } from '@/components/ui/CardTitle';
@@ -8,6 +10,7 @@ import { statusBoxClass } from '@/lib/classNames';
 // 可抽离的逻辑处理函数/组件
 
 const _DialogCard = (props: IDialogCardProps) => {
+  useLingui();
   // 变量声明、解构
   const {
     selectedPath,
@@ -36,24 +39,24 @@ const _DialogCard = (props: IDialogCardProps) => {
       title={
         <CardTitle
           icon="📂"
-          title="原生对话框与文件定位 (Native Dialogs)"
-          subtitle="经由安全 Controller & Preload 调起系统文件管理器与访达"
+          title={t`原生对话框与文件定位 (Native Dialogs)`}
+          subtitle={t`经由安全 Controller & Preload 调起系统文件管理器与访达`}
         />
       }
     >
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <Button size="small" loading={isLoading} onClick={onOpenFile}>
-            📄 选择文件
+            {t`📄 选择文件`}
           </Button>
           <Button size="small" loading={isLoading} onClick={onOpenDirectory}>
-            📁 选择目录
+            {t`📁 选择目录`}
           </Button>
           <Button size="small" loading={isLoading} onClick={onSaveFile}>
-            💾 另存为
+            {t`💾 另存为`}
           </Button>
           <Button disabled={!selectedPath} onClick={onShowInFolder}>
-            🔍 在资源管理器中定位
+            {t`🔍 在资源管理器中定位`}
           </Button>
         </div>
 

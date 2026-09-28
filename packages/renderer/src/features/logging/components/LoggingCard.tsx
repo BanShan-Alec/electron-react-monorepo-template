@@ -1,3 +1,5 @@
+import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import { Button, Card } from 'antd';
 import { memo } from 'react';
 import { CardTitle } from '@/components/ui/CardTitle';
@@ -8,6 +10,7 @@ import { statusBoxClass } from '@/lib/classNames';
 // 可抽离的逻辑处理函数/组件
 
 const _LoggingCard = (props: ILoggingCardProps) => {
+  useLingui();
   // 变量声明、解构
   const { logStatus, isLoading, onSendLog, onOpenLogFolder } = props;
 
@@ -28,26 +31,26 @@ const _LoggingCard = (props: ILoggingCardProps) => {
       title={
         <CardTitle
           icon="📜"
-          title="生产分级日志 (LogManager)"
-          subtitle="进程隔离落盘 (main.log / renderer.log) 与 5MB 自动轮转"
+          title={t`生产分级日志 (LogManager)`}
+          subtitle={t`进程隔离落盘 (main.log / renderer.log) 与 5MB 自动轮转`}
         />
       }
       extra={
         <Button size="small" loading={isLoading} onClick={onOpenLogFolder}>
-          📂 打开日志目录
+          {t`📂 打开日志目录`}
         </Button>
       }
     >
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <Button size="small" loading={isLoading} onClick={() => onSendLog('info')}>
-            ℹ️ 发送 INFO
+            {t`ℹ️ 发送 INFO`}
           </Button>
           <Button size="small" loading={isLoading} onClick={() => onSendLog('warn')}>
-            ⚠️ 发送 WARN
+            {t`⚠️ 发送 WARN`}
           </Button>
           <Button size="small" danger loading={isLoading} onClick={() => onSendLog('error')}>
-            🛑 发送 ERROR
+            {t`🛑 发送 ERROR`}
           </Button>
         </div>
 

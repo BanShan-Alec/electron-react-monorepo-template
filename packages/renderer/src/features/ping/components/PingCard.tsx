@@ -1,3 +1,5 @@
+import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import { Button, Card, Tag } from 'antd';
 import { memo } from 'react';
 import { CardTitle } from '@/components/ui/CardTitle';
@@ -9,15 +11,16 @@ const NORMAL_LATENCY_MS = 15;
 // 可抽离的逻辑处理函数/组件
 function renderLatencyTag(latency: number) {
   if (latency < FAST_LATENCY_MS) {
-    return <Tag color="success">极速</Tag>;
+    return <Tag color="success">{t`极速`}</Tag>;
   }
   if (latency < NORMAL_LATENCY_MS) {
-    return <Tag color="processing">正常</Tag>;
+    return <Tag color="processing">{t`正常`}</Tag>;
   }
-  return <Tag color="warning">延迟稍高</Tag>;
+  return <Tag color="warning">{t`延迟稍高`}</Tag>;
 }
 
 const _PingCard = (props: IPingCardProps) => {
+  useLingui();
   // 变量声明、解构
   const { latency, serverTime, isPinging, onPing } = props;
 
@@ -38,15 +41,17 @@ const _PingCard = (props: IPingCardProps) => {
       title={
         <CardTitle
           icon="📡"
-          title="进程间通信 (IPC Ping)"
-          subtitle="Electron ContextBridge & window.api 延迟测量"
+          title={t`进程间通信 (IPC Ping)`}
+          subtitle={t`Electron ContextBridge & window.api 延迟测量`}
         />
       }
     >
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-background-secondary rounded-lg border border-border">
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <div className="flex flex-col">
-            <span className="text-xs text-foreground-secondary font-medium">IPC 通信往返延迟</span>
+            <span className="text-xs text-foreground-secondary font-medium">
+              {t`IPC 通信往返延迟`}
+            </span>
             <div className="flex items-baseline gap-2 mt-1">
               <span className="text-2xl font-bold text-foreground font-mono">
                 {latency !== null ? `${latency}` : '--'}
@@ -60,11 +65,11 @@ const _PingCard = (props: IPingCardProps) => {
         <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
           {serverTime && (
             <span className="text-xs text-foreground-secondary font-mono">
-              主进程时间: {serverTime}
+              {t`主进程时间`}: {serverTime}
             </span>
           )}
           <Button type="primary" size="small" loading={isPinging} onClick={onPing}>
-            ⚡ 测速 Ping
+            {t`⚡ 测速 Ping`}
           </Button>
         </div>
       </div>

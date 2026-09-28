@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { memo } from 'react';
 
 // 私有常量
@@ -37,8 +38,8 @@ const _CardTitle = (props: ICardTitleProps) => {
 // props 类型定义
 interface ICardTitleProps {
   icon?: string;
-  title: string;
-  subtitle?: string;
+  title: ReactNode;
+  subtitle?: ReactNode;
 }
 
 const CardTitle = memo(_CardTitle);

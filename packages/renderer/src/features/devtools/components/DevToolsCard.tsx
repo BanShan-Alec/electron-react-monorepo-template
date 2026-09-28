@@ -1,3 +1,5 @@
+import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import { Button, Card } from 'antd';
 import { memo } from 'react';
 import { CardTitle } from '@/components/ui/CardTitle';
@@ -8,6 +10,7 @@ import { statusBoxClass } from '@/lib/classNames';
 // 可抽离的逻辑处理函数/组件
 
 const _DevToolsCard = (props: IDevToolsCardProps) => {
+  useLingui();
   // 变量声明、解构
   const { actionMessage, onToggleDevTools, onOpenDocs } = props;
 
@@ -28,18 +31,18 @@ const _DevToolsCard = (props: IDevToolsCardProps) => {
       title={
         <CardTitle
           icon="🛠️"
-          title="调试与系统外链 (Security Filter)"
-          subtitle="严格协议白名单校验 (仅允许 http/https) 与 DevTools 控制"
+          title={t`调试与系统外链 (Security Filter)`}
+          subtitle={t`严格协议白名单校验 (仅允许 http/https) 与 DevTools 控制`}
         />
       }
     >
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <Button size="small" onClick={onToggleDevTools}>
-            🪟 开关 DevTools
+            {t`🪟 开关 DevTools`}
           </Button>
           <Button size="small" onClick={onOpenDocs}>
-            🌐 打开 GitHub 页面
+            {t`🌐 打开 GitHub 页面`}
           </Button>
         </div>
 
