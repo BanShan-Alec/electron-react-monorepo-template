@@ -15,66 +15,14 @@ msgstr "{uptimeMinutes} mins ({uptimeSeconds} secs)"
 msgid "@app/shared 共享契约单一事实源"
 msgstr "@app/shared Single Source of Truth for Contracts"
 
-#: src/features/logging/components/LoggingCard.tsx
-msgid "⚠️ 发送 WARN"
-msgstr "⚠️ Send WARN"
-
-#: src/features/ping/components/PingCard.tsx
-msgid "⚡ 测速 Ping"
-msgstr "⚡ Ping Test"
-
 #: src/features/logging/hooks/useLogging.ts
 msgid "✅ 已发送 {levelUpper} 日志到 renderer.log"
 msgstr "✅ Sent {levelUpper} log to renderer.log"
-
-#: src/features/architecture/components/ArchitectureView.tsx
-msgid "✨ Fullstack 规范分层方式"
-msgstr "✨ Fullstack Layered Architecture"
-
-#: src/features/architecture/components/ArchitectureView.tsx
-msgid "❌ 传统散装 / 进程穿透方式"
-msgstr "❌ Legacy Ad-hoc / Process Leaking Approach"
-
-#: src/features/devtools/components/DevToolsCard.tsx
-msgid "🌐 打开 GitHub 页面"
-msgstr "🌐 Open GitHub"
-
-#: src/features/native-dialogs/components/DialogCard.tsx
-msgid "💾 另存为"
-msgstr "💾 Save As"
-
-#: src/features/native-dialogs/components/DialogCard.tsx
-msgid "📁 选择目录"
-msgstr "📁 Select Directory"
 
 #. placeholder {0}: data.path
 #: src/features/logging/hooks/useLogging.ts
 msgid "📂 已打开日志目录: {0}"
 msgstr "📂 Opened log directory: {0}"
-
-#: src/features/logging/components/LoggingCard.tsx
-msgid "📂 打开日志目录"
-msgstr "📂 Open Log Directory"
-
-#: src/features/native-dialogs/components/DialogCard.tsx
-msgid "📄 选择文件"
-msgstr "📄 Select File"
-
-#: src/features/system-info/components/SystemInfoCard.tsx
-msgid "🔄 刷新"
-msgstr "🔄 Refresh"
-
-#: src/features/native-dialogs/components/DialogCard.tsx
-msgid "🔍 在资源管理器中定位"
-msgstr "🔍 Reveal in Explorer"
-
-#: src/features/devtools/components/DevToolsCard.tsx
-msgid "🪟 开关 DevTools"
-msgstr "🪟 Toggle DevTools"
-
-#: src/features/logging/components/LoggingCard.tsx
-msgid "🛑 发送 ERROR"
-msgstr "🛑 Send ERROR"
 
 #: src/features/system-info/components/SystemInfoCard.tsx
 msgid "Chromium 版本"
@@ -104,9 +52,9 @@ msgstr "Electron Version"
 msgid "Fullstack 经典分层通信架构全流程"
 msgstr "Fullstack Layered IPC Architecture Workflow"
 
-#: src/features/logging/components/LoggingCard.tsx
-msgid "ℹ️ 发送 INFO"
-msgstr "ℹ️ Send INFO"
+#: src/features/architecture/components/ArchitectureView.tsx
+msgid "Fullstack 规范分层方式"
+msgstr "Fullstack Layered Architecture"
 
 #: src/features/counter/components/CounterCard.tsx
 msgid "IPC 计数器 (Counter)"
@@ -177,6 +125,10 @@ msgstr "Coupled Code & Messy Contracts"
 msgid "企业级端到端类型安全桌面客户端脚手架"
 msgstr "Enterprise-Grade End-to-End Type-Safe Desktop Client Boilerplate"
 
+#: src/features/architecture/components/ArchitectureView.tsx
+msgid "传统散装 / 进程穿透方式"
+msgstr "Legacy Ad-hoc / Process Leaking Approach"
+
 #: src/features/updater/components/ProgressCard.tsx
 msgid "传输速率"
 msgstr "Transfer Speed"
@@ -205,6 +157,10 @@ msgstr "Keep running in background with tray icon"
 msgid "关闭"
 msgstr "Close"
 
+#: src/features/system-info/components/SystemInfoCard.tsx
+msgid "刷新"
+msgstr "Refresh"
+
 #: src/components/feedback/ErrorBoundary.tsx
 msgid "刷新重试"
 msgstr "Reload & Retry"
@@ -221,9 +177,25 @@ msgstr "Native Dialogs & File Location"
 msgid "发现新版本"
 msgstr "Update Available"
 
+#: src/features/logging/components/LoggingCard.tsx
+msgid "发送 ERROR"
+msgstr "Send ERROR"
+
+#: src/features/logging/components/LoggingCard.tsx
+msgid "发送 INFO"
+msgstr "Send INFO"
+
+#: src/features/logging/components/LoggingCard.tsx
+msgid "发送 WARN"
+msgstr "Send WARN"
+
 #: src/features/updater/components/ActionBar.tsx
 msgid "取消下载"
 msgstr "Cancel Download"
+
+#: src/features/native-dialogs/components/DialogCard.tsx
+msgid "另存为"
+msgstr "Save As"
 
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "另存为示例"
@@ -233,6 +205,10 @@ msgstr "Save File Example"
 msgid "可用内存 / 总内存"
 msgstr "Available / Total Memory"
 
+#: src/features/native-dialogs/components/DialogCard.tsx
+msgid "在资源管理器中定位"
+msgstr "Reveal in Explorer"
+
 #: src/features/counter/components/CounterCard.tsx
 msgid "基于主进程状态原子操作与响应式更新"
 msgstr "Atomic state mutation and reactive feedback in main process"
@@ -240,6 +216,11 @@ msgstr "Atomic state mutation and reactive feedback in main process"
 #: src/features/settings/components/SettingsCard.tsx
 msgid "外观主题 (Theme)"
 msgstr "Appearance Theme"
+
+#. placeholder {0}: err.message
+#: src/features/devtools/hooks/useDevTools.ts
+msgid "安全拦截: {0}"
+msgstr "Security Blocked: {0}"
 
 #: src/features/calculator/components/CalculatorCard.tsx
 msgid "安全计算器 (IPC 错误处理)"
@@ -262,8 +243,8 @@ msgid "已在资源管理器中定位: {selectedPath}"
 msgstr "Revealed in file explorer: {selectedPath}"
 
 #: src/features/devtools/hooks/useDevTools.ts
-msgid "已在默认浏览器中打开外部页面: https://github.com"
-msgstr "Opened external page in default browser: https://github.com"
+msgid "已在默认浏览器中打开外部页面: {openedUrl}"
+msgstr "Opened external page in default browser: {openedUrl}"
 
 #: src/features/devtools/hooks/useDevTools.ts
 msgid "已开启 DevTools"
@@ -293,6 +274,10 @@ msgstr "Preferences (ConfigStore)"
 msgid "延迟稍高"
 msgstr "High Latency"
 
+#: src/features/devtools/components/DevToolsCard.tsx
+msgid "开关 DevTools"
+msgstr "Toggle DevTools"
+
 #: src/features/updater/index.tsx
 msgid "当前安装的应用已包含所有最新功能与安全更新。"
 msgstr "The currently installed app includes all the latest features and security updates."
@@ -318,9 +303,17 @@ msgstr "Failed to restore default configuration: {0}"
 msgid "您的应用已保持在最新版本，无需更新。"
 msgstr "Your application is currently up to date."
 
+#: src/features/devtools/components/DevToolsCard.tsx
+msgid "打开 GitHub 页面"
+msgstr "Open GitHub"
+
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "打开失败"
 msgstr "Failed to open"
+
+#: src/features/logging/components/LoggingCard.tsx
+msgid "打开日志目录"
+msgstr "Open Log Directory"
 
 #: src/features/calculator/components/CalculatorCard.tsx
 msgid "提示：尝试输入 B = 0 并选择除法 (÷) 触发服务端异常拦截"
@@ -432,6 +425,10 @@ msgstr "Step:"
 #: src/features/settings/components/SettingsCard.tsx
 msgid "浅色模式 (Light)"
 msgstr "Light Mode"
+
+#: src/features/ping/components/PingCard.tsx
+msgid "测速 Ping"
+msgstr "Ping Test"
 
 #: src/features/settings/components/SettingsCard.tsx
 msgid "深色模式 (Dark)"
@@ -554,6 +551,10 @@ msgstr "Inter-Process Communication (IPC Ping)"
 msgid "进程隔离落盘 (main.log / renderer.log) 与 5MB 自动轮转"
 msgstr "Process-isolated disk logging (main.log / renderer.log) with 5MB rotation"
 
+#: src/features/native-dialogs/components/DialogCard.tsx
+msgid "选择文件"
+msgstr "Select File"
+
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "选择测试文件"
 msgstr "Select Test File"
@@ -561,6 +562,10 @@ msgstr "Select Test File"
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "选择测试文件夹"
 msgstr "Select Test Folder"
+
+#: src/features/native-dialogs/components/DialogCard.tsx
+msgid "选择目录"
+msgstr "Select Directory"
 
 #: src/features/counter/components/CounterCard.tsx
 msgid "递减 (-1)"
@@ -589,6 +594,10 @@ msgstr "Retry"
 #: src/features/updater/components/ActionBar.tsx
 msgid "隐藏到后台"
 msgstr "Hide to Background"
+
+#: src/features/devtools/components/DevToolsCard.tsx
+msgid "非白名单外链 (example.com)"
+msgstr "Blocked External Link (example.com)"
 
 #: src/components/feedback/ErrorBoundary.tsx
 msgid "页面出错啦~"

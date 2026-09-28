@@ -4,6 +4,7 @@ import type { ActionResult } from '@app/shared/types/diagnostics';
 import { BrowserWindow, shell } from 'electron';
 import { AppError } from '../errors/AppError';
 import { getLogManager } from '../modules/log.module';
+import { isAllowedExternalUrl } from '../modules/security/external-urls';
 
 export class DiagnosticsService {
   logMessage(input: LogInput): void {
@@ -38,6 +39,9 @@ export class DiagnosticsService {
           'Invalid URL protocol. Only http: and https: are allowed.',
           ErrorCode.INVALID_PROTOCOL,
         );
+      }
+      if (!isAllowedExternalUrl(input.url)) {
+        throw new AppError(`Disallowed external URL: ${input.url}`, ErrorCode.INVALID_ARGUMENT);
       }
       await shell.openExternal(input.url);
       return { success: true, message: `Opened ${input.url}` };

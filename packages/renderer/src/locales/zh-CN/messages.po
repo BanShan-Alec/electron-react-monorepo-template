@@ -15,66 +15,14 @@ msgstr "{uptimeMinutes} 分钟 ({uptimeSeconds} 秒)"
 msgid "@app/shared 共享契约单一事实源"
 msgstr "@app/shared 共享契约单一事实源"
 
-#: src/features/logging/components/LoggingCard.tsx
-msgid "⚠️ 发送 WARN"
-msgstr "⚠️ 发送 WARN"
-
-#: src/features/ping/components/PingCard.tsx
-msgid "⚡ 测速 Ping"
-msgstr "⚡ 测速 Ping"
-
 #: src/features/logging/hooks/useLogging.ts
 msgid "✅ 已发送 {levelUpper} 日志到 renderer.log"
 msgstr "✅ 已发送 {levelUpper} 日志到 renderer.log"
-
-#: src/features/architecture/components/ArchitectureView.tsx
-msgid "✨ Fullstack 规范分层方式"
-msgstr "✨ Fullstack 规范分层方式"
-
-#: src/features/architecture/components/ArchitectureView.tsx
-msgid "❌ 传统散装 / 进程穿透方式"
-msgstr "❌ 传统散装 / 进程穿透方式"
-
-#: src/features/devtools/components/DevToolsCard.tsx
-msgid "🌐 打开 GitHub 页面"
-msgstr "🌐 打开 GitHub 页面"
-
-#: src/features/native-dialogs/components/DialogCard.tsx
-msgid "💾 另存为"
-msgstr "💾 另存为"
-
-#: src/features/native-dialogs/components/DialogCard.tsx
-msgid "📁 选择目录"
-msgstr "📁 选择目录"
 
 #. placeholder {0}: data.path
 #: src/features/logging/hooks/useLogging.ts
 msgid "📂 已打开日志目录: {0}"
 msgstr "📂 已打开日志目录: {0}"
-
-#: src/features/logging/components/LoggingCard.tsx
-msgid "📂 打开日志目录"
-msgstr "📂 打开日志目录"
-
-#: src/features/native-dialogs/components/DialogCard.tsx
-msgid "📄 选择文件"
-msgstr "📄 选择文件"
-
-#: src/features/system-info/components/SystemInfoCard.tsx
-msgid "🔄 刷新"
-msgstr "🔄 刷新"
-
-#: src/features/native-dialogs/components/DialogCard.tsx
-msgid "🔍 在资源管理器中定位"
-msgstr "🔍 在资源管理器中定位"
-
-#: src/features/devtools/components/DevToolsCard.tsx
-msgid "🪟 开关 DevTools"
-msgstr "🪟 开关 DevTools"
-
-#: src/features/logging/components/LoggingCard.tsx
-msgid "🛑 发送 ERROR"
-msgstr "🛑 发送 ERROR"
 
 #: src/features/system-info/components/SystemInfoCard.tsx
 msgid "Chromium 版本"
@@ -104,9 +52,9 @@ msgstr "Electron 版本"
 msgid "Fullstack 经典分层通信架构全流程"
 msgstr "Fullstack 经典分层通信架构全流程"
 
-#: src/features/logging/components/LoggingCard.tsx
-msgid "ℹ️ 发送 INFO"
-msgstr "ℹ️ 发送 INFO"
+#: src/features/architecture/components/ArchitectureView.tsx
+msgid "Fullstack 规范分层方式"
+msgstr "Fullstack 规范分层方式"
 
 #: src/features/counter/components/CounterCard.tsx
 msgid "IPC 计数器 (Counter)"
@@ -177,6 +125,10 @@ msgstr "代码耦合 & 契约混乱"
 msgid "企业级端到端类型安全桌面客户端脚手架"
 msgstr "企业级端到端类型安全桌面客户端脚手架"
 
+#: src/features/architecture/components/ArchitectureView.tsx
+msgid "传统散装 / 进程穿透方式"
+msgstr "传统散装 / 进程穿透方式"
+
 #: src/features/updater/components/ProgressCard.tsx
 msgid "传输速率"
 msgstr "传输速率"
@@ -205,6 +157,10 @@ msgstr "保持后台常驻与托盘图标交互"
 msgid "关闭"
 msgstr "关闭"
 
+#: src/features/system-info/components/SystemInfoCard.tsx
+msgid "刷新"
+msgstr "刷新"
+
 #: src/components/feedback/ErrorBoundary.tsx
 msgid "刷新重试"
 msgstr "刷新重试"
@@ -221,9 +177,25 @@ msgstr "原生对话框与文件定位 (Native Dialogs)"
 msgid "发现新版本"
 msgstr "发现新版本"
 
+#: src/features/logging/components/LoggingCard.tsx
+msgid "发送 ERROR"
+msgstr "发送 ERROR"
+
+#: src/features/logging/components/LoggingCard.tsx
+msgid "发送 INFO"
+msgstr "发送 INFO"
+
+#: src/features/logging/components/LoggingCard.tsx
+msgid "发送 WARN"
+msgstr "发送 WARN"
+
 #: src/features/updater/components/ActionBar.tsx
 msgid "取消下载"
 msgstr "取消下载"
+
+#: src/features/native-dialogs/components/DialogCard.tsx
+msgid "另存为"
+msgstr "另存为"
 
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "另存为示例"
@@ -233,6 +205,10 @@ msgstr "另存为示例"
 msgid "可用内存 / 总内存"
 msgstr "可用内存 / 总内存"
 
+#: src/features/native-dialogs/components/DialogCard.tsx
+msgid "在资源管理器中定位"
+msgstr "在资源管理器中定位"
+
 #: src/features/counter/components/CounterCard.tsx
 msgid "基于主进程状态原子操作与响应式更新"
 msgstr "基于主进程状态原子操作与响应式更新"
@@ -240,6 +216,11 @@ msgstr "基于主进程状态原子操作与响应式更新"
 #: src/features/settings/components/SettingsCard.tsx
 msgid "外观主题 (Theme)"
 msgstr "外观主题 (Theme)"
+
+#. placeholder {0}: err.message
+#: src/features/devtools/hooks/useDevTools.ts
+msgid "安全拦截: {0}"
+msgstr "安全拦截: {0}"
 
 #: src/features/calculator/components/CalculatorCard.tsx
 msgid "安全计算器 (IPC 错误处理)"
@@ -262,8 +243,8 @@ msgid "已在资源管理器中定位: {selectedPath}"
 msgstr "已在资源管理器中定位: {selectedPath}"
 
 #: src/features/devtools/hooks/useDevTools.ts
-msgid "已在默认浏览器中打开外部页面: https://github.com"
-msgstr "已在默认浏览器中打开外部页面: https://github.com"
+msgid "已在默认浏览器中打开外部页面: {openedUrl}"
+msgstr "已在默认浏览器中打开外部页面: {openedUrl}"
 
 #: src/features/devtools/hooks/useDevTools.ts
 msgid "已开启 DevTools"
@@ -293,6 +274,10 @@ msgstr "应用偏好设置 (ConfigStore)"
 msgid "延迟稍高"
 msgstr "延迟稍高"
 
+#: src/features/devtools/components/DevToolsCard.tsx
+msgid "开关 DevTools"
+msgstr "开关 DevTools"
+
 #: src/features/updater/index.tsx
 msgid "当前安装的应用已包含所有最新功能与安全更新。"
 msgstr "当前安装的应用已包含所有最新功能与安全更新。"
@@ -318,9 +303,17 @@ msgstr "恢复默认配置失败: {0}"
 msgid "您的应用已保持在最新版本，无需更新。"
 msgstr "您的应用已保持在最新版本，无需更新。"
 
+#: src/features/devtools/components/DevToolsCard.tsx
+msgid "打开 GitHub 页面"
+msgstr "打开 GitHub 页面"
+
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "打开失败"
 msgstr "打开失败"
+
+#: src/features/logging/components/LoggingCard.tsx
+msgid "打开日志目录"
+msgstr "打开日志目录"
 
 #: src/features/calculator/components/CalculatorCard.tsx
 msgid "提示：尝试输入 B = 0 并选择除法 (÷) 触发服务端异常拦截"
@@ -432,6 +425,10 @@ msgstr "步长:"
 #: src/features/settings/components/SettingsCard.tsx
 msgid "浅色模式 (Light)"
 msgstr "浅色模式 (Light)"
+
+#: src/features/ping/components/PingCard.tsx
+msgid "测速 Ping"
+msgstr "测速 Ping"
 
 #: src/features/settings/components/SettingsCard.tsx
 msgid "深色模式 (Dark)"
@@ -554,6 +551,10 @@ msgstr "进程间通信 (IPC Ping)"
 msgid "进程隔离落盘 (main.log / renderer.log) 与 5MB 自动轮转"
 msgstr "进程隔离落盘 (main.log / renderer.log) 与 5MB 自动轮转"
 
+#: src/features/native-dialogs/components/DialogCard.tsx
+msgid "选择文件"
+msgstr "选择文件"
+
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "选择测试文件"
 msgstr "选择测试文件"
@@ -561,6 +562,10 @@ msgstr "选择测试文件"
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "选择测试文件夹"
 msgstr "选择测试文件夹"
+
+#: src/features/native-dialogs/components/DialogCard.tsx
+msgid "选择目录"
+msgstr "选择目录"
 
 #: src/features/counter/components/CounterCard.tsx
 msgid "递减 (-1)"
@@ -589,6 +594,10 @@ msgstr "重试"
 #: src/features/updater/components/ActionBar.tsx
 msgid "隐藏到后台"
 msgstr "隐藏到后台"
+
+#: src/features/devtools/components/DevToolsCard.tsx
+msgid "非白名单外链 (example.com)"
+msgstr "非白名单外链 (example.com)"
 
 #: src/components/feedback/ErrorBoundary.tsx
 msgid "页面出错啦~"
