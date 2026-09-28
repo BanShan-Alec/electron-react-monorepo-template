@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Linux Virtual Framebuffer (Xvfb)
         if: runner.os == 'Linux'
@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
