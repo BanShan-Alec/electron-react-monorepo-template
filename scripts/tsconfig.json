@@ -1,7 +1,9 @@
 {
   "extends": "@app/tsconfig/node.json",
   "compilerOptions": {
-    "lib": ["ESNext", "DOM", "DOM.Iterable"]
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
   "include": ["./**/*.ts"]
 }

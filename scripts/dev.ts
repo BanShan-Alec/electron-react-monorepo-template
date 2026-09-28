@@ -2,6 +2,7 @@ import { type ChildProcess, spawn } from 'node:child_process';
 import path from 'node:path';
 import electronPath from 'electron';
 import { build, createServer, type Plugin, type ViteDevServer } from 'vite';
+import { ensurePortsAvailable, killProcessTree } from './port-guard.ts';
 
 /**
  * 默认配置。
@@ -55,13 +56,28 @@ function createPreloadReloaderPlugin(server: ViteDevServer): Plugin {
 function createElectronLauncherPlugin(): Plugin {
   let electronApp: ChildProcess | null = null;
 
+  // 监听终端退出信号，连带强杀 Electron 子进程树，防止僵尸进程退到后台托盘
+  const handleExitSignal = async () => {
+    if (electronApp?.pid) {
+      await killProcessTree(electronApp.pid);
+      electronApp = null;
+    }
+    process.exit(0);
+  };
+  process.once('SIGINT', handleExitSignal);
+  process.once('SIGTERM', handleExitSignal);
+
   return {
     name: '[dev]main-electron-launcher',
-    writeBundle() {
+    async writeBundle() {
       /** Kill electron if a process already exists */
       if (electronApp !== null) {
         electronApp.removeListener('exit', process.exit);
-        electronApp.kill('SIGINT');
+        if (electronApp.pid) {
+          await killProcessTree(electronApp.pid);
+        } else {
+          electronApp.kill('SIGINT');
+        }
         electronApp = null;
       }
 
@@ -100,6 +116,13 @@ async function startRendererDevServer(): Promise<ViteDevServer> {
 
 /** 开发入口:编排渲染进程服务器与两个 watch 构建,副作用只发生在此。 */
 async function startDevServer(): Promise<void> {
+  // 0. 启动前端口排查与定向释放
+  await ensurePortsAvailable([
+    { port: config.rendererPort, desc: 'Vite Renderer' },
+    { port: config.rendererCdpPort, desc: 'Renderer CDP Debugging' },
+    { port: config.mainInspectPort, desc: 'Main Inspect Break' },
+  ]);
+
   // 1. Create and start Vite dev server for the renderer
   const rendererWatchServer = await startRendererDevServer();
 
