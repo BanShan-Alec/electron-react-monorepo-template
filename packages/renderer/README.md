@@ -165,34 +165,11 @@ const { runAsync: runCounterOp } = useManualRequest(async (action: CounterAction
 - 别名：`@/` → `packages/renderer/src/*`，`@shared/` → `packages/shared/src/*`（单一事实源在根 tsconfig.json）。
 - 跨端契约只从 `@shared/types` / `@shared/schemas` 消费，不反向依赖。
 
-## 国际化规范 (LinguiJS i18n)
+## 国际化 (i18n)
 
-本工程采用 **LinguiJS 6 + Source-as-Key（中文优先）** 架构，将自然中文作为代码单一事实源，并在构建期通过 Vite 8 + Rolldown Babel 插件编译展开为极小静态 ID 调用。
-
-1. **自然中文书写**：
-   在组件或工具函数中，直接使用 `t` 模板宏包裹自然中文：
-   ```tsx
-   import { t } from '@lingui/core/macro';
-
-   <Button>{t`保存配置`}</Button>
-   ```
-2. **穿透 `React.memo` 阻断**：
-   展示卡片若使用 `memo(_Card)` 封装且依赖多语言刷新，必须在组件内部调用 `useLingui()` 建立响应式订阅：
-   ```tsx
-   import { useLingui } from '@lingui/react';
-
-   const _MyCard = () => {
-     useLingui(); // 确保切换语言时即使 Props 未变也能即时重渲染
-     return <span>{t`当前状态`}</span>;
-   };
-   ```
-3. **按需 Chunk 代码分割**：
-   所有语种通过 `dynamicActivate(lang)` 动态 `import('./locales/${lang}/messages.po')`，独立拆分为 ~0.7KB 的极小 Chunk，避免一次性加载全量字典。
-4. **词条自动化增量提取**：
-   在渲染端运行 `pnpm run extract`（或在根目录运行 `pnpm run i18n:extract`），CLI 自动扫描 AST 并增量同步至 `src/locales/` 下的 `.po` 文件。
-5. 详细开发规范与架构深度解析请参考：
-   - 📖 [多语言全链路工程架构设计指南](../../docs/i18n/architecture.md)
-   - 🛠️ [多语言日常开发与维护实操手册 (SOP)](../../docs/i18n/guide.md)
+渲染进程采用 **LinguiJS（中文优先 Source-as-Key）** 方案，文案编写、词条提取与架构设计细节请直接查阅专用文档：
+- 🛠️ **开发者日常开发与维护手册**：[docs/i18n/guide.md](../../docs/i18n/guide.md)
+- 📖 **多语言全链路架构设计指南**：[docs/i18n/architecture.md](../../docs/i18n/architecture.md)
 
 ## 已知取舍
 

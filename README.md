@@ -82,8 +82,8 @@ flowchart LR
 4. **Phase 4：在 `@app/renderer` 构建自包含 Feature 消费**
    - 在 `src/features/notes/` 下建立自包含域（`index.tsx`、`hooks/`、`components/`）；
    - 在 hook 中调用 `useIpc('notes.create', window.api.notes.create)`，自动获得解构后的 `data` 与异常捕获，传递给展示卡片；
-   - 编写 UI 时直接书写自然中文（`t\`文案\``），运行 `pnpm run i18n:extract` 即可自动增量提取至 PO 字典（若为 Memo 卡片需挂载 `useLingui()` 响应多语言刷新）。
-   - 📖 *组件分层规范请参考：[Renderer 规范](packages/renderer/README.md#feature-规范) · [多语言实操 SOP](docs/i18n/guide.md)*
+   - 界面多语言文案编写与一键提取请参考 [多语言实操手册](docs/i18n/guide.md)。
+   - 📖 *组件分层规范请参考：[Renderer 规范](packages/renderer/README.md#feature-规范)*
 
 ---
 
