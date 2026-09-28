@@ -4,6 +4,7 @@ import { registerCounterControllers } from './counter.controller';
 import { registerDiagnosticsControllers } from './diagnostics.controller';
 import { registerDialogControllers } from './dialog.controller';
 import { registerSystemControllers } from './system.controller';
+import { registerUpdaterControllers } from './updater.controller';
 
 /**
  * 显式挂载注册所有 IPC Controllers
@@ -16,4 +17,5 @@ export function registerAllControllers(): void {
   registerConfigControllers();
   registerDiagnosticsControllers();
   registerDialogControllers();
+  registerUpdaterControllers();
 }
