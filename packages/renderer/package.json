@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build --configLoader bundle",
+    "extract": "lingui extract --clean",
     "typecheck": "tsc -b",
     "lint": "biome check .",
     "preview": "vite preview"
