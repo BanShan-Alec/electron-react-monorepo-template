@@ -4,36 +4,103 @@
 
 ---
 
-## ✨ 核心特性
+## 🗺️ 架构导航与子包索引 (Architecture Hub)
 
-- 🛡️ **安全的 Typed ContextBridge IPC**：严格遵循 Electron 官方安全最佳实践（`contextIsolation: true` + 沙箱隔离），通过 `@app/shared` 统一管理 IPC 频道常量与 API 强类型接口，在保证最高安全等级的前提下获得极致类型推导。
-- 🧱 **高扩展的 ModuleRunner 主进程架构**：主进程采用清晰的模块化设计，统一管理窗口生命周期、安全策略守卫、单实例限制、托盘图标、日志与崩溃守护。
-- ⚡ **毫秒级极速开发体验**：基于 Vite 驱动的渲染进程即时热重载（HMR）与主进程/Preload 增量构建。
-- 📦 **清晰严谨的 Monorepo 划分**：基于 `pnpm workspace` 划分清晰边界（Main、Preload、Renderer、Shared），各司其职，无循环耦合。
-- 🎨 **现代化 React 19 + TailwindCSS 前端**：内置现代化仪表盘界面与丰富原生能力演练（系统信息、原生弹窗、状态持久化、诊断日志）。
-- 🧹 **极速工程质量守卫**：全链路采用 [Biome](https://biomejs.dev/) 进行毫秒级代码格式化与 Lint 校验，配合 Husky、lint-staged 与 Commitlint 保障每次提交质量。
-- 🚀 **跨平台打包开箱即用**：集成 TypeScript 编写的 `scripts/build.ts` 与收拢的 `build/electron-builder.ts` 配置，支持 Windows、macOS 与 Linux 原生安装包打包。
+本项目严格采用技术分层与自包含领域划分，根目录作为全景导航入口，各子包职责与独立文档规范索引如下：
+
+| 子包 / 文档 | 物理路径 | 核心职责 | 详细指南 |
+| :--- | :--- | :--- | :--- |
+| **`@app/shared`** | [`packages/shared/`](packages/shared) | **跨端契约单一事实源**：统一管理 Zod 运行时 Schema、IPC Channel 常量、纯 TypeScript 返回接口与 `Result<T>` 契约模型（无桶文件直出） | [Shared 架构指南](packages/shared/README.md) |
+| **`@app/main`** | [`packages/main/`](packages/main) | **本地微型后端**：基于 ModuleRunner 流水线管理窗口与系统生命周期，采用 `Controller ➔ Service` 严格分层处理 IPC 请求与原生系统交互 | [Main 架构指南](packages/main/README.md) |
+| **`@app/preload`** | [`packages/preload/`](packages/preload) | **安全隔离桥接**：在 Context Isolation 沙箱保护下，将强类型的 `apiBridge` 通过 `contextBridge` 安全暴露为 `window.api` | [Preload 架构指南](packages/preload/README.md) |
+| **`@app/renderer`** | [`packages/renderer/`](packages/renderer) | **现代前端界面**：React 19 + TailwindCSS + antd，采用自包含 Feature 驱动架构，统一通过 `useIpc` / `useManualRequest` 消费数据 | [Renderer 架构指南](packages/renderer/README.md) |
+| **工程质量规范** | [`CONTRIBUTING.md`](CONTRIBUTING.md) | **研发与提交守则**：全库 Biome 静态检查与格式化、桶文件禁令（noBarrelFile）、Conventional Commits 提交校验及 changelogen 自动化发布 | [团队工程规范](CONTRIBUTING.md) |
 
 ---
 
-## 📂 项目结构
+## 🔄 跨端 IPC 通信拓扑模型
+
+```mermaid
+flowchart LR
+    subgraph Renderer["渲染进程 (Renderer)"]
+        UI["Feature UI 组件"] --> Hook["useIpc / useManualRequest"]
+        Hook --> WindowApi["window.api (类型推导)"]
+    end
+
+    subgraph Preload["预加载沙箱 (Preload)"]
+        WindowApi -.-> Bridge["contextBridge.exposeInMainWorld"]
+        Bridge --> Invoke["ipcRenderer.invoke(CHANNEL, input)"]
+    end
+
+    subgraph Main["主进程 (Main - 本地微型后端)"]
+        Invoke -.-> Controller["Controller (Zod.safeParse 校验)"]
+        Controller --> Service["Service (纯业务/原生能力)"]
+        Service --> PackResult["catchToResult ➔ Result&lt;T&gt;"]
+    end
+
+    subgraph Shared["契约共享层 (Shared - 单一事实源)"]
+        Schema["Zod Schemas"] -.-> Controller
+        Channels["IPC_CHANNELS"] -.-> Preload
+        Channels -.-> Controller
+        Types["ElectronApi &amp; Result&lt;T&gt;"] -.-> Renderer
+        Types -.-> Preload
+    end
+
+    PackResult -.-> Hook
+```
+
+---
+
+## 🛠️ 全栈端到端功能开发 SOP (End-to-End Pipeline)
+
+当需要新增一个业务领域（以新增 `notes` 便签领域为例）时，请严格遵照以下 **4 阶段标准流水线** 进行端到端开发：
+
+```
+[Phase 1: Shared 契约] ➔ [Phase 2: Main 逻辑] ➔ [Phase 3: Preload 桥接] ➔ [Phase 4: Renderer 消费]
+```
+
+1. **Phase 1：在 `@app/shared` 声明跨端契约**
+   - 在 `schemas/notes.ts` 中定义 Zod 入参校验模型并推导类型；
+   - 在 `types/notes.ts` 中定义返回数据接口 `NoteItem`；
+   - 在 `constants/ipc-channels.ts` 中注册唯一通道常量 `IPC_CHANNELS.NOTES_CREATE`；
+   - 在 `types/api.ts` 中扩充 `ElectronApi` 声明。
+   - 📖 *完整代码模板请参考：[Shared 规范 - 新增业务开发范式](packages/shared/README.md#4-新增业务领域开发范式-sop)*
+
+2. **Phase 2：在 `@app/main` 实现主进程能力**
+   - 编写 `services/notes.service.ts` 实现业务逻辑与持久化（单例导出，不感知 IPC）；
+   - 编写 `controllers/notes.controller.ts` 执行 Zod `.safeParse()` 校验入参，并调用 `notesService`，异常统一包装为 `Result<T>`；
+   - 在 `controllers/index.ts` 中显式挂载注册 `registerNotesControllers()`。
+   - 📖 *完整代码模板请参考：[Main 规范 - 新增业务开发范式](packages/main/README.md#4-新增业务领域标准开发范式-sop)*
+
+3. **Phase 3：在 `@app/preload` 挂载安全桥接**
+   - 在 `src/index.ts` 的 `apiBridge` 中对齐 `ElectronApi.notes` 的方法实现，调用 `ipcRenderer.invoke(IPC_CHANNELS.NOTES_CREATE, input)`。
+   - 📖 *安全约束请参考：[Preload 规范](packages/preload/README.md)*
+
+4. **Phase 4：在 `@app/renderer` 构建自包含 Feature 消费**
+   - 在 `src/features/notes/` 下建立自包含域（`index.tsx`、`hooks/`、`components/`）；
+   - 在 hook 中调用 `useIpc('notes.create', window.api.notes.create)`，自动获得解构后的 `data` 与异常捕获，传递给展示卡片。
+   - 📖 *组件分层与请求层规范请参考：[Renderer 规范](packages/renderer/README.md#feature-规范)*
+
+---
+
+## 📂 项目全局结构
 
 ```text
 electron-react-monorepo-template/
 ├── .config/                  # 工程工具链配置（Biome、Commitlint、changelogen）
 ├── build/                    # 打包配置与原生静态资源（图标、entitlements 等）
 ├── packages/
-│   ├── main/                 # [主进程] 窗口管理、原生系统交互、IPC 监听与模块生命周期
-│   ├── preload/              # [Preload] 安全桥接、暴露 window.api 契约
-│   ├── renderer/             # [渲染进程] React 19 + TailwindCSS 现代前端应用
-│   ├── shared/               # [共享层] 跨进程通用工具、IPC 频道常量与类型定义
+│   ├── main/                 # [主进程] Controller/Service 分层、窗口与系统生命周期
+│   ├── preload/              # [Preload] 安全沙箱桥接、暴露 window.api 契约
+│   ├── renderer/             # [渲染进程] React 19 + Tailwind 前端应用 (Feature 驱动)
+│   ├── shared/               # [共享层] 跨进程契约、Zod Schemas、IPC 常量与类型定义
 │   └── tsconfig/             # 共享的 TypeScript 基础配置
 ├── scripts/                  # 工程构建与启动脚本（TS 编写）
 │   ├── dev.ts                # 开发服务启动与热重启编排
 │   └── build.ts              # 跨平台打包构建 CLI
 ├── pnpm-workspace.yaml       # pnpm monorepo 与依赖 Catalog 配置
 ├── package.json              # 根项目元数据与通用脚本
-└── CONTRIBUTING.md           # 团队工程规范与 Git 提交指南
+└── CONTRIBUTING.md           # 团队工程规范、Git 提交指南与版本发布
 ```
 
 ---
@@ -50,18 +117,16 @@ pnpm install
 ```
 
 > [!NOTE]
-> 本项目根目录已预设 `.npmrc`，内置国内淘宝镜像加速源与 pnpm 隔离布局（`node-linker=isolated`）策略。
+> 根目录已预设 `.npmrc`，内置国内淘宝镜像源与 pnpm 隔离布局（`node-linker=isolated`）策略。跨包通用依赖版本由 `pnpm-workspace.yaml` 的 `catalog:` 集中收敛（详见 [CONTRIBUTING.md](CONTRIBUTING.md)）。
 
 ### 2. 启动本地开发
 ```bash
 pnpm start
-# 或者
-npm start
 ```
 执行后将自动启动 Vite Dev Server 并唤起 Electron 窗口。主进程代码改动将自动增量编译并重启应用；前端页面改动享受即时 HMR。
 
 > [!NOTE]
-> dev server 固定端口 `5173`（strictPort）：重复执行 `pnpm start` 会检测到端口已占用并直接复用运行中的实例，不会重复拉起 Electron。 Electron 同时开放 renderer CDP 端点 `9222`（主进程 inspect 为 `9229`，互不干扰）。
+> dev server 固定端口 `5173`（strictPort）：重复执行 `pnpm start` 会检测到端口已占用并直接复用运行中的实例。开放 renderer CDP 端点 `9222`（主进程 inspect 为 `9229`）。
 
 ---
 
@@ -83,63 +148,19 @@ pnpm run build:mac
 pnpm run build:linux
 ```
 
-打包生成的可执行文件与安装包将输出至根目录下的 `dist/` 文件夹中。
+打包产物输出至根目录下的 `dist/` 文件夹中。
 
 ---
 
-## 💡 进程间通信 (IPC) 最佳实践
+## 📋 质量保障与工程规范
 
-本项目采用标准契约分层机制：
-
-### 1. 共享层定义契约 (`packages/shared`)
-```ts
-// packages/shared/src/constants/ipc-channels.ts
-export const IPC_CHANNELS = {
-  SYSTEM_GET_INFO: 'system:get-info',
-} as const;
-
-// packages/shared/src/types/api.ts
-export interface ElectronApi {
-  system: {
-    getSystemInfo: () => Promise<Result<SystemInfo>>;
-  };
-}
-```
-
-> 注：`@app/shared` 无根入口，消费方按需从子路径导入（如 `@app/shared/constants/ipc-channels`、`@app/shared/types/api`），详见 [packages/shared/README.md](packages/shared/README.md)。
-
-### 2. Preload 暴露安全桥接 (`packages/preload`)
-```ts
-// packages/preload/src/index.ts
-import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
-import type { ElectronApi } from '@app/shared/types/api';
-
-export const apiBridge: ElectronApi = {
-  system: {
-    getSystemInfo: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_INFO),
-  },
-};
-
-contextBridge.exposeInMainWorld('api', apiBridge);
-```
-
-### 3. 前端消费 (`packages/renderer`)
-```tsx
-// packages/renderer/src/App.tsx
-const info = await window.api.system.getSystemInfo();
-```
-
----
-
-## 📋 代码规范与质量保障
-
-- **代码风格与静态检查**：
+- **静态检查与格式化**：全库由 Biome 驱动，秒级完成代码质量巡检。
   ```bash
   pnpm run lint       # 检查格式与规范
-  pnpm run lint:fix   # 自动修复可修复的格式与 Lint 问题
+  pnpm run lint:fix   # 自动修复格式与 Lint 问题
   pnpm run typecheck  # 执行全项目 TypeScript 类型检查
   ```
-- **模块导入**：全库默认禁止桶文件（barrel），跨模块一律直达具体文件；详见 [CONTRIBUTING.md](CONTRIBUTING.md) 的桶文件禁令。
-- **提交规范**：遵循 Conventional Commits 规范，提交信息必须包含简体中文说明。详情参见 [CONTRIBUTING.md](CONTRIBUTING.md)。
-
+- **禁止桶文件（No Barrel Files）**：全库开启 `performance.noBarrelFile: "error"`，跨模块导入必须直达具体文件。
+- **提交规范**：遵循 Conventional Commits 规范，提交说明**强制要求包含简体中文**（由 Commitlint + Husky 拦截校验）。
+- **版本发布与 Changelog**：通过 `pnpm run release` 自动推导语义化版本号并生成变更日志。
+- 更多详细规则请参考 **[CONTRIBUTING.md](CONTRIBUTING.md)**。

@@ -136,3 +136,14 @@ export interface ElectronApi {
 ```
 
 完成上述步骤后，主进程 Controller 可直接使用 `createNoteInputSchema.safeParse` 进行强校验，Preload 即可对齐 `apiBridge` 实现，Renderer 即可获得强类型自动补全与类型检查。
+
+---
+
+## 5. 跨包关联与后续开发
+
+- **主进程实现**：在 [packages/main/README.md](../main/README.md) 中实现 Service 与 Controller 并挂载
+- **Preload 桥接**：在 [packages/preload/README.md](../preload/README.md) 中将 API 挂载至 `apiBridge`
+- **渲染层消费**：在 [packages/renderer/README.md](../renderer/README.md) 中通过 `useIpc` 消费
+- **全局工程规范**：参见 [CONTRIBUTING.md](../../CONTRIBUTING.md)
+- **返回根目录**：[README.md](../../README.md)
+

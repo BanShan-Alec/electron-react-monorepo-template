@@ -168,3 +168,11 @@ const { runAsync: runCounterOp } = useManualRequest(async (action: CounterAction
 - **暂不引入路由与全局业务 store**：当前 7 个域无共享 state，按第 3 条规则保持状态局部化；
   出现第二个消费者再下沉。
 - **不建第二份 API map**：类型全部从 `ElectronApi`（`@shared/types/api`）推导，避免手写表与真实契约漂移。
+
+## 跨包关联
+
+- 契约源头：参见 [packages/shared/README.md](../shared/README.md)
+- 安全桥接：参见 [packages/preload/README.md](../preload/README.md)
+- 主进程实现：参见 [packages/main/README.md](../main/README.md)
+- 工程与提交规范：参见 [CONTRIBUTING.md](../../CONTRIBUTING.md)
+- 返回根目录：[README.md](../../README.md)
