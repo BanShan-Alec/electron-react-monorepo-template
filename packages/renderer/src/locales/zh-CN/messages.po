@@ -1,0 +1,61 @@
+msgid ""
+msgstr ""
+"Language: zh-CN\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "总览看板"
+msgstr "总览看板"
+
+msgid "架构全貌"
+msgstr "架构全貌"
+
+msgid "应用偏好设置 (ConfigStore)"
+msgstr "应用偏好设置 (ConfigStore)"
+
+msgid "类型安全主进程本地持久化存储与动态生效"
+msgstr "类型安全主进程本地持久化存储与动态生效"
+
+msgid "外观主题 (Theme)"
+msgstr "外观主题 (Theme)"
+
+msgid "跟随系统 (System)"
+msgstr "跟随系统 (System)"
+
+msgid "浅色模式 (Light)"
+msgstr "浅色模式 (Light)"
+
+msgid "深色模式 (Dark)"
+msgstr "深色模式 (Dark)"
+
+msgid "界面语言 (Language)"
+msgstr "界面语言 (Language)"
+
+msgid "点击关闭时最小化到托盘"
+msgstr "点击关闭时最小化到托盘"
+
+msgid "保持后台常驻与托盘图标交互"
+msgstr "保持后台常驻与托盘图标交互"
+
+msgid "自动检查新版本"
+msgstr "自动检查新版本"
+
+msgid "后台轮询与版本下载通知"
+msgstr "后台轮询与版本下载通知"
+
+msgid "恢复默认值"
+msgstr "恢复默认值"
+
+msgid "IPC 计数器 (Counter)"
+msgstr "IPC 计数器 (Counter)"
+
+msgid "基于主进程状态原子操作与响应式更新"
+msgstr "基于主进程状态原子操作与响应式更新"
+
+msgid "递增 (+1)"
+msgstr "递增 (+1)"
+
+msgid "递减 (-1)"
+msgstr "递减 (-1)"
+
+msgid "重置为 0"
+msgstr "重置为 0"

@@ -2,6 +2,7 @@ import type { AppConfig } from '@shared/schemas/config';
 import { App } from 'antd';
 import { useEffect } from 'react';
 import { useIpc } from '@/hooks/useIpc';
+import type { SupportedLocale } from '@/locales/i18n';
 import { useAppStore } from '@/stores/useAppStore';
 
 // 私有常量
@@ -11,6 +12,7 @@ import { useAppStore } from '@/stores/useAppStore';
 export function useAppConfig() {
   const { message } = App.useApp();
   const setThemeMode = useAppStore((state) => state.setThemeMode);
+  const setLanguage = useAppStore((state) => state.setLanguage);
 
   // 网络IO（显式挂载触发）—— 拉取偏好配置
   const {
@@ -21,6 +23,7 @@ export function useAppConfig() {
   } = useIpc('config.get', window.api.config.get, {
     onSuccess: (data) => {
       setThemeMode(data.theme);
+      setLanguage(data.language as SupportedLocale);
     },
     onError: (err) => {
       message.error(`读取偏好设置失败: ${err.message}`);
@@ -46,6 +49,7 @@ export function useAppConfig() {
     {
       onSuccess: (data) => {
         setThemeMode(data.theme);
+        setLanguage(data.language as SupportedLocale);
       },
       onError: (err) => {
         message.error(`恢复默认配置失败: ${err.message}`);
@@ -59,6 +63,9 @@ export function useAppConfig() {
       await updateConfigAsync(partial);
       if (partial.theme !== undefined) {
         setThemeMode(partial.theme);
+      }
+      if (partial.language !== undefined) {
+        setLanguage(partial.language as SupportedLocale);
       }
       await fetchConfig();
     } catch {

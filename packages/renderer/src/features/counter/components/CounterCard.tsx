@@ -1,3 +1,5 @@
+import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import { Button, Card, Select } from 'antd';
 import { memo } from 'react';
 import { CardTitle } from '@/components/ui/CardTitle';
@@ -11,6 +13,7 @@ function toSelectOptions(steps: number[]) {
 }
 
 const _CounterCard = (props: ICounterCardProps) => {
+  useLingui();
   // 变量声明、解构
   const { count, step, onStepChange, isUpdating, onIncrement, onDecrement, onReset } = props;
 
@@ -32,8 +35,8 @@ const _CounterCard = (props: ICounterCardProps) => {
       title={
         <CardTitle
           icon="🔢"
-          title="持久化计数器 (ConfigStore)"
-          subtitle="端到端状态变更与本地 JSON 原子防损持久化"
+          title={t`IPC 计数器 (Counter)`}
+          subtitle={t`基于主进程状态原子操作与响应式更新`}
         />
       }
     >
@@ -61,13 +64,13 @@ const _CounterCard = (props: ICounterCardProps) => {
 
         <div className="flex items-center gap-2.5 w-full justify-center">
           <Button size="small" loading={isUpdating} onClick={onDecrement}>
-            - {step}
+            {t`递减 (-1)`}
           </Button>
           <Button size="small" type="primary" loading={isUpdating} onClick={onIncrement}>
-            + {step}
+            {t`递增 (+1)`}
           </Button>
           <Button size="small" loading={isUpdating} onClick={onReset}>
-            重置 0
+            {t`重置为 0`}
           </Button>
         </div>
       </div>

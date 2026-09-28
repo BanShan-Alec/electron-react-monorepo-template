@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { SupportedLocale } from '@/locales/i18n';
 
 /**
  * 全局轻量应用状态（对齐 renderer/hooks-and-state.md 第 2 章）。
@@ -26,10 +27,14 @@ interface AppState {
   themeMode: ThemeMode;
   resolvedTheme: ResolvedTheme;
   setThemeMode: (mode: ThemeMode) => void;
+  language: SupportedLocale;
+  setLanguage: (language: SupportedLocale) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
   themeMode: 'system',
   resolvedTheme: resolveTheme('system'),
   setThemeMode: (themeMode) => set({ themeMode, resolvedTheme: resolveTheme(themeMode) }),
+  language: 'zh-CN',
+  setLanguage: (language) => set({ language }),
 }));

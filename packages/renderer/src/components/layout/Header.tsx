@@ -1,16 +1,15 @@
+import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import { Badge, Segmented } from 'antd';
 import { memo } from 'react';
 
 // 私有常量
 const APP_VERSION = 'v3.1.0';
-const TAB_OPTIONS: { label: string; value: HeaderTab }[] = [
-  { label: '📊 功能控制台', value: 'dashboard' },
-  { label: '🛡️ 安全与架构设计', value: 'architecture' },
-];
 
 // 可抽离的逻辑处理函数/组件
 
 const _Header = (props: IHeaderProps) => {
+  useLingui();
   // 变量声明、解构
   const { activeTab, onTabChange } = props;
 
@@ -19,6 +18,10 @@ const _Header = (props: IHeaderProps) => {
   // 网络IO
 
   // 数据转换
+  const tabOptions = [
+    { label: t`总览看板`, value: 'dashboard' },
+    { label: t`架构全貌`, value: 'architecture' },
+  ];
 
   // 逻辑处理函数
   const handleTabChange = (value: string | number) => {
@@ -51,7 +54,7 @@ const _Header = (props: IHeaderProps) => {
       <Segmented
         className="no-drag"
         value={activeTab}
-        options={TAB_OPTIONS}
+        options={tabOptions}
         onChange={handleTabChange}
       />
     </header>

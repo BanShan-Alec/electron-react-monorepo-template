@@ -7,6 +7,7 @@ import { getLogManager } from './log.module';
 
 export class TrayManager implements AppModule {
   private tray: Tray | null = null;
+  private contextMenu: Menu | null = null;
   private readonly logger = getLogManager().scoped(this);
   static isQuitting = false;
 
@@ -18,6 +19,43 @@ export class TrayManager implements AppModule {
     electronApp.on('before-quit', () => {
       TrayManager.isQuitting = true;
     });
+  }
+
+  public getContextMenu(): Menu | null {
+    return this.contextMenu;
+  }
+
+  public updateLanguage(lang: string): void {
+    if (!this.tray) return;
+
+    const isZh = lang === 'zh-CN';
+    this.tray.setToolTip(
+      isZh ? `${app.getName()} - 桌面客户端` : `${app.getName()} - Desktop Client`,
+    );
+
+    this.contextMenu = Menu.buildFromTemplate([
+      {
+        label: isZh ? '显示主窗口' : 'Show Main Window',
+        click: () => this.restoreMainWindow(),
+      },
+      {
+        label: isZh ? '检查更新' : 'Check for Updates',
+        click: () => {
+          this.logger.info('User requested update check');
+          this.restoreMainWindow();
+        },
+      },
+      { type: 'separator' },
+      {
+        label: isZh ? '退出应用' : 'Quit Application',
+        click: () => {
+          TrayManager.isQuitting = true;
+          app.quit();
+        },
+      },
+    ]);
+
+    this.tray.setContextMenu(this.contextMenu);
   }
 
   public initTray(): Tray | null {
@@ -36,31 +74,7 @@ export class TrayManager implements AppModule {
       }
 
       this.tray = new Tray(icon);
-      this.tray.setToolTip(`${app.getName()} - 桌面客户端`);
-
-      const contextMenu = Menu.buildFromTemplate([
-        {
-          label: '显示主窗口',
-          click: () => this.restoreMainWindow(),
-        },
-        {
-          label: '检查更新',
-          click: () => {
-            this.logger.info('User requested update check');
-            this.restoreMainWindow();
-          },
-        },
-        { type: 'separator' },
-        {
-          label: '退出应用',
-          click: () => {
-            TrayManager.isQuitting = true;
-            app.quit();
-          },
-        },
-      ]);
-
-      this.tray.setContextMenu(contextMenu);
+      this.updateLanguage('zh-CN');
 
       // 单击/双击托盘图标切换窗口显示或隐藏
       this.tray.on('click', () => {
@@ -139,10 +153,21 @@ export class TrayManager implements AppModule {
     if (this.tray) {
       this.tray.destroy();
       this.tray = null;
+      this.contextMenu = null;
     }
   }
 }
 
+let singletonTrayManager: TrayManager | null = null;
+
+export function getTrayManager(): TrayManager {
+  if (!singletonTrayManager) {
+    singletonTrayManager = new TrayManager();
+  }
+  (globalThis as unknown as { __trayManager?: TrayManager }).__trayManager = singletonTrayManager;
+  return singletonTrayManager;
+}
+
 export function createTrayModule(): TrayManager {
-  return new TrayManager();
+  return getTrayManager();
 }

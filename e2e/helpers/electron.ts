@@ -69,6 +69,7 @@ export async function launchElectronApp(
 
   // 4. 等待应用首个窗口加载就绪
   const page = await electronApp.firstWindow();
+  page.on('pageerror', (err) => console.error('PAGE ERROR:', err));
   await page.waitForLoadState('domcontentloaded');
 
   const cleanup = async () => {

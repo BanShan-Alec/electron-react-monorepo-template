@@ -19,6 +19,7 @@ export function useTheme() {
   // 组件Effect
   useEffect(() => {
     document.documentElement.dataset.theme = resolvedTheme;
+    document.documentElement.classList.toggle('dark', resolvedTheme === 'dark');
   }, [resolvedTheme]);
 
   useEffect(() => {

@@ -1,0 +1,61 @@
+msgid ""
+msgstr ""
+"Language: en-US\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "总览看板"
+msgstr "Dashboard"
+
+msgid "架构全貌"
+msgstr "Architecture"
+
+msgid "应用偏好设置 (ConfigStore)"
+msgstr "Preferences (ConfigStore)"
+
+msgid "类型安全主进程本地持久化存储与动态生效"
+msgstr "Type-safe persistent storage and runtime application"
+
+msgid "外观主题 (Theme)"
+msgstr "Appearance Theme"
+
+msgid "跟随系统 (System)"
+msgstr "System (Follow OS)"
+
+msgid "浅色模式 (Light)"
+msgstr "Light Mode"
+
+msgid "深色模式 (Dark)"
+msgstr "Dark Mode"
+
+msgid "界面语言 (Language)"
+msgstr "Interface Language"
+
+msgid "点击关闭时最小化到托盘"
+msgstr "Minimize to tray on close"
+
+msgid "保持后台常驻与托盘图标交互"
+msgstr "Keep running in background with tray icon"
+
+msgid "自动检查新版本"
+msgstr "Auto check for updates"
+
+msgid "后台轮询与版本下载通知"
+msgstr "Background polling and download notification"
+
+msgid "恢复默认值"
+msgstr "Restore Defaults"
+
+msgid "IPC 计数器 (Counter)"
+msgstr "IPC Counter"
+
+msgid "基于主进程状态原子操作与响应式更新"
+msgstr "Atomic state mutation and reactive feedback in main process"
+
+msgid "递增 (+1)"
+msgstr "Increment"
+
+msgid "递减 (-1)"
+msgstr "Decrement"
+
+msgid "重置为 0"
+msgstr "Reset"

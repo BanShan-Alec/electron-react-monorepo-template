@@ -1,27 +1,23 @@
+import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import type { AppConfig } from '@shared/schemas/config';
-import { Button, Card, Checkbox, Select, Skeleton } from 'antd';
+import { Button, Card, Checkbox, Select, Skeleton, Switch } from 'antd';
 import { memo } from 'react';
 import { CardTitle } from '@/components/ui/CardTitle';
 
 // 私有常量
-const THEME_OPTIONS = [
-  { label: '跟随系统 (System)', value: 'system' },
-  { label: '浅色模式 (Light)', value: 'light' },
-  { label: '深色模式 (Dark)', value: 'dark' },
-];
-
 const LANGUAGE_OPTIONS = [
   { label: '简体中文 (zh-CN)', value: 'zh-CN' },
   { label: 'English (en-US)', value: 'en-US' },
-  { label: '日本語 (ja-JP)', value: 'ja-JP' },
 ];
 
 const TOGGLE_ROW_CLASS =
-  'flex items-center justify-between bg-background-secondary p-3 rounded-lg border border-border';
+  'settings-toggle-row flex items-center justify-between bg-background-secondary p-3 rounded-lg border border-border';
 
 // 可抽离的逻辑处理函数/组件
 
 const _SettingsCard = (props: ISettingsCardProps) => {
+  useLingui();
   // 变量声明、解构
   const { appConfig, onUpdate, onReset, isLoading } = props;
 
@@ -31,6 +27,11 @@ const _SettingsCard = (props: ISettingsCardProps) => {
 
   // 数据转换
   const showSkeleton = isLoading && appConfig === null;
+  const themeOptions = [
+    { label: t`跟随系统 (System)`, value: 'system' },
+    { label: t`浅色模式 (Light)`, value: 'light' },
+    { label: t`深色模式 (Dark)`, value: 'dark' },
+  ];
 
   // 逻辑处理函数
 
@@ -43,13 +44,13 @@ const _SettingsCard = (props: ISettingsCardProps) => {
       title={
         <CardTitle
           icon="⚙️"
-          title="应用偏好设置 (ConfigStore)"
-          subtitle="类型安全主进程本地持久化存储与动态生效"
+          title={t`应用偏好设置 (ConfigStore)`}
+          subtitle={t`类型安全主进程本地持久化存储与动态生效`}
         />
       }
       extra={
         <Button size="small" loading={isLoading} onClick={onReset}>
-          恢复默认值
+          {t`恢复默认值`}
         </Button>
       }
     >
@@ -60,12 +61,12 @@ const _SettingsCard = (props: ISettingsCardProps) => {
           {/* 主题模式 */}
           <div className="flex flex-col gap-1.5 bg-background-secondary p-3 rounded-lg border border-border">
             <label htmlFor="theme-select" className="text-foreground-secondary font-medium">
-              外观主题 (Theme)
+              {t`外观主题 (Theme)`}
             </label>
             <Select
               id="theme-select"
               value={appConfig.theme}
-              options={THEME_OPTIONS}
+              options={themeOptions}
               onChange={(value) => onUpdate({ theme: value as AppConfig['theme'] })}
             />
           </div>
@@ -73,36 +74,37 @@ const _SettingsCard = (props: ISettingsCardProps) => {
           {/* 默认语言 */}
           <div className="flex flex-col gap-1.5 bg-background-secondary p-3 rounded-lg border border-border">
             <label htmlFor="lang-select" className="text-foreground-secondary font-medium">
-              界面语言 (Language)
+              {t`界面语言 (Language)`}
             </label>
             <Select
               id="lang-select"
               value={appConfig.language}
               options={LANGUAGE_OPTIONS}
-              onChange={(value) => onUpdate({ language: value })}
+              onChange={(value) => onUpdate({ language: value as AppConfig['language'] })}
             />
           </div>
 
           {/* 最小化到托盘 */}
           <div className={TOGGLE_ROW_CLASS}>
-            <div>
-              <span className="text-foreground font-medium block">点击关闭时最小化到托盘</span>
+            <label htmlFor="tray-switch" className="cursor-pointer select-none flex-1 pr-3">
+              <span className="text-foreground font-medium block">{t`点击关闭时最小化到托盘`}</span>
               <span className="text-[11px] text-foreground-muted block mt-0.5">
-                保持后台常驻与托盘图标交互
+                {t`保持后台常驻与托盘图标交互`}
               </span>
-            </div>
-            <Checkbox
+            </label>
+            <Switch
+              id="tray-switch"
               checked={appConfig.minimizeToTray}
-              onChange={(e) => onUpdate({ minimizeToTray: e.target.checked })}
+              onChange={(checked) => onUpdate({ minimizeToTray: checked })}
             />
           </div>
 
           {/* 自动检查更新 */}
           <div className={TOGGLE_ROW_CLASS}>
             <div>
-              <span className="text-foreground font-medium block">自动检查新版本</span>
+              <span className="text-foreground font-medium block">{t`自动检查新版本`}</span>
               <span className="text-[11px] text-foreground-muted block mt-0.5">
-                后台轮询与版本下载通知
+                {t`后台轮询与版本下载通知`}
               </span>
             </div>
             <Checkbox

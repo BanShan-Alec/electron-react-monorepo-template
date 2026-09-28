@@ -38,18 +38,18 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
 
     // 1. 初始状态断言（简体中文）
     await expect(html).toHaveAttribute('lang', 'zh-CN');
-    await expect(page.getByRole('tab', { name: '总览看板' })).toBeVisible();
+    await expect(page.locator('.ant-segmented-item', { hasText: '总览看板' })).toBeVisible();
     await expect(page.getByText('应用偏好设置 (ConfigStore)')).toBeVisible();
     await expect(page.getByText('IPC 计数器 (Counter)')).toBeVisible();
 
     // 检查托盘右键菜单文案（中文）
     const initialTrayLabel = await electronApp.evaluate(() => {
-      const { createRequire } = process.getBuiltinModule('node:module');
-      const nodePath = process.getBuiltinModule('node:path');
-      const mainIndexPath = nodePath.resolve(process.cwd(), 'packages/main/dist/index.cjs');
-      const req = createRequire(mainIndexPath);
-      const { getTrayManager } = req(mainIndexPath);
-      const tray = getTrayManager?.()?.getContextMenu?.();
+      const trayManager = (
+        globalThis as unknown as {
+          __trayManager?: { getContextMenu: () => { items?: { label?: string }[] } };
+        }
+      ).__trayManager;
+      const tray = trayManager?.getContextMenu?.();
       return tray?.items?.[0]?.label;
     });
     expect(initialTrayLabel).toBe('显示主窗口');
@@ -64,7 +64,7 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     await expect(html).toHaveAttribute('lang', 'en-US');
 
     // 断言 Header 导航标签变为英文
-    await expect(page.getByRole('tab', { name: 'Dashboard' })).toBeVisible();
+    await expect(page.locator('.ant-segmented-item', { hasText: 'Dashboard' })).toBeVisible();
 
     // 断言 Settings 卡片标题与设置项标签变为英文
     await expect(page.getByText('Preferences (ConfigStore)')).toBeVisible();
@@ -76,12 +76,12 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
 
     // 断言主进程系统托盘菜单动态更新为英文
     const updatedTrayLabel = await electronApp.evaluate(() => {
-      const { createRequire } = process.getBuiltinModule('node:module');
-      const nodePath = process.getBuiltinModule('node:path');
-      const mainIndexPath = nodePath.resolve(process.cwd(), 'packages/main/dist/index.cjs');
-      const req = createRequire(mainIndexPath);
-      const { getTrayManager } = req(mainIndexPath);
-      const tray = getTrayManager?.()?.getContextMenu?.();
+      const trayManager = (
+        globalThis as unknown as {
+          __trayManager?: { getContextMenu: () => { items?: { label?: string }[] } };
+        }
+      ).__trayManager;
+      const tray = trayManager?.getContextMenu?.();
       return tray?.items?.[0]?.label;
     });
     expect(updatedTrayLabel).toBe('Show Main Window');
@@ -92,7 +92,7 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     await zhOption.click();
 
     await expect(html).toHaveAttribute('lang', 'zh-CN');
-    await expect(page.getByRole('tab', { name: '总览看板' })).toBeVisible();
+    await expect(page.locator('.ant-segmented-item', { hasText: '总览看板' })).toBeVisible();
     await expect(page.getByText('应用偏好设置 (ConfigStore)')).toBeVisible();
     await expect(page.getByText('IPC 计数器 (Counter)')).toBeVisible();
   });
@@ -102,46 +102,42 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     const toggleRow = page.locator('.settings-toggle-row', {
       hasText: '点击关闭时最小化到托盘',
     });
-    const checkbox = toggleRow.locator('input[type="checkbox"]');
+    const switchEl = toggleRow.locator('#tray-switch');
 
-    // 默认应当为勾选状态
-    await expect(checkbox).toBeChecked();
+    // 默认应当为开启状态
+    await expect(switchEl).toHaveAttribute('aria-checked', 'true');
 
-    // 点击文案切换为未勾选
-    await toggleRow.locator('text=点击关闭时最小化到托盘').click();
-    await expect(checkbox).not.toBeChecked();
+    // 点击文案切换为未开启
+    await toggleRow.locator('label[for="tray-switch"]').click();
+    await expect(switchEl).toHaveAttribute('aria-checked', 'false');
 
-    // 再次点击切回勾选
-    await toggleRow.locator('text=点击关闭时最小化到托盘').click();
-    await expect(checkbox).toBeChecked();
+    // 再次点击切回开启
+    await toggleRow.locator('label[for="tray-switch"]').click();
+    await expect(switchEl).toHaveAttribute('aria-checked', 'true');
 
     // 2. 行为验证：当 minimizeToTray 为 true 时，关闭主窗口触发拦截隐藏而非销毁
-    const isWindowVisibleBefore = await electronApp.evaluate(() => {
-      const { BrowserWindow } = process.getBuiltinModule('electron');
-      const win = BrowserWindow.getAllWindows().find((w: any) => !w.isDestroyed());
+    const isWindowVisibleBefore = await electronApp.evaluate(({ BrowserWindow }) => {
+      const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
       return win?.isVisible();
     });
     expect(isWindowVisibleBefore).toBe(true);
 
     // 触发窗口 close
-    await electronApp.evaluate(() => {
-      const { BrowserWindow } = process.getBuiltinModule('electron');
-      const win = BrowserWindow.getAllWindows().find((w: any) => !w.isDestroyed());
+    await electronApp.evaluate(({ BrowserWindow }) => {
+      const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
       win?.close();
     });
 
     // 窗口应被 hide，未被 destroy，依然存活
-    const isWindowHidden = await electronApp.evaluate(() => {
-      const { BrowserWindow } = process.getBuiltinModule('electron');
-      const win = BrowserWindow.getAllWindows().find((w: any) => !w.isDestroyed());
+    const isWindowHidden = await electronApp.evaluate(({ BrowserWindow }) => {
+      const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
       return win ? !win.isVisible() : false;
     });
     expect(isWindowHidden).toBe(true);
 
     // 恢复显示主窗口
-    await electronApp.evaluate(() => {
-      const { BrowserWindow } = process.getBuiltinModule('electron');
-      const win = BrowserWindow.getAllWindows().find((w: any) => !w.isDestroyed());
+    await electronApp.evaluate(({ BrowserWindow }) => {
+      const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
       win?.show();
     });
     await expect(page.locator('body')).toBeVisible();
@@ -174,9 +170,9 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     const toggleRow = page.locator('.settings-toggle-row', {
       hasText: 'Minimize to tray on close',
     });
-    const checkbox = toggleRow.locator('input[type="checkbox"]');
-    await toggleRow.click();
-    await expect(checkbox).not.toBeChecked();
+    const switchEl = toggleRow.locator('#tray-switch');
+    await toggleRow.locator('label[for="tray-switch"]').click();
+    await expect(switchEl).toHaveAttribute('aria-checked', 'false');
 
     // 【致命校验】：修改托盘开关后，theme 必须依然是 dark，language 必须依然是 en-US！
     await expect(html).toHaveAttribute('data-theme', 'dark');

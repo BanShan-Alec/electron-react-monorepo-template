@@ -11,6 +11,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lingui/core": "^6.8.0",
+    "@lingui/macro": "^5.9.5",
+    "@lingui/react": "^6.8.0",
     "@sentry/react": "^11.0.0",
     "ahooks": "^3.10.0",
     "antd": "^6.6.5",
@@ -20,6 +23,11 @@
   "devDependencies": {
     "@app/shared": "workspace:*",
     "@app/tsconfig": "workspace:*",
+    "@lingui/cli": "^6.8.0",
+    "@lingui/conf": "^6.8.0",
+    "@lingui/format-po": "^6.8.0",
+    "@lingui/vite-plugin": "^6.8.0",
+    "@rolldown/plugin-babel": "^0.2.4",
     "@sentry/vite-plugin": "^5.4.0",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
