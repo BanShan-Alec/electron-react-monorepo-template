@@ -1,9 +1,11 @@
+import { FileOutlined, FolderOpenOutlined, SaveOutlined, SearchOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Button, Card } from 'antd';
 import { memo } from 'react';
 import { CardTitle } from '@/components/ui/CardTitle';
 import { statusBoxClass } from '@/lib/classNames';
+import type { DialogAction } from '../hooks/useNativeDialogs';
 
 // 私有常量
 
@@ -15,7 +17,8 @@ const _DialogCard = (props: IDialogCardProps) => {
   const {
     selectedPath,
     statusMessage,
-    isLoading,
+    activeAction,
+    isLoading = false,
     onOpenFile,
     onOpenDirectory,
     onSaveFile,
@@ -23,6 +26,9 @@ const _DialogCard = (props: IDialogCardProps) => {
   } = props;
 
   // 组件状态
+  const isAnyLoading = activeAction !== undefined ? activeAction !== null : isLoading;
+  const isActionLoading = (action: DialogAction) =>
+    activeAction !== undefined ? activeAction === action : isLoading;
 
   // 网络IO
 
@@ -38,7 +44,7 @@ const _DialogCard = (props: IDialogCardProps) => {
       className="glass-card transition-all duration-200 hover:border-border/80"
       title={
         <CardTitle
-          icon="📂"
+          icon={<FolderOpenOutlined />}
           title={t`原生对话框与文件定位 (Native Dialogs)`}
           subtitle={t`经由安全 Controller & Preload 调起系统文件管理器与访达`}
         />
@@ -46,17 +52,42 @@ const _DialogCard = (props: IDialogCardProps) => {
     >
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="small" loading={isLoading} onClick={onOpenFile}>
-            {t`📄 选择文件`}
+          <Button
+            type="primary"
+            size="small"
+            icon={<FileOutlined />}
+            loading={isActionLoading('openFile')}
+            disabled={isAnyLoading && !isActionLoading('openFile')}
+            onClick={onOpenFile}
+          >
+            {t`选择文件`}
           </Button>
-          <Button size="small" loading={isLoading} onClick={onOpenDirectory}>
-            {t`📁 选择目录`}
+          <Button
+            size="small"
+            icon={<FolderOpenOutlined />}
+            loading={isActionLoading('openDirectory')}
+            disabled={isAnyLoading && !isActionLoading('openDirectory')}
+            onClick={onOpenDirectory}
+          >
+            {t`选择目录`}
           </Button>
-          <Button size="small" loading={isLoading} onClick={onSaveFile}>
-            {t`💾 另存为`}
+          <Button
+            size="small"
+            icon={<SaveOutlined />}
+            loading={isActionLoading('saveFile')}
+            disabled={isAnyLoading && !isActionLoading('saveFile')}
+            onClick={onSaveFile}
+          >
+            {t`另存为`}
           </Button>
-          <Button disabled={!selectedPath} onClick={onShowInFolder}>
-            {t`🔍 在资源管理器中定位`}
+          <Button
+            size="small"
+            icon={<SearchOutlined />}
+            loading={isActionLoading('showInFolder')}
+            disabled={!selectedPath || isAnyLoading}
+            onClick={onShowInFolder}
+          >
+            {t`在资源管理器中定位`}
           </Button>
         </div>
 
@@ -70,7 +101,8 @@ const _DialogCard = (props: IDialogCardProps) => {
 interface IDialogCardProps {
   selectedPath: string;
   statusMessage: string;
-  isLoading: boolean;
+  activeAction?: DialogAction | null;
+  isLoading?: boolean;
   onOpenFile: () => void;
   onOpenDirectory: () => void;
   onSaveFile: () => void;

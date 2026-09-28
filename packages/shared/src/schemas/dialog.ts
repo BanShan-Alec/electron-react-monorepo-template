@@ -37,6 +37,7 @@ export const saveFileInputSchema = z
         }),
       )
       .optional(),
+    content: z.string().optional(),
   })
   .optional();
 

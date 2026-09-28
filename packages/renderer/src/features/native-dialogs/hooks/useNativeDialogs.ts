@@ -4,7 +4,7 @@ import { useManualRequest } from '@/hooks/useManualRequest';
 import { callIpc } from '@/lib/ipc';
 
 // 私有常量
-type DialogAction = 'openFile' | 'openDirectory' | 'saveFile' | 'showInFolder';
+export type DialogAction = 'openFile' | 'openDirectory' | 'saveFile' | 'showInFolder';
 
 function getFailurePrefix(action: DialogAction): string {
   switch (action) {
@@ -55,7 +55,11 @@ async function runDialogAction(
       }
       case 'saveFile': {
         const data = await callIpc('dialog.saveFile', window.api.dialog.saveFile, [
-          { title: t`另存为示例`, defaultPath: 'example.txt' },
+          {
+            title: t`另存为示例`,
+            defaultPath: 'example.txt',
+            content: 'Hello from Electron React Template!\n',
+          },
         ]);
         if (!data.canceled && data.filePath) {
           const filePath = data.filePath;
@@ -81,15 +85,17 @@ async function runDialogAction(
 export function useNativeDialogs() {
   const [selectedPath, setSelectedPath] = useState<string>('');
   const [statusMessage, setStatusMessage] = useState<string>('');
+  const [activeAction, setActiveAction] = useState<DialogAction | null>(null);
 
   // 网络IO（显式触发）—— 单一动作通道；失败以状态框反馈（对话框流程的内嵌反馈渠道），并发时仅最后一次生效
-  const { runAsync: runDialog, loading: isLoading } = useManualRequest(
+  const { runAsync: runDialog } = useManualRequest(
     (action: DialogAction) => runDialogAction(action, selectedPath),
     {},
   );
 
   // 逻辑处理函数
   const runAction = async (action: DialogAction) => {
+    setActiveAction(action);
     try {
       const descriptor = await runDialog(action);
       setStatusMessage(descriptor.statusMessage);
@@ -98,6 +104,8 @@ export function useNativeDialogs() {
       }
     } catch {
       // 过期响应 CancelledError 已丢弃；业务失败已由 descriptor 反馈，此处防止未处理拒绝
+    } finally {
+      setActiveAction(null);
     }
   };
 
@@ -109,7 +117,8 @@ export function useNativeDialogs() {
   return {
     selectedPath,
     statusMessage,
-    isLoading,
+    activeAction,
+    isLoading: activeAction !== null,
     handleOpenFile,
     handleOpenDirectory,
     handleSaveFile,

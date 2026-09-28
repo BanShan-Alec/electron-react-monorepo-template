@@ -12,6 +12,7 @@ function NativeDialogsFeature() {
   const {
     selectedPath,
     statusMessage,
+    activeAction,
     isLoading,
     handleOpenFile,
     handleOpenDirectory,
@@ -24,6 +25,7 @@ function NativeDialogsFeature() {
     <DialogCard
       selectedPath={selectedPath}
       statusMessage={statusMessage}
+      activeAction={activeAction}
       isLoading={isLoading}
       onOpenFile={handleOpenFile}
       onOpenDirectory={handleOpenDirectory}
