@@ -1,0 +1,37 @@
+/*
+ * CSS Custom Highlight API 规则定义
+ * 使用 ::highlight(token-name) 挂载样式
+ */
+
+::highlight(hl-keyword) {
+  color: var(--hl-keyword);
+}
+
+::highlight(hl-string) {
+  color: var(--hl-string);
+}
+
+::highlight(hl-comment) {
+  color: var(--hl-comment);
+  font-style: italic;
+}
+
+::highlight(hl-type) {
+  color: var(--hl-type);
+}
+
+::highlight(hl-function) {
+  color: var(--hl-function);
+}
+
+::highlight(hl-number) {
+  color: var(--hl-number);
+}
+
+::highlight(hl-boolean) {
+  color: var(--hl-boolean);
+}
+
+::highlight(hl-builtin) {
+  color: var(--hl-builtin);
+}

@@ -4,6 +4,7 @@ import { useLingui } from '@lingui/react';
 import { Card, Tag } from 'antd';
 import { memo } from 'react';
 import { CardTitle } from '@/components/ui/CardTitle';
+import { CodeHighlight } from '@/components/ui/CodeHighlight';
 
 // 私有常量
 const STEP_CARD_CLASS =
@@ -129,7 +130,7 @@ const _ArchitectureView = (_props: IProps) => {
             </span>
             <Tag color="error">{t`代码耦合 & 契约混乱`}</Tag>
           </div>
-          <pre className={CODE_BLOCK_CLASS}>{legacyCode}</pre>
+          <CodeHighlight code={legacyCode} className={CODE_BLOCK_CLASS} />
         </div>
 
         {/* Fullstack Standard */}
@@ -141,7 +142,7 @@ const _ArchitectureView = (_props: IProps) => {
             </span>
             <Tag color="success">{t`物理隔离 & Result 契约`}</Tag>
           </div>
-          <pre className={CODE_BLOCK_CLASS}>{standardCode}</pre>
+          <CodeHighlight code={standardCode} className={CODE_BLOCK_CLASS} />
         </div>
       </div>
     </div>

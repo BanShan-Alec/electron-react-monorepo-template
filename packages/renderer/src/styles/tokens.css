@@ -19,6 +19,16 @@
   --color-success: #52c41a;
   --color-warning: #faad14;
   --color-danger: #ff4d4f;
+
+  /* CSS Custom Highlight 语法高亮令牌 (Light / VS Code 风格) */
+  --hl-keyword: #0000ff;
+  --hl-string: #a31515;
+  --hl-comment: #008000;
+  --hl-type: #267f99;
+  --hl-function: #795e26;
+  --hl-number: #098658;
+  --hl-boolean: #0000ff;
+  --hl-builtin: #001080;
 }
 
 :root[data-theme="dark"] {
@@ -36,4 +46,14 @@
   --color-success: #49aa19;
   --color-warning: #d89614;
   --color-danger: #dc4446;
+
+  /* CSS Custom Highlight 语法高亮令牌 (Dark / VS Code Dark+ 风格) */
+  --hl-keyword: #569cd6;
+  --hl-string: #ce9178;
+  --hl-comment: #6a9955;
+  --hl-type: #4ec9b0;
+  --hl-function: #dcdcaa;
+  --hl-number: #b5cea8;
+  --hl-boolean: #569cd6;
+  --hl-builtin: #9cdcfe;
 }
