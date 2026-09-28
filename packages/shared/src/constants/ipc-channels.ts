@@ -24,6 +24,22 @@ export const IPC_CHANNELS = {
   DIALOG_OPEN_DIRECTORY: 'dialog:open-directory',
   DIALOG_SAVE_FILE: 'dialog:save-file',
   SHELL_SHOW_ITEM_IN_FOLDER: 'shell:show-item-in-folder',
+  SHELL_OPEN_EXTERNAL: 'shell:open-external',
+
+  // 自动更新通道 (Updater IPC Channels)
+  UPDATER_GET_STATE: 'updater:get-state',
+  UPDATER_CHECK: 'updater:check',
+  UPDATER_DOWNLOAD: 'updater:download',
+  UPDATER_CANCEL: 'updater:cancel',
+  UPDATER_INSTALL: 'updater:install',
+  UPDATER_OPEN_WINDOW: 'updater:open-window',
+  UPDATER_CLOSE_WINDOW: 'updater:close-window',
+  UPDATER_EVENT_STATE: 'updater:event:state',
+  UPDATER_EVENT_PROGRESS: 'updater:event:progress',
+  UPDATER_MOCK_EMIT: 'updater:mock:emit',
+
+  // 跨窗口配置广播 (Config broadcast)
+  CONFIG_EVENT_CHANGED: 'config:event:changed',
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

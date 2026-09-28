@@ -10,6 +10,7 @@ import type { ActionResult, OpenLogFolderResult } from './diagnostics';
 import type { FileDialogResult, SaveFileDialogResult } from './dialog';
 import type { Result } from './result';
 import type { PingResult, SystemInfo } from './system';
+import type { UpdaterProgress, UpdaterSnapshot } from './updater';
 
 /**
  * Window.api 跨端统一契约接口 (ElectronApi)
@@ -32,6 +33,7 @@ export interface ElectronApi {
     get: () => Promise<Result<AppConfig>>;
     update: (input: UpdateConfigInput) => Promise<Result<AppConfig>>;
     reset: () => Promise<Result<AppConfig>>;
+    onChanged?: (cb: (config: AppConfig) => void) => () => void;
   };
   diagnostics: {
     log: (input: LogInput) => Promise<Result<{ success: boolean }>>;
@@ -45,6 +47,19 @@ export interface ElectronApi {
   };
   shell: {
     showItemInFolder: (input: ShowItemInFolderInput) => Promise<Result<{ success: boolean }>>;
+    openExternal: (url: string) => Promise<Result<{ success: boolean }>>;
+  };
+  updater: {
+    getState: () => Promise<Result<UpdaterSnapshot>>;
+    check: () => Promise<Result<UpdaterSnapshot>>;
+    download: () => Promise<Result<UpdaterSnapshot>>;
+    cancel: () => Promise<Result<UpdaterSnapshot>>;
+    install: () => Promise<Result<{ success: boolean }>>;
+    openWindow: () => Promise<Result<{ success: boolean }>>;
+    closeWindow: () => Promise<Result<{ success: boolean }>>;
+    /** 返回取消订阅函数，渲染层必须在 useEffect cleanup 中调用 */
+    onStateChanged: (cb: (s: UpdaterSnapshot) => void) => () => void;
+    onProgressChanged: (cb: (p: UpdaterProgress) => void) => () => void;
   };
   // 遵循 specs-electron-fullstack / renderer/ipc-consumption.md 安全规范
   getPathForFile: (file: File) => string;
