@@ -14,5 +14,9 @@ export type ThemeMode = 'dark' | 'light';
 export function getAntdThemeConfig(mode: ThemeMode) {
   return {
     algorithm: mode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
+    token: {
+      controlHeightSM: 28,
+      paddingInlineSM: 10,
+    },
   };
 }

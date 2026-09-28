@@ -1,3 +1,10 @@
+import {
+  CloseCircleOutlined,
+  FileTextOutlined,
+  FolderOpenOutlined,
+  InfoCircleOutlined,
+  WarningOutlined,
+} from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Button, Card } from 'antd';
@@ -30,27 +37,48 @@ const _LoggingCard = (props: ILoggingCardProps) => {
       className="glass-card transition-all duration-200 hover:border-border/80"
       title={
         <CardTitle
-          icon="📜"
+          icon={<FileTextOutlined />}
           title={t`生产分级日志 (LogManager)`}
           subtitle={t`进程隔离落盘 (main.log / renderer.log) 与 5MB 自动轮转`}
         />
       }
       extra={
-        <Button size="small" loading={isLoading} onClick={onOpenLogFolder}>
-          {t`📂 打开日志目录`}
+        <Button
+          type="primary"
+          size="small"
+          icon={<FolderOpenOutlined />}
+          loading={isLoading}
+          onClick={onOpenLogFolder}
+        >
+          {t`打开日志目录`}
         </Button>
       }
     >
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="small" loading={isLoading} onClick={() => onSendLog('info')}>
-            {t`ℹ️ 发送 INFO`}
+          <Button
+            size="small"
+            icon={<InfoCircleOutlined className="text-primary" />}
+            loading={isLoading}
+            onClick={() => onSendLog('info')}
+          >
+            {t`发送 INFO`}
           </Button>
-          <Button size="small" loading={isLoading} onClick={() => onSendLog('warn')}>
-            {t`⚠️ 发送 WARN`}
+          <Button
+            size="small"
+            icon={<WarningOutlined className="text-warning" />}
+            loading={isLoading}
+            onClick={() => onSendLog('warn')}
+          >
+            {t`发送 WARN`}
           </Button>
-          <Button size="small" danger loading={isLoading} onClick={() => onSendLog('error')}>
-            {t`🛑 发送 ERROR`}
+          <Button
+            size="small"
+            icon={<CloseCircleOutlined className="text-danger" />}
+            loading={isLoading}
+            onClick={() => onSendLog('error')}
+          >
+            {t`发送 ERROR`}
           </Button>
         </div>
 

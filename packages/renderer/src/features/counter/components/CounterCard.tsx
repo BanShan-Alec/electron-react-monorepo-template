@@ -1,3 +1,4 @@
+import { CalculatorOutlined, MinusOutlined, PlusOutlined, RedoOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Button, Card, Select } from 'antd';
@@ -34,7 +35,7 @@ const _CounterCard = (props: ICounterCardProps) => {
       className="glass-card transition-all duration-200 hover:border-border/80"
       title={
         <CardTitle
-          icon="🔢"
+          icon={<CalculatorOutlined />}
           title={t`IPC 计数器 (Counter)`}
           subtitle={t`基于主进程状态原子操作与响应式更新`}
         />
@@ -43,7 +44,7 @@ const _CounterCard = (props: ICounterCardProps) => {
       <div className="flex flex-col items-center justify-center p-4 bg-background-secondary rounded-lg border border-border gap-4">
         <div className="flex flex-col items-center">
           <span className="text-xs text-foreground-secondary font-medium">{t`当前持久化数值`}</span>
-          <span className="text-4xl font-extrabold text-primary font-mono mt-1">{count}</span>
+          <span className="text-4xl font-semibold text-primary font-mono mt-1">{count}</span>
         </div>
 
         <div className="flex items-center gap-2 w-full max-w-xs">
@@ -63,13 +64,19 @@ const _CounterCard = (props: ICounterCardProps) => {
         </div>
 
         <div className="flex items-center gap-2.5 w-full justify-center">
-          <Button size="small" loading={isUpdating} onClick={onDecrement}>
+          <Button size="small" icon={<MinusOutlined />} loading={isUpdating} onClick={onDecrement}>
             {t`递减 (-1)`}
           </Button>
-          <Button size="small" type="primary" loading={isUpdating} onClick={onIncrement}>
+          <Button
+            size="small"
+            type="primary"
+            icon={<PlusOutlined />}
+            loading={isUpdating}
+            onClick={onIncrement}
+          >
             {t`递增 (+1)`}
           </Button>
-          <Button size="small" loading={isUpdating} onClick={onReset}>
+          <Button size="small" icon={<RedoOutlined />} loading={isUpdating} onClick={onReset}>
             {t`重置为 0`}
           </Button>
         </div>

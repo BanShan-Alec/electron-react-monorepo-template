@@ -1,3 +1,4 @@
+import { ThunderboltFilled } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Badge, Segmented } from 'antd';
@@ -34,12 +35,12 @@ const _Header = (props: IHeaderProps) => {
   return (
     <header className="drag-region bg-background-container border-b border-border px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 sticky top-0 z-30 select-none">
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
-          ⚡
+        <div className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center text-lg flex-shrink-0">
+          <ThunderboltFilled />
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-foreground tracking-tight">
+            <h1 className="text-lg font-semibold text-foreground tracking-tight">
               Electron + Vite + Fullstack IPC
             </h1>
             <Badge count={APP_VERSION} color="var(--color-primary)" />

@@ -1,3 +1,4 @@
+import { ApiOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Button, Card, Tag } from 'antd';
@@ -40,7 +41,7 @@ const _PingCard = (props: IPingCardProps) => {
       className="glass-card transition-all duration-200 hover:border-border/80"
       title={
         <CardTitle
-          icon="📡"
+          icon={<ApiOutlined />}
           title={t`进程间通信 (IPC Ping)`}
           subtitle={t`Electron ContextBridge & window.api 延迟测量`}
         />
@@ -53,7 +54,7 @@ const _PingCard = (props: IPingCardProps) => {
               {t`IPC 通信往返延迟`}
             </span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-bold text-foreground font-mono">
+              <span className="text-2xl font-semibold text-foreground font-mono">
                 {latency !== null ? `${latency}` : '--'}
               </span>
               <span className="text-xs text-foreground-muted font-mono">ms</span>
@@ -68,8 +69,14 @@ const _PingCard = (props: IPingCardProps) => {
               {t`主进程时间`}: {serverTime}
             </span>
           )}
-          <Button type="primary" size="small" loading={isPinging} onClick={onPing}>
-            {t`⚡ 测速 Ping`}
+          <Button
+            type="primary"
+            size="small"
+            icon={<ThunderboltOutlined />}
+            loading={isPinging}
+            onClick={onPing}
+          >
+            {t`测速 Ping`}
           </Button>
         </div>
       </div>

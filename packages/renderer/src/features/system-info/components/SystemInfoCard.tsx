@@ -1,3 +1,4 @@
+import { DesktopOutlined, ReloadOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import type { SystemInfo } from '@shared/types/system';
@@ -45,14 +46,20 @@ const _SystemInfoCard = (props: ISystemInfoCardProps) => {
       className="glass-card transition-all duration-200 hover:border-border/80"
       title={
         <CardTitle
-          icon="💻"
+          icon={<DesktopOutlined />}
           title={t`系统与运行环境`}
           subtitle={t`Electron & Node.js 原生底层探针`}
         />
       }
       extra={
-        <Button size="small" loading={isLoading} onClick={onRefresh}>
-          {t`🔄 刷新`}
+        <Button
+          type="primary"
+          size="small"
+          icon={<ReloadOutlined />}
+          loading={isLoading}
+          onClick={onRefresh}
+        >
+          {t`刷新`}
         </Button>
       }
     >

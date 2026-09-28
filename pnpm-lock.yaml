@@ -134,6 +134,9 @@ importers:
 
   packages/renderer:
     dependencies:
+      '@ant-design/icons':
+        specifier: ^6.3.4
+        version: 6.3.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@lingui/core':
         specifier: ^6.8.0
         version: 6.8.0(@babel/core@7.29.7)

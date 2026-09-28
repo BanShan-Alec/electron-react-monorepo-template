@@ -45,7 +45,7 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children
     <ErrorBoundary>
       <I18nProvider i18n={i18n}>
         <ConfigProvider
-          autoInsertSpaceInButton={false}
+          button={{ autoInsertSpace: false }}
           theme={getAntdThemeConfig(resolvedTheme)}
           locale={getAntdLocale(language)}
         >

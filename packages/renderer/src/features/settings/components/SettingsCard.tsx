@@ -1,3 +1,4 @@
+import { SettingOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import type { AppConfig } from '@shared/schemas/config';
@@ -43,7 +44,7 @@ const _SettingsCard = (props: ISettingsCardProps) => {
       className="glass-card transition-all duration-200 hover:border-border/80"
       title={
         <CardTitle
-          icon="⚙️"
+          icon={<SettingOutlined />}
           title={t`应用偏好设置 (ConfigStore)`}
           subtitle={t`类型安全主进程本地持久化存储与动态生效`}
         />
@@ -109,6 +110,7 @@ const _SettingsCard = (props: ISettingsCardProps) => {
             </div>
             <div className="flex items-center gap-2.5">
               <Button
+                type="primary"
                 size="small"
                 onClick={async () => {
                   await window.api.updater.openWindow();

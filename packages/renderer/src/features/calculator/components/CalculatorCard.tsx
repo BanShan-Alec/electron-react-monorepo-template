@@ -1,3 +1,4 @@
+import { FunctionOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import type { CalcOperator } from '@shared/types/calculator';
@@ -37,7 +38,7 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
       className="glass-card transition-all duration-200 hover:border-border/80"
       title={
         <CardTitle
-          icon="🧮"
+          icon={<FunctionOutlined />}
           title={t`安全计算器 (IPC 错误处理)`}
           subtitle={t`Zod 严格模式入参校验与语义化错误码 Result 契约`}
         />
@@ -80,7 +81,7 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
           </div>
         )}
 
-        {error && <Alert type="error" showIcon message={error} />}
+        {error && <Alert type="error" showIcon title={error} />}
 
         <div className="flex items-center justify-between text-[11px] text-foreground-muted mt-1 pt-2 border-t border-border/40">
           <span>{t`提示：尝试输入 B = 0 并选择除法 (÷) 触发服务端异常拦截`}</span>

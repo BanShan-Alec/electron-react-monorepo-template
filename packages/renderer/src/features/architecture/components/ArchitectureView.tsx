@@ -1,3 +1,4 @@
+import { BulbOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Card, Tag } from 'antd';
@@ -87,7 +88,7 @@ const _ArchitectureView = (_props: IProps) => {
         className="glass-card"
         title={
           <CardTitle
-            icon="💡"
+            icon={<BulbOutlined />}
             title={t`Fullstack 经典分层通信架构全流程`}
             subtitle={t`遵循 specs-electron-fullstack 规范：Controller -> Service -> Result 契约`}
           />
@@ -122,7 +123,10 @@ const _ArchitectureView = (_props: IProps) => {
         {/* Legacy / Coupled */}
         <div className="glass-card rounded-lg p-4 border border-danger/30 flex flex-col">
           <div className="flex items-center justify-between pb-2 mb-3 border-b border-danger/20">
-            <span className="text-xs font-bold text-foreground">{t`❌ 传统散装 / 进程穿透方式`}</span>
+            <span className="text-xs font-semibold text-foreground flex items-center">
+              <CloseCircleOutlined className="text-danger mr-1.5" />
+              {t`传统散装 / 进程穿透方式`}
+            </span>
             <Tag color="error">{t`代码耦合 & 契约混乱`}</Tag>
           </div>
           <pre className={CODE_BLOCK_CLASS}>{legacyCode}</pre>
@@ -131,7 +135,10 @@ const _ArchitectureView = (_props: IProps) => {
         {/* Fullstack Standard */}
         <div className="glass-card rounded-lg p-4 border border-success/30 flex flex-col">
           <div className="flex items-center justify-between pb-2 mb-3 border-b border-success/20">
-            <span className="text-xs font-bold text-foreground">{t`✨ Fullstack 规范分层方式`}</span>
+            <span className="text-xs font-semibold text-foreground flex items-center">
+              <CheckCircleOutlined className="text-success mr-1.5" />
+              {t`Fullstack 规范分层方式`}
+            </span>
             <Tag color="success">{t`物理隔离 & Result 契约`}</Tag>
           </div>
           <pre className={CODE_BLOCK_CLASS}>{standardCode}</pre>
