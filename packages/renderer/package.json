@@ -45,6 +45,9 @@
   "exports": {
     ".": {
       "default": "./dist/index.html"
+    },
+    "./updater.html": {
+      "default": "./dist/updater.html"
     }
   }
 }

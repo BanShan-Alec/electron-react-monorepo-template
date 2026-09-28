@@ -49,6 +49,12 @@ export default defineConfig({
     // 使用 'hidden' 模式：仅生成 .map 文件供 Sentry 插件上传，不在 JS 产物末尾写入 sourceMappingURL 注释；
     // 配合 electron-builder 的 '!**/*.map' 排除规则，确保 SourceMap 绝不会被打包进 asar，彻底避免源码泄露
     sourcemap: 'hidden',
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        updater: path.resolve(__dirname, 'updater.html'),
+      },
+    },
   },
   css: {
     postcss: {
