@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { lingui, linguiTransformerBabelPreset } from '@lingui/vite-plugin';
 import babel from '@rolldown/plugin-babel';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
@@ -7,16 +8,21 @@ import tailwindcss from 'tailwindcss';
 import { defineConfig } from 'vite';
 import tailwindConfig from './tailwind.config.ts';
 
+const linguiConfigOpts = {
+  configPath: path.resolve(__dirname, 'lingui.config.ts'),
+  cwd: __dirname,
+};
+
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
   plugins: [
     react(),
-    lingui(),
+    lingui(linguiConfigOpts),
     babel({
       include: [/\.[jt]sx?$/],
       exclude: [/node_modules/],
-      presets: [linguiTransformerBabelPreset()],
+      presets: [linguiTransformerBabelPreset({}, linguiConfigOpts)],
     }),
     sentryVitePlugin({
       org: process.env.SENTRY_ORG || '',
