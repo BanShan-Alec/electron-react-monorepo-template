@@ -99,18 +99,29 @@ const _SettingsCard = (props: ISettingsCardProps) => {
             />
           </div>
 
-          {/* 自动检查更新 */}
+          {/* 自动检查更新与手动更新入口 */}
           <div className={TOGGLE_ROW_CLASS}>
-            <div>
-              <span className="text-foreground font-medium block">{t`自动检查新版本`}</span>
+            <div className="flex-1 pr-3">
+              <span className="text-foreground font-medium block">{t`软件更新 (Updater)`}</span>
               <span className="text-[11px] text-foreground-muted block mt-0.5">
-                {t`后台轮询与版本下载通知`}
+                {t`检查最新版本与下载安装`}
               </span>
             </div>
-            <Checkbox
-              checked={appConfig.autoCheckUpdate}
-              onChange={(e) => onUpdate({ autoCheckUpdate: e.target.checked })}
-            />
+            <div className="flex items-center gap-2.5">
+              <Button
+                size="small"
+                onClick={async () => {
+                  await window.api.updater.openWindow();
+                  await window.api.updater.check();
+                }}
+              >
+                {t`检查更新`}
+              </Button>
+              <Checkbox
+                checked={appConfig.autoCheckUpdate}
+                onChange={(e) => onUpdate({ autoCheckUpdate: e.target.checked })}
+              />
+            </div>
           </div>
         </div>
       ) : (

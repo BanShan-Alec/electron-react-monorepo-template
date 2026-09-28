@@ -7,13 +7,37 @@ msgstr ""
 msgid "IPC 计数器 (Counter)"
 msgstr "IPC 计数器 (Counter)"
 
+#: src/features/updater/index.tsx
+msgid "下载更新时发生网络异常，请稍后重试。"
+msgstr "下载更新时发生网络异常，请稍后重试。"
+
+#: src/features/updater/components/ProgressCard.tsx
+msgid "下载进度"
+msgstr "下载进度"
+
+#: src/features/updater/components/ProgressCard.tsx
+msgid "传输速率"
+msgstr "传输速率"
+
 #: src/features/settings/components/SettingsCard.tsx
 msgid "保持后台常驻与托盘图标交互"
 msgstr "保持后台常驻与托盘图标交互"
 
-#: src/features/settings/components/SettingsCard.tsx
-msgid "后台轮询与版本下载通知"
-msgstr "后台轮询与版本下载通知"
+#: src/features/updater/components/ActionBar.tsx
+msgid "关闭"
+msgstr "关闭"
+
+#: src/features/updater/components/ChangelogCard.tsx
+msgid "包含常规稳定性改进与性能优化。"
+msgstr "包含常规稳定性改进与性能优化。"
+
+#: src/features/updater/index.tsx
+msgid "发现新版本"
+msgstr "发现新版本"
+
+#: src/features/updater/components/ActionBar.tsx
+msgid "取消下载"
+msgstr "取消下载"
 
 #: src/features/counter/components/CounterCard.tsx
 msgid "基于主进程状态原子操作与响应式更新"
@@ -23,9 +47,21 @@ msgstr "基于主进程状态原子操作与响应式更新"
 msgid "外观主题 (Theme)"
 msgstr "外观主题 (Theme)"
 
+#: src/features/updater/index.tsx
+msgid "安装包下载中，完成后即可进行安装升级。"
+msgstr "安装包下载中，完成后即可进行安装升级。"
+
+#: src/features/updater/index.tsx
+msgid "已是最新版本"
+msgstr "已是最新版本"
+
 #: src/features/settings/components/SettingsCard.tsx
 msgid "应用偏好设置 (ConfigStore)"
 msgstr "应用偏好设置 (ConfigStore)"
+
+#: src/features/updater/index.tsx
+msgid "当前安装的应用已包含所有最新功能与安全更新。"
+msgstr "当前安装的应用已包含所有最新功能与安全更新。"
 
 #: src/components/layout/Header.tsx
 msgid "总览看板"
@@ -35,9 +71,69 @@ msgstr "总览看板"
 msgid "恢复默认值"
 msgstr "恢复默认值"
 
+#: src/features/updater/index.tsx
+msgid "您的应用已保持在最新版本，无需更新。"
+msgstr "您的应用已保持在最新版本，无需更新。"
+
+#: src/features/updater/index.tsx
+msgid "新版本已完成下载，重启应用后即可完成升级。"
+msgstr "新版本已完成下载，重启应用后即可完成升级。"
+
+#: src/features/updater/index.tsx
+msgid "新版本已经准备就绪，包含最新的功能与改进。"
+msgstr "新版本已经准备就绪，包含最新的功能与改进。"
+
+#: src/features/updater/index.tsx
+msgid "暂无可用更新信息。"
+msgstr "暂无可用更新信息。"
+
+#: src/features/updater/index.tsx
+msgid "更新发生错误"
+msgstr "更新发生错误"
+
+#: src/features/updater/index.tsx
+msgid "更新失败"
+msgstr "更新失败"
+
+#: src/features/updater/index.tsx
+msgid "更新已准备就绪"
+msgstr "更新已准备就绪"
+
+#: src/features/updater/components/ChangelogCard.tsx
+msgid "更新日志"
+msgstr "更新日志"
+
 #: src/components/layout/Header.tsx
 msgid "架构全貌"
 msgstr "架构全貌"
+
+#: src/features/settings/components/SettingsCard.tsx
+msgid "检查最新版本与下载安装"
+msgstr "检查最新版本与下载安装"
+
+#: src/features/updater/index.tsx
+msgid "检查或下载更新时发生异常，请检查网络后重试。"
+msgstr "检查或下载更新时发生异常，请检查网络后重试。"
+
+#: src/features/settings/components/SettingsCard.tsx
+msgid "检查更新"
+msgstr "检查更新"
+
+#: src/features/updater/index.tsx
+msgid "检查更新中"
+msgstr "检查更新中"
+
+#: src/features/updater/index.tsx
+msgid "正在下载更新"
+msgstr "正在下载更新"
+
+#: src/features/updater/index.tsx
+msgid "正在与更新服务器建立连接，请稍候..."
+msgstr "正在与更新服务器建立连接，请稍候..."
+
+#: src/features/updater/index.tsx
+msgid "正在检查更新..."
+msgstr "正在检查更新..."
 
 #: src/features/settings/components/SettingsCard.tsx
 msgid "浅色模式 (Light)"
@@ -55,17 +151,37 @@ msgstr "点击关闭时最小化到托盘"
 msgid "界面语言 (Language)"
 msgstr "界面语言 (Language)"
 
+#: src/features/updater/components/ActionBar.tsx
+msgid "知道了"
+msgstr "知道了"
+
+#: src/features/updater/components/ActionBar.tsx
+msgid "稍后安装"
+msgstr "稍后安装"
+
+#: src/features/updater/components/ActionBar.tsx
+msgid "稍后提醒"
+msgstr "稍后提醒"
+
+#: src/features/updater/components/ActionBar.tsx
+msgid "立即更新"
+msgstr "立即更新"
+
 #: src/features/settings/components/SettingsCard.tsx
 msgid "类型安全主进程本地持久化存储与动态生效"
 msgstr "类型安全主进程本地持久化存储与动态生效"
 
 #: src/features/settings/components/SettingsCard.tsx
-msgid "自动检查新版本"
-msgstr "自动检查新版本"
-
-#: src/features/settings/components/SettingsCard.tsx
 msgid "跟随系统 (System)"
 msgstr "跟随系统 (System)"
+
+#: src/features/updater/index.tsx
+msgid "软件更新"
+msgstr "软件更新"
+
+#: src/features/settings/components/SettingsCard.tsx
+msgid "软件更新 (Updater)"
+msgstr "软件更新 (Updater)"
 
 #: src/features/counter/components/CounterCard.tsx
 msgid "递减 (-1)"
@@ -75,6 +191,18 @@ msgstr "递减 (-1)"
 msgid "递增 (+1)"
 msgstr "递增 (+1)"
 
+#: src/features/updater/components/ActionBar.tsx
+msgid "重启并安装"
+msgstr "重启并安装"
+
 #: src/features/counter/components/CounterCard.tsx
 msgid "重置为 0"
 msgstr "重置为 0"
+
+#: src/features/updater/components/ActionBar.tsx
+msgid "重试"
+msgstr "重试"
+
+#: src/features/updater/components/ActionBar.tsx
+msgid "隐藏到后台"
+msgstr "隐藏到后台"
