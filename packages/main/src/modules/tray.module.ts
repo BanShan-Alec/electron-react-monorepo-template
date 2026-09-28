@@ -1,23 +1,23 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { app, BrowserWindow, Menu, nativeImage, Tray } from 'electron';
+import { WINDOW_IDS } from '@app/shared/constants/windows';
+import { app, Menu, nativeImage, Tray } from 'electron';
 import type { AppModule } from '../AppModule';
+import { appLifecycle } from '../lifecycle';
 import type { ModuleContext } from '../ModuleContext';
+import { updaterService } from '../services/updater.service';
 import { getLogManager } from './log.module';
+import { getUpdaterWindowModule } from './window/updater-window.module';
+import { getWindow } from './window/window-registry';
 
 export class TrayManager implements AppModule {
   private tray: Tray | null = null;
   private contextMenu: Menu | null = null;
   private readonly logger = getLogManager().scoped(this);
-  static isQuitting = false;
 
   public enable({ app: electronApp }: ModuleContext): void {
     electronApp.whenReady().then(() => {
       this.initTray();
-    });
-
-    electronApp.on('before-quit', () => {
-      TrayManager.isQuitting = true;
     });
   }
 
@@ -42,14 +42,21 @@ export class TrayManager implements AppModule {
         label: isZh ? '检查更新' : 'Check for Updates',
         click: () => {
           this.logger.info('User requested update check');
-          this.restoreMainWindow();
+          updaterService.check().catch((err) => {
+            this.logger.warn('Failed to check for updates from tray:', err);
+          });
+          getUpdaterWindowModule()
+            .show()
+            .catch((err) => {
+              this.logger.error('Failed to show updater window from tray:', err);
+            });
         },
       },
       { type: 'separator' },
       {
         label: isZh ? '退出应用' : 'Quit Application',
         click: () => {
-          TrayManager.isQuitting = true;
+          appLifecycle.isQuitting = true;
           app.quit();
         },
       },
@@ -93,7 +100,7 @@ export class TrayManager implements AppModule {
   }
 
   public toggleMainWindow(): void {
-    const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
+    const win = getWindow(WINDOW_IDS.HOME);
     if (!win) {
       this.restoreMainWindow();
       return;
@@ -106,7 +113,7 @@ export class TrayManager implements AppModule {
   }
 
   public restoreMainWindow(): void {
-    const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
+    const win = getWindow(WINDOW_IDS.HOME);
     if (win) {
       if (win.isMinimized()) {
         win.restore();

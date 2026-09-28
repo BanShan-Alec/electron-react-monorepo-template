@@ -8,7 +8,8 @@ import {
 import { showItemInFolderInputSchema } from '@app/shared/schemas/shell';
 import type { FileDialogResult, SaveFileDialogResult } from '@app/shared/types/dialog';
 import type { Result } from '@app/shared/types/result';
-import { ipcMain } from 'electron';
+import { ipcMain, shell } from 'electron';
+import { isAllowedExternalUrl } from '../modules/security/external-urls';
 import { dialogService } from '../services/dialog.service';
 import { catchToResult, failResult, successResult } from './utils';
 
@@ -70,6 +71,24 @@ export function registerDialogControllers(): void {
       }
       try {
         await dialogService.showItemInFolder(parseResult.data.path);
+        return successResult({ success: true });
+      } catch (err) {
+        return catchToResult(err);
+      }
+    },
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.SHELL_OPEN_EXTERNAL,
+    async (_event, url: unknown): Promise<Result<{ success: boolean }>> => {
+      if (typeof url !== 'string') {
+        return failResult('URL must be a string', ErrorCode.VALIDATION_ERROR);
+      }
+      if (!isAllowedExternalUrl(url)) {
+        return failResult(`Disallowed external URL: ${url}`, ErrorCode.INVALID_ARGUMENT);
+      }
+      try {
+        await shell.openExternal(url);
         return successResult({ success: true });
       } catch (err) {
         return catchToResult(err);

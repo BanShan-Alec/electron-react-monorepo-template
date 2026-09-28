@@ -3,6 +3,7 @@ import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import { type AppConfig, updateConfigInputSchema } from '@app/shared/schemas/config';
 import type { Result } from '@app/shared/types/result';
 import { ipcMain } from 'electron';
+import { broadcast } from '../modules/window/window-registry';
 import { configService } from '../services/config.service';
 import { catchToResult, failResult, successResult } from './utils';
 
@@ -23,7 +24,9 @@ export function registerConfigControllers(): void {
         return failResult(parseResult.error.issues[0].message, ErrorCode.VALIDATION_ERROR);
       }
       try {
-        return successResult(configService.updateConfig(parseResult.data));
+        const updated = configService.updateConfig(parseResult.data);
+        broadcast(IPC_CHANNELS.CONFIG_EVENT_CHANGED, updated);
+        return successResult(updated);
       } catch (err) {
         return catchToResult(err);
       }
@@ -32,7 +35,9 @@ export function registerConfigControllers(): void {
 
   ipcMain.handle(IPC_CHANNELS.CONFIG_RESET, async (): Promise<Result<AppConfig>> => {
     try {
-      return successResult(configService.resetConfig());
+      const reset = configService.resetConfig();
+      broadcast(IPC_CHANNELS.CONFIG_EVENT_CHANGED, reset);
+      return successResult(reset);
     } catch (err) {
       return catchToResult(err);
     }

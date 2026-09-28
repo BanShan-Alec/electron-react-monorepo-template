@@ -4,12 +4,27 @@ import type { AppModule } from '../../AppModule';
 import type { ModuleContext } from '../../ModuleContext';
 import { getLogManager } from '../log.module';
 
+let globalAllowedExternalOrigins = new Set<string>();
+
+export function isAllowedExternalUrl(urlString: string): boolean {
+  try {
+    const parsedUrl = new URL(urlString);
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return false;
+    }
+    return globalAllowedExternalOrigins.has(parsedUrl.origin);
+  } catch {
+    return false;
+  }
+}
+
 export class ExternalUrls implements AppModule {
   private readonly externalUrls: Set<string>;
   private readonly logger = getLogManager().scoped(this);
 
   constructor(externalUrls: Set<string>) {
     this.externalUrls = externalUrls;
+    globalAllowedExternalOrigins = externalUrls;
   }
 
   enable({ app }: ModuleContext): Promise<void> | void {
