@@ -71,7 +71,7 @@ packages/preload/src/index.ts   # + updater 命名空间（4 invoke + 2 订阅 +
 packages/renderer/
 ├── index.html                  # 既有入口
 ├── updater.html                # 新增入口
-├── vite.config.ts              # build.rollupOptions.input = { main, updater }
+├── vite.config.ts              # build.rolldownOptions.input = { main, updater }
 ├── package.json                # exports + "./updater.html"
 └── src/
     ├── main.tsx                # 既有：挂 <AppProviders><App /></AppProviders>
@@ -236,7 +236,7 @@ windows: {
 1. `packages/shared` 导出 `WINDOW_IDS` / `WindowId`，且 `IPC_CHANNELS` 含 6 命令 + 2 事件通道（`grep UPDATER_ packages/shared/src/constants/ipc-channels.ts`）。
 2. `packages/main/src/controllers/index.ts` 调用 `registerUpdaterControllers()`；`initApp` 链路包含 `createUpdaterWindowModule`。
 3. `packages/preload/src/index.ts` 的 `apiBridge` 含 `updater` 命名空间，`onStateChanged` / `onProgressChanged` 返回取消订阅函数。
-4. `packages/renderer/updater.html` 存在且脚本指向 `/src/main.updater.tsx`；`vite.config.ts` 的 `build.rollupOptions.input` 含 `updater`。
+4. `packages/renderer/updater.html` 存在且脚本指向 `/src/main.updater.tsx`；`vite.config.ts` 的 `build.rolldownOptions.input` 含 `updater`。
 5. `features/updater/{index.tsx,hooks/useUpdater.ts,components/ChangelogCard.tsx,components/ProgressCard.tsx,components/ActionBar.tsx}` 五个文件齐备，`index.tsx` 为唯一公开面。
 6. `grep -r "res.success" packages/renderer/src/features` 为 0；`grep "AppProviders" packages/renderer/src/{App.tsx,main.tsx,main.updater.tsx}` 三处命中。
 7. `pnpm --filter @app/renderer build` 产出 `dist/updater.html` 及独立 chunk。

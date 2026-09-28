@@ -11,7 +11,7 @@ export default defineConfig({
       entry: 'src/index.ts',
       formats: ['cjs'],
     },
-    rollupOptions: {
+    rolldownOptions: {
       external: ['electron', 'electron-updater', 'electron-log'],
       output: {
         entryFileNames: '[name].cjs',
