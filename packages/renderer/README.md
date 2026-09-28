@@ -1,11 +1,13 @@
 # @app/renderer
 
-渲染进程（Vite + React + antd + Tailwind + zustand + ahooks），通过 preload 暴露的 `window.api` 与主进程 IPC 通信。
+渲染进程（Vite 8 + React 19 + antd + TailwindCSS + LinguiJS + zustand + ahooks），通过 preload 暴露的 `window.api` 与主进程进行类型安全的 IPC 通信。
 
 ```bash
-pnpm --filter @app/renderer dev        # 开发
-pnpm --filter @app/renderer typecheck  # 类型检查
-pnpm --filter @app/renderer lint       # biome
+pnpm --filter @app/renderer dev        # 本地开发（由根目录 pnpm start 统一编排）
+pnpm --filter @app/renderer build      # 生产打包（含类型检查与按需 Chunk 分割）
+pnpm --filter @app/renderer extract    # 一键提取自然中文词条至 PO 字典
+pnpm --filter @app/renderer typecheck  # TypeScript 类型检查
+pnpm --filter @app/renderer lint       # Biome 代码规范与格式化检查
 ```
 
 ## 目录总览
@@ -13,23 +15,25 @@ pnpm --filter @app/renderer lint       # biome
 ```
 src/
 ├── main.tsx                # 挂载入口：createRoot + StrictMode + 全局样式
-├── App.tsx                 # 应用壳层：编排面板与主题，不含任何业务逻辑
+├── App.tsx                 # 应用壳层：I18nProvider + ConfigProvider + 编排面板与主题
 ├── components/             # 跨 feature 复用的通用 UI
 │   ├── ui/                 #   无业务语义的展示原子（CardTitle）
-│   ├── layout/             #   全局骨架（Header）
+│   ├── layout/             #   全局骨架（Header，含 useLingui 响应式多语言订阅）
 │   └── feedback/           #   全局反馈兜底（ErrorBoundary）
 ├── features/               # 业务域：一个域 = 一个自包含目录
-│   ├── counter/index.tsx            # 唯一公开入口 CounterFeature
-│   ├── counter/hooks/useCounter.ts  # 私有：IPC + 状态
-│   ├── counter/components/…         # 私有：纯展示
-│   └── …（calculator / settings / native-dialogs / system-info /
-│         diagnostics / architecture）
+│   ├── counter/            #   计数器域（CounterFeature，多语言与主进程状态联动）
+│   ├── settings/           #   应用配置域（SettingsFeature，主题/语言/托盘持久化）
+│   └── …（calculator / native-dialogs / system-info / diagnostics / architecture）
 ├── hooks/                  # 跨 feature 的基础 hooks
-│   ├── useManualRequest.ts  # ahooks useRequest 的 manual-only 封装
-│   ├── useIpc.ts            # 请求层：channel + api 函数 + 状态
-│   └── useTheme.ts          # 应用级主题联动（明暗 + OS 偏好）
+│   ├── useManualRequest.ts # ahooks useRequest 的 manual-only 封装
+│   ├── useIpc.ts           # 请求层：channel + api 函数 + 状态解构
+│   └── useTheme.ts         # 应用级主题联动（明暗 + OS 偏好 + Tailwind dark class 同步）
+├── locales/                # 国际化模块（LinguiJS Source-as-Key 驱动）
+│   ├── i18n.ts             # dynamicActivate 动态按需加载语言包 Chunk
+│   ├── zh-CN/messages.po   # 简体中文单一事实源与上下文标记
+│   └── en-US/messages.po   # 英文对照翻译字典
 ├── lib/ipc.ts              # IPC 调用与 Result 解构、IpcError、日志
-├── stores/                 # 全局 zustand store（当前仅主题）
+├── stores/                 # 全局 zustand store（主题状态 themeMode 与语言状态 language）
 └── styles/                 # tokens.css（antd 设计令牌镜像）+ antd-theme.ts
 ```
 
@@ -161,6 +165,35 @@ const { runAsync: runCounterOp } = useManualRequest(async (action: CounterAction
 - 别名：`@/` → `packages/renderer/src/*`，`@shared/` → `packages/shared/src/*`（单一事实源在根 tsconfig.json）。
 - 跨端契约只从 `@shared/types` / `@shared/schemas` 消费，不反向依赖。
 
+## 国际化规范 (LinguiJS i18n)
+
+本工程采用 **LinguiJS 6 + Source-as-Key（中文优先）** 架构，将自然中文作为代码单一事实源，并在构建期通过 Vite 8 + Rolldown Babel 插件编译展开为极小静态 ID 调用。
+
+1. **自然中文书写**：
+   在组件或工具函数中，直接使用 `t` 模板宏包裹自然中文：
+   ```tsx
+   import { t } from '@lingui/core/macro';
+
+   <Button>{t`保存配置`}</Button>
+   ```
+2. **穿透 `React.memo` 阻断**：
+   展示卡片若使用 `memo(_Card)` 封装且依赖多语言刷新，必须在组件内部调用 `useLingui()` 建立响应式订阅：
+   ```tsx
+   import { useLingui } from '@lingui/react';
+
+   const _MyCard = () => {
+     useLingui(); // 确保切换语言时即使 Props 未变也能即时重渲染
+     return <span>{t`当前状态`}</span>;
+   };
+   ```
+3. **按需 Chunk 代码分割**：
+   所有语种通过 `dynamicActivate(lang)` 动态 `import('./locales/${lang}/messages.po')`，独立拆分为 ~0.7KB 的极小 Chunk，避免一次性加载全量字典。
+4. **词条自动化增量提取**：
+   在渲染端运行 `pnpm run extract`（或在根目录运行 `pnpm run i18n:extract`），CLI 自动扫描 AST 并增量同步至 `src/locales/` 下的 `.po` 文件。
+5. 详细开发规范与架构深度解析请参考：
+   - 📖 [多语言全链路工程架构设计指南](../../docs/i18n/architecture.md)
+   - 🛠️ [多语言日常开发与维护实操手册 (SOP)](../../docs/i18n/guide.md)
+
 ## 已知取舍
 
 - **dashboard 常驻 + `hidden` 切换**：hook 已随 feature 收敛，若 tab 切换时卸载面板，counter 等本地状态会丢失、
@@ -169,8 +202,10 @@ const { runAsync: runCounterOp } = useManualRequest(async (action: CounterAction
   出现第二个消费者再下沉。
 - **不建第二份 API map**：类型全部从 `ElectronApi`（`@shared/types/api`）推导，避免手写表与真实契约漂移。
 
-## 跨包关联
+## 跨包与文档关联
 
+- 多语言架构深度指南：参见 [docs/i18n/architecture.md](../../docs/i18n/architecture.md)
+- 多语言日常实操 SOP：参见 [docs/i18n/guide.md](../../docs/i18n/guide.md)
 - 契约源头：参见 [packages/shared/README.md](../shared/README.md)
 - 安全桥接：参见 [packages/preload/README.md](../preload/README.md)
 - 主进程实现：参见 [packages/main/README.md](../main/README.md)
