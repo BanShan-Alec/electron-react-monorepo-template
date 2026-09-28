@@ -5,7 +5,7 @@ import {
   type HighlightTokenType,
   highlightManager,
   tokenizeCode,
-} from '@/lib/codeHighlight';
+} from '../lib/codeHighlight';
 
 // 可抽离的逻辑处理函数/组件
 

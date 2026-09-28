@@ -1,5 +1,6 @@
 import { memo, useRef } from 'react';
-import { useCodeHighlight } from '@/hooks/useCodeHighlight';
+import { useCodeHighlight } from './hooks/useCodeHighlight';
+import './highlight.css';
 
 // 私有常量
 
@@ -30,5 +31,5 @@ export interface ICodeHighlightProps {
 
 const CodeHighlight = memo(_CodeHighlight);
 
-export { CodeHighlight };
+export { CodeHighlight, useCodeHighlight };
 export default CodeHighlight;
