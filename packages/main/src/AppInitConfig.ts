@@ -1,11 +1,12 @@
+type RendererEntry = { path: string } | URL;
+
 export type AppInitConfig = {
   preload: {
     path: string;
   };
 
-  renderer:
-    | {
-        path: string;
-      }
-    | URL;
+  windows: {
+    home: RendererEntry;
+    updater: RendererEntry;
+  };
 };

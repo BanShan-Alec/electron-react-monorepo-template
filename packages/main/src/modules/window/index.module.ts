@@ -1,10 +1,14 @@
-import { BrowserWindow } from 'electron';
+import { WINDOW_IDS } from '@app/shared/constants/windows';
+import { app, BrowserWindow, Notification } from 'electron';
 import type { AppInitConfig } from '../../AppInitConfig';
 import type { AppModule } from '../../AppModule';
+import { appLifecycle } from '../../lifecycle';
 import type { ModuleContext } from '../../ModuleContext';
+import { updaterService } from '../../services/updater.service';
 import { getAppConfigStore } from '../config.module';
 import { getLogManager } from '../log.module';
-import { TrayManager } from '../tray.module';
+import { getUpdaterWindowModule } from './updater-window.module';
+import { forgetWindow, getWindow, registerWindow } from './window-registry';
 import { DEFAULT_WINDOW_STATE, type WindowState, WindowStateKeeper } from './window-state-keeper';
 
 export interface WindowManagerOptions {
@@ -22,20 +26,34 @@ export class WindowManager implements AppModule {
 
   constructor({ initConfig, openDevTools = false, keepState = true }: WindowManagerOptions) {
     this.preload = initConfig.preload;
-    this.renderer = initConfig.renderer;
+    this.renderer = initConfig.windows.home;
     this.openDevTools = openDevTools;
     this.keepState = keepState;
     this.windowStateKeeper = keepState ? new WindowStateKeeper() : null;
   }
 
-  async enable({ app }: ModuleContext): Promise<void> {
-    await app.whenReady();
+  async enable({ app: electronApp }: ModuleContext): Promise<void> {
+    await electronApp.whenReady();
     if (this.keepState && this.windowStateKeeper) {
       this.windowStateKeeper.validateWithDisplays();
     }
     await this.restoreOrCreateWindow(true);
-    app.on('second-instance', () => this.restoreOrCreateWindow(true));
-    app.on('activate', () => this.restoreOrCreateWindow(true));
+
+    const handleReactivation = async () => {
+      const homeWin = getWindow(WINDOW_IDS.HOME);
+      if (homeWin) {
+        await this.restoreOrCreateWindow(true);
+      } else {
+        const updaterWin = getWindow(WINDOW_IDS.UPDATER);
+        if (updaterWin) {
+          await getUpdaterWindowModule().show();
+        } else {
+          await this.restoreOrCreateWindow(true);
+        }
+      }
+    };
+    electronApp.on('second-instance', () => handleReactivation());
+    electronApp.on('activate', () => handleReactivation());
   }
 
   async createWindow(): Promise<BrowserWindow> {
@@ -63,6 +81,12 @@ export class WindowManager implements AppModule {
       },
     });
 
+    // 注册到 window-registry 唯一事实源
+    registerWindow(WINDOW_IDS.HOME, browserWindow);
+    browserWindow.on('closed', () => {
+      forgetWindow(WINDOW_IDS.HOME, browserWindow);
+    });
+
     // 绑定窗口尺寸/位置状态跟踪（若开启）
     if (this.keepState && this.windowStateKeeper) {
       this.windowStateKeeper.track(browserWindow);
@@ -76,7 +100,7 @@ export class WindowManager implements AppModule {
       if (this.openDevTools) {
         browserWindow.webContents.openDevTools();
       }
-      logger.info('Window displayed successfully');
+      logger.info('Home window displayed successfully');
     });
 
     browserWindow.webContents.on(
@@ -90,17 +114,41 @@ export class WindowManager implements AppModule {
       logger.error(`Preload script failed to load at "${preloadPath}":`, error);
     });
 
-    // 支持点击关闭按钮最小化到系统托盘
+    // 支持点击关闭按钮最小化到系统托盘及防僵尸退出闭环
     browserWindow.on('close', (event) => {
       const configStore = getAppConfigStore();
       const shouldMinimizeToTray = configStore.get('minimizeToTray');
 
-      if (!TrayManager.isQuitting && shouldMinimizeToTray) {
+      if (!appLifecycle.isQuitting && shouldMinimizeToTray) {
         event.preventDefault();
         browserWindow.hide();
-        logger.info('Window closed event intercepted -> minimized to tray');
+        logger.info('Home window closed event intercepted -> minimized to tray');
       } else {
-        logger.info('Window is closing and exiting');
+        logger.info('Home window is closing');
+        const updaterState = updaterService.getState();
+        if (updaterState === 'downloading') {
+          logger.info(
+            'Updater is downloading, keeping updater in background with watchdog (Strategy A)',
+          );
+          try {
+            getUpdaterWindowModule().hide();
+          } catch {}
+          if (Notification.isSupported()) {
+            new Notification({
+              title: app.getName(),
+              body: '应用已关闭，正在后台下载更新...',
+            }).show();
+          }
+          updaterService.startOrphanWatchdog();
+        } else {
+          logger.info(
+            'Home window closed and updater not downloading -> destroying updater and quitting',
+          );
+          try {
+            getUpdaterWindowModule().destroy();
+          } catch {}
+          app.quit();
+        }
       }
     });
 
@@ -114,7 +162,7 @@ export class WindowManager implements AppModule {
   }
 
   async restoreOrCreateWindow(show = false) {
-    let window = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
+    let window = getWindow(WINDOW_IDS.HOME);
 
     if (window === undefined) {
       window = await this.createWindow();
