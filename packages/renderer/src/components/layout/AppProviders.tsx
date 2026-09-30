@@ -3,6 +3,7 @@ import { App as AntdApp, ConfigProvider } from 'antd';
 import type React from 'react';
 import { useEffect } from 'react';
 import { ErrorBoundary } from '@/components/feedback/ErrorBoundary';
+import { usePlatform } from '@/hooks/usePlatform';
 import { useTheme } from '@/hooks/useTheme';
 import { dynamicActivate, getAntdLocale, i18n, type SupportedLocale } from '@/locales/i18n';
 import { useAppStore } from '@/stores/useAppStore';
@@ -13,6 +14,9 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children
   const language = useAppStore((state) => state.language);
   const setThemeMode = useAppStore((state) => state.setThemeMode);
   const setLanguage = useAppStore((state) => state.setLanguage);
+
+  // 注入平台类名，供 CSS 做平台避让
+  usePlatform();
 
   // 初始化并跟踪应用主题（设置 html 标签 data-theme 及 dark 类名）
   useTheme();

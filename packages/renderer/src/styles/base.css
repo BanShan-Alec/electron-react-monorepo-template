@@ -35,10 +35,18 @@
   -webkit-app-region: no-drag;
 }
 
-/* Platform specific padding for macOS traffic lights */
-.platform-mac .tab-bar,
-.platform-mac .title-bar-header {
-  padding-left: 80px;
+/*
+ * 平台标题栏避让（env() 由 titleBarOverlay 提供）：
+ * - darwin: 红绿灯在左上角，env(titlebar-area-x) 为其实际宽度，回退 80px
+ * - win32: 原生窗口控制按钮覆盖右上角，右侧按 env(titlebar-area-width) 预留
+ * 不强制高度：头部高度由内容决定，overlay 高度走系统默认。
+ */
+.platform-darwin .drag-region {
+  padding-left: env(titlebar-area-x, 80px);
+}
+
+.platform-win32 .drag-region {
+  padding-right: calc(100vw - env(titlebar-area-width, 100vw));
 }
 
 /* Scrollbar gutter stability (仅预留槽位防布局抖动，滚动条绘制交给平台原生实现，随 nativeTheme/system 外观变化) */

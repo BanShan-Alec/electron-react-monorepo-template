@@ -19,6 +19,7 @@ export interface ElectronApi {
   system: {
     ping: () => Promise<Result<PingResult>>;
     getSystemInfo: () => Promise<Result<SystemInfo>>;
+    getPlatform: () => string;
   };
   counter: {
     get: () => Promise<Result<CounterResult>>;

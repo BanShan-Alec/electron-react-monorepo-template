@@ -1,9 +1,12 @@
+import { WINDOW_IDS } from '@app/shared/constants/windows';
 import type { AppConfig } from '@app/shared/schemas/config';
 import { nativeTheme } from 'electron';
 import type { AppModule } from '../AppModule';
 import type { ModuleContext } from '../ModuleContext';
 import { getAppConfigStore } from './config.module';
 import { getLogManager } from './log.module';
+import { canUpdateTitleBarOverlay, getTitleBarOverlayOptions } from './window/titlebar-overlay';
+import { getWindow } from './window/window-registry';
 
 /**
  * 系统级主题同步（nativeTheme）
@@ -25,14 +28,39 @@ export function applyNativeThemeSource(theme: AppConfig['theme']): void {
   }
 }
 
+/**
+ * 同步主窗口 WCO 颜色。守卫参照 VS Code windowImpl.updateWindowControls：
+ * setTitleBarOverlay 仅 win32/linux 支持且要求创建时已启用 overlay；
+ * 本应用仅 win32 启用（darwin 的 overlay 仅用于启用 CSS env 变量，颜色由系统管理）。
+ */
+export function applyTitleBarOverlay(): void {
+  if (!canUpdateTitleBarOverlay()) {
+    return;
+  }
+
+  const homeWindow = getWindow(WINDOW_IDS.HOME);
+  if (!homeWindow) {
+    return;
+  }
+
+  try {
+    homeWindow.setTitleBarOverlay(getTitleBarOverlayOptions());
+    logger.info('TitleBarOverlay synced ->', getTitleBarOverlayOptions());
+  } catch (err) {
+    logger.error('Failed to sync titleBarOverlay:', err);
+  }
+}
+
 export class NativeThemeModule implements AppModule {
   enable({ app }: ModuleContext): void {
     // nativeTheme 须在 app.whenReady() 后操作；配置模块先于本模块初始化，store 已可读
     app.whenReady().then(() => {
       applyNativeThemeSource(getAppConfigStore().get('theme'));
+      applyTitleBarOverlay();
 
       nativeTheme.on('updated', () => {
         logger.info(`Updated, shouldUseDarkColors=${nativeTheme.shouldUseDarkColors}`);
+        applyTitleBarOverlay();
       });
     });
   }

@@ -7,6 +7,7 @@ import type { ModuleContext } from '../../ModuleContext';
 import { updaterService } from '../../services/updater.service';
 import { getAppConfigStore } from '../config.module';
 import { getLogManager } from '../log.module';
+import { getTitleBarOverlayOptions } from './titlebar-overlay';
 import { getUpdaterWindowModule } from './updater-window.module';
 import { forgetWindow, getWindow, registerWindow } from './window-registry';
 import { DEFAULT_WINDOW_STATE, type WindowState, WindowStateKeeper } from './window-state-keeper';
@@ -66,12 +67,29 @@ export class WindowManager implements AppModule {
 
     logger.info('Creating browser window with state:', savedState);
 
+    // 原生标题栏定制（平台分支参照 VS Code windows.ts/windowImpl.ts）：
+    // - darwin: titleBarStyle hidden 保留红绿灯；titleBarOverlay: true 仅启用
+    //   WCO JS API 与 CSS env(titlebar-area-*)（color/symbolColor 在 darwin 无效）
+    // - win32: hidden + frame:false 启用 WCO，overlay 颜色随主题
+    //   （运行时更新见 native-theme.module applyTitleBarOverlay）
+    // - linux: 保持系统默认边框，不做定制
+    const isMac = process.platform === 'darwin';
+    const isWin = process.platform === 'win32';
+
     const browserWindow = new BrowserWindow({
       show: false, // Use the 'ready-to-show' event to show the instantiated BrowserWindow.
       x: savedState.x,
       y: savedState.y,
       width: savedState.width,
       height: savedState.height,
+      ...(isMac ? { titleBarStyle: 'hidden', titleBarOverlay: true } : {}),
+      ...(isWin
+        ? {
+            titleBarStyle: 'hidden',
+            frame: false,
+            titleBarOverlay: getTitleBarOverlayOptions(),
+          }
+        : {}),
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,

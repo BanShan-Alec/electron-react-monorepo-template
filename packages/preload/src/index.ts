@@ -13,6 +13,7 @@ export const apiBridge: ElectronApi = {
   system: {
     ping: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_PING),
     getSystemInfo: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_INFO),
+    getPlatform: () => process.platform,
   },
   counter: {
     get: () => ipcRenderer.invoke(IPC_CHANNELS.COUNTER_GET),
