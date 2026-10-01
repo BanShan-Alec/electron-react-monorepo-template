@@ -480,3 +480,4 @@ createRoot(document.getElementById('root')!).render(
 1. **Logo 真实素材未定**：插槽与容器规格已冻结，素材到位后作为独立提交替换占位 SVG（Phase 5）。
 2. 无其他未决项；实现过程中的新问题回填本节。
 3. **【已解决】协调器脚本标签为经典 `<script>`（非 `type="module"`）**：实现时实测发现 Vite 8 构建会把内联 module script 抽进主 bundle（`dist/index.html` 内联 module script 数为 0，协调器被合并进 `assets/main-*.js`），恰触发 D3 红线（bundle 解析超 720ms 丢动画事件）。经典内联脚本 Vite 原样保留在产物 HTML 中，且在解析位同步执行、先于 defer 的 main.tsx，时序保证更强，故替代 module 内联；D3 的其余论证不变。
+4. **【已解决】组件路径与 props 类型微调**：Notifier 按仓库「一组件一文件夹」无条件规则（renderer README §组件书写约定）落为 `startup/StartupReadyNotifier/index.tsx`；props 类型沿用 App.tsx 无 props 先例写作 `type IProps = Record<string, never>`，并以 `(_props: IProps)` 形参消费（否则 `noUnusedLocals` 报 TS6196）。两者语义与冻结代码等价。

@@ -33,7 +33,7 @@ export function attachWindowsWindowRepaint(win: BrowserWindow): void {
       clearTimeout(repaintTimer);
     }
     repaintTimer = setTimeout(() => {
-      // 定时器触发前清空引用，避免对已销毁窗口排程
+      // 先清引用防 stale 句柄重排；窗口销毁安全由 repaint() 双判空兜底
       repaintTimer = null;
       repaint();
     }, SECOND_REPAINT_DELAY_MS);
