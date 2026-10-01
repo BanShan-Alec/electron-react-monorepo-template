@@ -16,14 +16,14 @@ pnpm --filter @app/renderer lint       # Biome 代码规范与格式化检查
 src/
 ├── main.tsx                # 挂载入口：createRoot + StrictMode + 全局样式
 ├── App.tsx                 # 应用壳层：I18nProvider + ConfigProvider + 编排面板与主题
-├── components/             # 跨 feature 复用的通用 UI
+├── components/             # 跨 feature 复用的通用 UI（一组件一文件夹）
 │   ├── ui/                 #   无业务语义的展示原子（CardTitle）
 │   ├── layout/             #   全局骨架（Header，含 useLingui 响应式多语言订阅）
 │   └── feedback/           #   全局反馈兜底（ErrorBoundary）
 ├── features/               # 业务域：一个域 = 一个自包含目录
 │   ├── counter/            #   计数器域（CounterFeature，多语言与主进程状态联动）
 │   ├── settings/           #   应用配置域（SettingsFeature，主题/语言/托盘持久化）
-│   └── …（calculator / native-dialogs / system-info / diagnostics / architecture）
+│   └── …（calculator / native-dialogs / logging / devtools / architecture）
 ├── hooks/                  # 跨 feature 的基础 hooks
 │   ├── useManualRequest.ts # ahooks useRequest 的 manual-only 封装
 │   ├── useIpc.ts           # 请求层：channel + api 函数 + 状态解构
@@ -66,8 +66,9 @@ src/
 ```
 features/calculator/
 ├── index.tsx                    # 公开面：<CalculatorFeature>
-├── components/CalculatorCard.tsx # 私有：纯展示
-└── hooks/useCalculator.ts        # 私有：IPC + 状态
+├── components/CalculatorCard/   # 私有：纯展示（一组件一文件夹）
+│   └── index.tsx
+└── hooks/useCalculator.ts       # 私有：IPC + 状态（hook 非组件，保持扁平文件）
 ```
 
 ### 2. 入口是容器组件，只做胶水
@@ -156,10 +157,18 @@ const { runAsync: runCounterOp } = useManualRequest(async (action: CounterAction
 
 ## 组件书写约定
 
+- **一组件一文件夹**：组件一律是 `Xxx/index.tsx`（文件夹与组件同名、PascalCase），不存在扁平的 `Xxx.tsx` 组件文件；
+  文件夹内只有 index.tsx 的"空壳"形态合法且是标准形态。先例：`components/ui/CodeHighlight/`。
+- index.tsx 是**组件本体实现**，不是 re-export 桶文件（不触发 biome `noBarrelFile` / `noReExportAll`）；
+  消费方 `import { X } from '@/…/X'` 按目录解析到 `X/index.tsx`。
+- 附属物住址（"服务谁住谁那"）：组件私有 hook / lib / 样式住组件文件夹内（如 CodeHighlight 的 `hooks/`、`lib/`、`highlight.css`）；
+  跨组件共享的上提顶层 `hooks/`、`lib/`、`styles/`；域编排 hook 留在 `features/<domain>/hooks/`。
+  hook 文件本身不是组件，保持扁平 `useXxx.ts`。
+- 公开面：共享 `components/` 不限制深层引用；feature 及其卡片对外仍遵守 Feature 规范第 1 条的唯一公开面规则。
 - 七段式模板：私有常量 → 可抽离函数 → 变量解构 → 组件状态 → 网络IO → 数据转换 → 逻辑函数 → Effect → 渲染；
   之后是 `IXxxProps` 类型定义；类组件（ErrorBoundary）不适用。
-- 命名：hook `useXxx.ts`、卡片 `XxxCard.tsx`、入口 `index.tsx` 导出 `XxxFeature`、常量 SCREAMING_SNAKE。
-- 展示卡片（`components/**`）：`const _X = (props) => …` + `const X = memo(_X)` + `export { X }` + `export default X`。
+- 命名：hook `useXxx.ts`、卡片 `XxxCard/index.tsx`、入口 `index.tsx` 导出 `XxxFeature`、常量 SCREAMING_SNAKE。
+- 展示卡片（`features/*/components/**`）：`const _X = (props) => …` + `const X = memo(_X)` + `export { X }` + `export default X`。
 - 容器入口（`features/*/index.tsx`）：直接 `function XFeature()`，不套 memo——内部持有 hook，memo 无收益；
   导出用 `export { XFeature }` + `export default XFeature`（勿与 `export function` 并用，TS 会报重复导出）。
 - 别名：`@/` → `packages/renderer/src/*`，`@shared/` → `packages/shared/src/*`（单一事实源在根 tsconfig.json）。

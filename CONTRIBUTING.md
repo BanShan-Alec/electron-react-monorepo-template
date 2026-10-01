@@ -31,6 +31,8 @@ npm run format
 ### 3. 桶文件禁令（Barrel Files Ban）
 本仓库**默认禁止桶文件**（只做重导出的 `index.ts` / `index.module.ts`），由 Biome `performance.noBarrelFile: "error"` 全库强制，不设白名单；配套 `noReExportAll` / `noImportCycles` 同为 error。跨模块一律直达具体文件导入。
 
+**例外澄清**：组件的 `Xxx/index.tsx`（一组件一文件夹形态，index 内是组件本体实现，见 [packages/renderer/README.md](packages/renderer/README.md) "组件书写约定"）**不是桶文件**，不受本条约束；`noBarrelFile` 针对的仅是"只做重导出"的 index。
+
 确需引入桶文件的唯一合法流程：评审 + 单条 override 豁免 + 显式命名导出 + 台账登记。
 
 ### 4. 请求 Hook 约束（manual-only）
