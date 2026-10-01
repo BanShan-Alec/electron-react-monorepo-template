@@ -230,7 +230,9 @@
         </div>
       </div>
     </div>
-    <script type="module">
+    <!-- 经典内联脚本（非 module）：Vite 会把内联 module script 抽进主 bundle（D3 红线），
+         经典脚本既保持零打包产物依赖，又在解析位同步执行、先于 defer 的 main.tsx -->
+    <script>
       // 4.3 就绪协调器（源码见下），必须物理位于 main.tsx 之前
     </script>
     <script type="module" src="/src/main.tsx"></script>
@@ -241,7 +243,7 @@
 硬性约束：
 
 1. **零外部依赖**：壳不得引用任何打包产物（外部 JS/CSS、字体、图片、Tailwind 工具类、antd 变量）。所有样式与逻辑内联自足。
-2. **脚本顺序**：内联协调器 `<script type="module">` 必须物理位于 `<script src="/src/main.tsx">` 之前。依据见 D3。
+2. **脚本顺序**：内联协调器 `<script>`（经典脚本，**非** `type="module"`，依据见 §10.3）必须物理位于 `<script src="/src/main.tsx">` 之前。依据见 D3。
 3. **拖拽写法**：`-webkit-app-region: drag` 写在内联 `<style>` 中。**禁止**使用 Tailwind 任意属性类 `[app-region:drag]`——`tailwind.config.ts` 的 content 仅含 `./src/**`，index.html 中的类不会生成产物。
 4. `updater.html` 不做任何改动。
 5. 已知开发期现象（与上游一致，接受）：dev 模式 HMR 全量刷新时壳动画会重播一次。
@@ -477,3 +479,4 @@ createRoot(document.getElementById('root')!).render(
 
 1. **Logo 真实素材未定**：插槽与容器规格已冻结，素材到位后作为独立提交替换占位 SVG（Phase 5）。
 2. 无其他未决项；实现过程中的新问题回填本节。
+3. **【已解决】协调器脚本标签为经典 `<script>`（非 `type="module"`）**：实现时实测发现 Vite 8 构建会把内联 module script 抽进主 bundle（`dist/index.html` 内联 module script 数为 0，协调器被合并进 `assets/main-*.js`），恰触发 D3 红线（bundle 解析超 720ms 丢动画事件）。经典内联脚本 Vite 原样保留在产物 HTML 中，且在解析位同步执行、先于 defer 的 main.tsx，时序保证更强，故替代 module 内联；D3 的其余论证不变。

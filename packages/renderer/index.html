@@ -5,9 +5,170 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>renderer</title>
+    <style>
+      html,
+      body,
+      #root {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        /* biome-ignore lint/complexity/noImportantStyles: 必须压住打包后注入的样式底色，让窗口 backgroundColor 透出（spec 冻结项） */
+        background: transparent !important;
+      }
+
+      #root {
+        opacity: 0;
+        transition: opacity 0.16s ease;
+      }
+
+      body.app-startup-ready #root {
+        opacity: 1;
+      }
+
+      /* 拖拽必须写在内联样式块：Tailwind content 仅扫描 ./src/**，
+         任意属性类 [app-region:drag] 在本文件中不会生成产物 */
+      #loading {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.16s ease;
+        -webkit-app-region: drag;
+      }
+
+      body.app-startup-ready #loading {
+        pointer-events: none;
+        opacity: 0;
+      }
+
+      .startup-logo-shell {
+        position: relative;
+        display: flex;
+        width: 96px;
+        height: 96px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 24px;
+        background: linear-gradient(180deg, #000000 0%, #151718 100%);
+        box-shadow:
+          0 20px 25px -5px rgb(0 0 0 / 0.25),
+          0 8px 10px -6px rgb(0 0 0 / 0.25);
+        transform: scale(0.72);
+        opacity: 0;
+        animation: startup-logo-pop 0.72s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        transform-origin: center;
+      }
+
+      .startup-logo-shell::before {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        content: '';
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: inherit;
+      }
+
+      .startup-logo-slot {
+        width: 56px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      @keyframes startup-logo-pop {
+        0% {
+          opacity: 0;
+          transform: scale(0.72);
+        }
+        38% {
+          opacity: 1;
+          transform: scale(1.045);
+        }
+        58% {
+          transform: scale(0.985);
+        }
+        76% {
+          transform: scale(1.008);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .startup-logo-shell {
+          opacity: 1;
+          transform: scale(1);
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <div id="loading" role="status" aria-busy="true" aria-label="Loading...">
+      <div class="startup-logo-shell">
+        <div class="startup-logo-slot">
+          <!-- Logo 资源插槽：素材替换属独立任务，容器规格已冻结（见第 5 节） -->
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#ffffff" stroke-width="2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2" />
+            <polyline points="2 17 12 22 22 17" />
+            <polyline points="2 12 12 17 22 12" />
+          </svg>
+        </div>
+      </div>
+    </div>
+    <!-- 经典内联脚本（非 module）：Vite 会把内联 module script 抽进主 bundle（D3 红线），
+         经典脚本既保持零打包产物依赖，又在解析位同步执行、先于 defer 的 main.tsx -->
+    <script>
+      {
+        const READY_CLASS = 'app-startup-ready';
+        const REACT_READY_EVENT = 'app-react-startup-ready';
+        const ANIMATION_FALLBACK_MS = 1000;
+        const REACT_FALLBACK_MS = 3000;
+        const UNMOUNT_DELAY_MS = 500;
+
+        let finished = false;
+        let animationDone = false;
+        let reactReady = false;
+
+        const tryFinishStartup = () => {
+          if (finished || !animationDone || !reactReady) return;
+          finished = true;
+          document.body.classList.add(READY_CLASS);
+          window.setTimeout(() => document.getElementById('loading')?.remove(), UNMOUNT_DELAY_MS);
+        };
+
+        const markAnimationDone = () => {
+          animationDone = true;
+          tryFinishStartup();
+        };
+
+        const markReactReady = () => {
+          reactReady = true;
+          tryFinishStartup();
+        };
+
+        const startupLogoShell = document.querySelector('.startup-logo-shell');
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // 门禁一：壳弹出动画（reduced-motion 或元素缺失时直接放行）
+        if (prefersReducedMotion || !startupLogoShell) {
+          markAnimationDone();
+        } else {
+          startupLogoShell.addEventListener('animationend', markAnimationDone, { once: true });
+          window.setTimeout(markAnimationDone, ANIMATION_FALLBACK_MS);
+        }
+
+        // 门禁二：React 首帧 commit（含兜底，React 侧事件见 StartupReadyNotifier）
+        window.addEventListener(REACT_READY_EVENT, markReactReady, { once: true });
+        window.setTimeout(markReactReady, REACT_FALLBACK_MS);
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
