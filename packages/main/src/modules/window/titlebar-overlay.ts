@@ -14,7 +14,6 @@ import { nativeTheme } from 'electron';
  */
 
 // 私有常量
-const IS_MAC = process.platform === 'darwin';
 const IS_WIN = process.platform === 'win32';
 
 // 可抽离的逻辑处理函数/组件
