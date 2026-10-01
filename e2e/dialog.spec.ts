@@ -97,9 +97,10 @@ test.describe
 
     test('用例 3：用户取消另存为操作', async ({ page, electronApp }) => {
       // 1. 在主进程中 mock dialog.showSaveDialog 返回取消状态
+      // （d.ts 中 filePath 为非可选 string，取消场景主进程只读 canceled，空串即"未选择路径"）
       await electronApp.evaluate(({ dialog }) => {
         dialog.showSaveDialog = async () => {
-          return { canceled: true, filePath: undefined };
+          return { canceled: true, filePath: '' };
         };
       });
 

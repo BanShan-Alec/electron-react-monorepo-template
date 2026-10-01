@@ -1,5 +1,5 @@
-import type { Page } from '@playwright/test';
-import { type ElectronApplication, expect, test } from './helpers/fixture';
+import type { ElectronApplication, Page } from '@playwright/test';
+import { expect, test } from './helpers/fixture';
 
 test.describe
   .serial('自动更新模块 (Updater Features) E2E 自动化测试', () => {

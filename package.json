@@ -25,7 +25,7 @@
     "i18n:extract": "pnpm --filter @app/renderer exec lingui extract --clean",
     "test:e2e": "playwright test -c .config/playwright.config.ts",
     "test:e2e:build": "pnpm run build && pnpm run test:e2e",
-    "typecheck": "tsc -p scripts/tsconfig.json --noEmit && pnpm -r run typecheck",
+    "typecheck": "tsc -p scripts/tsconfig.json --noEmit && tsc -p e2e/tsconfig.json --noEmit && pnpm -r run typecheck",
     "lint": "biome check --config-path=.config .",
     "lint:fix": "biome check --write --config-path=.config .",
     "format": "biome format --write --config-path=.config .",
