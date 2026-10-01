@@ -5,7 +5,7 @@ import { Button, Card } from 'antd';
 import { memo } from 'react';
 import { CardTitle } from '@/components/ui/CardTitle';
 import { statusBoxClass } from '@/lib/classNames';
-import type { DialogAction } from '../hooks/useNativeDialogs';
+import type { DialogAction } from '../../hooks/useNativeDialogs';
 
 // 私有常量
 
