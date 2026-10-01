@@ -4,11 +4,6 @@ import * as Sentry from '@sentry/react';
 import { Button, Empty } from 'antd';
 import type { ReactNode } from 'react';
 
-/**
- * 全局渲染异常兜底（基于 Sentry.ErrorBoundary 实现）。
- * 视觉风格与交互对齐 vite-nginx-template：Empty 缺省图 + 刷新重试，区分 DEV 与生产环境文案。
- */
-
 // 私有常量
 
 interface IErrorBoundaryProps {

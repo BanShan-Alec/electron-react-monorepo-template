@@ -18,8 +18,7 @@ src/
 ├── App.tsx                 # 应用壳层：I18nProvider + ConfigProvider + 编排面板与主题
 ├── components/             # 跨 feature 复用的通用 UI（一组件一文件夹）
 │   ├── ui/                 #   无业务语义的展示原子（CardTitle）
-│   ├── layout/             #   全局骨架（Header，含 useLingui 响应式多语言订阅）
-│   └── feedback/           #   全局反馈兜底（ErrorBoundary）
+│   └── layout/             #   全局骨架与全局兜底（Header、ErrorBoundary，含 useLingui 响应式多语言订阅）
 ├── features/               # 业务域：一个域 = 一个自包含目录
 │   ├── counter/            #   计数器域（CounterFeature，多语言与主进程状态联动）
 │   ├── settings/           #   应用配置域（SettingsFeature，主题/语言/托盘持久化）
@@ -88,7 +87,7 @@ DevToolsCard）。拆分或合并域的标准是**两张卡片是否共享同一
 
 ### 5. 共享提取规则（第二个消费者）
 
-不要预抽取。只有当第二个消费者真实出现时才把 UI 提到 `components/ui|layout|feedback/`、把纯函数提到 `lib/`、
+不要预抽取。只有当第二个消费者真实出现时才把 UI 提到 `components/ui|layout/`、把纯函数提到 `lib/`、
 把 hook 提到 `hooks/`。当前 `CardTitle`（7 处复用）、`lib/statusBoxClass`（3 处复用）都符合该规则。
 
 ### 6. 子域组织（`sections/`）

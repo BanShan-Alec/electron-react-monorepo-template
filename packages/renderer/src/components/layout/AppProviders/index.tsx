@@ -2,7 +2,7 @@ import { I18nProvider } from '@lingui/react';
 import { App as AntdApp, ConfigProvider } from 'antd';
 import type React from 'react';
 import { useEffect } from 'react';
-import { ErrorBoundary } from '@/components/feedback/ErrorBoundary';
+import { ErrorBoundary } from '@/components/layout/ErrorBoundary';
 import { usePlatform } from '@/hooks/usePlatform';
 import { useTheme } from '@/hooks/useTheme';
 import { dynamicActivate, getAntdLocale, i18n, type SupportedLocale } from '@/locales/i18n';
