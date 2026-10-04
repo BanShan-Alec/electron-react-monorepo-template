@@ -25,12 +25,12 @@ jobs:
         uses: alibaba/open-code-review@v1.12.11
         with:
           # ===== LLM API 配置(留空,待填写)=====
-          # OpenAI 兼容端点,如 https://api.openai.com/v1 或 https://dashscope.aliyuncs.com/compatible-mode/v1
-          llm_url: 'https://api.stepfun.com/step_plan/v1'
+          # OpenAI 兼容端点,如 https://api.openai.com/v1
+          llm_url: ${{ secrets.OCR_LLM_URL }}
           # 认证令牌;建议放入仓库 Secrets 后改为 ${{ secrets.OCR_LLM_TOKEN }}
           llm_auth_token: ${{ secrets.OCR_LLM_TOKEN }}
           # 模型名,如 gpt-4o / qwen-max / claude-sonnet-4-5
-          llm_model: 'step-3.7-flash'
+          llm_model: ${{ secrets.OCR_LLM_MODEL }}
           # 协议:留空 = OpenAI 兼容;填 true = Anthropic 协议
           llm_use_anthropic: ''
           # ===== 输出配置 =====
