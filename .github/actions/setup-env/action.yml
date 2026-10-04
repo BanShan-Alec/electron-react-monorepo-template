@@ -10,24 +10,19 @@ runs:
         Xvfb :99 -screen 0 1280x960x24 &
         echo "DISPLAY=:99" >> $GITHUB_ENV
 
-    # corepack shim 必须先于 setup-node 存在,否则 cache: pnpm 解析不了 store 路径(setup-node#531)。
-    # 镜像自带的 Node 足以运行 corepack;pnpm 版本由 package.json 的 packageManager 字段决定。
-    # Node 25 起不再捆绑 corepack,此处显式安装以保证镜像升级后仍可用。
-    - name: Enable corepack (provides pnpm shim)
-      run: |
-        echo "COREPACK_ENABLE_DOWNLOAD_PROMPT=0" >> "$GITHUB_ENV"
-        npm install -g corepack
-        corepack enable
-      shell: bash
-
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '22'
-        cache: 'pnpm'
+
+    # pnpm 版本由根 package.json 的 packageManager 字段决定,Node 22 自带 corepack
+    - name: Enable corepack
+      run: corepack enable
+      shell: bash
 
     - name: Install Dependencies
       run: pnpm install --frozen-lockfile
       shell: bash
       env:
+        COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
