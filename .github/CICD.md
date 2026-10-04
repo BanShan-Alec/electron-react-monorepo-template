@@ -41,7 +41,7 @@ docs/ci-guide
 
 1. 提交信息走 conventional commits,commit-msg 钩子(commitlint)校验:类型合法、说明含中文、body 每行 ≤100 字符。
 2. push 后开 PR:
-   - **标题 = 未来 main 上的提交信息**,格式 `type(scope): 中文说明`,由 `semantic-pr` workflow 机器校验(squash 合并后标题即提交信息,changelog 从这里来);
+   - **标题 = 未来 main 上的提交信息**,请保持 `type(scope): 中文说明` 格式——squash 合并后标题即提交信息,changelog 从这里来。此格式无机器校验,靠自觉(本地 commit 有 commitlint 把关,PR 标题没有),写歪会降低 changelog 质量;
    - 正文由模板预填(意图 / 改动 / 人工验证),只填 CI 查不了的事。
 3. draft PR 可放心使用:转正式(ready_for_review)同样会触发全部检查。
 
@@ -49,7 +49,6 @@ docs/ci-guide
 
 | 检查 | 性质 | 内容 |
 |---|---|---|
-| `semantic-pr` | **required** | PR 标题 conventional + 含中文 |
 | `typecheck` | **required** | tsc 全工作区类型检查 |
 | `lint` | **required** | biome 检查 |
 | `e2e` | **required** | Playwright + Electron,单 worker 串行 |
@@ -62,7 +61,7 @@ docs/ci-guide
 ## 合并
 
 - 仓库设置只允许 **squash merge**,且 Default commit message = PR title;
-- 分支保护强制上述四个 required check 全绿才能合入 `main`,**没有豁免**(hotfix 也不例外);
+- 分支保护强制上述三个 required check 全绿才能合入 `main`,**没有豁免**(hotfix 也不例外);
 - 一个大分支要拆多个 PR:把相关 commit `cherry-pick` 到干净分支分别开 PR;存在依赖时用 stacked PR(`gh pr create --base <前一个PR的分支>`),前者合并后 `gh pr edit --base main` 收窄 diff。
 
 ## 发版
@@ -98,7 +97,7 @@ PR 的"意图"一节引用 `#编号`;修复类 PR 在正文写 `fixes #n` 可在
 ```mermaid
 flowchart LR
   A["本地开发<br/>feat/xxx 分支"] -->|"push"| B["开 PR"]
-  B --> C["门禁:semantic-pr + typecheck + lint + e2e<br/>CodeQL / AI 审查并行(信息性)"]
+  B --> C["门禁:typecheck + lint + e2e<br/>CodeQL / AI 审查并行(信息性)"]
   C -->|"required 全绿"| D["squash 合并 main"]
   D -->|"pnpm release:patch"| E["tag v* push"]
   E --> F["三平台构建<br/>Windows / macOS / Linux"]
@@ -110,7 +109,6 @@ flowchart LR
 | 文件 | 职责 |
 |---|---|
 | `workflows/ci.yml` | PR / main 门禁:typecheck + lint + e2e |
-| `workflows/semantic-pr.yml` | PR 标题校验 |
 | `workflows/release.yml` | tag 触发的三平台构建与发布 |
 | `workflows/codeql.yml` | 安全扫描(push/PR main + 每周三定时) |
 | `workflows/open-code-review.yml` | AI 代码审查 |
