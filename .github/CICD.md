@@ -113,7 +113,7 @@ flowchart LR
 | `workflows/codeql.yml` | 安全扫描(push/PR main + 每周三定时) |
 | `workflows/open-code-review.yml` | AI 代码审查 |
 | `actions/setup-env/` | 构建环境准备:corepack/pnpm、Node 22、Xvfb |
-| `ISSUE_TEMPLATE/`、`PULL_REQUEST_TEMPLATE/` | 中英双语模板 |
+| `ISSUE_TEMPLATE/` 目录 + `PULL_REQUEST_TEMPLATE.md` | 中英双语模板(issue 多模板用目录;PR 单模板须单文件才会自动预填正文) |
 
 ## 设计决策速览
 
