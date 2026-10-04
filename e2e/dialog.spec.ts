@@ -56,10 +56,8 @@ test.describe
             return { canceled: false, filePath: savePath };
           };
 
-          const origShowItemInFolder = shell.showItemInFolder;
           shell.showItemInFolder = (p: string) => {
             g.__dialogMockCalls.showItemInFolder.push(p);
-            return origShowItemInFolder ? origShowItemInFolder(p) : undefined;
           };
         },
         { savePath: targetSavePath },

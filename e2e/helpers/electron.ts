@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -34,6 +35,34 @@ export interface ElectronTestContext {
 }
 
 /**
+ * 跨平台强力终止进程及其所有子孙进程
+ */
+function killProcessTree(pid: number, tempUserDataDir?: string): void {
+  try {
+    if (process.platform === 'win32') {
+      execSync(`taskkill /pid ${pid} /T /F`, { stdio: 'ignore' });
+    } else {
+      // 1. 优先通过唯一 user-data-dir 特征清理属于本实例的所有 Electron 关联进程
+      if (tempUserDataDir) {
+        try {
+          execSync(`pkill -9 -f "${tempUserDataDir}"`, { stdio: 'ignore' });
+        } catch {}
+      }
+      // 2. 杀灭直接子进程
+      try {
+        execSync(`pkill -9 -P ${pid}`, { stdio: 'ignore' });
+      } catch {}
+      // 3. 杀灭主进程自身
+      try {
+        process.kill(pid, 'SIGKILL');
+      } catch {}
+    }
+  } catch {
+    // 忽略终止异常
+  }
+}
+
+/**
  * 启动 Electron 自动化测试环境公共上下文
  * 封装了 4 大标准启动步骤：
  * 1. 创建隔离的临时用户数据目录（规避本地单例锁冲突）
@@ -53,6 +82,7 @@ export async function launchElectronApp(
       '.',
       `--user-data-dir=${tempUserDataDir}`,
       '--disable-gpu',
+      '--disable-dev-shm-usage',
       '--no-sandbox',
       ...(options.extraArgs ?? []),
     ],
@@ -64,31 +94,28 @@ export async function launchElectronApp(
   });
 
   // 3. 将主进程日志重定向至控制台以便追踪诊断
-  electronApp.process().stdout?.pipe(process.stdout);
-  electronApp.process().stderr?.pipe(process.stderr);
+  const proc = electronApp.process();
+  proc.stdout?.pipe(process.stdout);
+  proc.stderr?.pipe(process.stderr);
 
-  // 4. 等待应用首个窗口加载就绪
+  // 4. 注入主进程 shell 安全桩（防止任何用例拉起外部系统文件管理器或浏览器造成 CI 挂死）
+  await electronApp.evaluate(({ shell }) => {
+    shell.openExternal = async () => {};
+    shell.openPath = async () => '';
+    shell.showItemInFolder = () => {};
+  });
+
+  // 5. 等待应用首个窗口加载就绪
   const page = await electronApp.firstWindow();
   page.on('pageerror', (err) => console.error('PAGE ERROR:', err));
   await page.waitForLoadState('domcontentloaded');
 
   const cleanup = async () => {
     if (electronApp) {
-      try {
-        // 1. 优先尝试主进程内部干净关闭所有窗口并退出
-        await Promise.race([
-          electronApp.evaluate(({ app, BrowserWindow }) => {
-            BrowserWindow.getAllWindows().forEach((win) => {
-              if (!win.isDestroyed()) {
-                win.destroy();
-              }
-            });
-            app.quit();
-          }),
-          new Promise((resolve) => setTimeout(resolve, 2000)),
-        ]).catch(() => {});
+      const pid = proc?.pid;
 
-        // 2. 限时 5 秒等待 Playwright electronApp.close() 完成
+      try {
+        // 限时 5 秒等待 Playwright electronApp.close() 完成
         await Promise.race([
           electronApp.close(),
           new Promise((_, reject) =>
@@ -97,16 +124,37 @@ export async function launchElectronApp(
         ]);
       } catch (err) {
         console.warn(
-          '[E2E Teardown] electronApp.close() timed out or failed, force killing process:',
+          '[E2E Teardown] electronApp.close() timed out or failed, killing process tree:',
           err,
         );
-        try {
-          const proc = electronApp.process();
-          if (proc && !proc.killed) {
-            proc.kill('SIGKILL');
+        if (pid) {
+          killProcessTree(pid, tempUserDataDir);
+        }
+      } finally {
+        // 确保断开并销毁 stdio 管道，防止未关闭句柄阻塞 Worker 退出
+        if (proc) {
+          try {
+            if (proc.stdout) {
+              proc.stdout.unpipe(process.stdout);
+              proc.stdout.destroy();
+            }
+            if (proc.stderr) {
+              proc.stderr.unpipe(process.stderr);
+              proc.stderr.destroy();
+            }
+          } catch {
+            // 忽略流销毁异常
           }
-        } catch {
-          // 忽略进程杀灭异常
+        }
+
+        // 兜底检查：如果主进程或子进程依然残留，强制杀灭进程树
+        if (pid) {
+          try {
+            process.kill(pid, 0);
+            killProcessTree(pid, tempUserDataDir);
+          } catch {
+            // 进程已退出
+          }
         }
       }
     }
