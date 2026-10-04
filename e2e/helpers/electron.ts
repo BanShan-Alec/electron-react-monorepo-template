@@ -74,7 +74,41 @@ export async function launchElectronApp(
 
   const cleanup = async () => {
     if (electronApp) {
-      await electronApp.close();
+      try {
+        // 1. 优先尝试主进程内部干净关闭所有窗口并退出
+        await Promise.race([
+          electronApp.evaluate(({ app, BrowserWindow }) => {
+            BrowserWindow.getAllWindows().forEach((win) => {
+              if (!win.isDestroyed()) {
+                win.destroy();
+              }
+            });
+            app.quit();
+          }),
+          new Promise((resolve) => setTimeout(resolve, 2000)),
+        ]).catch(() => {});
+
+        // 2. 限时 5 秒等待 Playwright electronApp.close() 完成
+        await Promise.race([
+          electronApp.close(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('electronApp.close() timed out after 5000ms')), 5000),
+          ),
+        ]);
+      } catch (err) {
+        console.warn(
+          '[E2E Teardown] electronApp.close() timed out or failed, force killing process:',
+          err,
+        );
+        try {
+          const proc = electronApp.process();
+          if (proc && !proc.killed) {
+            proc.kill('SIGKILL');
+          }
+        } catch {
+          // 忽略进程杀灭异常
+        }
+      }
     }
 
     if (tempUserDataDir && fs.existsSync(tempUserDataDir)) {
