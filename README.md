@@ -18,6 +18,7 @@
 | **🧪 E2E 自动化测试** | [`e2e/`](e2e) | **端到端质量防护**：基于 Playwright 驱动真实打包/运行态 Electron 进程，常态化保障主题、多语言、托盘及防冲刷逻辑 | [测试用例集](e2e/settings.spec.ts) |
 | **📜 日志与防护** | [`docs/logging-and-exception-audit.md`](docs/logging-and-exception-audit.md) | **系统容灾与调试**：进程隔离落盘、5MB 自动轮转、大 Payload 截断保护与未捕获异常分级处置指南 | [日志系统指南](docs/logging-and-exception-audit.md) |
 | **工程质量规范** | [`CONTRIBUTING.md`](CONTRIBUTING.md) | **研发与提交守则**：全库 Biome 静态检查与格式化、桶文件禁令（noBarrelFile）、Conventional Commits 提交校验及 changelogen 自动化发布 | [团队工程规范](CONTRIBUTING.md) |
+| **⚙️ CI/CD 与工作流** | [`.github/`](.github) | **自动化研发管线**：PR 门禁（typecheck / lint / e2e / 标题校验）、OpenCodeReview AI 审查、CodeQL 安全扫描与 tag 驱动的三平台自动发版 | [CI/CD 流程指南](.github/CICD.md) |
 
 ---
 
