@@ -99,10 +99,17 @@ export async function launchElectronApp(
   proc.stderr?.pipe(process.stderr);
 
   // 4. 注入主进程 shell 安全桩（防止任何用例拉起外部系统文件管理器或浏览器造成 CI 挂死）
-  await electronApp.evaluate(({ shell }) => {
-    shell.openExternal = async () => {};
-    shell.openPath = async () => '';
-    shell.showItemInFolder = () => {};
+await electronApp.evaluate(({ shell }) => {
+    shell.openExternal = async (url) => {
+      console.warn('[E2E Shell Stub] openExternal called with:', url);
+    };
+    shell.openPath = async (path) => {
+      console.warn('[E2E Shell Stub] openPath called with:', path);
+      return '';
+    };
+    shell.showItemInFolder = (fullPath) => {
+      console.warn('[E2E Shell Stub] showItemInFolder called with:', fullPath);
+    };
   });
 
   // 5. 等待应用首个窗口加载就绪
