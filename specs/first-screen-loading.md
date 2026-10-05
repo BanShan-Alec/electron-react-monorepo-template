@@ -122,7 +122,7 @@
          html/body/#root 透明、#root 与 #loading 的 0.16s 交叉淡入、
          startup-logo-pop 关键帧、prefers-reduced-motion 降级。
          v2 修订：.startup-logo-shell 为 96×96 无底透明容器（v1 的深色渐变
-         卡片/阴影/描边已按用户裁决移除），Logo 即视觉主体。
+         卡片/阴影/描边已按用户裁决移除），Logo 即视觉主体（满幅 96×96）。
          注意：background: transparent !important 的 biome noImportantStyles 抑制
          移至 .config/biome.json 文件级 overrides（v2 起 HTML 内不放抑制注释）。 */
     </style>
@@ -323,8 +323,8 @@ preload（`packages/preload/src/index.ts`）在**求值时**（早于页面一�
 | 弹出动画时长与曲线 | `0.72s cubic-bezier(0.22, 1, 0.36, 1) forwards` | index.html L54 |
 | 关键帧序列（scale） | 0%:`0.72` / 38%:`1.045` / 58%:`0.985` / 76%:`1.008` / 100%:`1` | index.html L74-97 |
 | `#loading` z-index | `2147483647` | index.html L28 |
-| 壳容器规格 | 96×96 **无底透明容器**（仅承载弹簧动画与居中，无渐变/阴影/描边），Logo 即视觉主体（蓝底白雷电 56×56） | v2 修订（原 v1 深色渐变卡片按用户裁决移除）；96/56 数值沿用上游 |
-| Logo 插槽规格 | 56×56（容器冻结；素材后续替换） | index.html L68-72 |
+| 壳容器规格 | 96×96 **无底透明容器**（仅承载弹簧动画与居中，无渐变/阴影/描边），Logo 即视觉主体（蓝底白雷电满幅 96×96） | v2 修订（原 v1 深色渐变卡片按用户裁决移除）；96 沿用上游 |
+| Logo 插槽规格 | 96×96（与壳容器满幅） | v2 修订（上游 index.html L68-72 为 56×56，卡片移除后 Logo 为唯一视觉元素，按用户裁决放大） |
 | 动画门禁兜底 | `1000ms` | index.html L182 |
 | React 门禁兜底 | `3000ms` | index.html L186 |
 | 壳 DOM 卸载延迟 | `500ms` | index.html L155 |
@@ -448,3 +448,4 @@ v1 的 1~5 已按序落库（`feat/first-screen-loading`）。v2 追加：
 6. **【已解决·v2】协调器打包 API 选型**：`transformWithOxc` 为单文件转译、不打包 import（无法吸收 shared 常量）；Vite 8 不 re-export rolldown 本体。定选程序化 `build()`（`configFile:false` + `write:false` + `format:'iife'`）内存打包，零新增依赖（D10）。
 7. **【已解决·v2】contextIsolation 下的快照载体**：preload 直接写 `window.xxx` 主世界不可见（隔离世界），"window 快照对象"不可行；定选 contextBridge API（`api.startup.getSnapshot()` 拉取 + `onMainReady` 回调携带 payload）+ 无 payload 纯 `Event` 跨世界派发（`APP_STARTUP_MAIN_READY_EVENT`）。
 8. **【已解决·v2】壳卡片移除**：v1 沿用上游的 96×96 深色渐变卡片（#000000→#151718 + 白描边 + 阴影）在 Logo 换为蓝底白雷电后成为多余的"黑色底"，按用户裁决移除全部卡片装饰——壳容器降级为无底透明动画承载层，Logo 即视觉主体（§5 冻结表已同步修订）。
+9. **【已解决·v2】Logo 放大**：卡片移除后 56×56 的 Logo 成为唯一视觉元素，观感偏小；插槽与 SVG 显示尺寸按用户裁决放大至 96×96（与壳容器满幅），圆角比例由 viewBox 缩放自动保持。
