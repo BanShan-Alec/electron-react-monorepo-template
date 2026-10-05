@@ -1,4 +1,5 @@
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
+import { APP_STARTUP_MAIN_READY_EVENT } from '@app/shared/constants/startup';
 import type { CalculateInput } from '@app/shared/schemas/calculator';
 import type { AppConfig, UpdateConfigInput } from '@app/shared/schemas/config';
 import type { StepInput } from '@app/shared/schemas/counter';
@@ -6,6 +7,7 @@ import type { LogInput, PerformActionInput } from '@app/shared/schemas/diagnosti
 import type { OpenDirectoryInput, OpenFileInput, SaveFileInput } from '@app/shared/schemas/dialog';
 import type { ShowItemInFolderInput } from '@app/shared/schemas/shell';
 import type { ElectronApi } from '@app/shared/types/api';
+import type { StartupMainReadyPayload } from '@app/shared/types/startup';
 import type { UpdaterProgress, UpdaterSnapshot } from '@app/shared/types/updater';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
 
@@ -74,6 +76,21 @@ export const apiBridge: ElectronApi = {
       ipcRenderer.on(IPC_CHANNELS.UPDATER_EVENT_PROGRESS, listener);
       return () => {
         ipcRenderer.removeListener(IPC_CHANNELS.UPDATER_EVENT_PROGRESS, listener);
+      };
+    },
+  },
+  // 启动就绪桥（spec §4.6 / ADR-0003）：先拉后推，主进程信号先于窗口时经快照补发不丢
+  startup: {
+    getSnapshot: () => ipcRenderer.invoke(IPC_CHANNELS.STARTUP_GET_SNAPSHOT),
+    onMainReady: (cb: (payload: StartupMainReadyPayload) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: StartupMainReadyPayload) => {
+        // 无 payload 纯 Event 跨世界可见（contextIsolation），payload 经回调携带
+        window.dispatchEvent(new Event(APP_STARTUP_MAIN_READY_EVENT));
+        cb(payload);
+      };
+      ipcRenderer.on(IPC_CHANNELS.STARTUP_EVENT_MAIN_READY, listener);
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.STARTUP_EVENT_MAIN_READY, listener);
       };
     },
   },
