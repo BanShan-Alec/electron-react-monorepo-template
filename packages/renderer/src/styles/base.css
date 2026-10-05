@@ -56,8 +56,8 @@
  * 且 scrollbar-color 一旦声明会整体禁用本伪元素样式，两者互斥。
  */
 *::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
 }
 
 *::-webkit-scrollbar-track {
@@ -65,13 +65,14 @@
 }
 
 /*
- * 2px 透明 border + background-clip 让滑块四周离边留白（悬浮观感）：
- * 12px 总宽 - 两侧各 2px = 视觉 8px 滑块；外圈圆角 6px 扣除 border 后视觉即 4px。
+ * 透明 border + background-clip 让滑块四周离边留白（悬浮观感）：
+ * 14px 总宽 - 两侧各 3px = 视觉 8px 滑块；外圈圆角 7px 扣除 border 后视觉即 4px。
+ * 隙不能取 2px：Chromium 按设备像素取整，100% 缩放下 2px 实渲染 ≈1px，视觉等于贴边。
  */
 *::-webkit-scrollbar-thumb {
   background-color: var(--color-scrollbar-thumb);
-  border: 2px solid transparent;
-  border-radius: 6px;
+  border: 3px solid transparent;
+  border-radius: 7px;
   background-clip: padding-box;
 }
 
