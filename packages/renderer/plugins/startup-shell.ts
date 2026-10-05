@@ -7,13 +7,17 @@ import { build, normalizePath } from 'vite';
  * 启动壳构建期内联插件 (specs/first-screen-loading.md §4.7 / ADR-0002)
  *
  * dev 与 build 走同一 transformIndexHtml，替换两个占位符：
- * - `<!-- __APP_STARTUP_LOGO__ -->` ← src/assets/logo.svg 文件原文（剥 XML 声明与注释）
+ * - `<!-- __APP_STARTUP_LOGO__ -->` ← src/assets/startup-logo.svg 文件原文直读
  * - `<!-- __APP_STARTUP_COORDINATOR__ -->` ← src/startup/coordinator.ts 打包的经典 IIFE
- *   内联 `<script>`（含其 import 的 @app/shared 纯常量），物理位置先于 main.tsx。
+ *   内联 `<script>`（含其 import 的 @app/shared 纯常量），物理位置先于 main.tsx
+ *
+ * 压缩策略：dev（ctx.server 在场）不压缩，内联脚本可读便于排查；
+ * build 开 minify，剥除产物内的 JSDoc/region 注释。
  *
  * 工具链红线（D10 / CONTRIBUTING §一.5）：仅用 Vite 8 / Rolldown / Oxc 原生能力。
  * transformWithOxc 为单文件转译、不打包 import，故协调器用程序化 build() 内存打包：
  * configFile:false + write:false + format:'iife'，零新增依赖。
+ * 不做打包缓存：实测该迷你构建仅 10~36ms（2026-10-06 基准），缓存属过度设计。
  *
  * fail-fast：占位符缺失、打包失败即抛错终止——壳是首屏生命线，静默降级等于白屏。
  */
@@ -31,84 +35,38 @@ export function startupShellInlinePlugin(options: StartupShellInlinePluginOption
   const { root } = options;
   const indexEntry = normalizePath(path.resolve(root, 'index.html')).toLowerCase();
   const coordinatorEntry = path.resolve(root, 'src/startup/coordinator.ts');
-  const sharedConstantsDir = path.resolve(root, '../../packages/shared/src/constants');
   const logoFile = path.resolve(root, 'src/assets/startup-logo.svg');
 
-  // 私有常量与工具：缓存键覆盖协调器与 shared constants 全目录的 mtime，
-  // 避免协调器未来 import 其它 shared 常量时 dev 缓存不失效
-
-  // 可抽离的逻辑处理函数/组件
-
-  const statMtime = (file: string): number => {
-    try {
-      return fs.statSync(file).mtimeMs;
-    } catch {
-      return -1;
-    }
-  };
-
-  const dirMtimeKey = (dir: string): string => {
-    try {
-      return fs
-        .readdirSync(dir)
-        .map((file) => statMtime(path.join(dir, file)))
-        .join('|');
-    } catch {
-      return '';
-    }
-  };
-
-  // 剥除 XML 声明与注释后原文内联（防编辑器元数据进产物）；素材替换只改文件，HTML 零改动。
-  // dev 每次页面加载直读一次即可（8KB 级文件），需要缓存的大头是协调器的内存打包
-  const readLogoMarkup = (): string =>
-    fs
-      .readFileSync(logoFile, 'utf-8')
-      .replace(/<\?xml[^>]*\?>/g, '')
-      .replace(/<!--[\s\S]*?-->/g, '')
-      .trim();
-
-  const bundleCoordinator = (() => {
-    let cacheKey = '';
-    let cacheValue = '';
-    return async (): Promise<string> => {
-      const key = `${statMtime(coordinatorEntry)}|${dirMtimeKey(sharedConstantsDir)}`;
-      if (key === cacheKey) {
-        return cacheValue;
-      }
-
-      // 程序化内存打包：空插件管线 + rolldown 原生 TS 转译；@app/shared 经
-      // renderer 的 node_modules symlink 以裸 TS subpath exports 解析
-      const result = await build({
-        configFile: false,
-        logLevel: 'silent',
-        root,
-        plugins: [],
-        build: {
-          write: false,
-          minify: false,
-          rollupOptions: {
-            input: coordinatorEntry,
-            output: {
-              format: 'iife',
-            },
+  const bundleCoordinator = async (minify: boolean): Promise<string> => {
+    // 程序化内存打包：空插件管线 + rolldown 原生 TS 转译；@app/shared 经
+    // renderer 的 node_modules symlink 以裸 TS subpath exports 解析
+    const result = await build({
+      configFile: false,
+      logLevel: 'silent',
+      root,
+      plugins: [],
+      build: {
+        write: false,
+        minify,
+        rollupOptions: {
+          input: coordinatorEntry,
+          output: {
+            format: 'iife',
           },
         },
-      });
+      },
+    });
 
-      const bundle = Array.isArray(result) ? result[0] : result;
-      if (!('output' in bundle)) {
-        throw new Error('[startup-shell] 内存打包未返回产物，请检查 rollupOptions 配置');
-      }
-      const chunk = bundle.output.find((item) => item.type === 'chunk');
-      if (!chunk) {
-        throw new Error('[startup-shell] 内存打包产物中没有 chunk');
-      }
-
-      cacheValue = `<script>\n${chunk.code.trim()}\n</script>`;
-      cacheKey = key;
-      return cacheValue;
-    };
-  })();
+    const bundle = Array.isArray(result) ? result[0] : result;
+    if (!('output' in bundle)) {
+      throw new Error('[startup-shell] 内存打包未返回产物，请检查 rollupOptions 配置');
+    }
+    const chunk = bundle.output.find((item) => item.type === 'chunk');
+    if (!chunk) {
+      throw new Error('[startup-shell] 内存打包产物中没有 chunk');
+    }
+    return `<script>\n${chunk.code.trim()}\n</script>`;
+  };
 
   return {
     name: 'app-startup-shell-inline',
@@ -129,7 +87,10 @@ export function startupShellInlinePlugin(options: StartupShellInlinePluginOption
           );
         }
 
-        const [logoMarkup, coordinatorScript] = [readLogoMarkup(), await bundleCoordinator()];
+        // Logo 原文直读（素材手写极简，无剥除/优化必要）；
+        // dev（ctx.server 在场）不压缩保可读，build 压缩去产物注释
+        const logoMarkup = fs.readFileSync(logoFile, 'utf-8');
+        const coordinatorScript = await bundleCoordinator(ctx.server === undefined);
         // 用函数替换：注入内容若含 $&/$' 等模式串，字符串替换会被特殊展开
         const replaced = html
           .replace(LOGO_PLACEHOLDER, () => logoMarkup)

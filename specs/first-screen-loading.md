@@ -144,7 +144,7 @@
 
 占位符契约（插件替换，形态冻结）：
 
-- `<!-- __APP_STARTUP_LOGO__ -->`：替换为 `packages/renderer/src/assets/startup-logo.svg` 的**文件原文**（去除 XML 声明与注释）。素材为 Header 同款——`--color-primary` 蓝底（#1677ff）+ 白色 Thunderbolt 雷电；壳先于应用样式加载，CSS 变量不可用，故色值在 SVG 内固化（品牌蓝不属 §6.5 窗口底色单一事实源约束范围）；换素材只改此文件，HTML 零改动。
+- `<!-- __APP_STARTUP_LOGO__ -->`：替换为 `packages/renderer/src/assets/startup-logo.svg` 的**文件原文直读**（不剥除、不优化——素材为手写极简 SVG）。素材为 Header 同款——`--color-primary` 蓝底（#1677ff）+ 白色 Thunderbolt 雷电；壳先于应用样式加载，CSS 变量不可用，故色值在 SVG 内固化（品牌蓝不属 §6.5 窗口底色单一事实源约束范围）；换素材只改此文件，HTML 零改动。
 - `<!-- __APP_STARTUP_COORDINATOR__ -->`：替换为 `<script>...</script>`，内容为 `src/startup/coordinator.ts` 打包产出的经典 IIFE（非 module，§10.3 结论不变），**物理位置必须仍在 main.tsx 的 script 之前**。
 
 硬性约束：
@@ -307,8 +307,8 @@ preload（`packages/preload/src/index.ts`）在**求值时**（早于页面一�
 新增文件：`packages/renderer/plugins/startup-shell.ts`，导出 `startupShellInlinePlugin(): Plugin`，接入 `packages/renderer/vite.config.ts` 的 `plugins` 数组。renderer 专属构建期插件的归口目录 `plugins/` 由此建立（文件名不带 `vite-plugin-` 前缀——那是 npm 发布包的命名惯例）；`build/` 保持 electron-builder 打包配置与原生资源的单一语义。职责与实现约束：
 
 - **单一钩子**：`transformIndexHtml` 同时服务 dev 与 build（已核实 Vite 8.3 dev 对真实磁盘入口生效，§10.5），两形态一致。
-- **Logo 替换**：读取 `packages/renderer/public/favicon.svg`（与站点 favicon 同素材）原文（剥除 XML 声明与注释）替换 `<!-- __APP_STARTUP_LOGO__ -->`；按 mtime 缓存。
-- **协调器编译**：以程序化 Vite `build()` 内存打包——`inlineConfig = { configFile: false, logLevel: 'silent', plugins: [], resolve.tsconfigPaths: true, build: { write: false, rollupOptions: { input: coordinator.ts, output: { format: 'iife' } } } }`（`rollupOptions` 为 Vite 8 兼容键，等价 `rolldownOptions`），取 `output[0].code` 包裹为 `<script>...</script>` 替换 `<!-- __APP_STARTUP_COORDINATOR__ -->`；按入口与 shared constants 目录文件 mtime 缓存。替换一律用函数形式（注入内容含 `$&`/`$'` 等模式串时字符串替换会被特殊展开）。**工具链红线（D10）**：仅用 Vite 8 / Rolldown / Oxc 原生能力，禁止引入 esbuild / babel（`transformWithOxc` 为单文件转译、不打包，不满足 import shared 的需求，故取 build API 路径）。
+- **Logo 替换**：读取 `packages/renderer/src/assets/startup-logo.svg` 原文直读替换 `<!-- __APP_STARTUP_LOGO__ -->`（无剥除、无缓存——实测成本低于感知阈值）。
+- **协调器编译**：以程序化 Vite `build()` 内存打包——`inlineConfig = { configFile: false, logLevel: 'silent', plugins: [], build: { write: false, rollupOptions: { input: coordinator.ts, output: { format: 'iife' } } } }`（`rollupOptions` 为 Vite 8 兼容键，等价 `rolldownOptions`），取 `output[0].code` 包裹为 `<script>...</script>` 替换 `<!-- __APP_STARTUP_COORDINATOR__ -->`；**minify 仅 build 开启**（剥除产物内 JSDoc/region 注释，内联脚本 ~2.8KB→851B），dev 保持不压缩便于排查；**不缓存**：实测该迷你构建 10~36ms（rolldown 空管线 + 2 模块，2026-10-06 基准），缓存属过度设计。替换一律用函数形式（注入内容含 `$&`/`$'` 等模式串时字符串替换会被特殊展开）。**工具链红线（D10）**：仅用 Vite 8 / Rolldown / Oxc 原生能力，禁止引入 esbuild / babel（`transformWithOxc` 为单文件转译、不打包，不满足 import shared 的需求，故取 build API 路径）；SVG 不引入 svgo（素材手写极简，优化空间≈0，避免零依赖裁决破例）。
 - **入口隔离与 fail-fast**：仅主入口接壳（`ctx.filename` 归一化 + 大小写不敏感比较；`updater.html` 原样放行）；协调器打包失败、占位符缺失或替换未完成时抛错终止构建（壳是首屏生命线，静默降级等于白屏），错误信息指向本规范。
 
 ---

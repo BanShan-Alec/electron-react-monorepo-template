@@ -12,7 +12,7 @@ Status: accepted（2026-10-05）
 
 - **A. 维持全手写内联**：零构建机器，但源码债持续累积，shared 常量无法复用，两端耦合靠注释纪律维持——否决；
 - **B. 协调器改外链 module script**：dev 省事，但产物被 Vite 抽进主 bundle，直接违反 D3（本规范 §10.3 实测结论）——否决；
-- **C. 源码外置 + 手写 transformIndexHtml 插件内联（选定）**：产物形态不变、源码可维护可类型检查、shared 契约可复用；成本是 ~60 行插件与一次内存打包（按 mtime 缓存）；
+- **C. 源码外置 + 手写 transformIndexHtml 插件内联（选定）**：产物形态不变、源码可维护可类型检查、shared 契约可复用；成本是 ~90 行插件与一次内存打包（实测 10~36ms，不缓存）；
 - **D. 第三方内联插件（vite-plugin-svg 等）**：dev 行为参差、离线装包有 lockfile 漂移风险、逻辑太薄不值得引依赖——否决。
 
 ## Consequences
