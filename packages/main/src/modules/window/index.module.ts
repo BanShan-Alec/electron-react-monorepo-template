@@ -7,9 +7,10 @@ import type { ModuleContext } from '../../ModuleContext';
 import { updaterService } from '../../services/updater.service';
 import { getAppConfigStore } from '../config.module';
 import { getLogManager } from '../log.module';
-import { getTitleBarOverlayOptions } from './titlebar-overlay';
+import { getTitleBarOverlayOptions, getWindowBackgroundColor } from './titlebar-overlay';
 import { getUpdaterWindowModule } from './updater-window.module';
 import { forgetWindow, getWindow, registerWindow } from './window-registry';
+import { attachWindowsWindowRepaint } from './window-repaint';
 import { DEFAULT_WINDOW_STATE, type WindowState, WindowStateKeeper } from './window-state-keeper';
 
 export interface WindowManagerOptions {
@@ -77,11 +78,13 @@ export class WindowManager implements AppModule {
     const isWin = process.platform === 'win32';
 
     const browserWindow = new BrowserWindow({
-      show: false, // Use the 'ready-to-show' event to show the instantiated BrowserWindow.
+      // 首屏渐进式加载：不设 show:false 门禁，窗口创建即可见，
+      // 首个可视内容为 backgroundColor 主题底色（与 WCO overlay 同源），禁止白屏期
       x: savedState.x,
       y: savedState.y,
       width: savedState.width,
       height: savedState.height,
+      backgroundColor: getWindowBackgroundColor(),
       ...(isMac ? { titleBarStyle: 'hidden', titleBarOverlay: true } : {}),
       ...(isWin
         ? {
@@ -110,15 +113,16 @@ export class WindowManager implements AppModule {
       this.windowStateKeeper.track(browserWindow);
     }
 
-    browserWindow.once('ready-to-show', () => {
-      if (savedState.isMaximized) {
-        browserWindow.maximize();
+    // win32 dom-ready 补偿：无边框窗口在 dom-ready 前可能未完成首帧合成，
+    // 补一次 show+focus 避免任务栏有图标但窗口不可见（对齐上游 desktopWindowLifecycle）
+    browserWindow.webContents.on('dom-ready', () => {
+      if (process.platform === 'win32' && !browserWindow.isDestroyed()) {
+        browserWindow.show();
+        browserWindow.focus();
       }
-      browserWindow.show();
       if (this.openDevTools) {
         browserWindow.webContents.openDevTools();
       }
-      logger.info('Home window displayed successfully');
     });
 
     browserWindow.webContents.on(
@@ -172,6 +176,14 @@ export class WindowManager implements AppModule {
         }
       }
     });
+
+    // 无边框重绘守护全生命周期挂载（win32）：跨屏拖拽 / Snap / 锁屏唤醒后补绘
+    attachWindowsWindowRepaint(browserWindow);
+
+    // maximize 前置于 load：窗口创建即可见后，若在 load 后最大化会产生可见的尺寸跳变
+    if (savedState.isMaximized) {
+      browserWindow.maximize();
+    }
 
     if (this.renderer instanceof URL) {
       await browserWindow.loadURL(this.renderer.href);

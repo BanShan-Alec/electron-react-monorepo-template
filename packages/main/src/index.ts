@@ -11,6 +11,7 @@ import { createNativeThemeModule } from './modules/native-theme.module';
 import { allowInternalOrigins } from './modules/security/block-origins';
 import { allowExternalUrls } from './modules/security/external-urls';
 import { disallowMultipleAppInstance } from './modules/single-instance.module';
+import { createStartupReadinessModule } from './modules/startup-readiness.module';
 import { createTrayModule } from './modules/tray.module';
 import { createWindowManagerModule } from './modules/window/index.module';
 import { createUpdaterWindowModule } from './modules/window/updater-window.module';
@@ -52,6 +53,8 @@ export async function initApp(initConfig: AppInitConfig) {
     .init(createConfigModule())
     .init(createNativeThemeModule())
     .init(createIPCModule())
+    // 主进程就绪源：链位在 WindowManager 之前，信号先于窗口与壳（spec §4.6 / ADR-0003）
+    .init(createStartupReadinessModule())
     .init(createWindowManagerModule({ initConfig }))
     .init(createUpdaterWindowModule({ initConfig }))
     .init(createTrayModule())

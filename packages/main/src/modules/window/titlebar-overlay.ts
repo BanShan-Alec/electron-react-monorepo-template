@@ -23,11 +23,20 @@ export function canUpdateTitleBarOverlay(): boolean {
   return IS_WIN;
 }
 
+/**
+ * 窗口底色与 overlay 色同源同主题分支（深 #141414 / 浅 #ffffff），
+ * 供 BrowserWindow 构造项 backgroundColor 使用：首帧先于渲染进程，
+ * 与启动壳叠放后保证深浅主题均无白闪。严禁在别处硬编码这两个色值。
+ */
+export function getWindowBackgroundColor(): string {
+  return nativeTheme.shouldUseDarkColors ? '#141414' : '#ffffff';
+}
+
 /** overlay 颜色与 tokens.css 主题变量对齐（浅色 #ffffff/#141414 容器底色 + 主文字色） */
 export function getTitleBarOverlayOptions(): { color: string; symbolColor: string } {
   const shouldUseDarkColors = nativeTheme.shouldUseDarkColors;
   return {
-    color: shouldUseDarkColors ? '#141414' : '#ffffff',
+    color: getWindowBackgroundColor(),
     symbolColor: shouldUseDarkColors ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)',
   };
 }
