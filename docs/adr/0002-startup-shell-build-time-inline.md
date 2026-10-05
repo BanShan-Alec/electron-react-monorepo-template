@@ -18,6 +18,6 @@ Status: accepted（2026-10-05）
 ## Consequences
 
 - `build/` 目录新增首个 Vite 插件（`vite-plugin-startup-shell.ts`），renderer 的 `vite.config.ts` 引入对 `build/` 的相对导入（先例由此建立）；
-- 协调器源码允许 import `@app/shared/constants/*` 纯常量，严禁打包产物/组件/样式——壳产物自足红线（§6.1 v2）由插件 fail-fast（占位符缺失/打包失败即终止构建）兜底；
+- 协调器源码允许 import `@app/shared/constants/*` 纯常量，严禁打包产物/组件/样式——import 面红线由评审与 spec §4.3 参考实现把守，插件 fail-fast 仅兜占位符契约与打包成功（缺失/失败即终止构建）；
 - `noImportantStyles` 抑制从 HTML 内联注释移至 `.config/biome.json` 文件级 override，HTML 源码不再承载工具注释；
 - 未来给壳加资产（新 Logo、新引导脚本）的路径：改源文件或加占位符 + 插件分支，HTML 结构不再膨胀。

@@ -11,6 +11,19 @@ import type { StartupMainReadyPayload } from '@app/shared/types/startup';
 import type { UpdaterProgress, UpdaterSnapshot } from '@app/shared/types/updater';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
 
+// 启动就绪桥（spec §4.6 / ADR-0003）：先拉后推，主进程信号先于窗口时经快照补发不丢。
+// 求值时即预取快照并注册推送监听（不等 onMainReady 被调用）——晚到信号经跨世界
+// 纯 Event 派发给壳协调器（contextIsolation 下无 payload Event 可见），payload 经回调携带
+const mainReadyCallbacks = new Set<(payload: StartupMainReadyPayload) => void>();
+const startupSnapshotPromise = ipcRenderer.invoke(IPC_CHANNELS.STARTUP_GET_SNAPSHOT);
+ipcRenderer.on(
+  IPC_CHANNELS.STARTUP_EVENT_MAIN_READY,
+  (_event, payload: StartupMainReadyPayload) => {
+    window.dispatchEvent(new Event(APP_STARTUP_MAIN_READY_EVENT));
+    for (const cb of mainReadyCallbacks) cb(payload);
+  },
+);
+
 export const apiBridge: ElectronApi = {
   system: {
     ping: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_PING),
@@ -79,18 +92,13 @@ export const apiBridge: ElectronApi = {
       };
     },
   },
-  // 启动就绪桥（spec §4.6 / ADR-0003）：先拉后推，主进程信号先于窗口时经快照补发不丢
+  // 启动就绪桥（spec §4.6 / ADR-0003）：快照走求值期预取的 Promise，推送回调按注册表分发
   startup: {
-    getSnapshot: () => ipcRenderer.invoke(IPC_CHANNELS.STARTUP_GET_SNAPSHOT),
+    getSnapshot: () => startupSnapshotPromise,
     onMainReady: (cb: (payload: StartupMainReadyPayload) => void) => {
-      const listener = (_event: Electron.IpcRendererEvent, payload: StartupMainReadyPayload) => {
-        // 无 payload 纯 Event 跨世界可见（contextIsolation），payload 经回调携带
-        window.dispatchEvent(new Event(APP_STARTUP_MAIN_READY_EVENT));
-        cb(payload);
-      };
-      ipcRenderer.on(IPC_CHANNELS.STARTUP_EVENT_MAIN_READY, listener);
+      mainReadyCallbacks.add(cb);
       return () => {
-        ipcRenderer.removeListener(IPC_CHANNELS.STARTUP_EVENT_MAIN_READY, listener);
+        mainReadyCallbacks.delete(cb);
       };
     },
   },

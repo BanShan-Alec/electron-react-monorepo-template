@@ -20,13 +20,6 @@ import { broadcast } from './window/window-registry';
 // 私有常量
 let snapshot: StartupGateSnapshot = { mainReady: false, payload: null };
 
-// 可抽离的逻辑处理函数/组件
-
-/** 闩锁快照只读视图：供测试或同链后序模块查证（渲染端一律走 IPC 快照通道） */
-export function getStartupGateSnapshot(): StartupGateSnapshot {
-  return snapshot;
-}
-
 export function createStartupReadinessModule(): AppModule {
   return {
     enable() {

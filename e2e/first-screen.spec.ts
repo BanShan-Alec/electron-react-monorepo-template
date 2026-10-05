@@ -2,6 +2,8 @@ import { expect, test } from './helpers/fixture';
 
 type WindowWithCommitMark = Window & { __APP_REACT_COMMIT_AT__?: number };
 
+// e2e 独立 tsconfig 不解析 workspace 包，结构视图与 shared 的
+// StartupGateSnapshot 保持一致即可（形状漂移会被 AC-7 断言捕获）
 type StartupApiLike = {
   startup?: {
     getSnapshot?: () => Promise<{

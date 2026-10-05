@@ -29,13 +29,13 @@ export interface StartupShellInlinePluginOptions {
 
 export function startupShellInlinePlugin(options: StartupShellInlinePluginOptions): Plugin {
   const { root } = options;
-  const indexEntry = normalizePath(path.resolve(root, 'index.html'));
+  const indexEntry = normalizePath(path.resolve(root, 'index.html')).toLowerCase();
   const coordinatorEntry = path.resolve(root, 'src/startup/coordinator.ts');
-  const sharedStartupConstants = path.resolve(
-    root,
-    '../../packages/shared/src/constants/startup.ts',
-  );
+  const sharedConstantsDir = path.resolve(root, '../../packages/shared/src/constants');
   const logoFile = path.resolve(root, 'public/favicon.svg');
+
+  // 私有常量与工具：缓存键覆盖协调器与 shared constants 全目录的 mtime，
+  // 避免协调器未来 import 其它 shared 常量时 dev 缓存不失效
 
   // 可抽离的逻辑处理函数/组件
 
@@ -44,6 +44,17 @@ export function startupShellInlinePlugin(options: StartupShellInlinePluginOption
       return fs.statSync(file).mtimeMs;
     } catch {
       return -1;
+    }
+  };
+
+  const dirMtimeKey = (dir: string): string => {
+    try {
+      return fs
+        .readdirSync(dir)
+        .map((file) => statMtime(path.join(dir, file)))
+        .join('|');
+    } catch {
+      return '';
     }
   };
 
@@ -69,7 +80,7 @@ export function startupShellInlinePlugin(options: StartupShellInlinePluginOption
     let cacheKey = '';
     let cacheValue = '';
     return async (): Promise<string> => {
-      const key = `${statMtime(coordinatorEntry)}|${statMtime(sharedStartupConstants)}`;
+      const key = `${statMtime(coordinatorEntry)}|${dirMtimeKey(sharedConstantsDir)}`;
       if (key === cacheKey) {
         return cacheValue;
       }
@@ -110,13 +121,13 @@ export function startupShellInlinePlugin(options: StartupShellInlinePluginOption
 
   return {
     name: 'app-startup-shell-inline',
-    enforce: 'pre',
     transformIndexHtml: {
       order: 'pre',
       async handler(html, ctx) {
         // 入口隔离（spec §6.7）：仅主入口接壳；updater.html 等其它 html 原样放行。
-        // build 模式 ctx.filename 经 vite normalizePath 为正斜杠，两侧必须归一后比较
-        const isMainEntry = ctx.filename === indexEntry;
+        // build 模式 ctx.filename 经 vite normalizePath 为正斜杠，与 path.resolve 的
+        // 反斜杠不同；再统一小写比较，消除 Windows 大小写漂移导致的静默跳过
+        const isMainEntry = (ctx.filename ?? '').toLowerCase() === indexEntry;
         if (!isMainEntry) {
           return html;
         }
@@ -128,9 +139,10 @@ export function startupShellInlinePlugin(options: StartupShellInlinePluginOption
         }
 
         const [logoMarkup, coordinatorScript] = [readLogoMarkup(), await bundleCoordinator()];
+        // 用函数替换：注入内容若含 $&/$' 等模式串，字符串替换会被特殊展开
         const replaced = html
-          .replace(LOGO_PLACEHOLDER, logoMarkup)
-          .replace(COORDINATOR_PLACEHOLDER, coordinatorScript);
+          .replace(LOGO_PLACEHOLDER, () => logoMarkup)
+          .replace(COORDINATOR_PLACEHOLDER, () => coordinatorScript);
 
         if (replaced.includes(LOGO_PLACEHOLDER) || replaced.includes(COORDINATOR_PLACEHOLDER)) {
           throw new Error('[startup-shell] 占位符替换未完成，请检查插件替换逻辑');

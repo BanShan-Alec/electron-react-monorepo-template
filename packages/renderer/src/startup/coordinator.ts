@@ -23,20 +23,17 @@ const UNMOUNT_DELAY_MS = 500;
 const LOGO_SHELL_SELECTOR = '.startup-logo-shell';
 const LOADING_ELEMENT_ID = 'loading';
 
-// 可抽离的逻辑处理函数/组件
+// 门禁注册表状态：待齐备门禁集合与完成标记（裸 DOM 引导层，豁免 7 段式模板，无锚点约束）
+type GateId = 'animation' | 'react' | 'main';
 
 /** 主进程就绪桥的结构视图：contextIsolation 下经 api.startup 暴露（不存在时主门禁立即放行） */
 type StartupBridgeLike = {
   getSnapshot: () => Promise<{ mainReady: boolean }>;
 };
 
-type GateId = 'animation' | 'react' | 'main';
-
-// 变量声明、解构
 let finished = false;
 const pendingGates = new Set<GateId>(['animation', 'react', 'main']);
 
-// 逻辑处理函数
 const tryFinishStartup = () => {
   if (finished || pendingGates.size > 0) return;
   finished = true;

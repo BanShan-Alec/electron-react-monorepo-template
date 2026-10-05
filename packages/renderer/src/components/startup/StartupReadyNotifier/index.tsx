@@ -35,8 +35,7 @@ type IProps = Record<string, never>;
 
 declare global {
   interface Window {
-    /** 字面量键与 shared 的 APP_REACT_COMMIT_AT_KEY 契约一致（TS 接口索引不支持非常量计算键） */
-    __APP_REACT_COMMIT_AT__?: number;
+    [APP_REACT_COMMIT_AT_KEY]?: number;
   }
 }
 

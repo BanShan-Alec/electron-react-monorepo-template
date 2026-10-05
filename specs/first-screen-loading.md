@@ -292,10 +292,11 @@ shared 契约新增：
 - `packages/shared/src/types/startup.ts`：`StartupMainReadyPayload { initMs: number; latchedAt: number }`、`StartupGateSnapshot { mainReady: boolean; payload: StartupMainReadyPayload | null }`。
 - `packages/shared/src/constants/ipc-channels.ts` 增补：`STARTUP_GET_SNAPSHOT: 'startup:get-snapshot'`、`STARTUP_EVENT_MAIN_READY: 'startup:event:main-ready'`。
 
-preload（`packages/preload/src/index.ts`）`apiBridge` 增补 `startup` 命名空间：
+preload（`packages/preload/src/index.ts`）在**求值时**（早于页面一切脚本）即完成"先拉后推"布线：
 
-- `getSnapshot(): Promise<StartupGateSnapshot>`——引导期一次性拉取（非壳等待的往返 RPC，§6.3 修订后允许）。
-- `onMainReady(cb: (payload: StartupMainReadyPayload) => void): () => void`——订阅推送；收到时除回调外，向共享 `window` EventTarget 派发无 payload 的 `new Event(APP_STARTUP_MAIN_READY_EVENT)`（contextIsolation 下纯 Event 跨世界可见，payload 经 contextBridge 回调携带）。
+- **快照预取**：`invoke(STARTUP_GET_SNAPSHOT)` 的 Promise 在求值期创建，`api.startup.getSnapshot()` 返回该预取 Promise（非壳等待的往返 RPC，§6.3 修订后允许）。
+- **推送监听**：`ipcRenderer.on(STARTUP_EVENT_MAIN_READY)` 在求值期注册，**不等** `onMainReady` 被调用——收到推送时向共享 `window` EventTarget 派发无 payload 的 `new Event(APP_STARTUP_MAIN_READY_EVENT)`（contextIsolation 下纯 Event 跨世界可见）并分发给已注册回调。此布线保证"晚到信号"的 DOM 事件腿真实可达，而非依赖调用方先订阅。
+- `onMainReady?(cb: (payload: StartupMainReadyPayload) => void): () => void`——payload 订阅接口（可选性沿用 `config.onChanged` 先例）；壳协调器只消费 DOM 事件，不消费 payload。
 
 §6.3 红线修订（v2）：壳期**禁止**的是"壳显形依赖一次主进程往返应答"的同步耦合；**允许**引导期一次性快照拉取与单向订阅推送，且事件源必须闩锁（先到信号经拉取补发）。就绪判定仍以渲染端闭环为骨架（事件 + 兜底超时），主进程信号迟到/缺席时壳永不被卡死。
 
@@ -304,9 +305,9 @@ preload（`packages/preload/src/index.ts`）`apiBridge` 增补 `startup` 命名�
 新增文件：`build/vite-plugin-startup-shell.ts`，导出 `startupShellInlinePlugin(): Plugin`，接入 `packages/renderer/vite.config.ts` 的 `plugins` 数组。职责与实现约束：
 
 - **单一钩子**：`transformIndexHtml` 同时服务 dev 与 build（已核实 Vite 8.3 dev 对真实磁盘入口生效，§10.5），两形态一致。
-- **Logo 替换**：读取 `packages/renderer/src/assets/logo.svg` 原文（剥除 XML 声明与注释）替换 `<!-- __APP_STARTUP_LOGO__ -->`；按 mtime 缓存。
-- **协调器编译**：以程序化 Vite `build()` 内存打包——`inlineConfig = { configFile: false, logLevel: 'silent', plugins: [], resolve.tsconfigPaths: true, build: { write: false, rolldownOptions: { input: coordinator.ts, output: { format: 'iife' } } } }`，取 `output[0].code` 包裹为 `<script>...</script>` 替换 `<!-- __APP_STARTUP_COORDINATOR__ -->`；按入口与 shared 常量文件 mtime 缓存。**工具链红线（D10）**：仅用 Vite 8 / Rolldown / Oxc 原生能力，禁止引入 esbuild / babel（`transformWithOxc` 为单文件转译、不打包，不满足 import shared 的需求，故取 build API 路径）。
-- **fail-fast**：协调器打包失败或占位符缺失时抛错终止构建（壳是首屏生命线，静默降级等于白屏），错误信息指向本规范。
+- **Logo 替换**：读取 `packages/renderer/public/favicon.svg`（与站点 favicon 同素材）原文（剥除 XML 声明与注释）替换 `<!-- __APP_STARTUP_LOGO__ -->`；按 mtime 缓存。
+- **协调器编译**：以程序化 Vite `build()` 内存打包——`inlineConfig = { configFile: false, logLevel: 'silent', plugins: [], resolve.tsconfigPaths: true, build: { write: false, rollupOptions: { input: coordinator.ts, output: { format: 'iife' } } } }`（`rollupOptions` 为 Vite 8 兼容键，等价 `rolldownOptions`），取 `output[0].code` 包裹为 `<script>...</script>` 替换 `<!-- __APP_STARTUP_COORDINATOR__ -->`；按入口与 shared constants 目录文件 mtime 缓存。替换一律用函数形式（注入内容含 `$&`/`$'` 等模式串时字符串替换会被特殊展开）。**工具链红线（D10）**：仅用 Vite 8 / Rolldown / Oxc 原生能力，禁止引入 esbuild / babel（`transformWithOxc` 为单文件转译、不打包，不满足 import shared 的需求，故取 build API 路径）。
+- **入口隔离与 fail-fast**：仅主入口接壳（`ctx.filename` 归一化 + 大小写不敏感比较；`updater.html` 原样放行）；协调器打包失败、占位符缺失或替换未完成时抛错终止构建（壳是首屏生命线，静默降级等于白屏），错误信息指向本规范。
 
 ---
 
