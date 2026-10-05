@@ -118,9 +118,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>renderer</title>
     <style>
-      /* 内容与 v1 冻结版逐字一致（§4.2 v1 版本），此处省略：
+      /* 内容与 v1 冻结版基本一致（§4.2 v1 版本），此处省略：
          html/body/#root 透明、#root 与 #loading 的 0.16s 交叉淡入、
-         .startup-logo-shell 规格与 startup-logo-pop 关键帧、prefers-reduced-motion 降级。
+         startup-logo-pop 关键帧、prefers-reduced-motion 降级。
+         v2 修订：.startup-logo-shell 为 96×96 无底透明容器（v1 的深色渐变
+         卡片/阴影/描边已按用户裁决移除），Logo 即视觉主体。
          注意：background: transparent !important 的 biome noImportantStyles 抑制
          移至 .config/biome.json 文件级 overrides（v2 起 HTML 内不放抑制注释）。 */
     </style>
@@ -321,7 +323,7 @@ preload（`packages/preload/src/index.ts`）在**求值时**（早于页面一�
 | 弹出动画时长与曲线 | `0.72s cubic-bezier(0.22, 1, 0.36, 1) forwards` | index.html L54 |
 | 关键帧序列（scale） | 0%:`0.72` / 38%:`1.045` / 58%:`0.985` / 76%:`1.008` / 100%:`1` | index.html L74-97 |
 | `#loading` z-index | `2147483647` | index.html L28 |
-| 壳卡片规格 | 96×96、`border-radius: 24px`、渐变 `#000000 → #151718`、描边 `rgba(255,255,255,0.1)` 1px | index.html L40-66 |
+| 壳容器规格 | 96×96 **无底透明容器**（仅承载弹簧动画与居中，无渐变/阴影/描边），Logo 即视觉主体（蓝底白雷电 56×56） | v2 修订（原 v1 深色渐变卡片按用户裁决移除）；96/56 数值沿用上游 |
 | Logo 插槽规格 | 56×56（容器冻结；素材后续替换） | index.html L68-72 |
 | 动画门禁兜底 | `1000ms` | index.html L182 |
 | React 门禁兜底 | `3000ms` | index.html L186 |
@@ -445,3 +447,4 @@ v1 的 1~5 已按序落库（`feat/first-screen-loading`）。v2 追加：
 5. **【已解决·v2】dev 下 transformIndexHtml 生效性**：读 Vite 8.3 源码实锤——indexHtmlMiddleware 对 `fs.existsSync` 为真的磁盘入口必过 `transformIndexHtml`（dev/build 同一插件形态的依据）；此前"dev html 不走插件管线"的坑仅适用于磁盘不存在的虚拟入口。另 full-bundle 实验模式不调该钩子，本仓未启用。
 6. **【已解决·v2】协调器打包 API 选型**：`transformWithOxc` 为单文件转译、不打包 import（无法吸收 shared 常量）；Vite 8 不 re-export rolldown 本体。定选程序化 `build()`（`configFile:false` + `write:false` + `format:'iife'`）内存打包，零新增依赖（D10）。
 7. **【已解决·v2】contextIsolation 下的快照载体**：preload 直接写 `window.xxx` 主世界不可见（隔离世界），"window 快照对象"不可行；定选 contextBridge API（`api.startup.getSnapshot()` 拉取 + `onMainReady` 回调携带 payload）+ 无 payload 纯 `Event` 跨世界派发（`APP_STARTUP_MAIN_READY_EVENT`）。
+8. **【已解决·v2】壳卡片移除**：v1 沿用上游的 96×96 深色渐变卡片（#000000→#151718 + 白描边 + 阴影）在 Logo 换为蓝底白雷电后成为多余的"黑色底"，按用户裁决移除全部卡片装饰——壳容器降级为无底透明动画承载层，Logo 即视觉主体（§5 冻结表已同步修订）。
