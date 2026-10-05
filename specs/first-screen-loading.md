@@ -302,9 +302,9 @@ preload（`packages/preload/src/index.ts`）在**求值时**（早于页面一�
 
 §6.3 红线修订（v2）：壳期**禁止**的是"壳显形依赖一次主进程往返应答"的同步耦合；**允许**引导期一次性快照拉取与单向订阅推送，且事件源必须闩锁（先到信号经拉取补发）。就绪判定仍以渲染端闭环为骨架（事件 + 兜底超时），主进程信号迟到/缺席时壳永不被卡死。
 
-### 4.7 构建期内联插件（`build/vite-plugin-startup-shell.ts`，D8）
+### 4.7 构建期内联插件（`packages/renderer/plugins/startup-shell.ts`，D8）
 
-新增文件：`build/vite-plugin-startup-shell.ts`，导出 `startupShellInlinePlugin(): Plugin`，接入 `packages/renderer/vite.config.ts` 的 `plugins` 数组。职责与实现约束：
+新增文件：`packages/renderer/plugins/startup-shell.ts`，导出 `startupShellInlinePlugin(): Plugin`，接入 `packages/renderer/vite.config.ts` 的 `plugins` 数组。renderer 专属构建期插件的归口目录 `plugins/` 由此建立（文件名不带 `vite-plugin-` 前缀——那是 npm 发布包的命名惯例）；`build/` 保持 electron-builder 打包配置与原生资源的单一语义。职责与实现约束：
 
 - **单一钩子**：`transformIndexHtml` 同时服务 dev 与 build（已核实 Vite 8.3 dev 对真实磁盘入口生效，§10.5），两形态一致。
 - **Logo 替换**：读取 `packages/renderer/public/favicon.svg`（与站点 favicon 同素材）原文（剥除 XML 声明与注释）替换 `<!-- __APP_STARTUP_LOGO__ -->`；按 mtime 缓存。
@@ -401,7 +401,7 @@ preload（`packages/preload/src/index.ts`）在**求值时**（早于页面一�
 
 | 文件 | 动作 | 内容 |
 | :--- | :--- | :--- |
-| `build/vite-plugin-startup-shell.ts` | 新增 | 4.7：`startupShellInlinePlugin`（Logo 内联 + 协调器内存打包） |
+| `packages/renderer/plugins/startup-shell.ts` | 新增 | 4.7：`startupShellInlinePlugin`（Logo 内联 + 协调器内存打包） |
 | `packages/shared/src/constants/startup.ts` | 新增 | 4.6：就绪契约常量 |
 | `packages/shared/src/types/startup.ts` | 新增 | 4.6：`StartupMainReadyPayload` / `StartupGateSnapshot` |
 | `packages/shared/src/constants/ipc-channels.ts` | 修改 | 4.6：`STARTUP_GET_SNAPSHOT` / `STARTUP_EVENT_MAIN_READY` |

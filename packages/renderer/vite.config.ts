@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react';
 import autoprefixer from 'autoprefixer';
 import tailwindcss from 'tailwindcss';
 import { defineConfig } from 'vite';
-import { startupShellInlinePlugin } from '../../build/vite-plugin-startup-shell';
+import { startupShellInlinePlugin } from './plugins/startup-shell';
 import tailwindConfig from './tailwind.config.ts';
 
 const linguiConfigOpts = {
