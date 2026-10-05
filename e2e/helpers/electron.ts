@@ -98,8 +98,16 @@ export async function launchElectronApp(
   proc.stdout?.pipe(process.stdout);
   proc.stderr?.pipe(process.stderr);
 
-  // 4. 注入主进程 shell 安全桩（防止任何用例拉起外部系统文件管理器或浏览器造成 CI 挂死）
-await electronApp.evaluate(({ shell }) => {
+  // 4. 注入主进程 shell 安全桩
+  // 【为什么必须全局 Mock 掉 shell 模块？】
+  // - 在 Linux Xvfb / GitHub Actions 等无头 CI 环境中，缺少标准桌面文件管理器（如 Nautilus），
+  //   Electron 的 shell.showItemInFolder / openPath 会降级触发 xdg-open，导致系统在后台误唤起
+  //   Firefox 或其他默认浏览器作为独立后台孤儿进程常驻。
+  // - 这些外部孤儿进程会持有主进程的 stdout/stderr 管道写端，导致测试套件全部通过后，
+  //   Playwright Worker 因 stdio 管道无法到达 EOF 而发生严重挂死，触发 45000ms Worker teardown 超时。
+  // - 同时亦可防止在本地开发者机器上运行 E2E 测试时频繁弹出真实的外部浏览器或资源管理器窗口。
+  // - 测试用例只需验证 IPC 通信协议与参数分发正确性，严禁直接穿透操作系统原生界面。
+  await electronApp.evaluate(({ shell }) => {
     shell.openExternal = async (url) => {
       console.warn('[E2E Shell Stub] openExternal called with:', url);
     };
