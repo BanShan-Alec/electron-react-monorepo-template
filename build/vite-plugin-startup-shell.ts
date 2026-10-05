@@ -35,7 +35,7 @@ export function startupShellInlinePlugin(options: StartupShellInlinePluginOption
     root,
     '../../packages/shared/src/constants/startup.ts',
   );
-  const logoFile = path.resolve(root, 'src/assets/logo.svg');
+  const logoFile = path.resolve(root, 'public/favicon.svg');
 
   // 可抽离的逻辑处理函数/组件
 
