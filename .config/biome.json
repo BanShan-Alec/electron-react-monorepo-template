@@ -92,6 +92,16 @@
           }
         }
       }
+    },
+    {
+      "includes": ["packages/renderer/index.html"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noImportantStyles": "off"
+          }
+        }
+      }
     }
   ]
 }

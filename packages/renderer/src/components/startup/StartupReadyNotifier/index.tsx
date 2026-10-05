@@ -1,7 +1,10 @@
+import {
+  APP_REACT_COMMIT_AT_KEY,
+  APP_REACT_STARTUP_READY_EVENT,
+} from '@app/shared/constants/startup';
 import { memo, useEffect } from 'react';
 
 // 私有常量
-const REACT_READY_EVENT = 'app-react-startup-ready';
 
 // 可抽离的逻辑处理函数/组件
 
@@ -18,10 +21,9 @@ const _StartupReadyNotifier = (_props: IProps) => {
 
   // 组件Effect
   useEffect(() => {
-    // 事件名与 index.html 内联协调器字符串耦合，两端必须同步修改
-    window.__APP_REACT_COMMIT_AT__ = Date.now();
+    window[APP_REACT_COMMIT_AT_KEY] = Date.now();
     performance.mark('app:react-commit');
-    window.dispatchEvent(new Event(REACT_READY_EVENT));
+    window.dispatchEvent(new Event(APP_REACT_STARTUP_READY_EVENT));
   }, []);
 
   // 组件渲染
@@ -33,6 +35,7 @@ type IProps = Record<string, never>;
 
 declare global {
   interface Window {
+    /** 字面量键与 shared 的 APP_REACT_COMMIT_AT_KEY 契约一致（TS 接口索引不支持非常量计算键） */
     __APP_REACT_COMMIT_AT__?: number;
   }
 }

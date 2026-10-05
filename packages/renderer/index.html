@@ -112,60 +112,11 @@
     <div id="loading" role="status" aria-busy="true" aria-label="Loading...">
       <div class="startup-logo-shell">
         <div class="startup-logo-slot">
-          <!-- Logo 资源插槽：素材替换属独立任务，容器规格已冻结（见第 5 节） -->
-          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#ffffff" stroke-width="2">
-            <polygon points="12 2 2 7 12 12 22 7 12 2" />
-            <polyline points="2 17 12 22 22 17" />
-            <polyline points="2 12 12 17 22 12" />
-          </svg>
+          <!-- __APP_STARTUP_LOGO__ -->
         </div>
       </div>
     </div>
-    <script>
-      {
-        const READY_CLASS = 'app-startup-ready';
-        const REACT_READY_EVENT = 'app-react-startup-ready';
-        const ANIMATION_FALLBACK_MS = 1000;
-        const REACT_FALLBACK_MS = 3000;
-        const UNMOUNT_DELAY_MS = 500;
-
-        let finished = false;
-        let animationDone = false;
-        let reactReady = false;
-
-        const tryFinishStartup = () => {
-          if (finished || !animationDone || !reactReady) return;
-          finished = true;
-          document.body.classList.add(READY_CLASS);
-          window.setTimeout(() => document.getElementById('loading')?.remove(), UNMOUNT_DELAY_MS);
-        };
-
-        const markAnimationDone = () => {
-          animationDone = true;
-          tryFinishStartup();
-        };
-
-        const markReactReady = () => {
-          reactReady = true;
-          tryFinishStartup();
-        };
-
-        const startupLogoShell = document.querySelector('.startup-logo-shell');
-        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-        // 门禁一：壳弹出动画（reduced-motion 或元素缺失时直接放行）
-        if (prefersReducedMotion || !startupLogoShell) {
-          markAnimationDone();
-        } else {
-          startupLogoShell.addEventListener('animationend', markAnimationDone, { once: true });
-          window.setTimeout(markAnimationDone, ANIMATION_FALLBACK_MS);
-        }
-
-        // 门禁二：React 首帧 commit（含兜底，React 侧事件见 StartupReadyNotifier）
-        window.addEventListener(REACT_READY_EVENT, markReactReady, { once: true });
-        window.setTimeout(markReactReady, REACT_FALLBACK_MS);
-      }
-    </script>
+    <!-- __APP_STARTUP_COORDINATOR__ -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
