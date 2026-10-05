@@ -32,7 +32,7 @@ export function startupShellInlinePlugin(options: StartupShellInlinePluginOption
   const indexEntry = normalizePath(path.resolve(root, 'index.html')).toLowerCase();
   const coordinatorEntry = path.resolve(root, 'src/startup/coordinator.ts');
   const sharedConstantsDir = path.resolve(root, '../../packages/shared/src/constants');
-  const logoFile = path.resolve(root, 'public/favicon.svg');
+  const logoFile = path.resolve(root, 'src/assets/startup-logo.svg');
 
   // 私有常量与工具：缓存键覆盖协调器与 shared constants 全目录的 mtime，
   // 避免协调器未来 import 其它 shared 常量时 dev 缓存不失效

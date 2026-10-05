@@ -2,7 +2,7 @@
 
 Status: accepted（2026-10-05）
 
-首屏加载规范（[spec](../../specs/first-screen-loading.md)）v1 把就绪协调器与 Logo 全部手写内联在 `index.html`，产物形态完全正确，但源码层有三笔债：协调器是约 50 行裸 JS（无类型检查、无法 import shared 常量，与 `StartupReadyNotifier` 存在"两端字符串耦合"）；Logo 以内联 SVG 硬编码（换素材要动 HTML）；HTML 里散落 biome 抑制注释与机制解释注释。v2 裁决：**协调器与 Logo 源码外置（`src/startup/coordinator.ts`、`public/favicon.svg` 与站点 favicon 同素材），由手写 Vite 插件在 `transformIndexHtml` 时编译/读取并内联；构建产物形态与 v1 逐字节等价（经典内联 `<script>` + 内联 SVG）**。
+首屏加载规范（[spec](../../specs/first-screen-loading.md)）v1 把就绪协调器与 Logo 全部手写内联在 `index.html`，产物形态完全正确，但源码层有三笔债：协调器是约 50 行裸 JS（无类型检查、无法 import shared 常量，与 `StartupReadyNotifier` 存在"两端字符串耦合"）；Logo 以内联 SVG 硬编码（换素材要动 HTML）；HTML 里散落 biome 抑制注释与机制解释注释。v2 裁决：**协调器与 Logo 源码外置（`src/startup/coordinator.ts`、`src/assets/startup-logo.svg`——Header 同款蓝底白雷电），由手写 Vite 插件在 `transformIndexHtml` 时编译/读取并内联；构建产物形态与 v1 逐字节等价（经典内联 `<script>` + 内联 SVG）**。
 
 裁决的锚点是产物红线而非源码形态：D3/§6.1 要求的是**产物**零打包依赖（协调器 IIFE 自包含、先于 main.tsx、经典脚本防 Vite 抽取），源码维护在哪里不改变该约束。dev 与 build 走同一插件同一替换——已核实 Vite 8.3 dev 的 indexHtmlMiddleware 对真实磁盘入口必过 `transformIndexHtml`（[spec §10.5](../../specs/first-screen-loading.md)），无需 configureServer 中间件。
 
