@@ -58,23 +58,14 @@ export function startupShellInlinePlugin(options: StartupShellInlinePluginOption
     }
   };
 
-  const readLogoMarkup = (() => {
-    let cacheKey = '';
-    let cacheValue = '';
-    return (): string => {
-      const key = String(statMtime(logoFile));
-      if (key !== cacheKey) {
-        // 剥除 XML 声明与注释后原文内联；素材替换只改文件，HTML 零改动
-        cacheValue = fs
-          .readFileSync(logoFile, 'utf-8')
-          .replace(/<\?xml[^>]*\?>/g, '')
-          .replace(/<!--[\s\S]*?-->/g, '')
-          .trim();
-        cacheKey = key;
-      }
-      return cacheValue;
-    };
-  })();
+  // 剥除 XML 声明与注释后原文内联（防编辑器元数据进产物）；素材替换只改文件，HTML 零改动。
+  // dev 每次页面加载直读一次即可（8KB 级文件），需要缓存的大头是协调器的内存打包
+  const readLogoMarkup = (): string =>
+    fs
+      .readFileSync(logoFile, 'utf-8')
+      .replace(/<\?xml[^>]*\?>/g, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .trim();
 
   const bundleCoordinator = (() => {
     let cacheKey = '';
