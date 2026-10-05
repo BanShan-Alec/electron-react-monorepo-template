@@ -21,10 +21,10 @@
   --color-warning: #faad14;
   --color-danger: #ff4d4f;
 
-  /* 滚动条：antd 中性色 alpha 梯度 colorTextQuaternary → Tertiary → Secondary */
-  --color-scrollbar-thumb: rgba(0, 0, 0, 0.25);
-  --color-scrollbar-thumb-hover: rgba(0, 0, 0, 0.45);
-  --color-scrollbar-thumb-active: rgba(0, 0, 0, 0.65);
+  /* 滚动条：antd 中性色 alpha 梯度 colorFill → colorTextQuaternary → colorTextTertiary */
+  --color-scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --color-scrollbar-thumb-hover: rgba(0, 0, 0, 0.25);
+  --color-scrollbar-thumb-active: rgba(0, 0, 0, 0.45);
 
   /* CSS Custom Highlight 语法高亮令牌 (Light / VS Code 风格) */
   --hl-keyword: #0000ff;
@@ -54,10 +54,10 @@
   --color-warning: #d89614;
   --color-danger: #dc4446;
 
-  /* 滚动条：antd 中性色 alpha 梯度 colorTextQuaternary → Tertiary → Secondary */
-  --color-scrollbar-thumb: rgba(255, 255, 255, 0.25);
-  --color-scrollbar-thumb-hover: rgba(255, 255, 255, 0.45);
-  --color-scrollbar-thumb-active: rgba(255, 255, 255, 0.65);
+  /* 滚动条：antd 中性色 alpha 梯度 colorFill → colorTextQuaternary → colorTextTertiary */
+  --color-scrollbar-thumb: rgba(255, 255, 255, 0.18);
+  --color-scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+  --color-scrollbar-thumb-active: rgba(255, 255, 255, 0.45);
 
   /* CSS Custom Highlight 语法高亮令牌 (Dark / VS Code Dark+ 风格) */
   --hl-keyword: #569cd6;
