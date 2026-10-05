@@ -1,6 +1,6 @@
 # Electron 首屏渐进式无缝加载规范 (First Screen Loading Spec)
 
-> 版本：v1 | 状态：设计定稿，待实现
+> 版本：v2 | 状态：设计定稿 | v2 修订：壳资产源码外置 + 构建期内联（D8）、就绪门禁注册表与主进程就绪源（D9）、构建工具链时代规则（D10）；v2 决策依据见 [ADR-0002](../docs/adr/0002-startup-shell-build-time-inline.md) 与 [ADR-0003](../docs/adr/0003-startup-gate-registry.md)
 > 关联：[README](../README.md)（分层架构与开发 SOP）· [CONTRIBUTING](../CONTRIBUTING.md)（代码风格与提交规范）· [titlebar-overlay.ts](../packages/main/src/modules/window/titlebar-overlay.ts)（窗口主题色单一事实源）· [ADR-0001](../docs/adr/0001-first-screen-keeps-opaque-wco-window.md)（窗口材质裁决）· `e2e/first-screen.spec.ts`（验收用例，随实施新增）
 > 上游事实基线：[zai-org/ZCode](https://github.com/zai-org/ZCode) @ commit `29628c9acdb81b703bbd4080c207a0e7ce5e276e`（v3.14.3，2026-09-24）。本规范所有数值、事件名、实现结构均以该 commit 真实源码为准，引用格式为 `上游仓库相对路径 + 行号`。
 
@@ -17,6 +17,9 @@
 | D5 | 显示时序跟随上游：废除 `show: false` + `ready-to-show` 门禁，窗口创建即可见 | 启动壳接管首帧后，"等首帧就绪再显示"的门禁失去意义；win32 在 `dom-ready` 补 `show()+focus()`，maximize 前置于 load |
 | D6 | 启动遥测仅取 T5 等价物（`__APP_REACT_COMMIT_AT__` + `performance.mark`），不建上报体系 | 上游 T0–T6 七段 marks + 7 个上报事件 + 时钟哨兵超出本特性体量 |
 | D7 | 验收分层：e2e 只锁最终态与兜底上界，过程节奏（0.72s / 160ms / 500ms）归人工目测 | CI 环境时序抖动会造成脆测；过程节奏由人工清单覆盖 |
+| D8 | 壳资产**源码外置、产物内联**：协调器以 TS 文件维护（`src/startup/coordinator.ts`）、Logo 以 SVG 文件维护（`src/assets/logo.svg`），由手写 Vite 插件在 `transformIndexHtml` 时编译/读取并内联进 index.html；dev 与 build 同一插件同一形态 | index.html 不再承载大段脚本，可维护、可类型检查、可复用 shared 常量；产物形态与 v1 完全一致（经典内联 `<script>`，先于 main.tsx），D3 的产物级论证原样保留。依据见 ADR-0002 |
+| D9 | 就绪协调器从双门禁演进为**门禁注册表**：每类就绪源 = 事件/信号 + 独立兜底超时，全部齐备才交叉淡入；新增首个主进程就绪源 `app-startup-main-ready`（ModuleRunner 链初始化完成后闩锁，payload 携带初始化耗时），渲染端经 `api.startup.getSnapshot()` 引导期拉取 + 跨世界 DOM 事件订阅，先到信号不丢 | 未来主进程重型初始化（如数据库 admission）接入时零结构改动；管道（shared 契约 → main → preload → 壳）真实打通并被 e2e 覆盖，拓展性是已验证的管道而非纸面约定。依据见 ADR-0003 |
+| D10 | 构建期转换一律使用 Vite 8 / Rolldown / Oxc 原生能力，**禁止引入 esbuild、babel 等旧工具链依赖**（存量 `@rolldown/plugin-babel`（lingui）不在此列，但不再扩用） | 本仓已进入 Vite 8（rolldown 内核）时代，新旧工具链并存会制造双事实源与无谓体积；规则成文于 CONTRIBUTING 与 ADR-0002 |
 
 ---
 
@@ -66,7 +69,7 @@
 | React commit 时间戳全局变量 | `__ZCODE_REACT_COMMIT_AT__` | `__APP_REACT_COMMIT_AT__` |
 | 通知组件 | `StartupReadyNotifier` | `StartupReadyNotifier`（同名） |
 | 壳动画 keyframes | `startup-logo-pop` | `startup-logo-pop`（同名） |
-| 协调器位置 | index.html 内联 `<script type="module">` | 同（**禁止**抽成独立模块，见 D3） |
+| 协调器位置 | index.html 内联 `<script type="module">` | **源码** `packages/renderer/src/startup/coordinator.ts`，构建期由手写插件内联进 index.html（**产物**仍是经典内联 `<script>`，见 D8 / ADR-0002） |
 
 ### 关键源码索引（上游 @ `29628c9`）
 
@@ -104,7 +107,7 @@
 
 ### 4.2 HTML 启动壳（渲染端）
 
-改动文件：`packages/renderer/index.html`。目标形态（完整冻结，占位注释除外）：
+改动文件：`packages/renderer/index.html`。v2 目标形态：**样式继续内联冻结**（壳自足红线只豁免协调器与 Logo 的源码外置，CSS 无外部依赖问题且 Tailwind 不可用，见 §4.2 硬性约束），协调器与 Logo 缩为占位符，由插件（§4.7）在 dev 与 build 统一替换：
 
 ```html
 <!doctype html>
@@ -115,105 +118,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>renderer</title>
     <style>
-      html,
-      body,
-      #root {
-        margin: 0;
-        width: 100%;
-        height: 100%;
-        background: transparent !important;
-      }
-
-      #root {
-        opacity: 0;
-        transition: opacity 0.16s ease;
-      }
-
-      body.app-startup-ready #root {
-        opacity: 1;
-      }
-
-      /* 拖拽必须写在内联样式块：Tailwind content 仅扫描 ./src/**，
-         任意属性类 [app-region:drag] 在本文件中不会生成产物 */
-      #loading {
-        position: fixed;
-        inset: 0;
-        z-index: 2147483647;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: opacity 0.16s ease;
-        -webkit-app-region: drag;
-      }
-
-      body.app-startup-ready #loading {
-        pointer-events: none;
-        opacity: 0;
-      }
-
-      .startup-logo-shell {
-        position: relative;
-        display: flex;
-        width: 96px;
-        height: 96px;
-        align-items: center;
-        justify-content: center;
-        border-radius: 24px;
-        background: linear-gradient(180deg, #000000 0%, #151718 100%);
-        box-shadow:
-          0 20px 25px -5px rgb(0 0 0 / 0.25),
-          0 8px 10px -6px rgb(0 0 0 / 0.25);
-        transform: scale(0.72);
-        opacity: 0;
-        animation: startup-logo-pop 0.72s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        transform-origin: center;
-      }
-
-      .startup-logo-shell::before {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        content: '';
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: inherit;
-      }
-
-      .startup-logo-slot {
-        width: 56px;
-        height: 56px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      @keyframes startup-logo-pop {
-        0% {
-          opacity: 0;
-          transform: scale(0.72);
-        }
-        38% {
-          opacity: 1;
-          transform: scale(1.045);
-        }
-        58% {
-          transform: scale(0.985);
-        }
-        76% {
-          transform: scale(1.008);
-        }
-        100% {
-          opacity: 1;
-          transform: scale(1);
-        }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        .startup-logo-shell {
-          opacity: 1;
-          transform: scale(1);
-          animation: none;
-        }
-      }
+      /* 内容与 v1 冻结版逐字一致（§4.2 v1 版本），此处省略：
+         html/body/#root 透明、#root 与 #loading 的 0.16s 交叉淡入、
+         .startup-logo-shell 规格与 startup-logo-pop 关键帧、prefers-reduced-motion 降级。
+         注意：background: transparent !important 的 biome noImportantStyles 抑制
+         移至 .config/biome.json 文件级 overrides（v2 起 HTML 内不放抑制注释）。 */
     </style>
   </head>
   <body>
@@ -221,102 +130,111 @@
     <div id="loading" role="status" aria-busy="true" aria-label="Loading...">
       <div class="startup-logo-shell">
         <div class="startup-logo-slot">
-          <!-- Logo 资源插槽：素材替换属独立任务，容器规格已冻结（见第 5 节） -->
-          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#ffffff" stroke-width="2">
-            <polygon points="12 2 2 7 12 12 22 7 12 2" />
-            <polyline points="2 17 12 22 22 17" />
-            <polyline points="2 12 12 17 22 12" />
-          </svg>
+          <!-- __APP_STARTUP_LOGO__ -->
         </div>
       </div>
     </div>
-    <!-- 经典内联脚本（非 module）：Vite 会把内联 module script 抽进主 bundle（D3 红线），
-         经典脚本既保持零打包产物依赖，又在解析位同步执行、先于 defer 的 main.tsx -->
-    <script>
-      // 4.3 就绪协调器（源码见下），必须物理位于 main.tsx 之前
-    </script>
+    <!-- __APP_STARTUP_COORDINATOR__ -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
 ```
 
+占位符契约（插件替换，形态冻结）：
+
+- `<!-- __APP_STARTUP_LOGO__ -->`：替换为 `packages/renderer/src/assets/logo.svg` 的**文件原文**（去除 XML 声明与注释；素材替换属独立任务 Phase 5，换文件即换 Logo，HTML 零改动）。
+- `<!-- __APP_STARTUP_COORDINATOR__ -->`：替换为 `<script>...</script>`，内容为 `src/startup/coordinator.ts` 打包产出的经典 IIFE（非 module，§10.3 结论不变），**物理位置必须仍在 main.tsx 的 script 之前**。
+
 硬性约束：
 
-1. **零外部依赖**：壳不得引用任何打包产物（外部 JS/CSS、字体、图片、Tailwind 工具类、antd 变量）。所有样式与逻辑内联自足。
-2. **脚本顺序**：内联协调器 `<script>`（经典脚本，**非** `type="module"`，依据见 §10.3）必须物理位于 `<script src="/src/main.tsx">` 之前。依据见 D3。
-3. **拖拽写法**：`-webkit-app-region: drag` 写在内联 `<style>` 中。**禁止**使用 Tailwind 任意属性类 `[app-region:drag]`——`tailwind.config.ts` 的 content 仅含 `./src/**`，index.html 中的类不会生成产物。
-4. `updater.html` 不做任何改动。
-5. 已知开发期现象（与上游一致，接受）：dev 模式 HMR 全量刷新时壳动画会重播一次。
+1. **产物零外部依赖（红线承袭）**：替换后的 index.html 产物不得引用任何打包产物或网络资源——协调器 IIFE 自包含（含其 import 的 shared 常量），Logo 原文内联。dev 与 build 走同一插件同一替换，形态一致（D8 / Q6-A）。
+2. **样式内联冻结**：`<style>` 块继续完整内联在 index.html 源码中；Tailwind content 仅扫描 `./src/**`，壳中禁用任何 Tailwind 工具类与任意属性类。
+3. `updater.html` 不做任何改动（入口隔离红线不变）。
+4. 已知开发期现象（接受）：dev 模式 HMR 全量刷新时壳动画会重播一次。
 
-### 4.3 双门禁就绪协调器（index.html 内联脚本）
+### 4.3 门禁注册表就绪协调器（源码 `src/startup/coordinator.ts`）
 
-内联脚本内容冻结如下：
+源码文件：`packages/renderer/src/startup/coordinator.ts`（TS，允许 import `@app/shared/constants/*` 纯常量——构建期内联时一并打包；**裸 DOM 引导层豁免承袭 v1 §6.2**：不适用 7 段式与 manual-only Hook 约束，但严禁 import 打包产物、组件、样式或网络资源）。构建产物为经典 IIFE 内联脚本（§4.2 占位符契约），行为冻结如下（参考实现）：
 
-```js
-{
-  const READY_CLASS = 'app-startup-ready';
-  const REACT_READY_EVENT = 'app-react-startup-ready';
-  const ANIMATION_FALLBACK_MS = 1000;
-  const REACT_FALLBACK_MS = 3000;
-  const UNMOUNT_DELAY_MS = 500;
+```ts
+import {
+  APP_REACT_STARTUP_READY_EVENT,
+  APP_STARTUP_MAIN_READY_EVENT,
+  APP_STARTUP_READY_CLASS,
+} from '@app/shared/constants/startup';
 
-  let finished = false;
-  let animationDone = false;
-  let reactReady = false;
+// 私有常量
+const ANIMATION_FALLBACK_MS = 1000;
+const REACT_FALLBACK_MS = 3000;
+const MAIN_FALLBACK_MS = 5000;
+const UNMOUNT_DELAY_MS = 500;
 
-  const tryFinishStartup = () => {
-    if (finished || !animationDone || !reactReady) return;
-    finished = true;
-    document.body.classList.add(READY_CLASS);
-    window.setTimeout(() => document.getElementById('loading')?.remove(), UNMOUNT_DELAY_MS);
-  };
+let finished = false;
+const pendingGates = new Set(['animation', 'react', 'main']);
 
-  const markAnimationDone = () => {
-    animationDone = true;
-    tryFinishStartup();
-  };
+const tryFinishStartup = () => {
+  if (finished || pendingGates.size > 0) return;
+  finished = true;
+  document.body.classList.add(APP_STARTUP_READY_CLASS);
+  window.setTimeout(() => document.getElementById('loading')?.remove(), UNMOUNT_DELAY_MS);
+};
 
-  const markReactReady = () => {
-    reactReady = true;
-    tryFinishStartup();
-  };
+const settleGate = (id: (typeof pendingGates) extends Set<infer T> ? T : never) => {
+  if (finished) return;
+  pendingGates.delete(id);
+  tryFinishStartup();
+};
 
-  const startupLogoShell = document.querySelector('.startup-logo-shell');
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// 门禁一：壳弹出动画（reduced-motion 或元素缺失时直接放行）
+const startupLogoShell = document.querySelector('.startup-logo-shell');
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !startupLogoShell) {
+  settleGate('animation');
+} else {
+  startupLogoShell.addEventListener('animationend', () => settleGate('animation'), { once: true });
+  window.setTimeout(() => settleGate('animation'), ANIMATION_FALLBACK_MS);
+}
 
-  // 门禁一：壳弹出动画（reduced-motion 或元素缺失时直接放行）
-  if (prefersReducedMotion || !startupLogoShell) {
-    markAnimationDone();
-  } else {
-    startupLogoShell.addEventListener('animationend', markAnimationDone, { once: true });
-    window.setTimeout(markAnimationDone, ANIMATION_FALLBACK_MS);
-  }
+// 门禁二：React 首帧 commit（含兜底，React 侧事件见 4.4）
+window.addEventListener(APP_REACT_STARTUP_READY_EVENT, () => settleGate('react'), { once: true });
+window.setTimeout(() => settleGate('react'), REACT_FALLBACK_MS);
 
-  // 门禁二：React 首帧 commit（含兜底，React 侧事件见 4.4）
-  window.addEventListener(REACT_READY_EVENT, markReactReady, { once: true });
-  window.setTimeout(markReactReady, REACT_FALLBACK_MS);
+// 门禁三：主进程就绪（先拉后推，先到信号不丢；就绪源见 4.6）
+const bridge = (window as Window & { api?: { startup?: StartupBridgeLike } }).api?.startup;
+if (!bridge) {
+  settleGate('main'); // 无 preload 桥的异常环境不阻塞壳
+} else {
+  bridge.getSnapshot().then((snapshot) => {
+    if (snapshot.mainReady) settleGate('main');
+  });
+  window.addEventListener(APP_STARTUP_MAIN_READY_EVENT, () => settleGate('main'), { once: true });
+  window.setTimeout(() => settleGate('main'), MAIN_FALLBACK_MS);
 }
 ```
 
 行为契约：
 
-- **幂等**：`finished` 标志保证 `app-startup-ready` 只会添加一次；两门禁触发顺序无关；`{ once: true }` + 兜底定时器双路径安全（StrictMode 重复派发亦无害）。
+- **门禁注册表**：`pendingGates` 为待齐备门禁集合，任一门禁经"信号 / 拉取 / 兜底超时"任一路径 settle，全部 settle 才触发显形；新增就绪源 = 加一个集合成员 + 一段注册代码 + 一个兜底常量，零结构改动（D9）。
+- **幂等**：`finished` 标志保证 `app-startup-ready` 只会添加一次；门禁触发顺序无关；`{ once: true }` + 兜底定时器多路径安全（StrictMode 重复派发亦无害）。
 - **物理退场**：交叉淡入启动后 500ms 将 `#loading` 从 DOM 移除（`remove()`，非隐藏）。
-- **降级路径**：`prefers-reduced-motion: reduce` 或壳元素缺失时，门禁一直接放行（此时 CSS 亦静态显示壳，用户仅失去弹出动画）。
+- **降级路径**：`prefers-reduced-motion: reduce` 或壳元素缺失时，动画门禁直接放行（此时 CSS 亦静态显示壳，用户仅失去弹出动画）。
+- **主进程门禁先到不丢**：主进程信号常态早于窗口创建（闩锁 + 快照拉取命中），`getSnapshot()` 即 settle；DOM 事件与 5s 兜底分别承接"晚到信号"与"桥异常"场景；无 preload 桥的环境（如裸 file:// 打开）立即放行，不阻塞壳。
 
 ### 4.4 React 首帧提交通知器（`StartupReadyNotifier`）
 
-新增文件：`packages/renderer/src/components/startup/StartupReadyNotifier.tsx`（新增 `startup/` 目录：引导期横切组件，不归属任何业务 `features/`）。作为 React 树内组件，必须遵循仓库统一的 7 段式组件模板（10 处注释锚点：`// 私有常量`、`// 可抽离的逻辑处理函数/组件`、`// 变量声明、解构`、`// 组件状态`、`// 网络IO`、`// 数据转换`、`// 逻辑处理函数`、`// 组件Effect`、`// 组件渲染`、`// props 类型定义`），`_ComponentName` 原型 + `memo` 包装 + 具名/默认双导出：
+文件：`packages/renderer/src/components/startup/StartupReadyNotifier/index.tsx`（一组件一文件夹；`startup/` 目录：引导期横切组件，不归属任何业务 `features/`）。作为 React 树内组件，必须遵循仓库统一的 7 段式组件模板（10 处注释锚点），`_ComponentName` 原型 + `memo` 包装 + 具名/默认双导出。v2 起事件名与提交标记键名从 shared 契约导入（v1 的"两端字符串耦合"技术债消除）：
 
 ```tsx
 import { memo, useEffect } from 'react';
+import {
+  APP_REACT_COMMIT_AT_KEY,
+  APP_REACT_STARTUP_READY_EVENT,
+} from '@app/shared/constants/startup';
 
 // 私有常量
-const REACT_READY_EVENT = 'app-react-startup-ready';
 
 // 可抽离的逻辑处理函数/组件
 
-const _StartupReadyNotifier = () => {
+const _StartupReadyNotifier = (_props: IProps) => {
     // 变量声明、解构
 
     // 组件状态
@@ -329,10 +247,9 @@ const _StartupReadyNotifier = () => {
 
     // 组件Effect
     useEffect(() => {
-        // 事件名与 index.html 内联协调器字符串耦合，两端必须同步修改
-        window.__APP_REACT_COMMIT_AT__ = Date.now();
+        window[APP_REACT_COMMIT_AT_KEY] = Date.now();
         performance.mark('app:react-commit');
-        window.dispatchEvent(new Event(REACT_READY_EVENT));
+        window.dispatchEvent(new Event(APP_REACT_STARTUP_READY_EVENT));
     }, []);
 
     // 组件渲染
@@ -340,11 +257,11 @@ const _StartupReadyNotifier = () => {
 };
 
 // props 类型定义
-interface IProps {}
+type IProps = Record<string, never>;
 
 declare global {
     interface Window {
-        __APP_REACT_COMMIT_AT__?: number;
+        [APP_REACT_COMMIT_AT_KEY]?: number;
     }
 }
 
@@ -353,24 +270,43 @@ export { StartupReadyNotifier };
 export default StartupReadyNotifier;
 ```
 
-挂载点：`packages/renderer/src/main.tsx`，作为 `<App />` 的前置兄弟节点：
+挂载点：`packages/renderer/src/main.tsx`，作为 `<App />` 的前置兄弟节点（与 v1 一致，不变）。
 
-```tsx
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <AppProviders>
-      <StartupReadyNotifier />
-      <App />
-    </AppProviders>
-  </StrictMode>,
-);
-```
-
-行为契约：`useEffect` 触发时机即 React 首帧 commit 完成点（`return null` 不产生任何视觉输出）；StrictMode 开发态双重触发由协调器幂等性吸收。
+行为契约：`useEffect` 触发时机即 React 首帧 commit 完成点（`return null` 不产生任何视觉输出）；StrictMode 开发态双重触发由协调器幂等性吸收。`declare global` 的键名用常量计算属性——若 TS 版本对常量索引签名报错，回退为字面量键 + `satisfies` 断言与常量对齐（实现时择一，两端同源不改）。
 
 ### 4.5 启动耗时埋点（最小集）
 
-仅纳入 4.4 代码中的两处：`window.__APP_REACT_COMMIT_AT__`（等价上游 T5 `reactCommit`）与 `performance.mark('app:react-commit')`。供 e2e 断言与 DevTools Performance 面板读取，**不建上报通道**。上游 T0–T6 全量表见第 3 节源码索引，未来扩表时按需增补。
+渲染端维持 v1 两处：`window[APP_REACT_COMMIT_AT_KEY]`（等价上游 T5 `reactCommit`）与 `performance.mark('app:react-commit')`。v2 新增主进程侧最小集（§4.6 payload 的 `initMs` / `latchedAt`），随就绪信号被动携带，不建上报通道。上游 T0–T6 全量表见第 3 节源码索引，未来扩表时按需增补。
+
+### 4.6 主进程就绪源（`app-startup-main-ready`，D9）
+
+新增文件：`packages/main/src/modules/startup-readiness.module.ts`，ModuleRunner 链位在 IPC 模块之后、WindowManager 之前（保证信号先于窗口与壳）：
+
+- **闩锁**：`enable()` 时记录 `initMs`（`performance.now()`，主进程启动为锚）与 `latchedAt`，置 `mainReady: true`；链位保证此时尚无任何窗口。
+- **拉取**：`ipcMain.handle(STARTUP_GET_SNAPSHOT)` 返回闩锁快照 `StartupGateSnapshot`；preload 在求值时（早于页面一切脚本）调用，先到的信号经快照补发，不丢。
+- **推送**：`broadcast(STARTUP_EVENT_MAIN_READY, payload)`（复用 config 的广播助手）；此刻无窗口属预期空操作，契约对后续创建的窗口与晚到门禁成立。
+
+shared 契约新增：
+
+- `packages/shared/src/constants/startup.ts`：`APP_STARTUP_READY_CLASS` / `APP_REACT_STARTUP_READY_EVENT` / `APP_STARTUP_MAIN_READY_EVENT` / `APP_REACT_COMMIT_AT_KEY`（SCREAMING_SNAKE，JSDoc 标注两端耦合关系）。
+- `packages/shared/src/types/startup.ts`：`StartupMainReadyPayload { initMs: number; latchedAt: number }`、`StartupGateSnapshot { mainReady: boolean; payload: StartupMainReadyPayload | null }`。
+- `packages/shared/src/constants/ipc-channels.ts` 增补：`STARTUP_GET_SNAPSHOT: 'startup:get-snapshot'`、`STARTUP_EVENT_MAIN_READY: 'startup:event:main-ready'`。
+
+preload（`packages/preload/src/index.ts`）`apiBridge` 增补 `startup` 命名空间：
+
+- `getSnapshot(): Promise<StartupGateSnapshot>`——引导期一次性拉取（非壳等待的往返 RPC，§6.3 修订后允许）。
+- `onMainReady(cb: (payload: StartupMainReadyPayload) => void): () => void`——订阅推送；收到时除回调外，向共享 `window` EventTarget 派发无 payload 的 `new Event(APP_STARTUP_MAIN_READY_EVENT)`（contextIsolation 下纯 Event 跨世界可见，payload 经 contextBridge 回调携带）。
+
+§6.3 红线修订（v2）：壳期**禁止**的是"壳显形依赖一次主进程往返应答"的同步耦合；**允许**引导期一次性快照拉取与单向订阅推送，且事件源必须闩锁（先到信号经拉取补发）。就绪判定仍以渲染端闭环为骨架（事件 + 兜底超时），主进程信号迟到/缺席时壳永不被卡死。
+
+### 4.7 构建期内联插件（`build/vite-plugin-startup-shell.ts`，D8）
+
+新增文件：`build/vite-plugin-startup-shell.ts`，导出 `startupShellInlinePlugin(): Plugin`，接入 `packages/renderer/vite.config.ts` 的 `plugins` 数组。职责与实现约束：
+
+- **单一钩子**：`transformIndexHtml` 同时服务 dev 与 build（已核实 Vite 8.3 dev 对真实磁盘入口生效，§10.5），两形态一致。
+- **Logo 替换**：读取 `packages/renderer/src/assets/logo.svg` 原文（剥除 XML 声明与注释）替换 `<!-- __APP_STARTUP_LOGO__ -->`；按 mtime 缓存。
+- **协调器编译**：以程序化 Vite `build()` 内存打包——`inlineConfig = { configFile: false, logLevel: 'silent', plugins: [], resolve.tsconfigPaths: true, build: { write: false, rolldownOptions: { input: coordinator.ts, output: { format: 'iife' } } } }`，取 `output[0].code` 包裹为 `<script>...</script>` 替换 `<!-- __APP_STARTUP_COORDINATOR__ -->`；按入口与 shared 常量文件 mtime 缓存。**工具链红线（D10）**：仅用 Vite 8 / Rolldown / Oxc 原生能力，禁止引入 esbuild / babel（`transformWithOxc` 为单文件转译、不打包，不满足 import shared 的需求，故取 build API 路径）。
+- **fail-fast**：协调器打包失败或占位符缺失时抛错终止构建（壳是首屏生命线，静默降级等于白屏），错误信息指向本规范。
 
 ---
 
@@ -389,6 +325,7 @@ createRoot(document.getElementById('root')!).render(
 | 动画门禁兜底 | `1000ms` | index.html L182 |
 | React 门禁兜底 | `3000ms` | index.html L186 |
 | 壳 DOM 卸载延迟 | `500ms` | index.html L155 |
+| 主进程门禁兜底 | `5000ms` | 本规范 v2 §4.3（D9 新增门禁） |
 | 重绘二次补绘间隔 | `32ms`（立即一次 + 32ms 一次） | desktopWindowChrome.ts L241-250 |
 | 窗口底色（深/浅） | `#141414` / `#ffffff`（与 WCO overlay 同源） | 本仓 `titlebar-overlay.ts` L28-34 |
 
@@ -396,13 +333,14 @@ createRoot(document.getElementById('root')!).render(
 
 ## 6. 架构约束与红线
 
-1. **壳自足红线**：启动壳（4.2）与就绪协调器（4.3）只允许存在于 `index.html` 内联层，严禁拆分为依赖打包产物的模块，严禁引入任何网络资源。
-2. **裸 DOM 引导层豁免边界**：index.html 内联脚本与壳 DOM 属于"React 引导前的裸 DOM 引导层"，豁免 7 段式模板与 manual-only Hook 约束；该豁免仅覆盖 index.html 内联代码——任何进入 React 树的组件（含 `StartupReadyNotifier`）必须完整遵循 7 段式与注释锚点留存。
-3. **禁壳期 IPC**：就绪判定完全在渲染端闭环（DOM 事件 + 超时兜底），严禁为壳引入主进程 IPC 往返；主进程严禁为壳新增任何阻塞逻辑。
+1. **壳产物自足红线（v2 修订）**：构建**产物**中，启动壳（样式 + Logo + 协调器 IIFE）必须完整内联于 index.html，运行时零打包产物依赖、零网络资源；**源码**层面协调器与 Logo 允许外置（D8），协调器 import 面仅限 `@app/shared/constants/*` 纯常量，严禁引用打包产物、组件、样式。
+2. **裸 DOM 引导层豁免边界**：index.html 内联产物对应的引导层源码（`src/startup/coordinator.ts`）与壳 DOM 属于"React 引导前的裸 DOM 引导层"，豁免 7 段式模板与 manual-only Hook 约束；该豁免不覆盖 React 树内组件（含 `StartupReadyNotifier`，必须完整遵循 7 段式与注释锚点留存）。
+3. **壳期 IPC 边界（v2 修订）**：就绪判定以渲染端闭环为骨架（DOM 事件 + 兜底超时），严禁壳显形依赖主进程**往返应答**；允许引导期一次性快照拉取（`startup:get-snapshot`）与单向订阅推送（`startup:event:main-ready`），事件源必须闩锁（先到信号经拉取补发）；主进程严禁为壳新增任何阻塞逻辑。
 4. **显示零阻塞**：`ready-to-show` 门禁废除后**不得回潮**；任何"等业务初始化完成再显示窗口"的重构都违反本规范。主进程前序模块（`ModuleRunner` 链）不得因本规范新增同步耗时。
 5. **底色单一事实源**：窗口 `backgroundColor` 与 WCO overlay 色共用 `titlebar-overlay.ts` 一处事实源，出现第二处硬编码色值即违规。
 6. **重绘守护常驻**：`attachWindowsWindowRepaint` 全生命周期挂载不得移除；事件名必须是 `'resized'`（严禁 `'resize'`）；双判空守卫不得省略。
 7. **入口隔离**：本规范一切产物仅作用于 `index.html` 主入口，`updater.html` 及其入口链路保持零改动。
+8. **工具链时代红线（v2 新增）**：构建期转换一律使用 Vite 8 / Rolldown / Oxc 原生能力，禁止引入 esbuild / babel 等旧工具链依赖（存量 `@rolldown/plugin-babel` 仅限 lingui 既有用途，不扩用）。规则成文于 CONTRIBUTING 与 ADR-0002。
 
 ---
 
@@ -420,6 +358,7 @@ createRoot(document.getElementById('root')!).render(
 | AC-4 | 稳定后 `getComputedStyle(document.getElementById('root')).opacity === '1'` |
 | AC-5 | Updater 窗口 DOM 中不存在 `#loading`（入口隔离回归） |
 | AC-6 | 既有 `titlebar.spec.ts` / `dialog.spec.ts` / `settings.spec.ts` / `updater.spec.ts` 全绿（WCO 与窗口行为回归） |
+| AC-7 | 主进程就绪快照已闩锁：`window.api.startup.getSnapshot()` 返回 `mainReady === true` 且 `payload.initMs` 为正数（v2，D9） |
 
 > 时序断言刻意只锁"最终态 + 兜底上界"（D7），0.72s / 160ms / 500ms 的精确节奏不做 e2e 硬断言。
 
@@ -455,6 +394,24 @@ createRoot(document.getElementById('root')!).render(
 | `packages/renderer/src/main.tsx` | 修改 | 4.4：挂载 Notifier |
 | `e2e/first-screen.spec.ts` | 新增 | AC-1~AC-5 |
 
+**v2 追加清单**（v1 清单为已完成记录，保留不动）：
+
+| 文件 | 动作 | 内容 |
+| :--- | :--- | :--- |
+| `build/vite-plugin-startup-shell.ts` | 新增 | 4.7：`startupShellInlinePlugin`（Logo 内联 + 协调器内存打包） |
+| `packages/shared/src/constants/startup.ts` | 新增 | 4.6：就绪契约常量 |
+| `packages/shared/src/types/startup.ts` | 新增 | 4.6：`StartupMainReadyPayload` / `StartupGateSnapshot` |
+| `packages/shared/src/constants/ipc-channels.ts` | 修改 | 4.6：`STARTUP_GET_SNAPSHOT` / `STARTUP_EVENT_MAIN_READY` |
+| `packages/main/src/modules/startup-readiness.module.ts` | 新增 | 4.6：主进程就绪闩锁 + 快照/推送 |
+| `packages/main/src/index.ts` | 修改 | 4.6：链位接入（IPC 之后、WindowManager 之前） |
+| `packages/preload/src/index.ts` | 修改 | 4.6：`api.startup` 先拉后推桥接 |
+| `packages/renderer/src/startup/coordinator.ts` | 新增 | 4.3：门禁注册表协调器源码 |
+| `packages/renderer/src/assets/logo.svg` | 新增 | 4.2：Logo 插槽源文件（占位 SVG，Phase 5 换素材） |
+| `packages/renderer/index.html` | 修改 | 4.2：协调器/Logo 缩为占位符 |
+| `packages/renderer/src/components/startup/StartupReadyNotifier/index.tsx` | 修改 | 4.4：契约常量改为 shared 导入 |
+| `.config/biome.json` | 修改 | 4.2：`noImportantStyles` 文件级 override（HTML 内不再放抑制注释） |
+| `e2e/first-screen.spec.ts` | 修改 | 4.6：AC-7 主进程就绪快照断言 |
+
 | 阶段 | 内容 | 对应 |
 | :--- | :--- | :--- |
 | Phase 1 | 主进程窗口时序、底色、重绘守护 | 4.1 |
@@ -462,16 +419,19 @@ createRoot(document.getElementById('root')!).render(
 | Phase 3 | Notifier 挂载与埋点 | 4.4、4.5 |
 | Phase 4 | e2e 用例 + 人工清单全量验收 | 第 7 节 |
 | Phase 5 | Logo 真实素材替换（**挂起**：待素材提供，插槽规格已冻结） | 4.2 插槽 |
+| Phase 6（v2） | 壳资产源码外置 + 构建期内联 + 主进程就绪源 + 门禁注册表 | 4.2~4.7，D8~D10 |
 
 ---
 
 ## 9. 建议提交顺序
 
-1. `docs(specs): 新增首屏渐进式加载规范与 ADR-0001 窗口材质裁决`
-2. `feat(window): 废除 ready-to-show 门禁并对齐窗口主题底色与无边框重绘守护`
-3. `feat(renderer): 注入内联启动壳与双门禁就绪协调器`
-4. `feat(renderer): 接入 StartupReadyNotifier 并埋设 React 首帧提交标记`
-5. `test(e2e): 新增 first-screen 用例并回归既有套件`
+v1 的 1~5 已按序落库（`feat/first-screen-loading`）。v2 追加：
+
+6. `docs(specs): 首屏规范升版 v2——构建期内联与门禁注册表，新增 ADR-0002/0003 与工具链时代规则`
+7. `feat(shared): 启动就绪契约常量、类型与 IPC 通道入库`
+8. `feat(build): 新增 startup-shell 构建期内联插件，协调器与 Logo 源码外置、index.html 缩为占位符`
+9. `feat(main): ModuleRunner 链接入主进程就绪闩锁，preload 先拉后推桥接`
+10. `test(e2e): 新增主进程就绪快照断言并全量回归`
 
 ---
 
@@ -481,3 +441,6 @@ createRoot(document.getElementById('root')!).render(
 2. 无其他未决项；实现过程中的新问题回填本节。
 3. **【已解决】协调器脚本标签为经典 `<script>`（非 `type="module"`）**：实现时实测发现 Vite 8 构建会把内联 module script 抽进主 bundle（`dist/index.html` 内联 module script 数为 0，协调器被合并进 `assets/main-*.js`），恰触发 D3 红线（bundle 解析超 720ms 丢动画事件）。经典内联脚本 Vite 原样保留在产物 HTML 中，且在解析位同步执行、先于 defer 的 main.tsx，时序保证更强，故替代 module 内联；D3 的其余论证不变。
 4. **【已解决】组件路径与 props 类型微调**：Notifier 按仓库「一组件一文件夹」无条件规则（renderer README §组件书写约定）落为 `startup/StartupReadyNotifier/index.tsx`；props 类型沿用 App.tsx 无 props 先例写作 `type IProps = Record<string, never>`，并以 `(_props: IProps)` 形参消费（否则 `noUnusedLocals` 报 TS6196）。两者语义与冻结代码等价。
+5. **【已解决·v2】dev 下 transformIndexHtml 生效性**：读 Vite 8.3 源码实锤——indexHtmlMiddleware 对 `fs.existsSync` 为真的磁盘入口必过 `transformIndexHtml`（dev/build 同一插件形态的依据）；此前"dev html 不走插件管线"的坑仅适用于磁盘不存在的虚拟入口。另 full-bundle 实验模式不调该钩子，本仓未启用。
+6. **【已解决·v2】协调器打包 API 选型**：`transformWithOxc` 为单文件转译、不打包 import（无法吸收 shared 常量）；Vite 8 不 re-export rolldown 本体。定选程序化 `build()`（`configFile:false` + `write:false` + `format:'iife'`）内存打包，零新增依赖（D10）。
+7. **【已解决·v2】contextIsolation 下的快照载体**：preload 直接写 `window.xxx` 主世界不可见（隔离世界），"window 快照对象"不可行；定选 contextBridge API（`api.startup.getSnapshot()` 拉取 + `onMainReady` 回调携带 payload）+ 无 payload 纯 `Event` 跨世界派发（`APP_STARTUP_MAIN_READY_EVENT`）。
