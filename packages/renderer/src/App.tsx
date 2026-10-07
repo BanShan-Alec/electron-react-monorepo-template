@@ -27,21 +27,24 @@ const _App = (_props: IProps) => {
       <Header activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Main Content Area */}
-      <main className="flex-1 min-h-0 p-6 max-w-7xl mx-auto w-full overflow-y-auto stable-scrollbar">
-        {/* 两块面板均保持挂载、仅切换显隐：卸载会丢失域内状态并重复发起 IPC（README「已知取舍」） */}
-        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-5${isDashboard ? '' : ' hidden'}`}>
-          <PingFeature />
-          <SystemInfoFeature />
-          <CounterFeature />
-          <CalculatorFeature />
-          <SettingsFeature />
-          <NativeDialogsFeature />
-          <LoggingFeature />
-          <DevToolsFeature />
-        </div>
+      {/* 滚动容器必须全宽：max-w/mx-auto 一旦挂回 main，宽窗口下滚动条会随内容区一起被居中推离窗口右缘 */}
+      <main className="flex-1 min-h-0 w-full overflow-y-auto stable-scrollbar">
+        <div className="max-w-7xl mx-auto p-6">
+          {/* 两块面板均保持挂载、仅切换显隐：卸载会丢失域内状态并重复发起 IPC（README「已知取舍」） */}
+          <div className={`grid grid-cols-1 lg:grid-cols-2 gap-5${isDashboard ? '' : ' hidden'}`}>
+            <PingFeature />
+            <SystemInfoFeature />
+            <CounterFeature />
+            <CalculatorFeature />
+            <SettingsFeature />
+            <NativeDialogsFeature />
+            <LoggingFeature />
+            <DevToolsFeature />
+          </div>
 
-        <div className={isDashboard ? 'hidden' : undefined}>
-          <ArchitectureFeature />
+          <div className={isDashboard ? 'hidden' : undefined}>
+            <ArchitectureFeature />
+          </div>
         </div>
       </main>
     </div>

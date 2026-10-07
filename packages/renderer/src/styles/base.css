@@ -49,7 +49,51 @@
   padding-right: calc(100vw - env(titlebar-area-width, 100vw));
 }
 
-/* Scrollbar gutter stability (仅预留槽位防布局抖动，滚动条绘制交给平台原生实现，随 nativeTheme/system 外观变化) */
+/*
+ * 全局自定义滚动条。推翻旧决策「绘制交给平台原生」：Chromium 页面未声明 color-scheme
+ * 时原生滚动条恒按浅色绘制（nativeTheme 只影响浏览器级 UI），深色主题下必然发白突兀。
+ * 仅用 ::-webkit-scrollbar 系列：Electron 内核固定无需标准属性兜底，
+ * 且 scrollbar-color 一旦声明会整体禁用本伪元素样式，两者互斥。
+ */
+*::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/*
+ * 透明 border + background-clip 让滑块四周离边留白（悬浮观感）：
+ * 14px 总宽 - 两侧各 3px = 视觉 8px 滑块；外圈圆角 7px 扣除 border 后视觉即 4px。
+ * 隙不能取 2px：Chromium 按设备像素取整，100% 缩放下 2px 实渲染 ≈1px，视觉等于贴边。
+ */
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-scrollbar-thumb);
+  border: 3px solid transparent;
+  border-radius: 7px;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-scrollbar-thumb-hover);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background-color: var(--color-scrollbar-thumb-active);
+}
+
+/* Windows 自定义滚动条默认带步进箭头按钮，显式隐藏 */
+*::-webkit-scrollbar-button {
+  display: none;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Scrollbar gutter stability（仅预留槽位防布局抖动，滚动条外观见上方全局规则） */
 .stable-scrollbar {
   scrollbar-gutter: stable;
 }

@@ -84,6 +84,9 @@ export class WindowManager implements AppModule {
       y: savedState.y,
       width: savedState.width,
       height: savedState.height,
+      // 最小尺寸下限，防止窗口缩到布局不可用（updater 窗口为 420×400）
+      minWidth: 720,
+      minHeight: 480,
       backgroundColor: getWindowBackgroundColor(),
       ...(isMac ? { titleBarStyle: 'hidden', titleBarOverlay: true } : {}),
       ...(isWin
