@@ -43,7 +43,7 @@ function probe(cmd: string, args: string[]): string | null {
 
 function requireGh(): void {
   if (probe('gh', ['--version']) === null) {
-    fail('gh cli 不可用:先 winget install GitHub.cli(见 .github/CICD.md「本地环境」)');
+    fail('gh cli 不可用:请先安装 gh cli (Windows: winget install GitHub.cli, macOS: brew install gh, Linux: 见 https://cli.github.com/)(见 .github/CICD.md「本地环境」)');
   }
   if (probe('gh', ['auth', 'status']) === null) {
     fail('gh 未认证:运行 gh auth login 完成一次性认证(见 .github/CICD.md「本地环境」)');
