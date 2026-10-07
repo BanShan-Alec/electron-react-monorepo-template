@@ -43,7 +43,9 @@ function probe(cmd: string, args: string[]): string | null {
 
 function requireGh(): void {
   if (probe('gh', ['--version']) === null) {
-    fail('gh cli 不可用:请先安装 gh cli (Windows: winget install GitHub.cli, macOS: brew install gh, Linux: 见 https://cli.github.com/)(见 .github/CICD.md「本地环境」)');
+    fail(
+      'gh cli 不可用:请先安装 gh cli (Windows: winget install GitHub.cli, macOS: brew install gh, Linux: 见 https://cli.github.com/)(见 .github/CICD.md「本地环境」)',
+    );
   }
   if (probe('gh', ['auth', 'status']) === null) {
     fail('gh 未认证:运行 gh auth login 完成一次性认证(见 .github/CICD.md「本地环境」)');
@@ -86,7 +88,7 @@ function buildBody(commitList: string[], intent: string): string {
   };
   const template = fs.existsSync(PR_TEMPLATE) ? fs.readFileSync(PR_TEMPLATE, 'utf-8') : '';
   if (!template) {
-    return `## 改动 / Changes\n\n${fills['改动'] ?? ''}\n\n## 人工验证 / Manual Verification\n\n${fills['人工验证']}\n`;
+    return `## 改动 / Changes\n\n${fills.改动}\n\n## 人工验证 / Manual Verification\n\n${fills.人工验证}\n`;
   }
   const out: string[] = [];
   for (const line of template.split('\n')) {
