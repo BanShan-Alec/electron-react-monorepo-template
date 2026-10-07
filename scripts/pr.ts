@@ -15,7 +15,7 @@ import path from 'node:path';
 const MAIN_BRANCH = 'main';
 const PR_TEMPLATE = path.resolve('.github', 'PULL_REQUEST_TEMPLATE.md');
 const CHECKS_POLL_INTERVAL_MS = 15_000;
-const CHECKS_MAX_POLLS = 40; // gh --watch 遇"checks 尚未上报"时的轮询上限 ≈ 10 分钟
+const CHECKS_MAX_POLLS = 40; // 轮询上限 ≈ 10 分钟(required checks 未上报时持续等)
 
 function fail(message: string): never {
   console.error(`✗ ${message}`);
@@ -136,26 +136,62 @@ function createPr(): void {
   console.log('正文若有占位未填(意图/人工验证),用 gh pr edit --web 或 PR 页编辑补全');
 }
 
-/** 等待门禁:0=全绿;8=checks 尚未上报(轮询等 Actions 启动);其他=有失败 */
-function waitForChecks(branch: string): void {
-  for (let poll = 1; poll <= CHECKS_MAX_POLLS; poll++) {
-    const result = spawnSync('gh', ['pr', 'checks', branch, '--watch', '--fail-fast'], {
-      stdio: 'inherit',
-    });
-    if (result.status === 0) return;
-    if (result.status === 8 && poll < CHECKS_MAX_POLLS) {
-      console.log(
-        `checks 尚未全部上报(${poll}/${CHECKS_MAX_POLLS}),${CHECKS_POLL_INTERVAL_MS / 1000}s 后重查…`,
-      );
-      sleepSync(CHECKS_POLL_INTERVAL_MS);
-      continue;
-    }
-    if (result.status === 8) fail('等待 checks 上报超时,请到 Actions 页确认后再试');
-    fail('门禁未通过:按上方输出定位失败项,修复后 push 重跑');
-  }
+/**
+ * required checks 清单:读 main 的分支保护配置;读不到(无保护/非 admin)返回 null,退化为看全部检查
+ */
+function requiredChecks(): string[] | null {
+  const raw = probe('gh', [
+    'api',
+    `repos/{owner}/{repo}/branches/${MAIN_BRANCH}/protection`,
+    '--jq',
+    '.required_status_checks.contexts[]',
+  ]);
+  return raw === null
+    ? null
+    : raw
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean);
 }
 
-/** 打印合并后的本地收尾指引(区分普通检出与 worktree 场景) */
+/**
+ * 等待门禁:只看分支保护里的 required checks。gh pr checks 会把 CodeQL/AI 审查等
+ * 信息性检查一并计入,任一失败整体失败——CICD.md 的设计是信息性不挡合并(#13 实测踩坑)。
+ * 轮询式:15s 一次,required 未上报继续等,有 fail 立即终止。
+ */
+function waitForChecks(branch: string): void {
+  const required = requiredChecks();
+  const scope = required
+    ? `required checks(${required.join(', ')})`
+    : '全部检查(未读到分支保护配置)';
+  console.log(`→ 等待门禁:${scope}`);
+  for (let poll = 1; poll <= CHECKS_MAX_POLLS; poll++) {
+    const raw = probe('gh', ['pr', 'checks', branch, '--json', 'name,bucket']);
+    let checks: { name: string; bucket: string }[] = [];
+    if (raw !== null) {
+      try {
+        checks = JSON.parse(raw) as { name: string; bucket: string }[];
+      } catch {
+        // gh 输出异常,按未上报处理继续轮询
+      }
+    }
+    const gate = required ? checks.filter((c) => required.includes(c.name)) : checks;
+    const failed = gate.filter((c) => c.bucket === 'fail').map((c) => c.name);
+    if (failed.length > 0) fail(`门禁未通过:${failed.join(', ')}(信息性检查失败见 PR 页,不挡合并)`);
+    if (gate.length > 0 && gate.every((c) => c.bucket === 'pass' || c.bucket === 'skipping'))
+      return;
+    console.log(
+      `checks 进行中(${poll}/${CHECKS_MAX_POLLS}),${CHECKS_POLL_INTERVAL_MS / 1000}s 后重查…`,
+    );
+    sleepSync(CHECKS_POLL_INTERVAL_MS);
+  }
+  fail('等待 checks 超时,请到 Actions 页确认后再试');
+}
+
+/**
+ * 打印合并后的本地收尾指引(区分普通检出与 worktree 场景)。
+ * 用 -D 而非 -d:squash 后分支提交不在 main 祖先,-d 会以"未合并"拒绝;-D 安全(内容已由 squash 提交承载)。
+ */
 function printCleanupHint(branch: string): void {
   const raw = probe('git', ['worktree', 'list', '--porcelain']);
   if (!raw) return;
@@ -165,9 +201,9 @@ function printCleanupHint(branch: string): void {
     const isBranch = lines.some((l) => l === `branch refs/heads/${branch}`);
     if (!wtPath || !isBranch) continue;
     if (path.resolve(wtPath) === path.resolve(process.cwd())) {
-      console.log(`\n收尾:git checkout ${MAIN_BRANCH} && git pull && git branch -d ${branch}`);
+      console.log(`\n收尾:git checkout ${MAIN_BRANCH} && git pull && git branch -D ${branch}`);
     } else {
-      console.log(`\n收尾:git worktree remove ${wtPath} && git branch -d ${branch}`);
+      console.log(`\n收尾:git worktree remove ${wtPath} && git branch -D ${branch}`);
     }
     return;
   }
