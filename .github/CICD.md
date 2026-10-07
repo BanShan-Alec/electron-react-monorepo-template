@@ -84,16 +84,21 @@ docs/ci-guide
 
 ## 发版
 
-版本"只进不发"——何时发、发什么级别由人决定,其余全自动:
+版本"只进不发"——何时发、发什么级别由人决定,其余全自动。main 已被分支保护禁直推,发版走 PR 形态:
 
-```bash
-pnpm release:patch    # 或 minor / major
-```
+1. 从 main 切 `chore/release-vX.Y.Z` 分支,运行 `pnpm release:patch|minor|major`(changelogen:升 `package.json` 版本 → 生成 CHANGELOG → 本地提交并打 tag);
+2. `pnpm pr` 开发版 PR,**删除分支上的本地 tag**(squash 合并会改变提交 SHA,旧 tag 作废):
+   ```bash
+   git tag -d vX.Y.Z
+   ```
+3. 合并后在 main 上重新打 tag 并推送:
+   ```bash
+   git pull && git tag vX.Y.Z && git push origin vX.Y.Z
+   ```
 
-changelogen 会依次:升 `package.json` 版本 → 生成 CHANGELOG → 提交 → 打 `vX.Y.Z` tag → 推送。
 tag 的 push 自动触发 **Release App** workflow:三平台(Windows/macOS/Linux)构建 → 发布 GitHub Release(安装包 + `latest*.yml` 自动更新元数据 + 自动 release notes)。
 
-> 决策:tag 驱动、CI 内不升版本——版本与 tag 的一致性由 changelogen 的发版提交保证。
+> 决策:tag 驱动、CI 内不升版本——版本与 tag 的一致性由合并后的 main 提交保证;tag 必须指向合并后的 SHA,故打 tag 是合并后的手动一步。
 > 手动在 Actions 页 dispatch 只构建不发布,用于验证构建管线。
 
 ## hotfix

@@ -127,15 +127,17 @@ npm run release:minor   # 次版本升级（如 3.1.0 -> 3.2.0）
 npm run release:major   # 主版本升级（如 3.1.0 -> 4.0.0）
 ```
 
-### 2. 发布流程规范
-1. 确保工作区无未提交的代码：`git status` 为 clean；
-2. 确保所有质量检查通过：`npm run lint` 与 `npm run typecheck` 均为 0 错误；
-3. 运行对应的 Release 命令（如 `npm run release:minor`）；
-4. 推送代码与版本标签至远程仓库：
+### 2. 发布流程规范（PR 化）
+
+main 受分支保护禁直推，发版走 PR 形态：
+
+1. 从 main 切 `chore/release-vX.Y.Z` 分支；确认 lint / typecheck 为 0 错误后运行 Release 命令（如 `npm run release:minor`，生成版本号与 CHANGELOG 提交）；
+2. `pnpm pr` 开发版 PR；**删除分支上的本地 tag**（`git tag -d vX.Y.Z`，squash 合并会改变提交 SHA，旧 tag 作废）；
+3. PR 合并后在 main 上重新打 tag 并推送：
    ```bash
-   git push origin main --follow-tags
+   git pull && git tag vX.Y.Z && git push origin vX.Y.Z
    ```
-5. GitHub Actions 将监听推送到远端的版本 Tag（如 `v3.2.0`），自动构建 Windows、macOS 与 Linux 原生安装包并发布到 GitHub Releases。
+4. GitHub Actions 将监听推送到远端的版本 Tag（如 `v1.1.0`），自动构建 Windows、macOS 与 Linux 原生安装包并发布到 GitHub Releases。
 
 ---
 
