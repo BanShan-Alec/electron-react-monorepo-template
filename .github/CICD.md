@@ -6,6 +6,7 @@
 ## 本地环境
 
 - **Node.js 22**(用 fnm / nvm 安装均可),pnpm 不单独安装
+- **GitHub CLI**(下文 `pnpm pr` 三命令的依赖):`winget install GitHub.cli`,随后一次性认证 `gh auth login`
 - 首次初始化:
 
 ```bash
@@ -20,6 +21,7 @@ pnpm install           # pnpm 版本由根 package.json 的 packageManager 字�
 | `pnpm start` | 启动开发模式 |
 | `pnpm lint` / `pnpm typecheck` | 提交前自查(biome / tsc) |
 | `pnpm run test:e2e:build` | 构建产物 + 跑 e2e(= build + test:e2e) |
+| `pnpm pr` / `pr:merge` / `pr:status` | PR 工作流:开 PR / 合并 / 状态(见下文) |
 | `pnpm release:patch\|minor\|major` | 发版(见下文) |
 
 > 决策:pnpm 交给 corepack 管理,版本单点在 `packageManager` 字段,CI 与本地天然一致。
@@ -40,9 +42,13 @@ docs/ci-guide
 ## 提交与 PR
 
 1. 提交信息走 conventional commits,commit-msg 钩子(commitlint)校验:类型合法、说明含中文、body 每行 ≤100 字符。
-2. push 后开 PR:
-   - **标题 = 未来 main 上的提交信息**,请保持 `type(scope): 中文说明` 格式——squash 合并后标题即提交信息,changelog 从这里来。此格式无机器校验,靠自觉(本地 commit 有 commitlint 把关,PR 标题没有),写歪会降低 changelog 质量;
-   - 正文由模板预填(意图 / 改动 / 人工验证),只填 CI 查不了的事。
+2. 开 PR 一条命令(前置检查 → push → 创建):
+   ```bash
+   pnpm pr
+   ```
+   - **标题自动取分支上第一个提交的 subject**,即未来 main 上的提交信息,请保持 `type(scope): 中文说明` 格式——squash 合并后标题即提交信息,changelog 从这里来。此格式无机器校验,靠自觉(本地 commit 有 commitlint 把关,PR 标题没有),写歪会降低 changelog 质量;
+   - 正文由模板预填(意图 / 改动 / 人工验证),只填 CI 查不了的事;
+   - 分支已有 PR 时命令会拒绝并提示:直接 push 即可更新该 PR。
 3. draft PR 可放心使用:转正式(ready_for_review)同样会触发全部检查。
 
 ## 门禁一览
@@ -61,7 +67,19 @@ docs/ci-guide
 ## 合并
 
 - 仓库设置只允许 **squash merge**,且 Default commit message = PR title;
-- 分支保护强制上述三个 required check 全绿才能合入 `main`,**没有豁免**(hotfix 也不例外);
+- 分支保护强制上述三个 required check 全绿才能合入 `main`,**没有豁免**(hotfix 也不例外),直接 push `main` 同样被拒(ADR-0004);
+- 一条命令完成"等门禁全绿 → squash → 删远端分支":
+  ```bash
+  pnpm pr:merge
+  ```
+- 当前仓库 PR 与 checks 概览:`pnpm pr:status`;
+- 合并后的分支清理(不删会越积越脏;删分支不影响 PR 页面存档):
+  ```bash
+  # 分支在当前工作树:切回 main 拉取后删除
+  git checkout main && git pull && git branch -d feat/xxx
+  # 分支挂在独立 worktree:
+  git worktree remove <worktree路径> && git branch -d feat/xxx
+  ```
 - 一个大分支要拆多个 PR:把相关 commit `cherry-pick` 到干净分支分别开 PR;存在依赖时用 stacked PR(`gh pr create --base <前一个PR的分支>`),前者合并后 `gh pr edit --base main` 收窄 diff。
 
 ## 发版
@@ -96,9 +114,9 @@ PR 的"意图"一节引用 `#编号`;修复类 PR 在正文写 `fixes #n` 可在
 
 ```mermaid
 flowchart LR
-  A["本地开发<br/>feat/xxx 分支"] -->|"push"| B["开 PR"]
+  A["本地开发<br/>feat/xxx 分支"] -->|"pnpm pr"| B["开 PR"]
   B --> C["门禁:typecheck + lint + e2e<br/>CodeQL / AI 审查并行(信息性)"]
-  C -->|"required 全绿"| D["squash 合并 main"]
+  C -->|"required 全绿"| D["pnpm pr:merge<br/>squash 合并 main"]
   D -->|"pnpm release:patch"| E["tag v* push"]
   E --> F["三平台构建<br/>Windows / macOS / Linux"]
   F --> G["GitHub Release<br/>安装包 + latest*.yml"]
@@ -113,12 +131,13 @@ flowchart LR
 | `workflows/codeql.yml` | 安全扫描(push/PR main + 每周三定时) |
 | `workflows/open-code-review.yml` | AI 代码审查 |
 | `actions/setup-env/` | 构建环境准备:corepack/pnpm、Node 22、Xvfb |
+| `../scripts/pr.ts` | PR 命令封装:pnpm pr / pr:merge / pr:status |
 | `ISSUE_TEMPLATE/` 目录 + `PULL_REQUEST_TEMPLATE.md` | 中英双语模板(issue 多模板用目录;PR 单模板须单文件才会自动预填正文) |
 
 ## 设计决策速览
 
 - tag 驱动发版,CI 内不升版本;
-- squash only,PR 标题 = main 提交信息,changelog 按 feature 粒度;
+- squash only,PR 标题 = main 提交信息,changelog 按 feature 粒度;feature 一律经 PR,分支保护锁死(required checks + 仅 squash + 拒绝直推),命令入口 `pnpm pr` 三件套(ADR-0004);
 - e2e 单平台进门禁,三平台构建留给发版;
 - dependabot 已移除,action 版本手动升级;
 - pnpm 由 corepack 管理,版本单点在 `packageManager` 字段。

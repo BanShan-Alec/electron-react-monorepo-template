@@ -82,6 +82,18 @@ npm run format
 - 冒号 `:` 后面必须有一个英文空格；
 - 示例：`feat: 增加文件选择原生对话框` 或 `fix(ipc): 修复外部链接协议未校验的安全隐患`。
 
+### 4. PR 工作流（`pnpm pr`）
+
+feature 分支一律经 PR 合入 `main`：分支保护锁死 required checks（typecheck / lint / e2e）与 squash-only、拒绝直推，决策背景见 [ADR-0004](docs/adr/0004-pr-only-squash-workflow.md)，完整流程见 [.github/CICD.md](.github/CICD.md) 的「提交与 PR」「合并」章节。
+
+| 命令 | 用途 |
+| :--- | :--- |
+| `pnpm pr` | 前置检查 → push → 开 PR（标题取分支首个提交，正文读模板） |
+| `pnpm pr:merge` | 等门禁全绿 → squash 合并 → 删远端分支 |
+| `pnpm pr:status` | 当前仓库 PR 与 checks 概览 |
+
+PR 标题沿用本节 Conventional Commits 格式（squash 后即 main 提交信息、进 changelog），分支首个提交的 subject 请按此措辞。
+
 ---
 
 ## 三、Git 自动化工作流 (Husky + lint-staged)
