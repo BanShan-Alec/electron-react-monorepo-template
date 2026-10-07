@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { lingui } from '@lingui/vite-plugin';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
@@ -8,9 +9,19 @@ import { defineConfig } from 'vite';
 import { startupShellInlinePlugin } from './plugins/startup-shell';
 import tailwindConfig from './tailwind.config.ts';
 
+// 版本单一事实源 = 根 package.json：构建期 define 注入 renderer，UI 徽章不再硬编码
+const appVersion = (
+  JSON.parse(readFileSync(path.resolve(__dirname, '../../package.json'), 'utf-8')) as {
+    version: string;
+  }
+).version;
+
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+  },
   plugins: [
     react(),
     lingui({
