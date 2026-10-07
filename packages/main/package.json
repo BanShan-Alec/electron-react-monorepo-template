@@ -16,7 +16,7 @@
     "@app/renderer": "workspace:*",
     "@app/shared": "workspace:*",
     "electron-log": "^5.4.4",
-    "electron-updater": "6.8.3"
+    "electron-updater": "^6.8.3"
   },
   "devDependencies": {
     "@app/tsconfig": "workspace:*",
