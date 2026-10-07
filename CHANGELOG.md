@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v1.1.1
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.1.0...v1.1.1)
+
+### 🩹 缺陷修复 (Bug Fixes)
+
+- **main:** 崩溃监听前移至首个 import，接住 import 期异常 ([#17](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/17))
+
+### ❤️ Contributors
+
+- 半山Alec <627649674@qq.com>
+
 ## v1.1.0
 
 
