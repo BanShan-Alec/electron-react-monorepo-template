@@ -57,7 +57,7 @@ function preflight(): string {
     fail('工作区存在未提交变更:先 commit 或 stash');
   }
   const branch = probe('git', ['rev-parse', '--abbrev-ref', 'HEAD']) ?? '';
-  if (!branch || branch === MAIN_BRANCH) {
+  if (!branch || branch === MAIN_BRANCH || branch === 'HEAD') {
     fail(`当前分支 "${branch || 'detached HEAD'}",请在 feature 分支上执行(分支规范见 CICD.md)`);
   }
   return branch;
