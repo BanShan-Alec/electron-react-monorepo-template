@@ -2,7 +2,7 @@
  * PR 工作流命令:gh cli 的仓库级封装(见 .github/CICD.md「提交与 PR」「合并」与 ADR-0004)。
  *
  * 用法(pnpm 脚本映射):
- *   pnpm pr          开 PR:前置检查 → push -u → gh pr create(标题取分支首个提交,正文读模板)
+ *   pnpm pr          开 PR:前置检查 → push -u → gh pr create(标题取分支首个提交,正文按模板自动生成)
  *   pnpm pr:merge    合并:等待门禁全绿 → squash 合并 → 删除远端分支
  *   pnpm pr:status   查看当前仓库 PR 与 checks 概览
  *
@@ -63,12 +63,51 @@ function preflight(): string {
   return branch;
 }
 
+/**
+ * 分支首个提交的 body(意图的来源);无则空串
+ */
+function firstCommitBody(range: string): string {
+  const sha = (probe('git', ['log', '--reverse', '--format=%H', range]) ?? '').split('\n')[0] ?? '';
+  if (!sha) return '';
+  return probe('git', ['log', '-1', '--format=%b', sha]) ?? '';
+}
+
+/**
+ * 生成 PR 正文:模板的 H2 节骨架 + 自动填充。
+ * 意图 = 分支首个提交的 body(缺失则占位提示);改动 = 提交 subject 列表;人工验证 = 勾选占位。
+ * 直接把模板当正文会导致「只有节标题没内容」——模板里的 HTML 注释渲染时不可见。
+ * 模板文件缺失时退化为最小三节。
+ */
+function buildBody(commitList: string[], intent: string): string {
+  const fills: Record<string, string> = {
+    意图: intent || '_（提交里没提取到动机，编辑本节补一句）_',
+    改动: commitList.map((s) => `- ${s}`).join('\n'),
+    人工验证: '- [ ] （列出 CI 查不了的人工验证项；无则删掉本节）',
+  };
+  const template = fs.existsSync(PR_TEMPLATE) ? fs.readFileSync(PR_TEMPLATE, 'utf-8') : '';
+  if (!template) {
+    return `## 改动 / Changes\n\n${fills['改动'] ?? ''}\n\n## 人工验证 / Manual Verification\n\n${fills['人工验证']}\n`;
+  }
+  const out: string[] = [];
+  for (const line of template.split('\n')) {
+    if (!line.startsWith('## ')) continue; // 只留节骨架,注释与空行不进正文
+    out.push(line, '');
+    const key = Object.keys(fills).find((k) => line.includes(k));
+    if (key) out.push(fills[key] ?? '', '');
+  }
+  return `${out.join('\n').trim()}\n`;
+}
+
 function createPr(): void {
   const branch = preflight();
   run('git', ['fetch', 'origin', MAIN_BRANCH]);
-  const subjects =
-    probe('git', ['log', '--reverse', '--format=%s', `origin/${MAIN_BRANCH}..HEAD`]) ?? '';
-  const title = subjects.split('\n')[0]?.trim() ?? '';
+  const range = `origin/${MAIN_BRANCH}..HEAD`;
+  const subjects = probe('git', ['log', '--reverse', '--format=%s', range]) ?? '';
+  const commitList = subjects
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const title = commitList[0] ?? '';
   if (!title) fail(`分支上没有相对 ${MAIN_BRANCH} 的提交,无从生成 PR 标题`);
   if (probe('gh', ['pr', 'view', branch, '--json', 'number']) !== null) {
     fail(`分支 ${branch} 已有 PR:直接 push 即可更新,查看用 pnpm pr:status`);
@@ -77,15 +116,22 @@ function createPr(): void {
   console.log(`→ push -u origin ${branch}`);
   run('git', ['push', '-u', 'origin', 'HEAD']);
 
-  console.log('→ gh pr create(标题 = 分支首个提交,正文 = PR 模板)');
-  const args = ['pr', 'create', '--base', MAIN_BRANCH, '--head', branch, '--title', title];
-  if (fs.existsSync(PR_TEMPLATE)) {
-    args.push('--body-file', PR_TEMPLATE);
-  } else {
-    args.push('--fill');
-  }
-  run('gh', args);
+  const body = buildBody(commitList, firstCommitBody(range));
+  console.log('→ gh pr create(标题 = 分支首个提交,正文 = 模板骨架 + 自动填充)');
+  run('gh', [
+    'pr',
+    'create',
+    '--base',
+    MAIN_BRANCH,
+    '--head',
+    branch,
+    '--title',
+    title,
+    '--body',
+    body,
+  ]);
   console.log('\n后续:门禁在 GitHub Actions 运行,全绿后 pnpm pr:merge');
+  console.log('正文若有占位未填(意图/人工验证),用 gh pr edit --web 或 PR 页编辑补全');
 }
 
 /** 等待门禁:0=全绿;8=checks 尚未上报(轮询等 Actions 启动);其他=有失败 */

@@ -47,7 +47,7 @@ docs/ci-guide
    pnpm pr
    ```
    - **标题自动取分支上第一个提交的 subject**,即未来 main 上的提交信息,请保持 `type(scope): 中文说明` 格式——squash 合并后标题即提交信息,changelog 从这里来。此格式无机器校验,靠自觉(本地 commit 有 commitlint 把关,PR 标题没有),写歪会降低 changelog 质量;
-   - 正文由模板预填(意图 / 改动 / 人工验证),只填 CI 查不了的事;
+   - 正文由脚本按模板生成:意图 = 分支首个提交的 body,改动 = 提交列表,人工验证留占位勾选——创建后 `gh pr edit --web` 或 PR 页随时补全;
    - 分支已有 PR 时命令会拒绝并提示:直接 push 即可更新该 PR。
 3. draft PR 可放心使用:转正式(ready_for_review)同样会触发全部检查。
 
