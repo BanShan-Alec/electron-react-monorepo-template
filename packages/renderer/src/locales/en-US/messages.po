@@ -3,15 +3,15 @@ msgstr ""
 "Language: en-US\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 
-#: src/features/system-info/components/SystemInfoCard.tsx
+#: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "{cpuCores} 核 ({cpuModel})"
 msgstr "{cpuCores} Cores ({cpuModel})"
 
-#: src/features/system-info/components/SystemInfoCard.tsx
+#: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "{uptimeMinutes} 分钟 ({uptimeSeconds} 秒)"
 msgstr "{uptimeMinutes} mins ({uptimeSeconds} secs)"
 
-#: src/features/architecture/components/ArchitectureView.tsx
+#: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "@app/shared 共享契约单一事实源"
 msgstr "@app/shared Single Source of Truth for Contracts"
 
@@ -24,51 +24,51 @@ msgstr "✅ Sent {levelUpper} log to renderer.log"
 msgid "📂 已打开日志目录: {0}"
 msgstr "📂 Opened log directory: {0}"
 
-#: src/features/system-info/components/SystemInfoCard.tsx
+#: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "Chromium 版本"
 msgstr "Chromium Version"
 
-#: src/features/architecture/components/ArchitectureView.tsx
+#: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "Controller 执行 Zod 防御性参数校验与顶层异常包装，Service 专注核心业务逻辑，杜绝 Procedure 称谓混淆。"
 msgstr "Controllers perform defensive Zod parameter validation and top-level error wrapping, while Services focus purely on business logic without confusing Procedure semantics."
 
-#: src/features/system-info/components/SystemInfoCard.tsx
+#: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "CPU 核心 / 架构"
 msgstr "CPU Cores / Arch"
 
-#: src/features/system-info/components/SystemInfoCard.tsx
+#: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "Electron & Node.js 原生底层探针"
 msgstr "Electron & Node.js Native Runtime Probes"
 
-#: src/features/ping/components/PingCard.tsx
+#: src/features/ping/components/PingCard/index.tsx
 msgid "Electron ContextBridge & window.api 延迟测量"
 msgstr "Electron ContextBridge & window.api Latency Benchmark"
 
-#: src/features/system-info/components/SystemInfoCard.tsx
+#: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "Electron 版本"
 msgstr "Electron Version"
 
-#: src/features/architecture/components/ArchitectureView.tsx
+#: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "Fullstack 经典分层通信架构全流程"
 msgstr "Fullstack Layered IPC Architecture Workflow"
 
-#: src/features/architecture/components/ArchitectureView.tsx
+#: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "Fullstack 规范分层方式"
 msgstr "Fullstack Layered Architecture"
 
-#: src/features/counter/components/CounterCard.tsx
+#: src/features/counter/components/CounterCard/index.tsx
 msgid "IPC 计数器 (Counter)"
 msgstr "IPC Counter"
 
-#: src/features/ping/components/PingCard.tsx
+#: src/features/ping/components/PingCard/index.tsx
 msgid "IPC 通信往返延迟"
 msgstr "IPC Roundtrip Latency"
 
-#: src/features/architecture/components/ArchitectureView.tsx
+#: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "Main 进程 Controller -> Service 分层"
 msgstr "Main Process: Controller -> Service Layering"
 
-#: src/features/system-info/components/SystemInfoCard.tsx
+#: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "Node.js 版本"
 msgstr "Node.js Version"
 
@@ -77,23 +77,23 @@ msgstr "Node.js Version"
 msgid "Ping 失败: {0}"
 msgstr "Ping failed: {0}"
 
-#: src/features/architecture/components/ArchitectureView.tsx
+#: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "Preload 精准白名单桥接"
 msgstr "Preload: Precise Whitelist Bridging"
 
-#: src/features/architecture/components/ArchitectureView.tsx
+#: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "Renderer 进程纯净消费"
 msgstr "Renderer Process: Clean Consumption"
 
-#: src/features/system-info/components/SystemInfoCard.tsx
+#: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "V8 引擎版本"
 msgstr "V8 Engine Version"
 
-#: src/features/calculator/components/CalculatorCard.tsx
+#: src/features/calculator/components/CalculatorCard/index.tsx
 msgid "Zod 严格模式入参校验与语义化错误码 Result 契约"
 msgstr "Strict Zod Schema Validation & Semantic Error Code Result Contract"
 
-#: src/features/calculator/components/CalculatorCard.tsx
+#: src/features/calculator/components/CalculatorCard/index.tsx
 msgid "Zod 校验"
 msgstr "Zod Validated"
 
@@ -101,43 +101,43 @@ msgstr "Zod Validated"
 msgid "下载更新时发生网络异常，请稍后重试。"
 msgstr "Network error occurred while downloading update. Please try again later."
 
-#: src/features/updater/components/ProgressCard.tsx
+#: src/features/updater/components/ProgressCard/index.tsx
 msgid "下载进度"
 msgstr "Download Progress"
 
-#: src/features/devtools/components/DevToolsCard.tsx
+#: src/features/devtools/components/DevToolsCard/index.tsx
 msgid "严格协议白名单校验 (仅允许 http/https) 与 DevTools 控制"
 msgstr "Strict protocol whitelist validation (http/https only) and DevTools control"
 
-#: src/features/system-info/components/SystemInfoCard.tsx
+#: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "主进程堆内存占用"
 msgstr "Main Process Heap Usage"
 
-#: src/features/ping/components/PingCard.tsx
+#: src/features/ping/components/PingCard/index.tsx
 msgid "主进程时间"
 msgstr "Main Process Time"
 
-#: src/features/architecture/components/ArchitectureView.tsx
+#: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "代码耦合 & 契约混乱"
 msgstr "Coupled Code & Messy Contracts"
 
-#: src/components/layout/Header.tsx
+#: src/components/layout/Header/index.tsx
 msgid "企业级端到端类型安全桌面客户端脚手架"
 msgstr "Enterprise-Grade End-to-End Type-Safe Desktop Client Boilerplate"
 
-#: src/features/architecture/components/ArchitectureView.tsx
+#: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "传统散装 / 进程穿透方式"
 msgstr "Legacy Ad-hoc / Process Leaking Approach"
 
-#: src/features/updater/components/ProgressCard.tsx
+#: src/features/updater/components/ProgressCard/index.tsx
 msgid "传输速率"
 msgstr "Transfer Speed"
 
-#: src/features/architecture/components/ArchitectureView.tsx
+#: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "使用 contextBridge.exposeInMainWorld('api', apiBridge) 暴露受限安全 API 与 webUtils，杜绝渲染端渗透。"
 msgstr "Expose restricted safe APIs and webUtils via contextBridge.exposeInMainWorld('api', apiBridge) to eliminate renderer privilege escalation."
 
-#: src/features/architecture/components/ArchitectureView.tsx
+#: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "使用 Zod Schema 定义入参校验规则，派生跨端统一 TypeScript 类型与标准 Result<T> 响应契约。"
 msgstr "Define parameter validation schemas using Zod to derive unified cross-process TypeScript types and standard Result<T> response contracts."
 
@@ -149,27 +149,27 @@ msgstr "Failed to save"
 msgid "保存路径已选定: {filePath}"
 msgstr "Save path selected: {filePath}"
 
-#: src/features/settings/components/SettingsCard.tsx
+#: src/features/settings/components/SettingsCard/index.tsx
 msgid "保持后台常驻与托盘图标交互"
 msgstr "Keep running in background with tray icon"
 
-#: src/features/updater/components/ActionBar.tsx
+#: src/features/updater/components/ActionBar/index.tsx
 msgid "关闭"
 msgstr "Close"
 
-#: src/features/system-info/components/SystemInfoCard.tsx
+#: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "刷新"
 msgstr "Refresh"
 
-#: src/components/feedback/ErrorBoundary.tsx
+#: src/components/layout/ErrorBoundary/index.tsx
 msgid "刷新重试"
 msgstr "Reload & Retry"
 
-#: src/features/updater/components/ChangelogCard.tsx
+#: src/features/updater/components/ChangelogCard/index.tsx
 msgid "包含常规稳定性改进与性能优化。"
 msgstr "Includes general stability improvements and performance optimizations."
 
-#: src/features/native-dialogs/components/DialogCard.tsx
+#: src/features/native-dialogs/components/DialogCard/index.tsx
 msgid "原生对话框与文件定位 (Native Dialogs)"
 msgstr "Native Dialogs & File Location"
 
@@ -177,23 +177,23 @@ msgstr "Native Dialogs & File Location"
 msgid "发现新版本"
 msgstr "Update Available"
 
-#: src/features/logging/components/LoggingCard.tsx
+#: src/features/logging/components/LoggingCard/index.tsx
 msgid "发送 ERROR"
 msgstr "Send ERROR"
 
-#: src/features/logging/components/LoggingCard.tsx
+#: src/features/logging/components/LoggingCard/index.tsx
 msgid "发送 INFO"
 msgstr "Send INFO"
 
-#: src/features/logging/components/LoggingCard.tsx
+#: src/features/logging/components/LoggingCard/index.tsx
 msgid "发送 WARN"
 msgstr "Send WARN"
 
-#: src/features/updater/components/ActionBar.tsx
+#: src/features/updater/components/ActionBar/index.tsx
 msgid "取消下载"
 msgstr "Cancel Download"
 
-#: src/features/native-dialogs/components/DialogCard.tsx
+#: src/features/native-dialogs/components/DialogCard/index.tsx
 msgid "另存为"
 msgstr "Save As"
 
@@ -201,19 +201,19 @@ msgstr "Save As"
 msgid "另存为示例"
 msgstr "Save File Example"
 
-#: src/features/system-info/components/SystemInfoCard.tsx
+#: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "可用内存 / 总内存"
 msgstr "Available / Total Memory"
 
-#: src/features/native-dialogs/components/DialogCard.tsx
+#: src/features/native-dialogs/components/DialogCard/index.tsx
 msgid "在资源管理器中定位"
 msgstr "Reveal in Explorer"
 
-#: src/features/counter/components/CounterCard.tsx
+#: src/features/counter/components/CounterCard/index.tsx
 msgid "基于主进程状态原子操作与响应式更新"
 msgstr "Atomic state mutation and reactive feedback in main process"
 
-#: src/features/settings/components/SettingsCard.tsx
+#: src/features/settings/components/SettingsCard/index.tsx
 msgid "外观主题 (Theme)"
 msgstr "Appearance Theme"
 
@@ -222,7 +222,7 @@ msgstr "Appearance Theme"
 msgid "安全拦截: {0}"
 msgstr "Security Blocked: {0}"
 
-#: src/features/calculator/components/CalculatorCard.tsx
+#: src/features/calculator/components/CalculatorCard/index.tsx
 msgid "安全计算器 (IPC 错误处理)"
 msgstr "Safe Calculator (IPC Error Handling)"
 
@@ -262,19 +262,19 @@ msgstr "Selected file: {path}"
 msgid "已选择文件夹: {path}"
 msgstr "Selected directory: {path}"
 
-#: src/features/system-info/components/SystemInfoCard.tsx
+#: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "平台架构"
 msgstr "Platform & Arch"
 
-#: src/features/settings/components/SettingsCard.tsx
+#: src/features/settings/components/SettingsCard/index.tsx
 msgid "应用偏好设置 (ConfigStore)"
 msgstr "Preferences (ConfigStore)"
 
-#: src/features/ping/components/PingCard.tsx
+#: src/features/ping/components/PingCard/index.tsx
 msgid "延迟稍高"
 msgstr "High Latency"
 
-#: src/features/devtools/components/DevToolsCard.tsx
+#: src/features/devtools/components/DevToolsCard/index.tsx
 msgid "开关 DevTools"
 msgstr "Toggle DevTools"
 
@@ -282,15 +282,15 @@ msgstr "Toggle DevTools"
 msgid "当前安装的应用已包含所有最新功能与安全更新。"
 msgstr "The currently installed app includes all the latest features and security updates."
 
-#: src/features/counter/components/CounterCard.tsx
+#: src/features/counter/components/CounterCard/index.tsx
 msgid "当前持久化数值"
 msgstr "Persisted Value"
 
-#: src/components/layout/Header.tsx
+#: src/components/layout/Header/index.tsx
 msgid "总览看板"
 msgstr "Dashboard"
 
-#: src/features/settings/components/SettingsCard.tsx
+#: src/features/settings/components/SettingsCard/index.tsx
 msgid "恢复默认值"
 msgstr "Restore Defaults"
 
@@ -303,7 +303,7 @@ msgstr "Failed to restore default configuration: {0}"
 msgid "您的应用已保持在最新版本，无需更新。"
 msgstr "Your application is currently up to date."
 
-#: src/features/devtools/components/DevToolsCard.tsx
+#: src/features/devtools/components/DevToolsCard/index.tsx
 msgid "打开 GitHub 页面"
 msgstr "Open GitHub"
 
@@ -311,11 +311,11 @@ msgstr "Open GitHub"
 msgid "打开失败"
 msgstr "Failed to open"
 
-#: src/features/logging/components/LoggingCard.tsx
+#: src/features/logging/components/LoggingCard/index.tsx
 msgid "打开日志目录"
 msgstr "Open Log Directory"
 
-#: src/features/calculator/components/CalculatorCard.tsx
+#: src/features/calculator/components/CalculatorCard/index.tsx
 msgid "提示：尝试输入 B = 0 并选择除法 (÷) 触发服务端异常拦截"
 msgstr "Tip: Try entering B = 0 with division (÷) to trigger main process exception interception"
 
@@ -324,11 +324,11 @@ msgstr "Tip: Try entering B = 0 with division (÷) to trigger main process excep
 msgid "操作失败: {0}"
 msgstr "Operation failed: {0}"
 
-#: src/features/calculator/components/CalculatorCard.tsx
+#: src/features/calculator/components/CalculatorCard/index.tsx
 msgid "操作数 A"
 msgstr "Operand A"
 
-#: src/features/calculator/components/CalculatorCard.tsx
+#: src/features/calculator/components/CalculatorCard/index.tsx
 msgid "操作数 B"
 msgstr "Operand B"
 
@@ -366,19 +366,19 @@ msgstr "Update Failed"
 msgid "更新已准备就绪"
 msgstr "Update Ready"
 
-#: src/features/updater/components/ChangelogCard.tsx
+#: src/features/updater/components/ChangelogCard/index.tsx
 msgid "更新日志"
 msgstr "Changelog"
 
-#: src/features/ping/components/PingCard.tsx
+#: src/features/ping/components/PingCard/index.tsx
 msgid "极速"
 msgstr "Fast"
 
-#: src/components/layout/Header.tsx
+#: src/components/layout/Header/index.tsx
 msgid "架构全貌"
 msgstr "Architecture"
 
-#: src/features/settings/components/SettingsCard.tsx
+#: src/features/settings/components/SettingsCard/index.tsx
 msgid "检查最新版本与下载安装"
 msgstr "Check latest version, download and install"
 
@@ -386,7 +386,7 @@ msgstr "Check latest version, download and install"
 msgid "检查或下载更新时发生异常，请检查网络后重试。"
 msgstr "An error occurred while checking or downloading updates. Please check your network and retry."
 
-#: src/features/settings/components/SettingsCard.tsx
+#: src/features/settings/components/SettingsCard/index.tsx
 msgid "检查更新"
 msgstr "Check for Updates"
 
@@ -402,7 +402,7 @@ msgstr "Downloading Update"
 msgid "正在与更新服务器建立连接，请稍候..."
 msgstr "Connecting to update server, please wait..."
 
-#: src/features/system-info/components/SystemInfoCard.tsx
+#: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "正在探测系统运行环境..."
 msgstr "Probing system runtime environment..."
 
@@ -410,43 +410,43 @@ msgstr "Probing system runtime environment..."
 msgid "正在检查更新..."
 msgstr "Checking for updates..."
 
-#: src/features/settings/components/SettingsCard.tsx
+#: src/features/settings/components/SettingsCard/index.tsx
 msgid "正在读取偏好设置..."
 msgstr "Loading preferences..."
 
-#: src/features/ping/components/PingCard.tsx
+#: src/features/ping/components/PingCard/index.tsx
 msgid "正常"
 msgstr "Normal"
 
-#: src/features/counter/components/CounterCard.tsx
+#: src/features/counter/components/CounterCard/index.tsx
 msgid "步长:"
 msgstr "Step:"
 
-#: src/features/settings/components/SettingsCard.tsx
+#: src/features/settings/components/SettingsCard/index.tsx
 msgid "浅色模式 (Light)"
 msgstr "Light Mode"
 
-#: src/features/ping/components/PingCard.tsx
+#: src/features/ping/components/PingCard/index.tsx
 msgid "测速 Ping"
 msgstr "Ping Test"
 
-#: src/features/settings/components/SettingsCard.tsx
+#: src/features/settings/components/SettingsCard/index.tsx
 msgid "深色模式 (Dark)"
 msgstr "Dark Mode"
 
-#: src/components/feedback/ErrorBoundary.tsx
+#: src/components/layout/ErrorBoundary/index.tsx
 msgid "渲染进程发生未捕获错误"
 msgstr "Uncaught error occurred in renderer process"
 
-#: src/features/settings/components/SettingsCard.tsx
+#: src/features/settings/components/SettingsCard/index.tsx
 msgid "点击关闭时最小化到托盘"
 msgstr "Minimize to tray on close"
 
-#: src/features/architecture/components/ArchitectureView.tsx
+#: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "物理隔离 & Result 契约"
 msgstr "Physical Isolation & Result Contract"
 
-#: src/features/logging/components/LoggingCard.tsx
+#: src/features/logging/components/LoggingCard/index.tsx
 msgid "生产分级日志 (LogManager)"
 msgstr "Production Graded Logging (LogManager)"
 
@@ -458,43 +458,43 @@ msgstr "User cancelled saving"
 msgid "用户取消了选择"
 msgstr "User cancelled selection"
 
-#: src/features/settings/components/SettingsCard.tsx
+#: src/features/settings/components/SettingsCard/index.tsx
 msgid "界面语言 (Language)"
 msgstr "Interface Language"
 
-#: src/features/updater/components/ActionBar.tsx
+#: src/features/updater/components/ActionBar/index.tsx
 msgid "知道了"
 msgstr "OK"
 
-#: src/features/updater/components/ActionBar.tsx
+#: src/features/updater/components/ActionBar/index.tsx
 msgid "稍后安装"
 msgstr "Install Later"
 
-#: src/features/updater/components/ActionBar.tsx
+#: src/features/updater/components/ActionBar/index.tsx
 msgid "稍后提醒"
 msgstr "Remind Me Later"
 
-#: src/features/updater/components/ActionBar.tsx
+#: src/features/updater/components/ActionBar/index.tsx
 msgid "立即更新"
 msgstr "Update Now"
 
-#: src/features/settings/components/SettingsCard.tsx
+#: src/features/settings/components/SettingsCard/index.tsx
 msgid "类型安全主进程本地持久化存储与动态生效"
 msgstr "Type-safe persistent storage and runtime application"
 
-#: src/features/system-info/components/SystemInfoCard.tsx
+#: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "系统与运行环境"
 msgstr "System & Runtime Environment"
 
-#: src/features/system-info/components/SystemInfoCard.tsx
+#: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "系统运行时间"
 msgstr "System Uptime"
 
-#: src/features/native-dialogs/components/DialogCard.tsx
+#: src/features/native-dialogs/components/DialogCard/index.tsx
 msgid "经由安全 Controller & Preload 调起系统文件管理器与访达"
 msgstr "Invoke file manager & Finder via secure Controller & Preload"
 
-#: src/features/architecture/components/ArchitectureView.tsx
+#: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "统一通过 window.api 消费 Result 契约，享受完备 IDE 智能提示，与主进程实现 100% 物理代码隔离。"
 msgstr "Uniformly consume Result contracts via window.api with rich IDE autocompletion, maintaining 100% physical code isolation from the main process."
 
@@ -513,7 +513,7 @@ msgstr "Counter operation failed: {0}"
 msgid "计算失败: {0}"
 msgstr "Calculation failed: {0}"
 
-#: src/features/calculator/components/CalculatorCard.tsx
+#: src/features/calculator/components/CalculatorCard/index.tsx
 msgid "计算结果:"
 msgstr "Result:"
 
@@ -527,11 +527,11 @@ msgstr "Failed to read preferences: {0}"
 msgid "读取计数器失败: {0}"
 msgstr "Failed to read counter: {0}"
 
-#: src/features/devtools/components/DevToolsCard.tsx
+#: src/features/devtools/components/DevToolsCard/index.tsx
 msgid "调试与系统外链 (Security Filter)"
 msgstr "Diagnostics & External Links (Security Filter)"
 
-#: src/features/settings/components/SettingsCard.tsx
+#: src/features/settings/components/SettingsCard/index.tsx
 msgid "跟随系统 (System)"
 msgstr "System (Follow OS)"
 
@@ -539,19 +539,19 @@ msgstr "System (Follow OS)"
 msgid "软件更新"
 msgstr "Software Update"
 
-#: src/features/settings/components/SettingsCard.tsx
+#: src/features/settings/components/SettingsCard/index.tsx
 msgid "软件更新 (Updater)"
 msgstr "Software Update (Updater)"
 
-#: src/features/ping/components/PingCard.tsx
+#: src/features/ping/components/PingCard/index.tsx
 msgid "进程间通信 (IPC Ping)"
 msgstr "Inter-Process Communication (IPC Ping)"
 
-#: src/features/logging/components/LoggingCard.tsx
+#: src/features/logging/components/LoggingCard/index.tsx
 msgid "进程隔离落盘 (main.log / renderer.log) 与 5MB 自动轮转"
 msgstr "Process-isolated disk logging (main.log / renderer.log) with 5MB rotation"
 
-#: src/features/native-dialogs/components/DialogCard.tsx
+#: src/features/native-dialogs/components/DialogCard/index.tsx
 msgid "选择文件"
 msgstr "Select File"
 
@@ -563,42 +563,42 @@ msgstr "Select Test File"
 msgid "选择测试文件夹"
 msgstr "Select Test Folder"
 
-#: src/features/native-dialogs/components/DialogCard.tsx
+#: src/features/native-dialogs/components/DialogCard/index.tsx
 msgid "选择目录"
 msgstr "Select Directory"
 
-#: src/features/counter/components/CounterCard.tsx
+#: src/features/counter/components/CounterCard/index.tsx
 msgid "递减 (-1)"
 msgstr "Decrement"
 
-#: src/features/counter/components/CounterCard.tsx
+#: src/features/counter/components/CounterCard/index.tsx
 msgid "递增 (+1)"
 msgstr "Increment"
 
-#: src/features/architecture/components/ArchitectureView.tsx
+#: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "遵循 specs-electron-fullstack 规范：Controller -> Service -> Result 契约"
 msgstr "Follows specs-electron-fullstack: Controller -> Service -> Result contract"
 
-#: src/features/updater/components/ActionBar.tsx
+#: src/features/updater/components/ActionBar/index.tsx
 msgid "重启并安装"
 msgstr "Restart and Install"
 
-#: src/features/counter/components/CounterCard.tsx
+#: src/features/counter/components/CounterCard/index.tsx
 msgid "重置为 0"
 msgstr "Reset"
 
-#: src/features/updater/components/ActionBar.tsx
+#: src/features/updater/components/ActionBar/index.tsx
 msgid "重试"
 msgstr "Retry"
 
-#: src/features/updater/components/ActionBar.tsx
+#: src/features/updater/components/ActionBar/index.tsx
 msgid "隐藏到后台"
 msgstr "Hide to Background"
 
-#: src/features/devtools/components/DevToolsCard.tsx
+#: src/features/devtools/components/DevToolsCard/index.tsx
 msgid "非白名单外链 (example.com)"
 msgstr "Blocked External Link (example.com)"
 
-#: src/components/feedback/ErrorBoundary.tsx
+#: src/components/layout/ErrorBoundary/index.tsx
 msgid "页面出错啦~"
 msgstr "Something went wrong on this page~"

@@ -9,6 +9,7 @@ import type { CounterResult } from './counter';
 import type { ActionResult, OpenLogFolderResult } from './diagnostics';
 import type { FileDialogResult, SaveFileDialogResult } from './dialog';
 import type { Result } from './result';
+import type { StartupGateSnapshot, StartupMainReadyPayload } from './startup';
 import type { PingResult, SystemInfo } from './system';
 import type { UpdaterProgress, UpdaterSnapshot } from './updater';
 
@@ -61,6 +62,12 @@ export interface ElectronApi {
     /** 返回取消订阅函数，渲染层必须在 useEffect cleanup 中调用 */
     onStateChanged: (cb: (s: UpdaterSnapshot) => void) => () => void;
     onProgressChanged: (cb: (p: UpdaterProgress) => void) => () => void;
+  };
+  startup: {
+    /** 引导期一次性快照拉取（主进程闩锁，先到信号经此补发，spec §4.6） */
+    getSnapshot: () => Promise<StartupGateSnapshot>;
+    /** 主进程就绪单向推送订阅；同时派发跨世界 DOM 事件；返回取消订阅函数 */
+    onMainReady?: (cb: (payload: StartupMainReadyPayload) => void) => () => void;
   };
   // 遵循 specs-electron-fullstack / renderer/ipc-consumption.md 安全规范
   getPathForFile: (file: File) => string;

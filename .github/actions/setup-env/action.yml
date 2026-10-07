@@ -1,0 +1,28 @@
+name: Setup environment
+description: Setup Node.js + corepack-managed pnpm + dependencies, start Xvfb on Linux
+
+runs:
+  using: composite
+  steps:
+    - if: ${{ runner.os == 'Linux' }}
+      shell: bash
+      run: |
+        Xvfb :99 -screen 0 1280x960x24 &
+        echo "DISPLAY=:99" >> $GITHUB_ENV
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    # pnpm 版本由根 package.json 的 packageManager 字段决定,Node 22 自带 corepack
+    - name: Enable corepack
+      run: corepack enable
+      shell: bash
+
+    - name: Install Dependencies
+      run: pnpm install --frozen-lockfile
+      shell: bash
+      env:
+        COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'

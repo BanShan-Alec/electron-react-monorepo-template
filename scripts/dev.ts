@@ -23,6 +23,14 @@ const config: {
   rendererCdpPort: 9222, // 渲染进程 CDP 端口(--remote-debugging-port)
 };
 
+// MODE 由 package.json 脚本经 cross-env 注入(start=development / start:dist=production),
+// 主进程运行时靠它决定加载 dev server 还是 renderer dist(见 packages/main/src/index.ts)。
+if (!process.env.MODE) {
+  console.warn(
+    '[dev] MODE 未注入(应经 package.json 脚本的 cross-env 提供),主进程将回退加载 renderer dist',
+  );
+}
+
 /** 组装 Electron 启动参数;对应端口被注释掉时自动跳过并关闭日志。 */
 function buildElectronArgs(): string[] {
   const args: string[] = [];

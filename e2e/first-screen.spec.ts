@@ -2,6 +2,17 @@ import { expect, test } from './helpers/fixture';
 
 type WindowWithCommitMark = Window & { __APP_REACT_COMMIT_AT__?: number };
 
+// e2e 独立 tsconfig 不解析 workspace 包，结构视图与 shared 的
+// StartupGateSnapshot 保持一致即可（形状漂移会被 AC-7 断言捕获）
+type StartupApiLike = {
+  startup?: {
+    getSnapshot?: () => Promise<{
+      mainReady: boolean;
+      payload: { initMs: number; latchedAt: number } | null;
+    }>;
+  };
+};
+
 test.describe('首屏渐进式加载 (First Screen Loading) E2E 验证', () => {
   // 时序断言只锁"最终态 + 兜底上界"（spec D7）：
   // 0.72s 动画 / 160ms 交叉淡入 / 500ms 退场的精确节奏归人工目测清单
@@ -32,6 +43,15 @@ test.describe('首屏渐进式加载 (First Screen Loading) E2E 验证', () => {
       () => getComputedStyle(document.getElementById('root')!).opacity,
     );
     expect(opacity).toBe('1');
+  });
+
+  test('AC-7 主进程就绪快照已闩锁：mainReady 且 initMs 为正数', async ({ page }) => {
+    const snapshot = await page.evaluate(async () => {
+      const api = (window as Window & { api?: StartupApiLike }).api;
+      return api?.startup?.getSnapshot?.();
+    });
+    expect(snapshot?.mainReady).toBe(true);
+    expect(snapshot?.payload?.initMs).toBeGreaterThan(0);
   });
 
   test('AC-5 入口隔离回归：Updater 窗口 DOM 不存在启动壳 #loading', async ({

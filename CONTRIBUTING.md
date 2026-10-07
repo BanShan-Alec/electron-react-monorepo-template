@@ -42,6 +42,10 @@ npm run format
 
 三层强制：类型层（封装 `Omit` 掉全部自动触发键，传了即编译错误）、Lint 层（`noRestrictedImports` 禁止直连 `ahooks` `useRequest`，仅豁免封装文件）、评审层。
 
+### 5. 构建工具链时代规则（Vite 8 / Rolldown / Oxc）
+
+本仓已进入 Vite 8（rolldown 内核）时代：**新增构建期转换、插件与编译能力一律使用 Vite 8 / Rolldown / Oxc 原生 API**，禁止引入 esbuild、babel 等旧工具链依赖。存量 `@rolldown/plugin-babel` 仅限 lingui 既有用途，不扩用。选型参照 [ADR-0002](docs/adr/0002-startup-shell-build-time-inline.md)：单文件转译用 `transformWithOxc`（注意不打包 import），需打包时用程序化 `build()`（`configFile:false` + `write:false`）内存产出。
+
 ---
 
 ## 二、Git Commit 提交规范 (Conventional Commits)
@@ -77,6 +81,18 @@ npm run format
 - `type` 必须全小写；
 - 冒号 `:` 后面必须有一个英文空格；
 - 示例：`feat: 增加文件选择原生对话框` 或 `fix(ipc): 修复外部链接协议未校验的安全隐患`。
+
+### 4. PR 工作流（`pnpm pr`）
+
+feature 分支一律经 PR 合入 `main`：分支保护锁死 required checks（typecheck / lint / e2e）与 squash-only、拒绝直推，决策背景见 [ADR-0004](docs/adr/0004-pr-only-squash-workflow.md)，完整流程见 [.github/CICD.md](.github/CICD.md) 的「提交与 PR」「合并」章节。
+
+| 命令 | 用途 |
+| :--- | :--- |
+| `pnpm pr` | 前置检查 → push → 开 PR（标题取分支首个提交，正文读模板） |
+| `pnpm pr:merge` | 等门禁全绿 → squash 合并 → 删远端分支 |
+| `pnpm pr:status` | 当前仓库 PR 与 checks 概览 |
+
+PR 标题沿用本节 Conventional Commits 格式（squash 后即 main 提交信息、进 changelog），分支首个提交的 subject 请按此措辞。
 
 ---
 
