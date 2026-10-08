@@ -71,5 +71,6 @@ test.describe('首屏渐进式加载 (First Screen Loading) E2E 验证', () => {
     }
     expect(updaterPage.url()).toContain('updater.html');
     expect(await updaterPage.locator('#loading').count()).toBe(0);
+    await updaterPage.close();
   });
 });

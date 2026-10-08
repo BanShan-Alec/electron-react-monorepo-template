@@ -211,15 +211,26 @@ test.describe
       await expect(hideButton).toBeVisible();
       await hideButton.click();
 
-      // 断言更新窗口状态变为不可见（hide）
-      const isHidden = await electronApp.evaluate(({ BrowserWindow }) => {
+      // 断言更新窗口已被销毁（不存在于存活的 BrowserWindow 列表中）
+      const isClosedOrDestroyed = await electronApp.evaluate(({ BrowserWindow }) => {
         const wins = BrowserWindow.getAllWindows();
-        const updaterWin = wins.find((w) => w.webContents.getURL().includes('updater.html'));
-        return updaterWin ? !updaterWin.isVisible() : false;
+        const updaterWin = wins.find((w) => {
+          try {
+            return (
+              !w.isDestroyed() &&
+              Boolean(w.webContents) &&
+              !w.webContents.isDestroyed() &&
+              w.webContents.getURL().includes('updater.html')
+            );
+          } catch {
+            return false;
+          }
+        });
+        return !updaterWin?.isVisible();
       });
-      expect(isHidden).toBe(true);
+      expect(isClosedOrDestroyed).toBe(true);
 
-      // 在窗口隐藏期间，后台下载持续推进至 85%
+      // 在窗口销毁期间，后台下载持续推进至 85%
       await electronApp.evaluate(() => {
         // biome-ignore lint/suspicious/noExplicitAny: electron runtime mock injection
         const mock = (globalThis as any).__updaterMock;
@@ -232,20 +243,34 @@ test.describe
         });
       });
 
-      // 主窗口再次点击「检查更新」
-      const checkUpdatesBtn = page.getByRole('button', { name: /检查更新|Check for Updates/ });
-      await checkUpdatesBtn.click();
+      // 主窗口再次点击「检查更新」，重新创建并拉起更新窗口
+      const [newUpdaterPage] = await Promise.all([
+        electronApp.waitForEvent('window'),
+        page.getByRole('button', { name: /检查更新|Check for Updates/ }).click(),
+      ]);
+      await newUpdaterPage.waitForLoadState('domcontentloaded');
 
       // 更新窗口重新显示
       const isVisibleAgain = await electronApp.evaluate(({ BrowserWindow }) => {
         const wins = BrowserWindow.getAllWindows();
-        const updaterWin = wins.find((w) => w.webContents.getURL().includes('updater.html'));
+        const updaterWin = wins.find((w) => {
+          try {
+            return (
+              !w.isDestroyed() &&
+              Boolean(w.webContents) &&
+              !w.webContents.isDestroyed() &&
+              w.webContents.getURL().includes('updater.html')
+            );
+          } catch {
+            return false;
+          }
+        });
         return updaterWin ? updaterWin.isVisible() : false;
       });
       expect(isVisibleAgain).toBe(true);
 
       // 断言进度条保持最新连续进度 (85%)
-      await expect(updaterPage.getByText('85%')).toBeVisible();
-      await expect(updaterPage.getByText('3.50 MB/s')).toBeVisible();
+      await expect(newUpdaterPage.getByText('85%')).toBeVisible();
+      await expect(newUpdaterPage.getByText('3.50 MB/s')).toBeVisible();
     });
   });
