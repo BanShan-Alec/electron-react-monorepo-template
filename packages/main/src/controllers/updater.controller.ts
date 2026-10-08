@@ -69,7 +69,7 @@ export function registerUpdaterControllers(): void {
     IPC_CHANNELS.UPDATER_CLOSE_WINDOW,
     async (): Promise<Result<{ success: boolean }>> => {
       try {
-        getUpdaterWindowModule().hide();
+        getUpdaterWindowModule().close();
         return successResult({ success: true });
       } catch (err) {
         return catchToResult(err);

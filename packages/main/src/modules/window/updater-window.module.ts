@@ -21,7 +21,7 @@ export class UpdaterWindowModule implements AppModule {
     // 绑定更新服务的窗口代理
     updaterService.setWindowDelegate({
       show: () => this.show(),
-      hide: () => this.hide(),
+      hide: () => this.close(),
     });
   }
 
@@ -40,12 +40,14 @@ export class UpdaterWindowModule implements AppModule {
     const browserWindow = new BrowserWindow({
       show: false,
       width: 480,
-      height: 480,
-      minWidth: 420,
-      minHeight: 400,
-      resizable: true,
+      height: 500,
+      resizable: false,
       maximizable: false,
+      minimizable: false,
       fullscreenable: false,
+      frame: false,
+      transparent: true,
+      hasShadow: true,
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
@@ -83,18 +85,14 @@ export class UpdaterWindowModule implements AppModule {
       );
     });
 
-    // 拦截关闭事件为隐藏窗口，保留更新与下载事务上下文；若主窗口已销毁则退出应用
-    browserWindow.on('close', (event) => {
+    // 关闭更新窗口：销毁窗口实体，若主窗口已销毁则退出应用
+    browserWindow.on('close', () => {
       const homeWin = getWindow(WINDOW_IDS.HOME);
-      if (!appLifecycle.isQuitting && homeWin && !homeWin.isDestroyed()) {
-        event.preventDefault();
-        browserWindow.hide();
-        this.logger.info('Updater window close event intercepted -> hidden');
-      } else if (!appLifecycle.isQuitting) {
+      if (!appLifecycle.isQuitting && (!homeWin || homeWin.isDestroyed())) {
         this.logger.info('Home window does not exist, closing updater window will quit app');
         app.quit();
       } else {
-        this.logger.info('Updater window is closing for quit');
+        this.logger.info('Updater window closing and destroying');
       }
     });
 
@@ -129,18 +127,16 @@ export class UpdaterWindowModule implements AppModule {
     return win;
   }
 
-  hide(): void {
-    const homeWin = getWindow(WINDOW_IDS.HOME);
-    if (!homeWin || homeWin.isDestroyed()) {
-      this.logger.info('Home window does not exist, hide() will quit app to prevent zombie');
-      app.quit();
-      return;
-    }
+  close(): void {
     const win = getWindow(WINDOW_IDS.UPDATER);
-    if (win && !win.isDestroyed() && win.isVisible()) {
-      win.hide();
-      this.logger.info('Updater window hidden');
+    if (win && !win.isDestroyed()) {
+      win.close();
+      this.logger.info('Updater window closed and destroyed');
     }
+  }
+
+  hide(): void {
+    this.close();
   }
 
   destroy(): void {

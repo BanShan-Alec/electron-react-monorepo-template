@@ -154,6 +154,11 @@ export class UpdaterService {
             this.logger.error('Failed to quitAndInstall in orphan mode:', err);
             app.quit();
           }
+        } else {
+          // 主窗口正常存活时，拉起更新窗口提醒用户立即重启安装
+          this.windowDelegate?.show().catch((err) => {
+            this.logger.error('Failed to show updater window on update-downloaded:', err);
+          });
         }
       });
 
@@ -216,6 +221,33 @@ export class UpdaterService {
       this.snapshot.error = err instanceof Error ? err.message : String(err);
       this.emitState();
       throw new AppError(this.snapshot.error, ErrorCode.UPDATER_CHECK_FAILED);
+    }
+  }
+
+  /**
+   * 应用启动时的静默检查更新逻辑
+   * 不主动向用户展示报错或无更新状态，仅在发现新版本时触发通知/弹窗
+   */
+  public async checkSilently(): Promise<void> {
+    if (this.snapshot.state === 'checking' || this.snapshot.state === 'downloading') {
+      return;
+    }
+
+    if (process.env.NODE_ENV === 'test') {
+      return;
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      this.logger.info('Dev mode: skipping silent check request');
+      return;
+    }
+
+    this.logger.info('Starting silent update check on startup...');
+    try {
+      const updater = this.getAutoUpdater();
+      await updater.checkForUpdates();
+    } catch (err) {
+      this.logger.warn('Silent update check encountered error (ignored):', err);
     }
   }
 
