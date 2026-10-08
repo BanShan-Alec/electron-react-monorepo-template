@@ -2,8 +2,6 @@ import fs from 'node:fs';
 import { join } from 'node:path';
 import type { Configuration } from 'electron-builder';
 
-const pkg = JSON.parse(fs.readFileSync(join(process.cwd(), 'package.json'), 'utf8'));
-
 const config: Configuration = {
   directories: {
     output: 'dist',
@@ -28,40 +26,44 @@ const config: Configuration = {
   artifactName: '${productName}-${version}-${os}-${arch}.${ext}',
   files: [
     'LICENSE*',
-    pkg.main,
     '!node_modules/@app/**',
-    ...getListOfFilesFromEachWorkspace(),
+    ...getListOfFilesFromEachWorkspace(['main', 'preload', 'renderer']),
     '!**/*.map', // 严禁将 SourceMap 源码映射文件打包进 asar，彻底防止源码泄露
+    '!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,changelog.md}',
+    '!**/node_modules/*/{test,__tests__,tests,docs,example,examples}/**',
+    '!**/node_modules/**/*.d.ts',
+    '!**/node_modules/**/*.d.cts',
+    '!**/node_modules/**/*.d.mts',
   ],
 };
 
 export default config;
 
 /**
- * Scan workspace packages and selectively include files based on each package's "files" configuration
+ * 显式读取指定 workspace 子包的 package.json 中的 files 配置，生成打包匹配规则
  */
-function getListOfFilesFromEachWorkspace(): string[] {
+function getListOfFilesFromEachWorkspace(
+  workspaces: string[],
+): Array<{ from: string; to: string; filter: string[] }> {
   const packagesDir = join(process.cwd(), 'packages');
-  if (!fs.existsSync(packagesDir)) {
-    return [];
-  }
+  const allFilesToInclude: Array<{ from: string; to: string; filter: string[] }> = [];
 
-  const entries = fs.readdirSync(packagesDir, { withFileTypes: true });
-  const allFilesToInclude: string[] = [];
-
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    const pkgPath = join(packagesDir, entry.name, 'package.json');
+  for (const workspace of workspaces) {
+    const dirName = workspace.replace(/^@app\//, '');
+    const pkgPath = join(packagesDir, dirName, 'package.json');
     if (!fs.existsSync(pkgPath)) continue;
 
     const workspacePkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-
     const name = workspacePkg.name;
     if (!name) continue;
 
-    let patterns = workspacePkg.files || ['dist/**', 'package.json'];
-    patterns = patterns.map((p: string) => join('node_modules', name, p).replace(/\\/g, '/'));
-    allFilesToInclude.push(...patterns);
+    if (!Array.isArray(workspacePkg.files) || workspacePkg.files.length === 0) continue;
+
+    allFilesToInclude.push({
+      from: `packages/${dirName}`,
+      to: `node_modules/${name}`,
+      filter: [...workspacePkg.files, '!**/*.map'],
+    });
   }
 
   return allFilesToInclude;

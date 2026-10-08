@@ -40,7 +40,7 @@
 15. 作为开发者，我希望生产环境 Sentry 事件绑定 `electron-app@<version>` 的 release 标识，这样崩溃事件能精确归因到构建版本。
 16. 作为安全审计者，我希望脱敏是写入前的强制环节而非调用方自觉，这样任何调用路径都无法绕过。
 17. 作为安全审计者，我希望节流与长度上限作用于 IPC 入口层，这样它们不受渲染端代码是否可信的影响。
-18. 作为安全审计者，我希望 fatal-crash 落盘路径在应用任何生命周期阶段都可用且有兜底，这样崩溃信息本身不会因崩溃而丢失。
+18. 作为安全审计者，我希望主进程异常日志在应用生命周期中可用且有兜底，这样崩溃与异常信息不会因崩溃而丢失。
 19. 作为运维者，我希望清理策略（过期天数 + 归档份数）与新的归档命名模式真正配套生效，这样磁盘占用有界。
 20. 作为维护者，我希望渲染进程死亡处置尊重"最小化到托盘"等既有生命周期语义（退出中不弹窗、已销毁不操作），这样新增监听不会制造僵尸窗口。
 
@@ -48,7 +48,7 @@
 
 | # | 决策 | 理由 |
 | :--- | :--- | :--- |
-| D1 | **异常分级**：`uncaughtException` 维持现状（同步落 fatal-crash.log + `showErrorBox` + `exit(1)`）；`unhandledRejection` 改为**仅记录**——带完整 reason 栈写 error 级日志，不弹窗、不退出 | 同步栈崩溃后内存状态不可信，必须退出；Promise 漏抓不影响事件循环健康，强杀纯属误伤。云端上报依赖主进程 Sentry（本期未引入，见 Out of Scope） |
+| D1 | **异常分级**：移除强杀弹窗；主进程未捕获异常统一由 `electron-log` 记入 `main.log`；`unhandledRejection` 改为**仅记录**——带完整 reason 栈写 error 级日志，不弹窗、不退出 | 同步栈崩溃与 Promise 漏抓统一交由日志系统托管，不弹窗强杀，避免误伤用户操作。云端上报依赖主进程 Sentry（本期未引入，见 Out of Scope） |
 | D2 | **消息长度硬上限**：`logInputSchema.message` 增加 `.max(2000)`；超限经既有 `Result` 契约返回 `VALIDATION_ERROR` 语义错误码，不落盘 | 拦截大 payload 的第一道闸放在 schema 层（IPC 入口），与既有校验范式同构；语义错误码让调用方可分支处理 |
 | D3 | **滑动窗口节流**：`DiagnosticsService` 内实现每调用方 50 条/秒的滑动窗口计数；键为 `webContents.id`（控制器需把 `event.sender.id` 传入服务层，属签名变更）；超限静默丢弃并**只打印一条**汇总告警（含丢弃数量）；窗口滑过后自动恢复，无需重置 | 防洪闸放服务层而非控制器，保证计数逻辑与 Electron 类型解耦；单条汇总避免告警本身成为新洪流；按 webContents 分键天然覆盖未来的多窗口 |
 | D4 | **meta 脱敏与体积截断**：写盘前对 `meta` 执行浅层键脱敏（键名大小写不敏感匹配 `password` / `authorization` / `token`，值替换为 `'***'`）；随后安全序列化（`JSON.stringify` 包 try/catch，循环引用降级为占位串）并截断到 8KB，截断处追加明确标记 | 脱敏在服务层强制执行（调用方无法绕过）；只做浅层遍历，避免深递归被构造性拖垮；体积截断补齐 schema 层管不到的 `meta` 缺口 |
@@ -77,7 +77,7 @@
 
 1. **主进程 Sentry SDK 与云端上报**：仓库未安装主进程 SDK、无 DSN 供给链路；D1 的 Promise 漏抓本期只落本地日志。云端闭环待 Sentry 主进程集成独立立项。
 2. **CI SourceMap 上传管线**：依赖 Sentry 组织与凭据供给（env 注入未定），且 CI/CD 改造已另行定稿；本期仅落地 release 标识为未来上传铺路。
-3. **审计文档维度七中已被核查推翻/已解决的项**：main 包 `console.*` 混用（现状为零）、`scoped()` 落地（已在 9 个模块使用）、`ipc.module` 双日志冗余（已收敛为单条）、渲染端生产环境 IPC 刷屏（现行代码成功日志仅 DEV 记录）、`app.getPath('userData')` ready 前异常（Electron 官方文档无此限制，且现行 `handleFatalCrash` 已有 try/catch 双层兜底）。
+3. **审计文档维度七中已被核查推翻/已解决的项**：main 包 `console.*` 混用（现状为零）、`scoped()` 落地（已在 9 个模块使用）、`ipc.module` 双日志冗余（已收敛为单条）、渲染端生产环境 IPC 刷屏（现行代码成功日志仅 DEV 记录）、`app.getPath('userData')` ready 前异常（Electron 官方文档无此限制，且日志系统已有安全目录获取兜底）。
 4. **日志查看器 UI / 日志导出分享**：`openLogFolder` 已满足需求。
 5. **Session Replay 与 breadcrumbs 调优**：`sentry.ts` 注释已留开关，按需独立决策。
 6. **审计文档中的示例代码照抄**：审计给出的 `archiveLogFn` 片段用 `renameSync` + ISO 时间戳，实施时须对齐本仓的清理规则与 biome 规范（如异步 fs、跨平台文件名合法性），片段仅表达意图。

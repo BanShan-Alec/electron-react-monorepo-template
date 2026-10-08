@@ -2,14 +2,14 @@
   "name": "electron-react-monorepo-template",
   "productName": "Electron React Template",
   "description": "Type-safe Electron monorepo template powered by Vite, React and ContextBridge IPC",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "BanShan-Alec",
     "email": "627649674@qq.com"
   },
   "private": true,
   "packageManager": "pnpm@10.34.5",
-  "main": "packages/main/dist/index.cjs",
+  "main": "node_modules/@app/main/dist/index.cjs",
   "engines": {
     "node": ">=22.0.0",
     "pnpm": "^10.0.0"
@@ -29,6 +29,8 @@
     "i18n:extract": "pnpm --filter @app/renderer exec lingui extract --clean",
     "test:e2e": "playwright test -c .config/playwright.config.ts",
     "test:e2e:build": "pnpm run build && pnpm run test:e2e",
+    "test:dist": "node scripts/verify-dist.ts",
+    "verify:deps": "node scripts/verify-deps.ts",
     "typecheck": "tsc -p scripts/tsconfig.json --noEmit && tsc -p e2e/tsconfig.json --noEmit && pnpm -r run typecheck",
     "lint": "biome check --config-path=.config .",
     "lint:fix": "biome check --write --config-path=.config .",
@@ -46,6 +48,8 @@
     ]
   },
   "devDependencies": {
+    "@app/preload": "workspace:*",
+    "@app/renderer": "workspace:*",
     "@app/tsconfig": "workspace:*",
     "@biomejs/biome": "^2.5.12",
     "@commitlint/cli": "^21.2.2",
@@ -55,16 +59,14 @@
     "changelogen": "^0.6.2",
     "cross-env": "^10.1.0",
     "electron": "41.0.3",
-    "electron-builder": "26.8.1",
+    "electron-builder": "26.8.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.5.0",
     "typescript": "catalog:",
     "vite": "catalog:"
   },
   "dependencies": {
-    "@app/main": "workspace:*",
-    "@app/preload": "workspace:*",
-    "@app/renderer": "workspace:*"
+    "@app/main": "workspace:*"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

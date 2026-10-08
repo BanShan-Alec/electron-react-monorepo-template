@@ -1,6 +1,4 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { app, dialog } from 'electron';
+import log from 'electron-log/main';
 import type { AppInitConfig } from './AppInitConfig';
 import { createModuleRunner } from './ModuleRunner';
 import { terminateAppOnLastWindowClose } from './modules/auto-terminate.module';
@@ -15,37 +13,6 @@ import { createStartupReadinessModule } from './modules/startup-readiness.module
 import { createTrayModule } from './modules/tray.module';
 import { createWindowManagerModule } from './modules/window/index.module';
 import { createUpdaterWindowModule } from './modules/window/updater-window.module';
-
-/**
- * 致命错误同步落盘与系统原生弹窗告警 (跨全生命周期，包括生产打包态)
- */
-function handleFatalCrash(type: string, error: unknown): void {
-  const errorDetails = error instanceof Error ? error.stack || error.message : String(error);
-  const logContent = `\n[FATAL CRASH] [${new Date().toISOString()}] [${type}]\n${errorDetails}\n`;
-
-  console.error(logContent);
-
-  try {
-    const logDir = path.join(app?.getPath?.('userData') || process.cwd(), 'logs');
-    fs.mkdirSync(logDir, { recursive: true });
-    fs.appendFileSync(path.join(logDir, 'fatal-crash.log'), logContent, 'utf8');
-  } catch {
-    try {
-      fs.appendFileSync(path.join(process.cwd(), 'fatal-crash.log'), logContent, 'utf8');
-    } catch {}
-  }
-
-  dialog.showErrorBox(
-    'Application Initialization Error',
-    `A critical error occurred while starting the application:\n\n${errorDetails}\n\nPlease check fatal-crash.log for details.`,
-  );
-
-  process.exit(1);
-}
-
-// 全生命周期监听未捕获异常与未处理 Promise 拒绝
-process.on('uncaughtException', (err) => handleFatalCrash('uncaughtException', err));
-process.on('unhandledRejection', (reason) => handleFatalCrash('unhandledRejection', reason));
 
 export async function initApp(initConfig: AppInitConfig) {
   const moduleRunner = createModuleRunner()
@@ -90,6 +57,7 @@ initApp({
   preload: {
     path: require.resolve('@app/preload'),
   },
+  // 初始化失败只经 electron-log 记入 main.log，不弹窗不退出
 }).catch((error) => {
-  handleFatalCrash('initAppFailed', error);
+  log.error('[initAppFailed]', error);
 });

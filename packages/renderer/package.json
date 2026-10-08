@@ -13,16 +13,18 @@
   },
   "dependencies": {
     "@ant-design/icons": "^6.3.4",
+    "@app/shared": "workspace:*",
     "@lingui/core": "^6.9.0",
     "@lingui/react": "^6.9.0",
     "@sentry/react": "^11.0.0",
     "ahooks": "^3.10.0",
     "antd": "^6.6.5",
     "clsx": "^2.1.1",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "@app/shared": "workspace:*",
     "@app/tsconfig": "workspace:*",
     "@lingui/cli": "^6.9.0",
     "@lingui/conf": "^6.9.0",
@@ -34,13 +36,15 @@
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.6.0",
     "postcss": "^8.5.28",
-    "react": "catalog:",
-    "react-dom": "catalog:",
     "tailwindcss": "^3.4.19",
     "typescript": "catalog:",
     "vite": "catalog:"
   },
   "main": "./dist/index.html",
+  "files": [
+    "dist/**",
+    "package.json"
+  ],
   "exports": {
     ".": {
       "default": "./dist/index.html"

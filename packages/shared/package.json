@@ -8,10 +8,8 @@
     "./schemas/*": "./src/schemas/*.ts",
     "./types/*": "./src/types/*.ts"
   },
-  "dependencies": {
-    "zod": "catalog:"
-  },
   "devDependencies": {
-    "@app/tsconfig": "workspace:*"
+    "@app/tsconfig": "workspace:*",
+    "zod": "catalog:"
   }
 }
