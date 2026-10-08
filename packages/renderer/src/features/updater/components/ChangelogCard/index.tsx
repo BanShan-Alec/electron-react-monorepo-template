@@ -2,6 +2,7 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Card, Tag } from 'antd';
 import type React from 'react';
+import { useState } from 'react';
 
 interface ChangelogCardProps {
   version?: string;
@@ -62,8 +63,11 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
   releaseNotes,
 }) => {
   useLingui();
+  const [expanded, setExpanded] = useState(false);
 
   const formattedDate = releaseDate ? new Date(releaseDate).toLocaleDateString() : undefined;
+  const hasNotes = Boolean(releaseNotes && releaseNotes.length > 0);
+  const isLongNotes = Boolean(releaseNotes && releaseNotes.length > 4);
 
   return (
     <Card
@@ -85,17 +89,36 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
         </div>
       }
     >
-      <div className="max-h-40 overflow-y-auto pr-1 text-xs text-foreground-secondary space-y-1.5 stable-scrollbar">
-        {releaseNotes && releaseNotes.length > 0 ? (
-          <ul className="list-disc list-inside space-y-1">
-            {releaseNotes.map((note, index) => (
-              <li key={`${index}-${note.slice(0, 10)}`} className="leading-relaxed">
-                {formatInlineMarkdown(note)}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-foreground-muted italic">{t`包含常规稳定性改进与性能优化。`}</p>
+      <div className="text-xs text-foreground-secondary space-y-1.5">
+        <div
+          className={
+            expanded
+              ? 'max-h-60 overflow-y-auto pr-1 stable-scrollbar'
+              : 'line-clamp-4 overflow-hidden'
+          }
+        >
+          {hasNotes ? (
+            <ul className="list-disc list-inside space-y-1">
+              {releaseNotes!.map((note, index) => (
+                <li key={`${index}-${note.slice(0, 10)}`} className="leading-relaxed">
+                  {formatInlineMarkdown(note)}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-foreground-muted italic">{t`包含常规稳定性改进与性能优化。`}</p>
+          )}
+        </div>
+        {isLongNotes && (
+          <div className="flex justify-end pt-0.5">
+            <button
+              type="button"
+              onClick={() => setExpanded(!expanded)}
+              className="text-primary hover:underline text-[11px] cursor-pointer focus:outline-none"
+            >
+              {expanded ? t`收起` : t`展开全部`}
+            </button>
+          </div>
         )}
       </div>
     </Card>

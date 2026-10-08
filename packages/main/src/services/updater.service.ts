@@ -235,7 +235,18 @@ export class UpdaterService {
 
     try {
       const updater = this.getAutoUpdater();
-      await updater.checkForUpdates();
+      let timer: NodeJS.Timeout | undefined;
+      const timeoutPromise = new Promise((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error('检查更新请求超时（15 秒），请检查网络连接后重试')),
+          15000,
+        );
+      });
+      try {
+        await Promise.race([updater.checkForUpdates(), timeoutPromise]);
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
       return this.getSnapshot();
     } catch (err) {
       this.snapshot.state = 'error';
@@ -266,7 +277,15 @@ export class UpdaterService {
     this.logger.info('Starting silent update check on startup...');
     try {
       const updater = this.getAutoUpdater();
-      await updater.checkForUpdates();
+      let timer: NodeJS.Timeout | undefined;
+      const timeoutPromise = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('Silent check timeout (15s)')), 15000);
+      });
+      try {
+        await Promise.race([updater.checkForUpdates(), timeoutPromise]);
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
     } catch (err) {
       this.logger.warn('Silent update check encountered error (ignored):', err);
     }
