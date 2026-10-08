@@ -68,6 +68,16 @@ export class UpdaterService {
     this.windowDelegate = delegate;
   }
 
+  private isDevelopment(): boolean {
+    if (app.isPackaged) {
+      return false;
+    }
+    if (process.env.NODE_ENV === 'test') {
+      return false;
+    }
+    return process.env.MODE !== 'production';
+  }
+
   private getAutoUpdater(): AppUpdater {
     const { autoUpdater } = electronUpdater;
     return autoUpdater;
@@ -214,7 +224,7 @@ export class UpdaterService {
       return this.getSnapshot();
     }
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (this.isDevelopment()) {
       this.logger.info('Dev mode: running simulated check flow');
       if (this.devSimulationTimer) {
         clearInterval(this.devSimulationTimer);
@@ -275,7 +285,7 @@ export class UpdaterService {
       return;
     }
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (this.isDevelopment()) {
       this.logger.info('Dev mode: skipping silent check request');
       return;
     }
@@ -315,7 +325,7 @@ export class UpdaterService {
       return this.getSnapshot();
     }
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (this.isDevelopment()) {
       this.logger.info('Dev mode: running simulated download flow');
       if (this.devSimulationTimer) {
         clearInterval(this.devSimulationTimer);
@@ -407,7 +417,7 @@ export class UpdaterService {
       return { success: true };
     }
 
-    if (process.env.NODE_ENV !== 'production') {
+    if (this.isDevelopment()) {
       this.logger.info('Dev mode: simulated install completed');
       return { success: true };
     }
