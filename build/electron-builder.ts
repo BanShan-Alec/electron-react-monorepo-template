@@ -32,6 +32,11 @@ const config: Configuration = {
     '!node_modules/@app/**',
     ...getListOfFilesFromEachWorkspace(),
     '!**/*.map', // 严禁将 SourceMap 源码映射文件打包进 asar，彻底防止源码泄露
+    '!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,changelog.md}',
+    '!**/node_modules/*/{test,__tests__,tests,docs,example,examples}/**',
+    '!**/node_modules/**/*.d.ts',
+    '!**/node_modules/**/*.d.cts',
+    '!**/node_modules/**/*.d.mts',
   ],
 };
 
@@ -58,6 +63,10 @@ function getListOfFilesFromEachWorkspace(): string[] {
 
     const name = workspacePkg.name;
     if (!name) continue;
+
+    // @app/main 的入口产物已由 pkg.main (packages/main/dist/index.cjs) 单独纳入，
+    // 无需在 node_modules/@app/main 重复打包同一份产物，避免 asar 内产物冗余双份
+    if (name === '@app/main') continue;
 
     let patterns = workspacePkg.files || ['dist/**', 'package.json'];
     patterns = patterns.map((p: string) => join('node_modules', name, p).replace(/\\/g, '/'));

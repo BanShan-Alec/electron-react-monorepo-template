@@ -3,7 +3,8 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   build: {
     ssr: true,
-    sourcemap: 'inline',
+    sourcemap: process.env.MODE === 'development' ? 'inline' : 'hidden',
+    minify: process.env.MODE === 'development' ? false : 'oxc',
     outDir: 'dist',
     assetsDir: '.',
     target: 'node22',
