@@ -48,6 +48,7 @@ export class UpdaterService {
   private readonly logger = getLogManager().scoped('UpdaterService');
   private cancellationToken: CancellationToken | null = null;
   private orphanWatchdogTimer: NodeJS.Timeout | null = null;
+  private devSimulationTimer: NodeJS.Timeout | null = null;
   private isOrphan = false;
   private lastProgressEmitTime = 0;
 
@@ -208,7 +209,27 @@ export class UpdaterService {
     }
 
     if (process.env.NODE_ENV !== 'production') {
-      this.logger.info('Dev mode: skipping external check request');
+      this.logger.info('Dev mode: running simulated check flow');
+      if (this.devSimulationTimer) {
+        clearInterval(this.devSimulationTimer);
+        this.devSimulationTimer = null;
+      }
+      setTimeout(() => {
+        if (this.snapshot.state === 'checking') {
+          this.mockEmit({
+            type: 'available',
+            version: '2.0.0',
+            releaseDate: new Date().toISOString().split('T')[0],
+            releaseNotes: [
+              '【Dev 模式模拟更新】',
+              '统一多平台应用运行图标与安装包图标',
+              '支持 NSIS 自定义安装目录选择',
+              'OTA 窗口采用无边框纯平贴边现代布局与内嵌按钮',
+              '解耦窗口物理销毁与后台静默下载生命周期',
+            ],
+          });
+        }
+      }, 800);
       return this.getSnapshot();
     }
 
@@ -270,7 +291,36 @@ export class UpdaterService {
     }
 
     if (process.env.NODE_ENV !== 'production') {
-      this.logger.info('Dev mode: simulating download');
+      this.logger.info('Dev mode: running simulated download flow');
+      if (this.devSimulationTimer) {
+        clearInterval(this.devSimulationTimer);
+        this.devSimulationTimer = null;
+      }
+
+      let currentPercent = 0;
+      this.devSimulationTimer = setInterval(() => {
+        if (this.snapshot.state !== 'downloading') {
+          if (this.devSimulationTimer) clearInterval(this.devSimulationTimer);
+          this.devSimulationTimer = null;
+          return;
+        }
+
+        currentPercent += 10;
+        if (currentPercent >= 100) {
+          if (this.devSimulationTimer) clearInterval(this.devSimulationTimer);
+          this.devSimulationTimer = null;
+          this.mockEmit({ type: 'downloaded' });
+        } else {
+          this.mockEmit({
+            type: 'progress',
+            percent: currentPercent,
+            bytesPerSecond: 3.5 * 1024 * 1024,
+            transferred: Math.round((currentPercent / 100) * 85 * 1024 * 1024),
+            total: 85 * 1024 * 1024,
+          });
+        }
+      }, 500);
+
       return this.getSnapshot();
     }
 
@@ -292,6 +342,11 @@ export class UpdaterService {
   }
 
   public async cancel(): Promise<UpdaterSnapshot> {
+    if (this.devSimulationTimer) {
+      clearInterval(this.devSimulationTimer);
+      this.devSimulationTimer = null;
+    }
+
     if (this.snapshot.state === 'downloading') {
       if (this.cancellationToken) {
         try {
@@ -324,6 +379,11 @@ export class UpdaterService {
 
     this.logger.info('Initiating install: quitAndInstall(false, true)');
     if (process.env.NODE_ENV === 'test') {
+      return { success: true };
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      this.logger.info('Dev mode: simulated install completed');
       return { success: true };
     }
 

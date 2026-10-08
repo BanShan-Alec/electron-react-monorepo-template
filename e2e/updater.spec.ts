@@ -1,6 +1,10 @@
 import type { ElectronApplication, Page } from '@playwright/test';
 import { expect, test } from './helpers/fixture';
 
+const isDemo = Boolean(process.env.DEMO_MODE);
+const stepDelay = (ms = 1500) =>
+  isDemo ? new Promise((resolve) => setTimeout(resolve, ms)) : Promise.resolve();
+
 test.describe
   .serial('自动更新模块 (Updater Features) E2E 自动化测试', () => {
     let updaterPage: Page;
@@ -48,6 +52,7 @@ test.describe
       // 4. 断言具备 checking 初始态文案
       await expect(updaterPage.getByText('检查更新中')).toBeVisible();
       await expect(updaterPage.getByText('正在检查更新...')).toBeVisible();
+      await stepDelay(1500);
     });
 
     test('用例 2：新版本可用与 Changelog 渲染', async ({ electronApp }) => {
@@ -90,6 +95,7 @@ test.describe
       // 断言主操作按钮显示为「立即更新」，次要按钮显示为「稍后提醒」
       await expect(updaterPage.getByRole('button', { name: '立即更新' })).toBeVisible();
       await expect(updaterPage.getByRole('button', { name: '稍后提醒' })).toBeVisible();
+      await stepDelay(1500);
     });
 
     test('用例 3：下载流程与进度条推进', async ({ electronApp }) => {
@@ -114,6 +120,7 @@ test.describe
       await expect(updaterPage.getByText('下载进度')).toBeVisible();
       await expect(updaterPage.getByText('25%')).toBeVisible();
       await expect(updaterPage.getByText('2.50 MB/s')).toBeVisible();
+      await stepDelay(800);
 
       // 3. 持续注入下载进度：50%
       await electronApp.evaluate(() => {
@@ -129,6 +136,7 @@ test.describe
       });
       await expect(updaterPage.getByText('50%')).toBeVisible();
       await expect(updaterPage.getByText('4.80 MB/s')).toBeVisible();
+      await stepDelay(800);
 
       // 4. 注入进度：100%
       await electronApp.evaluate(() => {
@@ -143,6 +151,7 @@ test.describe
         });
       });
       await expect(updaterPage.getByText('100%')).toBeVisible();
+      await stepDelay(800);
     });
 
     test('用例 4：下载就绪与安装引导', async ({ electronApp }) => {
@@ -159,6 +168,7 @@ test.describe
       await expect(updaterPage.getByText('更新已准备就绪')).toBeVisible();
       await expect(updaterPage.getByRole('button', { name: '重启并安装' })).toBeVisible();
       await expect(updaterPage.getByRole('button', { name: '稍后安装' })).toBeVisible();
+      await stepDelay(1500);
     });
 
     test('用例 5：下载中断错误与重试', async ({ electronApp }) => {
@@ -175,6 +185,7 @@ test.describe
       // 断言错误提示展示
       await expect(updaterPage.getByText('更新失败')).toBeVisible();
       await expect(updaterPage.getByText('网络连接异常中断，无法继续下载更新包')).toBeVisible();
+      await stepDelay(1200);
 
       // 断言主按钮切换为「重试」
       const retryBtn = updaterPage.getByRole('button', { name: /重\s*试/ });
@@ -190,6 +201,7 @@ test.describe
         return service?.getState();
       });
       expect(['downloading', 'checking']).toContain(currentState);
+      await stepDelay(1000);
     });
 
     test('用例 6：窗口隐藏保留与后台下载连续性', async ({ page, electronApp }) => {
@@ -205,6 +217,7 @@ test.describe
           total: 100 * 1024 * 1024,
         });
       });
+      await stepDelay(1000);
 
       // 点击「隐藏到后台」按钮
       const hideButton = updaterPage.getByRole('button', { name: '隐藏到后台' });
@@ -229,6 +242,7 @@ test.describe
         return !updaterWin?.isVisible();
       });
       expect(isClosedOrDestroyed).toBe(true);
+      await stepDelay(1500);
 
       // 在窗口销毁期间，后台下载持续推进至 85%
       await electronApp.evaluate(() => {
@@ -272,5 +286,6 @@ test.describe
       // 断言进度条保持最新连续进度 (85%)
       await expect(newUpdaterPage.getByText('85%')).toBeVisible();
       await expect(newUpdaterPage.getByText('3.50 MB/s')).toBeVisible();
+      await stepDelay(2000);
     });
   });
