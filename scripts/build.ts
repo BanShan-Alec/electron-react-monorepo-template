@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { build, type CliOptions } from 'electron-builder';
+import { verifyDist } from './verify-dist.ts';
 
 /**
  * CLI Argument Parsing
@@ -16,6 +17,7 @@ const { values } = parseArgs({
     publish: { type: 'string', short: 'p', default: 'never' },
     config: { type: 'string', short: 'c', default: 'build/electron-builder.ts' },
     'skip-build': { type: 'boolean', default: false },
+    'skip-verify': { type: 'boolean', default: false },
   },
   strict: false,
   allowPositionals: true,
@@ -49,6 +51,16 @@ async function runBuild() {
   } catch (error) {
     console.error('❌ Packaging failed:', error);
     process.exit(1);
+  }
+
+  // 4. Verify packaged artifact integrity & run smoke check unless --skip-verify is specified
+  if (!values['skip-verify']) {
+    try {
+      await verifyDist();
+    } catch (verifyError) {
+      console.error('❌ Post-packaging verification failed:', verifyError);
+      process.exit(1);
+    }
   }
 }
 
