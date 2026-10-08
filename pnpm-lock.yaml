@@ -135,13 +135,41 @@ importers:
         version: 8.3.0(@types/node@25.9.6)(jiti@2.7.0)(yaml@2.9.0)
 
   packages/renderer:
-    devDependencies:
+    dependencies:
       '@ant-design/icons':
         specifier: ^6.3.4
         version: 6.3.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@app/shared':
         specifier: workspace:*
         version: link:../shared
+      '@lingui/core':
+        specifier: ^6.9.0
+        version: 6.9.0(@babel/core@7.29.7)
+      '@lingui/react':
+        specifier: ^6.9.0
+        version: 6.9.0(@babel/core@7.29.7)(react@19.3.0)
+      '@sentry/react':
+        specifier: ^11.0.0
+        version: 11.0.0(react@19.3.0)
+      ahooks:
+        specifier: ^3.10.0
+        version: 3.10.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      antd:
+        specifier: ^6.6.5
+        version: 6.6.5(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      react:
+        specifier: 'catalog:'
+        version: 19.3.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.0(react@19.3.0)
+      zustand:
+        specifier: ^5.0.15
+        version: 5.0.15(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+    devDependencies:
       '@app/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
@@ -151,21 +179,12 @@ importers:
       '@lingui/conf':
         specifier: ^6.9.0
         version: 6.9.0
-      '@lingui/core':
-        specifier: ^6.9.0
-        version: 6.9.0(@babel/core@7.29.7)
       '@lingui/format-po':
         specifier: ^6.9.0
         version: 6.9.0
-      '@lingui/react':
-        specifier: ^6.9.0
-        version: 6.9.0(@babel/core@7.29.7)(react@19.3.0)
       '@lingui/vite-plugin':
         specifier: ^6.9.0
         version: 6.9.0(@babel/core@7.29.7)(@lingui/babel-plugin-lingui-macro@6.9.0(@babel/core@7.29.7))(@rolldown/plugin-babel@0.2.4(@babel/core@7.29.7)(@babel/runtime@8.0.5)(rolldown@1.2.8)(vite@8.3.0(@types/node@25.9.6)(jiti@1.21.7)(yaml@2.9.0)))(rolldown@1.2.8)(vite@8.3.0(@types/node@25.9.6)(jiti@1.21.7)(yaml@2.9.0))
-      '@sentry/react':
-        specifier: ^11.0.0
-        version: 11.0.0(react@19.3.0)
       '@sentry/vite-plugin':
         specifier: ^5.4.0
         version: 5.4.0
@@ -178,27 +197,12 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^6.0.1
         version: 6.1.1(@rolldown/plugin-babel@0.2.4(@babel/core@7.29.7)(@babel/runtime@8.0.5)(rolldown@1.2.8)(vite@8.3.0(@types/node@25.9.6)(jiti@1.21.7)(yaml@2.9.0)))(vite@8.3.0(@types/node@25.9.6)(jiti@1.21.7)(yaml@2.9.0))
-      ahooks:
-        specifier: ^3.10.0
-        version: 3.10.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      antd:
-        specifier: ^6.6.5
-        version: 6.6.5(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       autoprefixer:
         specifier: ^10.6.0
         version: 10.6.0(postcss@8.5.28)
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
       postcss:
         specifier: ^8.5.28
         version: 8.5.28
-      react:
-        specifier: 'catalog:'
-        version: 19.3.0
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.3.0(react@19.3.0)
       tailwindcss:
         specifier: ^3.4.19
         version: 3.4.19(yaml@2.9.0)
@@ -208,9 +212,6 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 8.3.0(@types/node@25.9.6)(jiti@1.21.7)(yaml@2.9.0)
-      zustand:
-        specifier: ^5.0.15
-        version: 5.0.15(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
 
   packages/shared:
     devDependencies:

@@ -11,32 +11,34 @@
     "lint": "biome check .",
     "preview": "vite preview"
   },
-  "devDependencies": {
+  "dependencies": {
     "@ant-design/icons": "^6.3.4",
     "@app/shared": "workspace:*",
+    "@lingui/core": "^6.9.0",
+    "@lingui/react": "^6.9.0",
+    "@sentry/react": "^11.0.0",
+    "ahooks": "^3.10.0",
+    "antd": "^6.6.5",
+    "clsx": "^2.1.1",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
     "@app/tsconfig": "workspace:*",
     "@lingui/cli": "^6.9.0",
     "@lingui/conf": "^6.9.0",
-    "@lingui/core": "^6.9.0",
     "@lingui/format-po": "^6.9.0",
-    "@lingui/react": "^6.9.0",
     "@lingui/vite-plugin": "^6.9.0",
-    "@sentry/react": "^11.0.0",
     "@sentry/vite-plugin": "^5.4.0",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "^6.0.1",
-    "ahooks": "^3.10.0",
-    "antd": "^6.6.5",
     "autoprefixer": "^10.6.0",
-    "clsx": "^2.1.1",
     "postcss": "^8.5.28",
-    "react": "catalog:",
-    "react-dom": "catalog:",
     "tailwindcss": "^3.4.19",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "zustand": "^5.0.15"
+    "vite": "catalog:"
   },
   "main": "./dist/index.html",
   "files": [

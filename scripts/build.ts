@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { build, type CliOptions } from 'electron-builder';
+import { verifyDependencies } from './verify-deps.ts';
 import { verifyDist } from './verify-dist.ts';
 
 /**
@@ -44,6 +45,11 @@ async function runBuild() {
   if (values.arm64) buildOptions.arm64 = true;
 
   // 3. Trigger packaging
+  const { valid } = await verifyDependencies();
+  if (!valid) {
+    process.exit(1);
+  }
+
   console.log('🚀 Packaging Electron application with electron-builder...');
   try {
     await build(buildOptions);

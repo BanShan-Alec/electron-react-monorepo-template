@@ -30,6 +30,7 @@
     "test:e2e": "playwright test -c .config/playwright.config.ts",
     "test:e2e:build": "pnpm run build && pnpm run test:e2e",
     "test:dist": "node scripts/verify-dist.ts",
+    "verify:deps": "node scripts/verify-deps.ts",
     "typecheck": "tsc -p scripts/tsconfig.json --noEmit && tsc -p e2e/tsconfig.json --noEmit && pnpm -r run typecheck",
     "lint": "biome check --config-path=.config .",
     "lint:fix": "biome check --write --config-path=.config .",
