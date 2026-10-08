@@ -15,10 +15,8 @@
     "build": "vite build --configLoader bundle",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@app/shared": "workspace:*"
-  },
   "devDependencies": {
+    "@app/shared": "workspace:*",
     "@app/tsconfig": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:"

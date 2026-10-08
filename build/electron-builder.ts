@@ -2,8 +2,6 @@ import fs from 'node:fs';
 import { join } from 'node:path';
 import type { Configuration } from 'electron-builder';
 
-const pkg = JSON.parse(fs.readFileSync(join(process.cwd(), 'package.json'), 'utf8'));
-
 const config: Configuration = {
   directories: {
     output: 'dist',
@@ -28,9 +26,8 @@ const config: Configuration = {
   artifactName: '${productName}-${version}-${os}-${arch}.${ext}',
   files: [
     'LICENSE*',
-    pkg.main,
     '!node_modules/@app/**',
-    ...getListOfFilesFromEachWorkspace(['preload', 'renderer']),
+    ...getListOfFilesFromEachWorkspace(['main', 'preload', 'renderer']),
     '!**/*.map', // 严禁将 SourceMap 源码映射文件打包进 asar，彻底防止源码泄露
     '!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,changelog.md}',
     '!**/node_modules/*/{test,__tests__,tests,docs,example,examples}/**',
@@ -45,9 +42,11 @@ export default config;
 /**
  * 显式读取指定 workspace 子包的 package.json 中的 files 配置，生成打包匹配规则
  */
-function getListOfFilesFromEachWorkspace(workspaces: string[]): string[] {
+function getListOfFilesFromEachWorkspace(
+  workspaces: string[],
+): Array<{ from: string; to: string; filter: string[] }> {
   const packagesDir = join(process.cwd(), 'packages');
-  const allFilesToInclude: string[] = [];
+  const allFilesToInclude: Array<{ from: string; to: string; filter: string[] }> = [];
 
   for (const workspace of workspaces) {
     const dirName = workspace.replace(/^@app\//, '');
@@ -60,10 +59,11 @@ function getListOfFilesFromEachWorkspace(workspaces: string[]): string[] {
 
     if (!Array.isArray(workspacePkg.files) || workspacePkg.files.length === 0) continue;
 
-    const patterns = workspacePkg.files.map((p: string) =>
-      join('node_modules', name, p).replace(/\\/g, '/'),
-    );
-    allFilesToInclude.push(...patterns);
+    allFilesToInclude.push({
+      from: `packages/${dirName}`,
+      to: `node_modules/${name}`,
+      filter: [...workspacePkg.files, '!**/*.map'],
+    });
   }
 
   return allFilesToInclude;

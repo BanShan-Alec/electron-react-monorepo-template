@@ -38,13 +38,13 @@ importers:
       '@app/main':
         specifier: workspace:*
         version: link:packages/main
+    devDependencies:
       '@app/preload':
         specifier: workspace:*
         version: link:packages/preload
       '@app/renderer':
         specifier: workspace:*
         version: link:packages/renderer
-    devDependencies:
       '@app/tsconfig':
         specifier: workspace:*
         version: link:packages/tsconfig
@@ -90,6 +90,13 @@ importers:
 
   packages/main:
     dependencies:
+      electron-log:
+        specifier: ^5.4.4
+        version: 5.4.4
+      electron-updater:
+        specifier: ^6.8.3
+        version: 6.8.3
+    devDependencies:
       '@app/preload':
         specifier: workspace:*
         version: link:../preload
@@ -99,13 +106,6 @@ importers:
       '@app/shared':
         specifier: workspace:*
         version: link:../shared
-      electron-log:
-        specifier: ^5.4.4
-        version: 5.4.4
-      electron-updater:
-        specifier: ^6.8.3
-        version: 6.8.3
-    devDependencies:
       '@app/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
@@ -120,11 +120,10 @@ importers:
         version: 4.6.2
 
   packages/preload:
-    dependencies:
+    devDependencies:
       '@app/shared':
         specifier: workspace:*
         version: link:../shared
-    devDependencies:
       '@app/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig

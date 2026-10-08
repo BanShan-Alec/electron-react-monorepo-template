@@ -9,7 +9,7 @@
   },
   "private": true,
   "packageManager": "pnpm@10.34.5",
-  "main": "packages/main/dist/index.cjs",
+  "main": "node_modules/@app/main/dist/index.cjs",
   "engines": {
     "node": ">=22.0.0",
     "pnpm": "^10.0.0"
@@ -47,6 +47,8 @@
     ]
   },
   "devDependencies": {
+    "@app/preload": "workspace:*",
+    "@app/renderer": "workspace:*",
     "@app/tsconfig": "workspace:*",
     "@biomejs/biome": "^2.5.12",
     "@commitlint/cli": "^21.2.2",
@@ -63,9 +65,7 @@
     "vite": "catalog:"
   },
   "dependencies": {
-    "@app/main": "workspace:*",
-    "@app/preload": "workspace:*",
-    "@app/renderer": "workspace:*"
+    "@app/main": "workspace:*"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
