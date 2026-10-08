@@ -40,13 +40,13 @@ export class UpdaterWindowModule implements AppModule {
     const browserWindow = new BrowserWindow({
       show: false,
       width: 480,
-      height: 500,
+      height: 460,
       resizable: false,
       maximizable: false,
       minimizable: false,
       fullscreenable: false,
       frame: false,
-      transparent: true,
+      transparent: false,
       hasShadow: true,
       webPreferences: {
         nodeIntegration: false,
