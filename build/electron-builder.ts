@@ -30,7 +30,7 @@ const config: Configuration = {
     'LICENSE*',
     pkg.main,
     '!node_modules/@app/**',
-    ...getListOfFilesFromEachWorkspace(),
+    ...getListOfFilesFromEachWorkspace(['preload', 'renderer']),
     '!**/*.map', // 严禁将 SourceMap 源码映射文件打包进 asar，彻底防止源码泄露
     '!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,changelog.md}',
     '!**/node_modules/*/{test,__tests__,tests,docs,example,examples}/**',
@@ -43,35 +43,21 @@ const config: Configuration = {
 export default config;
 
 /**
- * Scan workspace packages and selectively include files based on each package's "files" configuration
+ * 显式读取指定 workspace 子包的 package.json 中的 files 配置，生成打包匹配规则
  */
-function getListOfFilesFromEachWorkspace(): string[] {
+function getListOfFilesFromEachWorkspace(workspaces: string[]): string[] {
   const packagesDir = join(process.cwd(), 'packages');
-  if (!fs.existsSync(packagesDir)) {
-    return [];
-  }
-
-  const entries = fs.readdirSync(packagesDir, { withFileTypes: true });
   const allFilesToInclude: string[] = [];
 
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    const pkgPath = join(packagesDir, entry.name, 'package.json');
+  for (const workspace of workspaces) {
+    const dirName = workspace.replace(/^@app\//, '');
+    const pkgPath = join(packagesDir, dirName, 'package.json');
     if (!fs.existsSync(pkgPath)) continue;
 
     const workspacePkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-
     const name = workspacePkg.name;
     if (!name) continue;
 
-    // @app/main 的入口产物已由 pkg.main (packages/main/dist/index.cjs) 单独纳入，
-    // 无需在 node_modules/@app/main 重复打包同一份产物，避免 asar 内产物冗余双份
-    if (name === '@app/main') continue;
-
-    // 排除纯开发期工具链配置子包
-    if (name === '@app/tsconfig') continue;
-
-    // 严禁隐式回退：仅收集显式声明了 files 数组的运行时子包产物
     if (!Array.isArray(workspacePkg.files) || workspacePkg.files.length === 0) continue;
 
     const patterns = workspacePkg.files.map((p: string) =>
