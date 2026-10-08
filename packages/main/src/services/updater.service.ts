@@ -89,6 +89,12 @@ export class UpdaterService {
         updater.channel = process.env.VITE_DISTRIBUTION_CHANNEL;
       }
 
+      updater.setFeedURL({
+        provider: 'github',
+        owner: 'BanShan-Alec',
+        repo: 'electron-react-monorepo-template',
+      });
+
       updater.on('checking-for-update', () => {
         this.logger.info('Checking for update...');
         this.snapshot.state = 'checking';
