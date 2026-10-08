@@ -82,6 +82,10 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          # 中文标题;正文首行给 CHANGELOG 导航(锚定 tag 版本),generate_release_notes 会把 PR 列表追加在其后
+          name: ${{ github.ref_name }} 版本发布
+          body: |
+            📖 完整变更日志见 [CHANGELOG.md](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md)
           files: release-artifacts/*
           generate_release_notes: true
         env:

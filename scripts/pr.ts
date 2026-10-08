@@ -3,7 +3,7 @@
  *
  * 用法(pnpm 脚本映射):
  *   pnpm pr          开 PR:前置检查 → push -u → gh pr create(标题取分支首个提交,正文按模板自动生成)
- *   pnpm pr:merge    合并:等待门禁全绿 → squash 合并 → 删除远端分支
+ *   pnpm pr:merge    合并:二次确认/--yes → 等待门禁全绿 → squash 合并 → 删除远端分支
  *   pnpm pr:status   查看当前仓库 PR 与 checks 概览
  *
  * 前置:gh cli 已安装且完成一次性 `gh auth login` 认证(CICD.md「本地环境」)。
@@ -209,11 +209,49 @@ function printCleanupHint(branch: string): void {
   }
 }
 
+function promptConfirm(question: string): boolean {
+  process.stdout.write(question);
+  const buffer = Buffer.alloc(1024);
+  try {
+    const bytesRead = fs.readSync(0, buffer, 0, buffer.length, null);
+    const answer = buffer.toString('utf-8', 0, bytesRead).trim().toLowerCase();
+    return answer === 'y' || answer === 'yes';
+  } catch {
+    return false;
+  }
+}
+
 function mergePr(): void {
   const branch = preflight();
-  if (probe('gh', ['pr', 'view', branch, '--json', 'number']) === null) {
+  const prJson = probe('gh', ['pr', 'view', branch, '--json', 'number,title']);
+  if (!prJson) {
     fail(`分支 ${branch} 还没有 PR:先 pnpm pr`);
   }
+  let prInfo = branch;
+  try {
+    const parsed = JSON.parse(prJson);
+    if (parsed.number) {
+      prInfo = `PR #${parsed.number} (${parsed.title ?? branch})`;
+    }
+  } catch {}
+
+  const autoConfirm = process.argv.slice(2).some((arg) => arg === '--yes' || arg === '-y');
+  if (!autoConfirm) {
+    if (!process.stdin.isTTY) {
+      fail(
+        `检测到非交互式运行环境且未携带 --yes 参数，已拦截对 ${prInfo} 的自动合并。\n` +
+          '💡 合并主干属于高风险操作。若为 AI 执行，请严格停步等待人类指令；若由人类脚本触发自动化合并，请显式传入 --yes。',
+      );
+    }
+    const confirmed = promptConfirm(
+      `\n⚠️  请确认：是否确认将 ${prInfo} squash 合并至 ${MAIN_BRANCH} 并删除远端分支？(y/N): `,
+    );
+    if (!confirmed) {
+      console.log('已取消合并操作。');
+      process.exit(0);
+    }
+  }
+
   console.log(`→ 等待 ${branch} 的门禁全绿…`);
   waitForChecks(branch);
   console.log('→ 门禁全绿,squash 合并并删除远端分支');

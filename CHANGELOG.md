@@ -1,6 +1,27 @@
 # Changelog
 
 
+## v1.2.0
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.1.1...v1.2.0)
+
+### 🚀 新增特性 (Features)
+
+- **ci:** 增加 pr:merge 安全确认守卫并更新面向 AI 的 SOP 规范 ([2494b15](https://github.com/BanShan-Alec/electron-react-monorepo-template/commit/2494b15))
+
+### ⚡ 性能优化 (Performance)
+
+- **build:** 缩减 asar 打包体积，去除内联 sourcemap 并剔除冗余依赖 ([#19](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/19))
+
+### 🤖 持续集成 (CI/CD)
+
+- Release 页中文标题与 CHANGELOG 导航 ([712d475](https://github.com/BanShan-Alec/electron-react-monorepo-template/commit/712d475))
+
+### ❤️ Contributors
+
+- Wengzehua ([@BanShan-Alec](https://github.com/BanShan-Alec))
+- 半山Alec ([@BanShan-Alec](https://github.com/BanShan-Alec))
+
 ## v1.1.1
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.1.0...v1.1.1)
