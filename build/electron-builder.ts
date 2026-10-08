@@ -68,8 +68,15 @@ function getListOfFilesFromEachWorkspace(): string[] {
     // 无需在 node_modules/@app/main 重复打包同一份产物，避免 asar 内产物冗余双份
     if (name === '@app/main') continue;
 
-    let patterns = workspacePkg.files || ['dist/**', 'package.json'];
-    patterns = patterns.map((p: string) => join('node_modules', name, p).replace(/\\/g, '/'));
+    // 排除纯开发期工具链配置子包
+    if (name === '@app/tsconfig') continue;
+
+    // 严禁隐式回退：仅收集显式声明了 files 数组的运行时子包产物
+    if (!Array.isArray(workspacePkg.files) || workspacePkg.files.length === 0) continue;
+
+    const patterns = workspacePkg.files.map((p: string) =>
+      join('node_modules', name, p).replace(/\\/g, '/'),
+    );
     allFilesToInclude.push(...patterns);
   }
 

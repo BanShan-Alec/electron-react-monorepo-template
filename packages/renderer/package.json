@@ -39,6 +39,10 @@
     "zustand": "^5.0.15"
   },
   "main": "./dist/index.html",
+  "files": [
+    "dist/**",
+    "package.json"
+  ],
   "exports": {
     ".": {
       "default": "./dist/index.html"

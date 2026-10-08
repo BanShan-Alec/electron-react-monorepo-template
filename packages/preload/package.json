@@ -1,6 +1,10 @@
 {
   "name": "@app/preload",
   "main": "./dist/index.cjs",
+  "files": [
+    "dist/**",
+    "package.json"
+  ],
   "exports": {
     ".": {
       "types": "./src/index.ts",
