@@ -73,11 +73,13 @@ export function detectUnpackedArtifact(distDir: string): DetectedArtifact | null
     const asarPath = path.join(linuxUnpackedDir, 'resources', 'app.asar');
     if (fs.existsSync(asarPath)) {
       const files = fs.readdirSync(linuxUnpackedDir);
+      const ignoredBinaries = new Set(['chrome-sandbox', 'chrome_crashpad_handler']);
       const binaryName = files.find((f) => {
+        if (ignoredBinaries.has(f)) return false;
         const fullPath = path.join(linuxUnpackedDir, f);
         try {
           const stat = fs.statSync(fullPath);
-          return stat.isFile() && !f.includes('.') && stat.mode & 0o111;
+          return stat.isFile() && !f.includes('.') && Boolean(stat.mode & 0o111);
         } catch {
           return false;
         }
