@@ -9,7 +9,7 @@
   },
   "private": true,
   "packageManager": "pnpm@10.34.5",
-  "main": "packages/main/dist/index.cjs",
+  "main": "node_modules/@app/main/dist/index.cjs",
   "engines": {
     "node": ">=22.0.0",
     "pnpm": "^10.0.0"
@@ -29,6 +29,8 @@
     "i18n:extract": "pnpm --filter @app/renderer exec lingui extract --clean",
     "test:e2e": "playwright test -c .config/playwright.config.ts",
     "test:e2e:build": "pnpm run build && pnpm run test:e2e",
+    "test:dist": "node scripts/verify-dist.ts",
+    "verify:deps": "node scripts/verify-deps.ts",
     "typecheck": "tsc -p scripts/tsconfig.json --noEmit && tsc -p e2e/tsconfig.json --noEmit && pnpm -r run typecheck",
     "lint": "biome check --config-path=.config .",
     "lint:fix": "biome check --write --config-path=.config .",
@@ -46,6 +48,8 @@
     ]
   },
   "devDependencies": {
+    "@app/preload": "workspace:*",
+    "@app/renderer": "workspace:*",
     "@app/tsconfig": "workspace:*",
     "@biomejs/biome": "^2.5.12",
     "@commitlint/cli": "^21.2.2",
@@ -62,9 +66,7 @@
     "vite": "catalog:"
   },
   "dependencies": {
-    "@app/main": "workspace:*",
-    "@app/preload": "workspace:*",
-    "@app/renderer": "workspace:*"
+    "@app/main": "workspace:*"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

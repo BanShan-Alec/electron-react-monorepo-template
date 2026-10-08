@@ -1,6 +1,10 @@
 {
   "name": "@app/preload",
   "main": "./dist/index.cjs",
+  "files": [
+    "dist/**",
+    "package.json"
+  ],
   "exports": {
     ".": {
       "types": "./src/index.ts",
@@ -11,10 +15,8 @@
     "build": "vite build --configLoader bundle",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@app/shared": "workspace:*"
-  },
   "devDependencies": {
+    "@app/shared": "workspace:*",
     "@app/tsconfig": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:"
