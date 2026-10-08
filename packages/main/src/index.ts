@@ -1,5 +1,3 @@
-// 必须保持为第一个 import：先于其他所有模块求值时安装致命崩溃监听，接住 import 期异常
-import './fatal-crash';
 import log from 'electron-log/main';
 import type { AppInitConfig } from './AppInitConfig';
 import { createModuleRunner } from './ModuleRunner';
@@ -59,7 +57,7 @@ initApp({
   preload: {
     path: require.resolve('@app/preload'),
   },
-  // 初始化失败只经 electron-log 记入 main.log，不弹窗不退出（fatal-crash 只兜 import 期与运行期同步崩溃）
+  // 初始化失败只经 electron-log 记入 main.log，不弹窗不退出
 }).catch((error) => {
   log.error('[initAppFailed]', error);
 });

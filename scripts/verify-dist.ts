@@ -161,13 +161,6 @@ export async function verifyDist(options: DistVerificationOptions = {}): Promise
       console.log('⏳ [verify-dist] 校验 #root 界面渲染...');
       await page.waitForSelector('#root', { timeout: 15000 });
       console.log('✅ [verify-dist] React 渲染容器 #root 已成功挂载！');
-
-      // 检查临时目录是否产生致命崩溃日志
-      const crashLogPath = path.join(tempUserDataDir, 'logs', 'fatal-crash.log');
-      if (fs.existsSync(crashLogPath)) {
-        const content = fs.readFileSync(crashLogPath, 'utf8');
-        throw new Error(`[verify-dist] 主进程产生致命错误日志: ${content}`);
-      }
     } finally {
       await app.close();
       console.log('🛑 [verify-dist] 应用程序已正常优雅退出。');

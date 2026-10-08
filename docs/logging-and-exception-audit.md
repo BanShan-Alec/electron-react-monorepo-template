@@ -32,7 +32,7 @@
   ```
 
 ### 2. `app.getPath('userData')` 生命周期越界
-* **现状代码**：`packages/main/src/index.ts` 中的 `handleFatalCrash`
+* **现状代码**：`packages/main/src/index.ts`（原 `handleFatalCrash`，现已彻底废弃移除）
 * **问题隐患**：通过 `app?.getPath?.('userData')` 获取目录。如果在 `app.whenReady()` 之前发生未捕获异常，调用 `app.getPath('userData')` 会直接抛出同步异常。
 * **整改方案**：增加 `app.isReady()` 前置安全校验：
   ```ts
@@ -71,7 +71,7 @@
 
 ### 1. `unhandledRejection` 一刀切 `process.exit(1)` 过于激进
 * **现状代码**：`packages/main/src/index.ts`
-* **问题隐患**：当前将 `unhandledRejection`（未捕获的 Promise）与 `uncaughtException`（同步崩溃）统一绑定到了 `handleFatalCrash`，一旦触发就强制弹窗 + 强杀应用。非核心背景轮询请求偶然漏抓时直接闪退，体验极差。
+* **问题隐患**：原实现将 `unhandledRejection`（未捕获的 Promise）与 `uncaughtException`（同步崩溃）统一绑定并强制弹窗 + 强杀应用。非核心背景轮询请求偶然漏抓时直接闪退，体验极差（现已彻底移除弹窗强杀，改由日志系统托管）。
 * **整改方案**：实行分级策略：
   - `uncaughtException`（同步栈崩溃，内存不可信）：**执行弹窗并退出**。
   - `unhandledRejection`（异步 Promise 漏抓）：**记录 Error 日志 + 上报云端**，不强杀应用。
