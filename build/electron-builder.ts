@@ -31,9 +31,9 @@ const config: Configuration = {
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
     shortcutName: 'Electron React Template',
-    installerIcon: 'build/resources/installer.ico',
+    installerIcon: 'build/resources/icon.ico',
     uninstallerIcon: 'build/resources/icon.ico',
-    installerHeaderIcon: 'build/resources/installer.ico',
+    installerHeaderIcon: 'build/resources/icon.ico',
     deleteAppDataOnUninstall: false,
   },
   mac: {
