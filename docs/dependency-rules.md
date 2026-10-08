@@ -55,7 +55,36 @@ Preload 脚本由 Vite 经 `ssr: { noExternal: true }` 构建为单文件 `dist/
 
 ---
 
-## 三、开发者操作指南（FAQ）
+## 三、深层原理：Vite SSR 与 electron-builder 的逻辑冲突与桥接
+
+在理解这套规则时，很多开发者会疑惑：*为什么主进程既配了 `rolldownOptions.external`，又在 `ssr` 下配置了 `noExternal: ['zod']`？*
+
+这源于 **Vite SSR（面向 Web 服务端）** 与 **electron-builder（面向离线桌面端）** 天生截然相反的打包心智模型：
+
+| 构建工具 | 核心出发点与假设 | 默认行为 |
+| :--- | :--- | :--- |
+| **Vite SSR** | **面向 Web 服务器（Node.js 服务端）**<br>默认假设生产服务器部署时会 `npm install`，把第三方库打包进单文件是浪费时间。 | **默认将所有 node_modules 视为外部依赖**，直接生成 `require('xxx')`（除非显式指定 `noExternal`）。 |
+| **electron-builder** | **面向离线桌面端（用户本地 PC）**<br>默认假设用户电脑没有 npm/Node 环境，生产运行所需的一切必须全部打包进安装包。 | **默认仅将 `dependencies` 打入 `app.asar`**，其余 `devDependencies` 彻底修剪剔除。 |
+
+这两套工具如果不做精确调和，就会出现两大典型陷阱：
+
+### 1. “互相踢皮球”陷阱（导致运行时启动崩溃）
+以 **`zod`** 为例（声明在 `devDependencies`）：
+- **Vite SSR** 以为生产环境有 node_modules，默认不打包它，编译为 `const { z } = require("zod")`；
+- **electron-builder** 发现 `zod` 在 `devDependencies` 中，打包时直接将其丢弃，不拷贝进 `app.asar`；
+- **后果**：两边都没包含 `zod` 的代码！程序在用户机器启动时执行到 `require("zod")`，瞬间抛出 `Cannot find module 'zod'` 报错崩溃。
+- **解法**：在 `vite.config.ts` 中配置 `ssr: { noExternal: ['zod'] }`，强制命令 Vite 必须在编译期将其完整 JS 源码内联打包进 `dist/index.cjs`。
+
+### 2. “争先恐后”陷阱（导致 asar 体积暴增 30 倍）
+以 **`antd`** 为例（误声明在根目录或主进程的 `dependencies` 树中）：
+- **Vite Client** 作为前端打包器，已经将 Antd 代码编译压缩打入了 `dist/assets/main.js`；
+- **electron-builder** 看到 `dependencies` 声明，又把 Antd 及其传递依赖的 **15,000+ 个未压缩源文件（67MB+）** 全量塞入 `app.asar`；
+- **后果**：同一套库在安装包里出现了两份（一份静态 bundle，一份几万个散装文件的 node_modules），体积从 2MB 暴涨至 76MB。
+- **解法**：根目录切断对 `@app/renderer` 的依赖链路，Builder 仅通过 `FileSet` 搬运静态编译结果。
+
+---
+
+## 四、开发者操作指南（FAQ）
 
 ### Q1：如何为主进程新增第三方依赖？
 1. 在主进程安装依赖：
@@ -89,7 +118,7 @@ pnpm --filter @app/renderer add -D vite-plugin-xxx @types/xxx
 
 ---
 
-## 四、自动化 CI / 本地门禁机制
+## 五、自动化 CI / 本地门禁机制
 
 为了防止后续团队协作中规则退化，项目部署了全流程闭环门禁：
 
