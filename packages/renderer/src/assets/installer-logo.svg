@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- 阴影滤镜 -->
+    <filter id="boxShadow" x="-20%" y="-10%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#001d66" flood-opacity="0.35"/>
+    </filter>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#001d66" flood-opacity="0.25"/>
+    </filter>
+
+    <!-- 渐变色系 -->
+    <!-- 箱体正面渐变 -->
+    <linearGradient id="boxFrontGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1677ff"/>
+      <stop offset="100%" stop-color="#0958d9"/>
+    </linearGradient>
+
+    <!-- 箱内深色底 -->
+    <linearGradient id="boxInnerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#001d66"/>
+      <stop offset="100%" stop-color="#002c8c"/>
+    </linearGradient>
+
+    <!-- 箱盖折角渐变 -->
+    <linearGradient id="flapLeftGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4096ff"/>
+      <stop offset="100%" stop-color="#1677ff"/>
+    </linearGradient>
+    <linearGradient id="flapRightGrad" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#69b1ff"/>
+      <stop offset="100%" stop-color="#1677ff"/>
+    </linearGradient>
+
+    <!-- 滑入软件卡片渐变 -->
+    <linearGradient id="softwareCardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e6f4ff"/>
+    </linearGradient>
+
+    <!-- 安装箭头渐变 -->
+    <linearGradient id="arrowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4096ff"/>
+      <stop offset="100%" stop-color="#1677ff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 底部投影 -->
+  <ellipse cx="256" cy="460" rx="160" ry="24" fill="#001529" opacity="0.22"/>
+
+  <!-- 箱体内部暗腔 -->
+  <path d="M106 210 L406 210 L380 256 L132 256 Z" fill="url(#boxInnerGrad)"/>
+
+  <!-- 滑入软件卡片 (Software package plate sliding downward) -->
+  <g filter="url(#cardShadow)">
+    <rect x="146" y="70" width="220" height="175" rx="20" fill="url(#softwareCardGrad)" stroke="#bae0ff" stroke-width="4"/>
+    
+    <!-- 卡片上的向下安装箭头动势 -->
+    <path d="M256 100 L256 166 M224 140 L256 172 L288 140" fill="none" stroke="url(#arrowGrad)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- 动势下落虚线与微点 -->
+    <circle cx="210" cy="115" r="4" fill="#91caff" opacity="0.8"/>
+    <circle cx="302" cy="115" r="4" fill="#91caff" opacity="0.8"/>
+    <line x1="210" y1="130" x2="210" y2="155" stroke="#91caff" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 8" opacity="0.8"/>
+    <line x1="302" y1="130" x2="302" y2="155" stroke="#91caff" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 8" opacity="0.8"/>
+  </g>
+
+  <!-- 包装箱主体（前壁与侧壁整体，带大圆角） -->
+  <g filter="url(#boxShadow)">
+    <!-- 箱体前壁 -->
+    <path d="M96 220 C96 208 106 198 118 198 L394 198 C406 198 416 208 416 220 L416 406 C416 428 398 446 376 446 L136 446 C114 446 96 428 96 406 Z" fill="url(#boxFrontGrad)"/>
+
+    <!-- 箱口边缘高光描边 -->
+    <path d="M110 200 L402 200" stroke="#69b1ff" stroke-width="4" stroke-linecap="round" opacity="0.8"/>
+    
+    <!-- 箱体侧向折痕质感线 -->
+    <path d="M256 220 L256 444" stroke="#003eb3" stroke-width="3" stroke-dasharray="8 6" opacity="0.45"/>
+
+    <!-- 箱体正面印有的品牌白闪电 Logo (与 startup-logo.svg 保持一致) -->
+    <g transform="translate(192 260) scale(0.125)">
+      <path fill="#ffffff" d="M848 359.3H627.7L825.8 109c4.1-5.3.4-13-6.3-13H436c-2.8 0-5.5 1.5-6.9 4L170 547.5c-3.1 5.3.7 12 6.9 12h174.4l-89.4 357.6c-1.9 7.8 7.5 13.3 13.3 7.7L853.5 373c5.2-4.9 1.7-13.7-5.5-13.7z"/>
+    </g>
+
+    <!-- 箱顶左展开折盖 (Left Flap) -->
+    <path d="M96 202 L118 198 L48 132 C40 124 28 130 30 142 L58 196 Z" fill="url(#flapLeftGrad)"/>
+
+    <!-- 箱顶右展开折盖 (Right Flap) -->
+    <path d="M416 202 L394 198 L464 132 C472 124 484 130 482 142 L454 196 Z" fill="url(#flapRightGrad)"/>
+  </g>
+</svg>

@@ -7,6 +7,10 @@
     "name": "BanShan-Alec",
     "email": "627649674@qq.com"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BanShan-Alec/electron-react-monorepo-template.git"
+  },
   "private": true,
   "packageManager": "pnpm@10.34.5",
   "main": "node_modules/@app/main/dist/index.cjs",
@@ -21,6 +25,7 @@
     "build:win": "node scripts/build.ts --win",
     "build:mac": "node scripts/build.ts --mac",
     "build:linux": "node scripts/build.ts --linux",
+    "icons": "node scripts/generate-icons.ts",
     "start": "cross-env MODE=development node scripts/dev.ts",
     "start:dist": "cross-env MODE=production node scripts/dev.ts",
     "pr": "node scripts/pr.ts create",
@@ -55,6 +60,7 @@
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
     "@playwright/test": "^1.63.0",
+    "@resvg/resvg-js": "^2.6.2",
     "@types/node": "catalog:",
     "changelogen": "^0.6.2",
     "cross-env": "^10.1.0",
@@ -62,6 +68,8 @@
     "electron-builder": "26.8.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.5.0",
+    "png-to-ico": "^3.0.2",
+    "png2icons": "^2.0.1",
     "typescript": "catalog:",
     "vite": "catalog:"
   },
