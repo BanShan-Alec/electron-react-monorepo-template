@@ -60,19 +60,19 @@ export const UpdaterFeature: React.FC = () => {
       snapshot.state === 'downloaded' ||
       snapshot.state === 'error');
 
-  const renderErrorCard = () => (
-    <div className="bg-background-secondary border border-border rounded-lg p-4 flex flex-col gap-3">
+  const renderErrorContent = () => (
+    <>
       <Alert
         type="error"
         showIcon
-        title={t`更新发生错误`}
+        message={t`更新发生错误`}
         description={snapshot.error || t`下载更新时发生网络异常，请稍后重试。`}
       />
-      <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+      <div className="flex items-center justify-end gap-2 pt-2">
         <Button onClick={handleClose}>{t`关闭`}</Button>
         <Button type="primary" onClick={handleRetry}>{t`重试`}</Button>
       </div>
-    </div>
+    </>
   );
 
   return (
@@ -106,7 +106,7 @@ export const UpdaterFeature: React.FC = () => {
         </button>
       </div>
 
-      {/* 主体内容区域：彻底移除独立底部 Footer，业务动作内嵌到各卡片内部 */}
+      {/* 主体内容区域：彻底移除独立底部 Footer，业务动作与下载中保持一致置于卡片正下方 */}
       <div className="flex-1 p-4 flex flex-col gap-3 min-h-0 overflow-y-auto stable-scrollbar">
         {snapshot.state === 'checking' && (
           <div className="flex-1 flex flex-col items-center justify-center gap-3 py-12">
@@ -142,11 +142,13 @@ export const UpdaterFeature: React.FC = () => {
                 <Button type="primary" onClick={handleInstall}>{t`重启并安装`}</Button>
               </div>
             )}
-            {snapshot.state === 'error' && renderErrorCard()}
+            {snapshot.state === 'error' && renderErrorContent()}
           </div>
         )}
 
-        {!showChangelog && snapshot.state === 'error' && renderErrorCard()}
+        {!showChangelog && snapshot.state === 'error' && (
+          <div className="flex flex-col gap-2">{renderErrorContent()}</div>
+        )}
 
         {snapshot.state === 'downloading' && (
           <div className="flex flex-col gap-2">
@@ -159,20 +161,20 @@ export const UpdaterFeature: React.FC = () => {
         )}
 
         {!showChangelog && snapshot.state === 'downloaded' && (
-          <Card size="small" className="bg-background-secondary border border-border rounded-lg">
-            <div className="space-y-3">
+          <div className="flex flex-col gap-2">
+            <Card size="small" className="bg-background-secondary border border-border rounded-lg">
               <div className="flex items-center gap-3">
                 <CheckCircleOutlined className="text-success text-2xl shrink-0" />
                 <div className="text-xs text-foreground-muted">
                   {t`新版本已完成下载，重启应用后即可完成升级。`}
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
-                <Button onClick={handleClose}>{t`稍后安装`}</Button>
-                <Button type="primary" onClick={handleInstall}>{t`重启并安装`}</Button>
-              </div>
+            </Card>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button onClick={handleClose}>{t`稍后安装`}</Button>
+              <Button type="primary" onClick={handleInstall}>{t`重启并安装`}</Button>
             </div>
-          </Card>
+          </div>
         )}
       </div>
     </div>
