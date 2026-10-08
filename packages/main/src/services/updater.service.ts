@@ -9,6 +9,7 @@ import type {
 } from '@app/shared/types/updater';
 import { app, Notification } from 'electron';
 import electronUpdater, { type AppUpdater, CancellationToken } from 'electron-updater';
+import { isDev, isTest } from '../env';
 import { AppError } from '../errors/AppError';
 import { getAppConfigStore } from '../modules/config.module';
 import { getLogManager } from '../modules/log.module';
@@ -69,13 +70,7 @@ export class UpdaterService {
   }
 
   private isDevelopment(): boolean {
-    if (app.isPackaged) {
-      return false;
-    }
-    if (process.env.NODE_ENV === 'test') {
-      return false;
-    }
-    return process.env.MODE !== 'production';
+    return isDev;
   }
 
   private getAutoUpdater(): AppUpdater {
@@ -84,7 +79,7 @@ export class UpdaterService {
   }
 
   private initElectronUpdater(): void {
-    if (process.env.NODE_ENV === 'test') {
+    if (isTest) {
       return;
     }
 
@@ -220,7 +215,7 @@ export class UpdaterService {
     this.snapshot.progress = null;
     this.emitState();
 
-    if (process.env.NODE_ENV === 'test') {
+    if (isTest) {
       return this.getSnapshot();
     }
 
@@ -281,7 +276,7 @@ export class UpdaterService {
       return;
     }
 
-    if (process.env.NODE_ENV === 'test') {
+    if (isTest) {
       return;
     }
 
@@ -321,7 +316,7 @@ export class UpdaterService {
     this.snapshot.error = null;
     this.emitState();
 
-    if (process.env.NODE_ENV === 'test') {
+    if (isTest) {
       return this.getSnapshot();
     }
 
@@ -413,7 +408,7 @@ export class UpdaterService {
     }
 
     this.logger.info('Initiating install: quitAndInstall(false, true)');
-    if (process.env.NODE_ENV === 'test') {
+    if (isTest) {
       return { success: true };
     }
 
@@ -534,7 +529,7 @@ export class UpdaterService {
         this.emitState();
         if (this.isOrphan || !getWindow(WINDOW_IDS.HOME)) {
           this.stopOrphanWatchdog();
-          if (process.env.NODE_ENV !== 'test') {
+          if (!isTest) {
             try {
               this.getAutoUpdater().quitAndInstall(true, false);
             } catch {

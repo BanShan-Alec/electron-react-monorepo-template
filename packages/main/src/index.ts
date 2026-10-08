@@ -1,5 +1,6 @@
 import log from 'electron-log/main';
 import type { AppInitConfig } from './AppInitConfig';
+import { devServerUrl } from './env';
 import { createModuleRunner } from './ModuleRunner';
 import { terminateAppOnLastWindowClose } from './modules/auto-terminate.module';
 import { createConfigModule, getAppConfigStore } from './modules/config.module';
@@ -57,10 +58,7 @@ export async function initApp(initConfig: AppInitConfig) {
 }
 
 // 自动引导启动主进程流水线
-const devServer =
-  process.env.MODE === 'development' && process.env.VITE_DEV_SERVER_URL
-    ? process.env.VITE_DEV_SERVER_URL
-    : undefined;
+const devServer = devServerUrl;
 
 initApp({
   windows: {

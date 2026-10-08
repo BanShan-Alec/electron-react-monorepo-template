@@ -1,4 +1,5 @@
 import type { Result } from '@shared/types/result';
+import { isDev } from './env';
 
 /**
  * IPC 失败语义化错误：保留主进程 Result 契约中的 code，调用方可按错误码分支（如 DIVIDE_BY_ZERO），
@@ -25,13 +26,13 @@ const IPC_LOG_PREFIX = '[ipc]';
 function logIpc(channel: string, ok: boolean, durationMs: number, error?: unknown) {
   const cost = `${durationMs.toFixed(1)}ms`;
   if (ok) {
-    if (import.meta.env.DEV) {
+    if (isDev) {
       console.info(`${IPC_LOG_PREFIX} ${channel} ok ${cost}`);
     }
     return;
   }
   const line = `${IPC_LOG_PREFIX} ${channel} failed ${cost}`;
-  if (import.meta.env.DEV) {
+  if (isDev) {
     console.warn(line, error);
     return;
   }

@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react';
+import { currentAppEnv, isProd } from './env';
 
 /**
  * 生产级 Sentry 渲染进程配置（黄金配置模板）
@@ -13,8 +14,8 @@ export function initSentry(): void {
   Sentry.init({
     dsn,
     // 仅在显式配置了有效 DSN 且在生产环境时才开启网络上报
-    enabled: Boolean(dsn) && import.meta.env.PROD,
-    environment: import.meta.env.MODE,
+    enabled: Boolean(dsn) && isProd,
+    environment: currentAppEnv,
 
     // 1. 性能追踪采样率控制在 10%，避免耗尽云端配额
     tracesSampleRate: 0.1,

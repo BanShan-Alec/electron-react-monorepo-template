@@ -4,6 +4,7 @@ import { updaterMockActionSchema } from '@app/shared/schemas/updater';
 import type { Result } from '@app/shared/types/result';
 import type { UpdaterSnapshot } from '@app/shared/types/updater';
 import { ipcMain } from 'electron';
+import { isTest } from '../env';
 import { getUpdaterWindowModule } from '../modules/window/updater-window.module';
 import { updaterService } from '../services/updater.service';
 import { catchToResult, failResult, successResult } from './utils';
@@ -78,7 +79,7 @@ export function registerUpdaterControllers(): void {
   );
 
   // 测试环境 Mock 注入通道
-  if (process.env.NODE_ENV === 'test') {
+  if (isTest) {
     ipcMain.handle(
       IPC_CHANNELS.UPDATER_MOCK_EMIT,
       async (_event, rawInput: unknown): Promise<Result<{ success: boolean }>> => {

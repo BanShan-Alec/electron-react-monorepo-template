@@ -3,6 +3,7 @@ import { useLingui } from '@lingui/react';
 import * as Sentry from '@sentry/react';
 import { Button, Empty } from 'antd';
 import type { ReactNode } from 'react';
+import { isDev } from '@/lib/env';
 
 // 私有常量
 
@@ -19,9 +20,7 @@ interface IFallbackProps {
 function FallbackView({ error, resetError }: IFallbackProps) {
   useLingui();
   const errorMessage = error instanceof Error ? error.message : String(error || '');
-  const description = import.meta.env.DEV
-    ? errorMessage || t`渲染进程发生未捕获错误`
-    : t`页面出错啦~`;
+  const description = isDev ? errorMessage || t`渲染进程发生未捕获错误` : t`页面出错啦~`;
 
   const handleReload = (): void => {
     if (resetError) {
