@@ -1,13 +1,13 @@
-import { execSync } from 'node:child_process';
-import readline from 'node:readline/promises';
+const { execSync } = require('node:child_process');
+const readline = require('node:readline/promises');
 
-export interface PortItem {
+interface PortItem {
   port?: number;
   desc: string;
 }
 
 /** 跨平台树状强制杀死进程及其子进程 */
-export async function killProcessTree(pid: number): Promise<void> {
+async function killProcessTree(pid: number): Promise<void> {
   try {
     if (process.platform === 'win32') {
       execSync(`taskkill /pid ${pid} /T /F`, { stdio: 'ignore' });
@@ -129,10 +129,12 @@ async function ensureSinglePortAvailable(port: number, desc: string): Promise<vo
 }
 
 /** 批量检查关键端口是否可用；自动过滤未配置端口 */
-export async function ensurePortsAvailable(ports: PortItem[]): Promise<void> {
+async function ensurePortsAvailable(ports: PortItem[]): Promise<void> {
   for (const item of ports) {
     if (typeof item.port === 'number') {
       await ensureSinglePortAvailable(item.port, item.desc);
     }
   }
 }
+
+module.exports = { killProcessTree, ensurePortsAvailable };

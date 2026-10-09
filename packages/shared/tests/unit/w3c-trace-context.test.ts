@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'vitest';
 import {
   generateSpanId,
   generateTraceId,
   parseTraceParent,
   serializeTraceParent,
-} from '../../packages/shared/src/utils/w3c-trace-context';
+} from '@app/shared/utils/w3c-trace-context';
+import { describe, expect, it } from 'vitest';
 
 describe('W3C TraceContext Codec', () => {
   it('generates valid 32-hex traceId and 16-hex spanId', () => {

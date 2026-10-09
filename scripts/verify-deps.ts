@@ -1,13 +1,13 @@
-import fs from 'node:fs';
-import { isBuiltin } from 'node:module';
-import { join } from 'node:path';
+const fs = require('node:fs');
+const { isBuiltin } = require('node:module');
+const { join } = require('node:path');
 
 interface VerificationResult {
   valid: boolean;
   errors: string[];
 }
 
-export async function verifyDependencies(): Promise<VerificationResult> {
+async function verifyDependencies(): Promise<VerificationResult> {
   const rootDir = process.cwd();
   const errors: string[] = [];
 
@@ -50,8 +50,7 @@ export async function verifyDependencies(): Promise<VerificationResult> {
   // 解析 packages/main/vite.config.ts 中的 external
   let externalList: string[] = [];
   try {
-    const viteConfigModule = await import('../packages/main/vite.config.ts');
-    const viteConfig = viteConfigModule.default || viteConfigModule;
+    const viteConfig = require('../packages/main/vite.config.ts');
     const rolldownExternal =
       viteConfig?.build?.rolldownOptions?.external ||
       viteConfig?.build?.rollupOptions?.external ||
@@ -60,20 +59,21 @@ export async function verifyDependencies(): Promise<VerificationResult> {
     const rawExternal = Array.isArray(rolldownExternal) ? rolldownExternal : [rolldownExternal];
     externalList = rawExternal.filter((item): item is string => typeof item === 'string');
   } catch (err) {
-    console.warn('  ⚠️ 动态导入 packages/main/vite.config.ts 失败，降级为静态正则解析', err);
+    console.warn('  ⚠️ 加载 packages/main/vite.config.ts 失败，降级为静态正则解析', err);
     const viteConfigText = fs.readFileSync(join(rootDir, 'packages/main/vite.config.ts'), 'utf8');
     const match = viteConfigText.match(/external:\s*\[([\s\S]*?)\]/);
     if (match) {
       externalList = match[1]
         .split(',')
-        .map((s) => s.trim().replace(/['"]/g, ''))
+        .map((s: string) => s.trim().replace(/['"]/g, ''))
         .filter(Boolean);
     }
   }
 
   // 过滤掉 electron 与 Node.js 内置模块
   const mainExternalDeps = externalList.filter(
-    (dep) => dep !== 'electron' && !isBuiltin(dep) && !dep.startsWith('node:'),
+    (dep) =>
+      dep !== 'electron' && !isBuiltin(dep) && !dep.startsWith('node:') && !dep.startsWith('/'),
   );
 
   // 校验 A: 声明在 main dependencies 中的库必须在 external 中
@@ -113,8 +113,10 @@ export async function verifyDependencies(): Promise<VerificationResult> {
   return { valid, errors };
 }
 
+module.exports = { verifyDependencies };
+
 // CLI 直启入口
-if (process.argv[1]?.endsWith('verify-deps.ts')) {
+if (require.main === module) {
   verifyDependencies()
     .then(({ valid }) => {
       if (!valid) {

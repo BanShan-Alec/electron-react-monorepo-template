@@ -1,8 +1,8 @@
 import { EventEmitter } from 'node:events';
+import { getTracer } from '@app/main/telemetry/tracer';
+import { trackWindowLifecycle } from '@app/main/telemetry/window-tracer';
+import type { SpanRecord } from '@app/shared/types/telemetry';
 import { describe, expect, it } from 'vitest';
-import { getTracer } from '../../packages/main/src/telemetry/tracer';
-import { trackWindowLifecycle } from '../../packages/main/src/telemetry/window-tracer';
-import type { SpanRecord } from '../../packages/shared/src/types/telemetry';
 
 class MockWebContents extends EventEmitter {
   public isDestroyed() {

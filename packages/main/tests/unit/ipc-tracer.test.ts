@@ -1,7 +1,7 @@
+import { isTracedIpcPayload } from '@app/main/telemetry/ipc-tracer';
+import { getTracer } from '@app/main/telemetry/tracer';
+import type { TracedIpcPayload } from '@app/shared/types/telemetry';
 import { describe, expect, it } from 'vitest';
-import { isTracedIpcPayload } from '../../packages/main/src/telemetry/ipc-tracer';
-import { getTracer } from '../../packages/main/src/telemetry/tracer';
-import type { TracedIpcPayload } from '../../packages/shared/types/telemetry';
 
 describe('IPC Tracer Contract', () => {
   it('correctly detects TracedIpcPayload', () => {

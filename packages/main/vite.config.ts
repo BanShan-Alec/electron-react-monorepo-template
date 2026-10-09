@@ -1,6 +1,30 @@
-import { defineConfig } from 'vite';
+const { sentryVitePlugin } = require('@sentry/vite-plugin');
+const { defineConfig } = require('vite');
+const { getSentryBuildConfig } = require('../../build/sentry-config.ts');
 
-export default defineConfig({
+const sentryConfig = getSentryBuildConfig(__dirname);
+
+module.exports = defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(sentryConfig.appVersion),
+    __SENTRY_DSN__: JSON.stringify(sentryConfig.sentryDsn),
+    __RELEASE_NAME__: JSON.stringify(sentryConfig.releaseName),
+  },
+  plugins: [
+    sentryVitePlugin({
+      org: sentryConfig.sentryOrg,
+      project: sentryConfig.sentryProject,
+      authToken: sentryConfig.sentryAuthToken,
+      telemetry: false,
+      disable: !sentryConfig.sentryAuthToken,
+      release: {
+        name: sentryConfig.releaseName,
+      },
+      sourcemaps: {
+        filesToDeleteAfterUpload: ['dist/**/*.map'],
+      },
+    }),
+  ],
   build: {
     ssr: true,
     sourcemap: process.env.MODE === 'development' ? 'inline' : 'hidden',
@@ -23,9 +47,6 @@ export default defineConfig({
     reportCompressedSize: false,
   },
   ssr: {
-    // Vite SSR 默认将所有 node_modules 外置为 require("xxx")。
-    // zod 为 devDependencies 纯编译工具，在此强制内联打包进 index.cjs，
-    // 避免因 electron-builder 忽略 devDep 导致运行时报 MODULE_NOT_FOUND 崩溃。
-    noExternal: ['zod'],
+    noExternal: ['zod', /^@sentry\/.*/],
   },
 });
