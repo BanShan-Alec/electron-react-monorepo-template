@@ -7,6 +7,7 @@ import log from 'electron-log/main';
 import type { AppModule } from '../AppModule';
 import type { ModuleContext } from '../ModuleContext';
 import { getTracer } from '../telemetry/tracer';
+import { cleanArchivedLogs, createCustomArchiveLogFn } from './log-archiver';
 
 export type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
@@ -48,6 +49,7 @@ export class LogManager implements AppModule {
       winLogger.transports.file.fileName = `renderer-${windowName}.log`;
       winLogger.transports.file.maxSize = 5 * 1024 * 1024;
       winLogger.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
+      winLogger.transports.file.archiveLogFn = createCustomArchiveLogFn();
       winLogger.hooks.push(this.injectTraceHook);
       this.windowLoggers.set(windowName, winLogger);
     }
@@ -66,12 +68,14 @@ export class LogManager implements AppModule {
     // 主进程日志配置
     this.mainLogger.transports.file.fileName = 'main.log';
     this.mainLogger.transports.file.maxSize = MAX_SIZE;
+    this.mainLogger.transports.file.archiveLogFn = createCustomArchiveLogFn();
 
     // 遥测拓扑日志配置 (NDJSON 独立文件)
     this.traceLogger.transports.file.fileName = 'traces.ndjson';
     this.traceLogger.transports.file.maxSize = TRACE_MAX_SIZE;
     this.traceLogger.transports.file.format = '{text}';
     this.traceLogger.transports.console.level = false;
+    this.traceLogger.transports.file.archiveLogFn = createCustomArchiveLogFn();
 
     // 格式化输出
     const format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
@@ -112,48 +116,8 @@ export class LogManager implements AppModule {
    * 清理过期（> 7天）或超额（> 5个）的历史归档日志
    */
   public cleanOldLogs(maxDays = 7, maxFiles = 5): void {
-    try {
-      const logsDir = this.getLogDirectory();
-      if (!fs.existsSync(logsDir)) return;
-
-      const files = fs.readdirSync(logsDir);
-      const now = Date.now();
-      const maxAgeMs = maxDays * 24 * 60 * 60 * 1000;
-
-      const archivedFiles: { name: string; fullPath: string; mtime: number }[] = [];
-
-      for (const file of files) {
-        if (!file.includes('.old')) continue;
-
-        const fullPath = path.join(logsDir, file);
-        try {
-          const stats = fs.statSync(fullPath);
-          // 超过指定天数直接删除
-          if (now - stats.mtimeMs > maxAgeMs) {
-            fs.unlinkSync(fullPath);
-          } else {
-            archivedFiles.push({ name: file, fullPath, mtime: stats.mtimeMs });
-          }
-        } catch {
-          // 忽略单个文件访问错误
-        }
-      }
-
-      // 如果超出归档数量上限，按时间升序淘汰最老的文件
-      if (archivedFiles.length > maxFiles) {
-        archivedFiles.sort((a, b) => a.mtime - b.mtime);
-        const toDeleteCount = archivedFiles.length - maxFiles;
-        for (let i = 0; i < toDeleteCount; i++) {
-          try {
-            fs.unlinkSync(archivedFiles[i].fullPath);
-          } catch {
-            // 忽略
-          }
-        }
-      }
-    } catch (err) {
-      this.mainLogger.warn('[LogManager] Failed to clean old logs:', err);
-    }
+    const logsDir = this.getLogDirectory();
+    cleanArchivedLogs(logsDir, { maxDays, maxFilesPerCategory: maxFiles });
   }
 
   /**
