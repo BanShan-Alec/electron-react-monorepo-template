@@ -1,6 +1,6 @@
+import { Tracer } from '@app/main/telemetry/tracer';
+import type { SpanRecord } from '@app/shared/types/telemetry';
 import { describe, expect, it } from 'vitest';
-import { Tracer } from '../../packages/main/src/telemetry/tracer';
-import type { SpanRecord } from '../../packages/shared/src/types/telemetry';
 
 describe('Tracer Core', () => {
   it('manages active context and propagates through async calls', async () => {

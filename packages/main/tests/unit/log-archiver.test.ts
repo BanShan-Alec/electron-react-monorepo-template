@@ -1,13 +1,13 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   cleanArchivedLogs,
   createCustomArchiveLogFn,
   formatArchiveTimestamp,
   getAvailableArchivePath,
-} from '../../packages/main/src/modules/log-archiver';
+} from '@app/main/modules/log-archiver';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 describe('Log Archiver', () => {
   let tempDir: string;

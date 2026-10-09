@@ -1,5 +1,5 @@
+import { getTracer } from '@app/main/telemetry/tracer';
 import { describe, expect, it } from 'vitest';
-import { getTracer } from '../../packages/main/src/telemetry/tracer';
 
 describe('Performance Benchmark (Spec §6)', () => {
   it('adds less than 0.1ms jitter overhead per call over 10,000 invocations', async () => {
@@ -26,15 +26,11 @@ describe('Performance Benchmark (Spec §6)', () => {
     }
     const traceDuration = performance.now() - traceStart;
 
-    const totalOverheadMs = traceDuration - baseDuration;
-    const perCallOverheadMs = totalOverheadMs / ITERATIONS;
+    // 3. 计算单次调用的附加遥测开销（Overhead per invocation）
+    const totalOverhead = traceDuration - baseDuration;
+    const overheadPerCallMs = totalOverhead / ITERATIONS;
 
-    console.log(`[Benchmark] 10,000 base calls: ${baseDuration.toFixed(2)}ms`);
-    console.log(`[Benchmark] 10,000 traced calls: ${traceDuration.toFixed(2)}ms`);
-    console.log(`[Benchmark] Total overhead: ${totalOverheadMs.toFixed(2)}ms`);
-    console.log(`[Benchmark] Per-call overhead: ${perCallOverheadMs.toFixed(4)}ms/call`);
-
-    // 验收指标：每调用附加时延抖动低于 0.1ms/次
-    expect(perCallOverheadMs).toBeLessThan(0.1);
+    // 4. 断言单次平均开销低于 0.1ms
+    expect(overheadPerCallMs).toBeLessThan(0.1);
   });
 });

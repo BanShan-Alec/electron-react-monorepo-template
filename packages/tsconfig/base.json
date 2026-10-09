@@ -8,6 +8,14 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "allowSyntheticDefaultImports": true,
-    "ignoreDeprecations": "6.0"
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@app/main/*": ["../main/src/*"],
+      "@app/preload/*": ["../preload/src/*"],
+      "@app/renderer/*": ["../renderer/src/*"],
+      "@app/shared/*": ["../shared/src/*"],
+      "@shared/*": ["../shared/src/*"],
+      "@/*": ["../renderer/src/*"]
+    }
   }
 }
