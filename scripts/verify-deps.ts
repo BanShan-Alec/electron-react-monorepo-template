@@ -73,7 +73,8 @@ export async function verifyDependencies(): Promise<VerificationResult> {
 
   // 过滤掉 electron 与 Node.js 内置模块
   const mainExternalDeps = externalList.filter(
-    (dep) => dep !== 'electron' && !isBuiltin(dep) && !dep.startsWith('node:'),
+    (dep) =>
+      dep !== 'electron' && !isBuiltin(dep) && !dep.startsWith('node:') && !dep.startsWith('/'),
   );
 
   // 校验 A: 声明在 main dependencies 中的库必须在 external 中

@@ -8,15 +8,20 @@ import { createLogModule } from './modules/log.module';
 import { createNativeThemeModule } from './modules/native-theme.module';
 import { allowInternalOrigins } from './modules/security/block-origins';
 import { allowExternalUrls } from './modules/security/external-urls';
+import { createSentryModule, initMainSentry } from './modules/sentry.module';
 import { disallowMultipleAppInstance } from './modules/single-instance.module';
 import { createStartupReadinessModule } from './modules/startup-readiness.module';
 import { createTrayModule } from './modules/tray.module';
 import { createWindowManagerModule } from './modules/window/index.module';
 import { createUpdaterWindowModule } from './modules/window/updater-window.module';
 
+// 主进程最早期初始化 Sentry
+initMainSentry();
+
 export async function initApp(initConfig: AppInitConfig) {
   const moduleRunner = createModuleRunner()
     .init(createLogModule())
+    .init(createSentryModule())
     .init(createConfigModule())
     .init(createNativeThemeModule())
     .init(createIPCModule())

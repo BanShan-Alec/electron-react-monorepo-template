@@ -1,3 +1,4 @@
+import '@sentry/electron/preload';
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import { APP_STARTUP_MAIN_READY_EVENT } from '@app/shared/constants/startup';
 import type { CalculateInput } from '@app/shared/schemas/calculator';

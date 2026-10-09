@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { lingui } from '@lingui/vite-plugin';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
@@ -9,18 +9,27 @@ import { defineConfig } from 'vite';
 import { startupShellInlinePlugin } from './plugins/startup-shell';
 import tailwindConfig from './tailwind.config.ts';
 
-// 版本单一事实源 = 根 package.json：构建期 define 注入 renderer，UI 徽章不再硬编码
-const appVersion = (
-  JSON.parse(readFileSync(path.resolve(__dirname, '../../package.json'), 'utf-8')) as {
-    version: string;
+const rootDir = path.resolve(import.meta.dirname, '../../');
+const rootPkg = JSON.parse(readFileSync(path.join(rootDir, 'package.json'), 'utf-8'));
+const appVersion = rootPkg.version;
+
+let sentryDsn = process.env.SENTRY_DSN || process.env.VITE_SENTRY_DSN || '';
+const envPath = path.join(rootDir, '.env');
+if (!sentryDsn && existsSync(envPath)) {
+  const content = readFileSync(envPath, 'utf-8');
+  const match = content.match(/^(?:SENTRY_DSN|VITE_SENTRY_DSN)\s*=\s*(.+)$/m);
+  if (match) {
+    sentryDsn = match[1].trim();
   }
-).version;
+}
 
 // https://vite.dev/config/
 export default defineConfig({
+  envDir: rootDir,
   base: './',
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
+    __SENTRY_DSN__: JSON.stringify(sentryDsn),
   },
   plugins: [
     react(),
@@ -35,6 +44,12 @@ export default defineConfig({
       authToken: process.env.SENTRY_AUTH_TOKEN || '',
       telemetry: false,
       disable: !process.env.SENTRY_AUTH_TOKEN,
+      release: {
+        name: `electron-react-monorepo-template@${appVersion}`,
+      },
+      sourcemaps: {
+        filesToDeleteAfterUpload: ['dist/**/*.map'],
+      },
     }),
     // 启动壳占位符内联（dev/build 同一形态），契约见 specs/first-screen-loading.md §4.7
     startupShellInlinePlugin({ root: __dirname }),

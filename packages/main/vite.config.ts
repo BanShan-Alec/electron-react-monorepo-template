@@ -1,6 +1,42 @@
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { defineConfig } from 'vite';
 
+const rootDir = path.resolve(import.meta.dirname, '../../');
+const rootPkg = JSON.parse(readFileSync(path.join(rootDir, 'package.json'), 'utf-8'));
+const appVersion = rootPkg.version;
+
+let sentryDsn = process.env.SENTRY_DSN || '';
+const envPath = path.join(rootDir, '.env');
+if (!sentryDsn && existsSync(envPath)) {
+  const content = readFileSync(envPath, 'utf-8');
+  const match = content.match(/^SENTRY_DSN\s*=\s*(.+)$/m);
+  if (match) {
+    sentryDsn = match[1].trim();
+  }
+}
+
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+    __SENTRY_DSN__: JSON.stringify(sentryDsn),
+  },
+  plugins: [
+    sentryVitePlugin({
+      org: process.env.SENTRY_ORG || '',
+      project: process.env.SENTRY_PROJECT || '',
+      authToken: process.env.SENTRY_AUTH_TOKEN || '',
+      telemetry: false,
+      disable: !process.env.SENTRY_AUTH_TOKEN,
+      release: {
+        name: `electron-react-monorepo-template@${appVersion}`,
+      },
+      sourcemaps: {
+        filesToDeleteAfterUpload: ['dist/**/*.map'],
+      },
+    }),
+  ],
   build: {
     ssr: true,
     sourcemap: process.env.MODE === 'development' ? 'inline' : 'hidden',
@@ -23,9 +59,6 @@ export default defineConfig({
     reportCompressedSize: false,
   },
   ssr: {
-    // Vite SSR 默认将所有 node_modules 外置为 require("xxx")。
-    // zod 为 devDependencies 纯编译工具，在此强制内联打包进 index.cjs，
-    // 避免因 electron-builder 忽略 devDep 导致运行时报 MODULE_NOT_FOUND 崩溃。
-    noExternal: ['zod'],
+    noExternal: ['zod', /^@sentry\/.*/],
   },
 });

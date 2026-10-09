@@ -24,6 +24,10 @@ jobs:
         os: [windows-latest, macos-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG || 'o4512213407105024' }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT || '4512220144730112' }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-env
