@@ -1,5 +1,5 @@
+import { APP_ENV } from '@app/shared/constants/env';
 import type { Result } from '@shared/types/result';
-import { isDev } from './env';
 
 /**
  * IPC 失败语义化错误：保留主进程 Result 契约中的 code，调用方可按错误码分支（如 DIVIDE_BY_ZERO），
@@ -24,6 +24,7 @@ const IPC_LOG_PREFIX = '[ipc]';
  * 严禁打印入参 body——config 含本地路径、dialog 含 URL。
  */
 function logIpc(channel: string, ok: boolean, durationMs: number, error?: unknown) {
+  const isDev = window.__APP_ENV__?.mode === APP_ENV.DEVELOPMENT;
   const cost = `${durationMs.toFixed(1)}ms`;
   if (ok) {
     if (isDev) {

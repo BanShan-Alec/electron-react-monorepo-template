@@ -1,5 +1,5 @@
+import { APP_ENV } from '@app/shared/constants/env';
 import * as Sentry from '@sentry/react';
-import { currentAppEnv, isProd } from './env';
 
 /**
  * 生产级 Sentry 渲染进程配置（黄金配置模板）
@@ -10,12 +10,15 @@ import { currentAppEnv, isProd } from './env';
  */
 export function initSentry(): void {
   const dsn = import.meta.env.VITE_SENTRY_DSN || '';
+  const mode =
+    window.__APP_ENV__?.mode || (import.meta.env.DEV ? APP_ENV.DEVELOPMENT : APP_ENV.PRODUCTION);
+  const isProd = mode === APP_ENV.PRODUCTION;
 
   Sentry.init({
     dsn,
     // 仅在显式配置了有效 DSN 且在生产环境时才开启网络上报
     enabled: Boolean(dsn) && isProd,
-    environment: currentAppEnv,
+    environment: mode,
 
     // 1. 性能追踪采样率控制在 10%，避免耗尽云端配额
     tracesSampleRate: 0.1,

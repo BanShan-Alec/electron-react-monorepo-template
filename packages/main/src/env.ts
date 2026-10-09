@@ -47,3 +47,26 @@ export const devServerUrl: string | undefined =
   process.env.MODE === 'development' && process.env.VITE_DEV_SERVER_URL
     ? process.env.VITE_DEV_SERVER_URL
     : undefined;
+
+/**
+ * 获取注入给渲染进程的全局只读运行时环境基座快照
+ */
+export function getRuntimeEnvSnapshot(): import('@app/shared/types/env').AppRuntimeEnv {
+  return {
+    mode: currentAppEnv,
+    appVersion: app.isReady() ? app.getVersion() : process.env.npm_package_version || '1.0.0',
+    appName: app.isReady() ? app.getName() : 'Electron App',
+    channel: process.env.VITE_DISTRIBUTION_CHANNEL,
+    apiBaseUrl: process.env.VITE_API_BASE_URL,
+    systemCode: process.env.VITE_SYSTEM_CODE,
+  };
+}
+
+/**
+ * 将运行时环境快照序列化为深度冻结的内联 HTML 脚本标签
+ */
+export function serializeRuntimeEnvScript(
+  env: import('@app/shared/types/env').AppRuntimeEnv = getRuntimeEnvSnapshot(),
+): string {
+  return `<script>window.__APP_ENV__=Object.freeze(${JSON.stringify(env)});</script>`;
+}

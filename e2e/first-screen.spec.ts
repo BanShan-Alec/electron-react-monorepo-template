@@ -54,6 +54,20 @@ test.describe('首屏渐进式加载 (First Screen Loading) E2E 验证', () => {
     expect(snapshot?.payload?.initMs).toBeGreaterThan(0);
   });
 
+  test('AC-8 全局运行时环境基座：window.__APP_ENV__ 存在且被 Object.freeze 保护', async ({
+    page,
+  }) => {
+    const envInfo = await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: window.__APP_ENV__ check
+      const env = (window as any).__APP_ENV__;
+      const isFrozen = Object.isFrozen(env);
+      return { env, isFrozen };
+    });
+    expect(envInfo.env).toBeDefined();
+    expect(envInfo.env.mode).toBe('test');
+    expect(envInfo.isFrozen).toBe(true);
+  });
+
   test('AC-5 入口隔离回归：Updater 窗口 DOM 不存在启动壳 #loading', async ({
     page,
     electronApp,

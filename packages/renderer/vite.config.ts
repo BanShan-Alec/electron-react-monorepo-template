@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react';
 import autoprefixer from 'autoprefixer';
 import tailwindcss from 'tailwindcss';
 import { defineConfig } from 'vite';
+import { injectAppEnvPlugin } from './plugins/inject-env';
 import { startupShellInlinePlugin } from './plugins/startup-shell';
 import tailwindConfig from './tailwind.config.ts';
 
@@ -38,6 +39,8 @@ export default defineConfig({
     }),
     // 启动壳占位符内联（dev/build 同一形态），契约见 specs/first-screen-loading.md §4.7
     startupShellInlinePlugin({ root: __dirname }),
+    // 运行时环境基座动态注入 (HTML Head Inlining)
+    injectAppEnvPlugin({ appVersion }),
   ],
   // 路径别名单一事实源：根 tsconfig.json + Vite 官方原生 tsconfigPaths（零插件）
   tsconfig: '../../tsconfig.json',

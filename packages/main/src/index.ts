@@ -1,3 +1,4 @@
+import path from 'node:path';
 import log from 'electron-log/main';
 import type { AppInitConfig } from './AppInitConfig';
 import { devServerUrl } from './env';
@@ -7,6 +8,7 @@ import { createConfigModule, getAppConfigStore } from './modules/config.module';
 import { createIPCModule } from './modules/ipc.module';
 import { createLogModule } from './modules/log.module';
 import { createNativeThemeModule } from './modules/native-theme.module';
+import { createProtocolModule } from './modules/protocol.module';
 import { allowInternalOrigins } from './modules/security/block-origins';
 import { allowExternalUrls } from './modules/security/external-urls';
 import { disallowMultipleAppInstance } from './modules/single-instance.module';
@@ -17,11 +19,15 @@ import { createUpdaterWindowModule } from './modules/window/updater-window.modul
 import { updaterService } from './services/updater.service';
 
 export async function initApp(initConfig: AppInitConfig) {
+  const rendererDistDir = path.dirname(require.resolve('@app/renderer'));
+
   const moduleRunner = createModuleRunner()
     .init(createLogModule())
     .init(createConfigModule())
     .init(createNativeThemeModule())
     .init(createIPCModule())
+    // 特权自定义协议：在窗口创建前拦截并提供带有不可变环境注入的 HTML 流
+    .init(createProtocolModule(rendererDistDir))
     // 主进程就绪源：链位在 WindowManager 之前，信号先于窗口与壳（spec §4.6 / ADR-0003）
     .init(createStartupReadinessModule())
     .init(createWindowManagerModule({ initConfig }))
@@ -33,7 +39,7 @@ export async function initApp(initConfig: AppInitConfig) {
     // Security
     .init(
       allowInternalOrigins(
-        new Set(initConfig.windows.home instanceof URL ? [initConfig.windows.home.origin] : []),
+        new Set(devServer ? [new URL(devServer).origin] : ['app://bundle', 'null']),
       ),
     )
     .init(
@@ -63,10 +69,10 @@ const devServer = devServerUrl;
 
 initApp({
   windows: {
-    home: devServer ? new URL(devServer) : { path: require.resolve('@app/renderer') },
+    home: devServer ? new URL(devServer) : new URL('app://bundle/index.html'),
     updater: devServer
       ? new URL(`${devServer.endsWith('/') ? devServer : `${devServer}/`}updater.html`)
-      : { path: require.resolve('@app/renderer/updater.html') },
+      : new URL('app://bundle/updater.html'),
   },
   preload: {
     path: require.resolve('@app/preload'),
