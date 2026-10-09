@@ -1,9 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import type { SpanRecord } from '@app/shared/types/telemetry';
 import { shell } from 'electron';
+import type { LogMessage } from 'electron-log';
 import log from 'electron-log/main';
 import type { AppModule } from '../AppModule';
 import type { ModuleContext } from '../ModuleContext';
+import { getTracer } from '../telemetry/tracer';
+import { cleanArchivedLogs, createCustomArchiveLogFn } from './log-archiver';
 
 export type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
@@ -16,28 +20,74 @@ export interface IScopedLogger {
 
 export class LogManager implements AppModule {
   public readonly mainLogger = log;
-  public readonly rendererLogger = log.create({ logId: 'renderer' });
+  public readonly traceLogger = log.create({ logId: 'traces' });
+  private readonly windowLoggers = new Map<string, ReturnType<typeof log.create>>();
+
+  private readonly injectTraceHook = (message: LogMessage): LogMessage => {
+    const ctx = getTracer().getActiveContext();
+    if (!ctx || !message.data || message.data.length === 0) {
+      return message;
+    }
+    const traceTag = `[trace_id:${ctx.traceId} span_id:${ctx.spanId}]`;
+    const data = [...message.data];
+    if (typeof data[0] === 'string') {
+      if (!data[0].includes('[trace_id:')) {
+        data[0] = `${traceTag} ${data[0]}`;
+      }
+    } else {
+      data.unshift(traceTag);
+    }
+    return { ...message, data };
+  };
 
   constructor() {
     this.setupLoggers();
+    (globalThis as unknown as { __appLogManager?: LogManager }).__appLogManager = this;
+  }
+
+  public getWindowLogger(windowName = 'home'): ReturnType<typeof log.create> {
+    let winLogger = this.windowLoggers.get(windowName);
+    if (!winLogger) {
+      winLogger = log.create({ logId: `renderer-${windowName}` });
+      winLogger.transports.file.fileName = `renderer-${windowName}.log`;
+      winLogger.transports.file.maxSize = 5 * 1024 * 1024;
+      winLogger.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
+      winLogger.transports.file.archiveLogFn = createCustomArchiveLogFn();
+      winLogger.hooks.push(this.injectTraceHook);
+      this.windowLoggers.set(windowName, winLogger);
+    }
+    return winLogger;
+  }
+
+  public removeWindowLogger(windowName: string): void {
+    if (windowName === 'home') return;
+    this.windowLoggers.delete(windowName);
+  }
+
+  public get rendererLogger(): ReturnType<typeof log.create> {
+    return this.getWindowLogger('home');
   }
 
   private setupLoggers(): void {
     // 5MB 轮转上限
     const MAX_SIZE = 5 * 1024 * 1024;
+    const TRACE_MAX_SIZE = 10 * 1024 * 1024;
 
     // 主进程日志配置
     this.mainLogger.transports.file.fileName = 'main.log';
     this.mainLogger.transports.file.maxSize = MAX_SIZE;
+    this.mainLogger.transports.file.archiveLogFn = createCustomArchiveLogFn();
 
-    // 渲染进程日志配置
-    this.rendererLogger.transports.file.fileName = 'renderer.log';
-    this.rendererLogger.transports.file.maxSize = MAX_SIZE;
+    // 遥测拓扑日志配置 (NDJSON 独立文件)
+    this.traceLogger.transports.file.fileName = 'traces.ndjson';
+    this.traceLogger.transports.file.maxSize = TRACE_MAX_SIZE;
+    this.traceLogger.transports.file.format = '{text}';
+    this.traceLogger.transports.console.level = false;
+    this.traceLogger.transports.file.archiveLogFn = createCustomArchiveLogFn();
 
     // 格式化输出
     const format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
     this.mainLogger.transports.file.format = format;
-    this.rendererLogger.transports.file.format = format;
 
     // 捕获未捕获异常并落盘
     this.mainLogger.errorHandler.startCatching({
@@ -45,6 +95,21 @@ export class LogManager implements AppModule {
       onError: ({ error }) => {
         this.mainLogger.error('[Uncaught Exception]', error);
       },
+    });
+
+    // 注册主进程 Trace 注入 Hook
+    this.mainLogger.hooks.push(this.injectTraceHook);
+
+    // 预初始化默认 home 窗口的 logger
+    this.getWindowLogger('home');
+
+    // 监听 Span 结束，以 NDJSON 格式落盘至 traces.ndjson
+    getTracer().onSpanEnd((record: SpanRecord) => {
+      try {
+        this.traceLogger.info(JSON.stringify(record));
+      } catch (err) {
+        this.mainLogger.warn('[LogManager] Failed to write SpanRecord:', err);
+      }
     });
   }
 
@@ -59,48 +124,8 @@ export class LogManager implements AppModule {
    * 清理过期（> 7天）或超额（> 5个）的历史归档日志
    */
   public cleanOldLogs(maxDays = 7, maxFiles = 5): void {
-    try {
-      const logsDir = this.getLogDirectory();
-      if (!fs.existsSync(logsDir)) return;
-
-      const files = fs.readdirSync(logsDir);
-      const now = Date.now();
-      const maxAgeMs = maxDays * 24 * 60 * 60 * 1000;
-
-      const archivedFiles: { name: string; fullPath: string; mtime: number }[] = [];
-
-      for (const file of files) {
-        if (!file.includes('.old')) continue;
-
-        const fullPath = path.join(logsDir, file);
-        try {
-          const stats = fs.statSync(fullPath);
-          // 超过指定天数直接删除
-          if (now - stats.mtimeMs > maxAgeMs) {
-            fs.unlinkSync(fullPath);
-          } else {
-            archivedFiles.push({ name: file, fullPath, mtime: stats.mtimeMs });
-          }
-        } catch {
-          // 忽略单个文件访问错误
-        }
-      }
-
-      // 如果超出归档数量上限，按时间升序淘汰最老的文件
-      if (archivedFiles.length > maxFiles) {
-        archivedFiles.sort((a, b) => a.mtime - b.mtime);
-        const toDeleteCount = archivedFiles.length - maxFiles;
-        for (let i = 0; i < toDeleteCount; i++) {
-          try {
-            fs.unlinkSync(archivedFiles[i].fullPath);
-          } catch {
-            // 忽略
-          }
-        }
-      }
-    } catch (err) {
-      this.mainLogger.warn('[LogManager] Failed to clean old logs:', err);
-    }
+    const logsDir = this.getLogDirectory();
+    cleanArchivedLogs(logsDir, { maxDays, maxFilesPerCategory: maxFiles });
   }
 
   /**
@@ -136,12 +161,19 @@ export class LogManager implements AppModule {
     await shell.openPath(dir);
   }
 
-  public logRendererMessage(level: LogLevel, message: string, meta?: unknown): void {
-    const fn = this.rendererLogger[level] || this.rendererLogger.info;
+  public logRendererMessage(
+    level: LogLevel,
+    message: string,
+    meta?: unknown,
+    windowName?: string,
+  ): void {
+    const targetName = windowName || 'home';
+    const targetLogger = this.getWindowLogger(targetName);
+    const fn = targetLogger[level] || targetLogger.info;
     if (meta !== undefined) {
-      fn(`[Renderer] ${message}`, meta);
+      fn(`[Renderer] [${targetName}] ${message}`, meta);
     } else {
-      fn(`[Renderer] ${message}`);
+      fn(`[Renderer] [${targetName}] ${message}`);
     }
   }
 }

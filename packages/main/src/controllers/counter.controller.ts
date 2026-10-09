@@ -3,12 +3,12 @@ import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import { stepInputSchema } from '@app/shared/schemas/counter';
 import type { CounterResult } from '@app/shared/types/counter';
 import type { Result } from '@app/shared/types/result';
-import { ipcMain } from 'electron';
 import { counterService } from '../services/counter.service';
+import { handleTraced } from '../telemetry/ipc-tracer';
 import { catchToResult, failResult, successResult } from './utils';
 
 export function registerCounterControllers(): void {
-  ipcMain.handle(IPC_CHANNELS.COUNTER_GET, async (): Promise<Result<CounterResult>> => {
+  handleTraced(IPC_CHANNELS.COUNTER_GET, async (): Promise<Result<CounterResult>> => {
     try {
       return successResult(counterService.getCounter());
     } catch (err) {
@@ -16,7 +16,7 @@ export function registerCounterControllers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleTraced(
     IPC_CHANNELS.COUNTER_INCREMENT,
     async (_event, rawInput: unknown): Promise<Result<CounterResult>> => {
       const parseResult = stepInputSchema.safeParse(rawInput ?? {});
@@ -31,7 +31,7 @@ export function registerCounterControllers(): void {
     },
   );
 
-  ipcMain.handle(
+  handleTraced(
     IPC_CHANNELS.COUNTER_DECREMENT,
     async (_event, rawInput: unknown): Promise<Result<CounterResult>> => {
       const parseResult = stepInputSchema.safeParse(rawInput ?? {});
@@ -46,7 +46,7 @@ export function registerCounterControllers(): void {
     },
   );
 
-  ipcMain.handle(IPC_CHANNELS.COUNTER_RESET, async (): Promise<Result<CounterResult>> => {
+  handleTraced(IPC_CHANNELS.COUNTER_RESET, async (): Promise<Result<CounterResult>> => {
     try {
       return successResult(counterService.reset());
     } catch (err) {
