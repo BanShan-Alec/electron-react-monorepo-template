@@ -15,10 +15,14 @@ packages/shared/
 ├── tsconfig.json
 └── src/
     ├── constants/           # 系统级常量与枚举
+    │   ├── env.ts           # 统一运行环境常量 (APP_ENV)
     │   ├── error-codes.ts   # 统一语义化错误码 (SCREAMING_SNAKE_CASE)
-    │   └── ipc-channels.ts  # IPC 通信通道常量定义
+    │   ├── ipc-channels.ts  # IPC 通信通道常量定义
+    │   ├── startup.ts       # 启动就绪与协调器契约常量
+    │   └── windows.ts       # 窗口 ID 常量定义
     │
     ├── types/               # 纯 TypeScript 接口定义（零运行时体积）
+    │   ├── env.ts           # 运行环境契约类型与标志位 (AppEnv, EnvFlags)
     │   ├── result.ts        # 全栈通用 Result<T> 响应包装器
     │   ├── api.ts           # Window.api (ElectronApi) 跨端调用契约
     │   ├── system.ts        # 系统与硬件信息返回接口
@@ -69,6 +73,11 @@ packages/shared/
   import type { CalculateResult } from '@app/shared/types/calculator';
   ```
 - **严禁桶文件**：不得新增任何 `index.ts` 聚合导出，不得使用 `export *`（由 Biome `performance.noBarrelFile` / `noReExportAll` 强制）。确需引入桶文件的唯一合法流程见 [CONTRIBUTING.md](../../CONTRIBUTING.md)。
+
+### 2.5 运行环境事实标准与跨端门面契约
+- **单一事实源**：在 `constants/env.ts` 与 `types/env.ts` 中定义 `APP_ENV`（`'development' | 'production' | 'test'`）与 `AppEnv` 类型。
+- **严禁散装读取**：主进程 (`packages/main/src/env.ts`) 与渲染进程 (`packages/renderer/src/lib/env.ts`) 基于此契约分别提供权威门面，项目 100% 基于 `MODE` 变量，严禁业务代码直接读取原生 `process.env.*`。
+- **详细规范**：参见全局架构文档 [全栈运行环境与模式控制规范](../../docs/environment-specification.md)。
 
 ---
 
