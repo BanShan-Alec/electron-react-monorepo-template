@@ -88,7 +88,7 @@ export async function launchElectronApp(
     ],
     env: {
       ...process.env,
-      NODE_ENV: 'test',
+      MODE: 'test',
       ...options.extraEnv,
     },
   });

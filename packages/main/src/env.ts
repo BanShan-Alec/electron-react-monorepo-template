@@ -3,9 +3,9 @@ import { app } from 'electron';
 
 /**
  * 是否处于自动化测试环境 (Playwright / Vitest)
- * 由测试启动器注入 NODE_ENV=test
+ * 由测试启动器注入 MODE=test
  */
-export const isTest: boolean = process.env.NODE_ENV === 'test';
+export const isTest: boolean = process.env.MODE === 'test';
 
 /**
  * 是否处于已打包二进制分发形态 (.exe / .app / AppImage)
