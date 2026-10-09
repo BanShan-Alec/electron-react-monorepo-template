@@ -113,8 +113,10 @@ async function verifyDependencies(): Promise<VerificationResult> {
   return { valid, errors };
 }
 
+module.exports = { verifyDependencies };
+
 // CLI 直启入口
-if (process.argv[1]?.endsWith('verify-deps.ts')) {
+if (require.main === module) {
   verifyDependencies()
     .then(({ valid }) => {
       if (!valid) {
@@ -126,5 +128,3 @@ if (process.argv[1]?.endsWith('verify-deps.ts')) {
       process.exit(1);
     });
 }
-
-module.exports = { verifyDependencies };
