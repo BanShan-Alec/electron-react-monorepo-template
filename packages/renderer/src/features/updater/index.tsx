@@ -78,10 +78,7 @@ export const UpdaterFeature: React.FC = () => {
   return (
     <div className="h-screen w-screen flex flex-col bg-background text-foreground select-none overflow-hidden border border-border">
       {/* 标题栏区域：贴合边缘，支持拖拽移动窗口，左侧固定更新图标，右上角保留唯一关闭按钮 */}
-      <div
-        className="flex items-center justify-between px-4 py-3 border-b border-border bg-background select-none cursor-move shrink-0"
-        style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-      >
+      <div className="drag-region flex items-center justify-between px-4 py-3 border-b border-border bg-background select-none cursor-move shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-8 h-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-base text-primary shrink-0">
             <CloudDownloadOutlined />
@@ -98,8 +95,7 @@ export const UpdaterFeature: React.FC = () => {
         <button
           type="button"
           aria-label="Close"
-          className="text-foreground-muted hover:text-foreground hover:bg-foreground/10 rounded-md p-1.5 transition-colors duration-150 inline-flex items-center justify-center cursor-pointer focus:outline-none shrink-0"
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          className="no-drag text-foreground-muted hover:text-foreground hover:bg-foreground/10 rounded-md p-1.5 transition-colors duration-150 inline-flex items-center justify-center cursor-pointer focus:outline-none shrink-0"
           onClick={handleClose}
         >
           <CloseOutlined className="text-sm" />
