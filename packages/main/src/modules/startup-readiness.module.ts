@@ -1,6 +1,5 @@
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import type { StartupGateSnapshot, StartupMainReadyPayload } from '@app/shared/types/startup';
-import { ipcMain } from 'electron';
 import type { AppModule } from '../AppModule';
 import { broadcast } from './window/window-registry';
 
@@ -17,6 +16,8 @@ import { broadcast } from './window/window-registry';
  * 严禁在本模块 enable() 中新增同步耗时（spec §6.4 显示零阻塞）。
  */
 
+import { handleTraced } from '../telemetry/ipc-tracer';
+
 // 私有常量
 let snapshot: StartupGateSnapshot = { mainReady: false, payload: null };
 
@@ -29,7 +30,7 @@ export function createStartupReadinessModule(): AppModule {
       };
       snapshot = { mainReady: true, payload };
 
-      ipcMain.handle(IPC_CHANNELS.STARTUP_GET_SNAPSHOT, () => snapshot);
+      handleTraced(IPC_CHANNELS.STARTUP_GET_SNAPSHOT, () => snapshot);
 
       // 此刻注册表为空属预期空操作；契约对后续创建的窗口（含 updater）成立
       broadcast(IPC_CHANNELS.STARTUP_EVENT_MAIN_READY, payload);

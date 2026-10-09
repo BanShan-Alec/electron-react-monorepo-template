@@ -71,4 +71,5 @@ export interface ElectronApi {
   };
   // 遵循 specs-electron-fullstack / renderer/ipc-consumption.md 安全规范
   getPathForFile: (file: File) => string;
+  invokeTraced?: <R = unknown, T = unknown>(channel: string, data?: T) => Promise<R>;
 }

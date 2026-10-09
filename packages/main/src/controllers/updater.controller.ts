@@ -3,13 +3,13 @@ import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import { updaterMockActionSchema } from '@app/shared/schemas/updater';
 import type { Result } from '@app/shared/types/result';
 import type { UpdaterSnapshot } from '@app/shared/types/updater';
-import { ipcMain } from 'electron';
 import { getUpdaterWindowModule } from '../modules/window/updater-window.module';
 import { updaterService } from '../services/updater.service';
+import { handleTraced } from '../telemetry/ipc-tracer';
 import { catchToResult, failResult, successResult } from './utils';
 
 export function registerUpdaterControllers(): void {
-  ipcMain.handle(IPC_CHANNELS.UPDATER_GET_STATE, async (): Promise<Result<UpdaterSnapshot>> => {
+  handleTraced(IPC_CHANNELS.UPDATER_GET_STATE, async (): Promise<Result<UpdaterSnapshot>> => {
     try {
       return successResult(updaterService.getSnapshot());
     } catch (err) {
@@ -17,7 +17,7 @@ export function registerUpdaterControllers(): void {
     }
   });
 
-  ipcMain.handle(IPC_CHANNELS.UPDATER_CHECK, async (): Promise<Result<UpdaterSnapshot>> => {
+  handleTraced(IPC_CHANNELS.UPDATER_CHECK, async (): Promise<Result<UpdaterSnapshot>> => {
     try {
       const snapshot = await updaterService.check();
       return successResult(snapshot);
@@ -26,7 +26,7 @@ export function registerUpdaterControllers(): void {
     }
   });
 
-  ipcMain.handle(IPC_CHANNELS.UPDATER_DOWNLOAD, async (): Promise<Result<UpdaterSnapshot>> => {
+  handleTraced(IPC_CHANNELS.UPDATER_DOWNLOAD, async (): Promise<Result<UpdaterSnapshot>> => {
     try {
       const snapshot = await updaterService.download();
       return successResult(snapshot);
@@ -35,7 +35,7 @@ export function registerUpdaterControllers(): void {
     }
   });
 
-  ipcMain.handle(IPC_CHANNELS.UPDATER_CANCEL, async (): Promise<Result<UpdaterSnapshot>> => {
+  handleTraced(IPC_CHANNELS.UPDATER_CANCEL, async (): Promise<Result<UpdaterSnapshot>> => {
     try {
       const snapshot = await updaterService.cancel();
       return successResult(snapshot);
@@ -44,7 +44,7 @@ export function registerUpdaterControllers(): void {
     }
   });
 
-  ipcMain.handle(IPC_CHANNELS.UPDATER_INSTALL, async (): Promise<Result<{ success: boolean }>> => {
+  handleTraced(IPC_CHANNELS.UPDATER_INSTALL, async (): Promise<Result<{ success: boolean }>> => {
     try {
       const result = await updaterService.install();
       return successResult(result);
@@ -53,7 +53,7 @@ export function registerUpdaterControllers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleTraced(
     IPC_CHANNELS.UPDATER_OPEN_WINDOW,
     async (): Promise<Result<{ success: boolean }>> => {
       try {
@@ -65,7 +65,7 @@ export function registerUpdaterControllers(): void {
     },
   );
 
-  ipcMain.handle(
+  handleTraced(
     IPC_CHANNELS.UPDATER_CLOSE_WINDOW,
     async (): Promise<Result<{ success: boolean }>> => {
       try {
@@ -79,7 +79,7 @@ export function registerUpdaterControllers(): void {
 
   // 测试环境 Mock 注入通道
   if (process.env.NODE_ENV === 'test') {
-    ipcMain.handle(
+    handleTraced(
       IPC_CHANNELS.UPDATER_MOCK_EMIT,
       async (_event, rawInput: unknown): Promise<Result<{ success: boolean }>> => {
         const parseResult = updaterMockActionSchema.safeParse(rawInput);
