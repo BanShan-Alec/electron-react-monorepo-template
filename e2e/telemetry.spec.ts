@@ -5,6 +5,7 @@ import { expect, test } from './helpers/fixture';
 test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => {
   test('端到端调用产生 trace 并成功落盘 main.log 和 traces.ndjson', async ({
     page,
+    electronApp,
     tempUserDataDir,
   }) => {
     // 1. 等待主窗口就绪
@@ -92,5 +93,32 @@ test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => 
       expect(typeof record.duration_ms).toBe('number');
       expect(record.status).toBe('OK');
     }
+
+    // 5. 验证真实 Electron 运行时中的日志轮转机制 (时间戳归档与主日志重置)
+    const rotated = await electronApp.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: access __logManager in main process
+      const logMgr = (globalThis as any).__logManager;
+      if (!logMgr) return false;
+      const testLogger = logMgr.getWindowLogger('rotation-test');
+      testLogger.transports.file.maxSize = 100; // 设定 100 字节极小阈值触发轮转
+      testLogger.info('Line 1: Exceed the size threshold of one hundred bytes to trigger rotation');
+      testLogger.info('Line 2: New log line written after rotation into active file');
+      return true;
+    });
+
+    expect(rotated).toBe(true);
+
+    const filesAfterRotation = fs.readdirSync(logsDir);
+    const archiveFiles = filesAfterRotation.filter((f) =>
+      /^renderer-rotation-test-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}(?:_\d+)?\.log$/.test(f),
+    );
+
+    console.log('\n================== [日志轮转 E2E 归档文件列表] ==================');
+    console.log('所有日志文件:', filesAfterRotation);
+    console.log('匹配到的时间戳归档:', archiveFiles);
+    console.log('===============================================================\n');
+
+    expect(archiveFiles.length).toBeGreaterThanOrEqual(1);
+    expect(filesAfterRotation).toContain('renderer-rotation-test.log');
   });
 });

@@ -139,5 +139,52 @@ describe('Log Archiver', () => {
       expect(files[0]).toMatch(/^main-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.log$/);
       expect(fs.readFileSync(path.join(tempDir, files[0]), 'utf-8')).toBe('log line 1\nlog line 2');
     });
+
+    it('should prune older archives when multiple rotations exceed quota', () => {
+      const activeFile = path.join(tempDir, 'main.log');
+      const archiveFn = createCustomArchiveLogFn({ maxDays: 7, maxFilesPerCategory: 3 });
+
+      // Rotate 5 times
+      for (let i = 1; i <= 5; i++) {
+        fs.writeFileSync(activeFile, `content version ${i}`);
+        archiveFn({ toString: () => activeFile });
+      }
+
+      const files = fs.readdirSync(tempDir);
+      // Only 3 files should be retained
+      expect(files.length).toBe(3);
+      for (const f of files) {
+        expect(f).toMatch(/^main-/);
+      }
+    });
+
+    it('should fallback to copy and truncate when rename fails due to file lock', () => {
+      const activeFile = path.join(tempDir, 'traces.ndjson');
+      fs.writeFileSync(activeFile, '{"span":"test"}\n');
+
+      const archiveFn = createCustomArchiveLogFn({ maxDays: 7, maxFilesPerCategory: 3 });
+
+      // Simulate renameSync throwing EBUSY
+      const originalRename = fs.renameSync;
+      fs.renameSync = () => {
+        const err = new Error('EBUSY: resource locked');
+        (err as NodeJS.ErrnoException).code = 'EBUSY';
+        throw err;
+      };
+
+      try {
+        archiveFn({ toString: () => activeFile });
+
+        // Target archive should exist with original content
+        const files = fs.readdirSync(tempDir).filter((f) => f.startsWith('traces-'));
+        expect(files.length).toBe(1);
+        expect(fs.readFileSync(path.join(tempDir, files[0]), 'utf-8')).toBe('{"span":"test"}\n');
+
+        // Original file was truncated to 0 bytes
+        expect(fs.readFileSync(activeFile, 'utf-8')).toBe('');
+      } finally {
+        fs.renameSync = originalRename;
+      }
+    });
   });
 });

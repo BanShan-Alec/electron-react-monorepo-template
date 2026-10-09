@@ -40,6 +40,7 @@ export class LogManager implements AppModule {
 
   constructor() {
     this.setupLoggers();
+    (globalThis as unknown as { __logManager?: LogManager }).__logManager = this;
   }
 
   public getWindowLogger(windowName = 'home'): ReturnType<typeof log.create> {
