@@ -1,4 +1,3 @@
-import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { lingui } from '@lingui/vite-plugin';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
@@ -6,30 +5,23 @@ import react from '@vitejs/plugin-react';
 import autoprefixer from 'autoprefixer';
 import tailwindcss from 'tailwindcss';
 import { defineConfig } from 'vite';
+import { getSentryBuildConfig } from '../../build/sentry-config.ts';
 import { startupShellInlinePlugin } from './plugins/startup-shell';
 import tailwindConfig from './tailwind.config.ts';
 
-const rootDir = path.resolve(import.meta.dirname, '../../');
-const rootPkg = JSON.parse(readFileSync(path.join(rootDir, 'package.json'), 'utf-8'));
-const appVersion = rootPkg.version;
-
-let sentryDsn = process.env.SENTRY_DSN || process.env.VITE_SENTRY_DSN || '';
-const envPath = path.join(rootDir, '.env');
-if (!sentryDsn && existsSync(envPath)) {
-  const content = readFileSync(envPath, 'utf-8');
-  const match = content.match(/^(?:SENTRY_DSN|VITE_SENTRY_DSN)\s*=\s*(.+)$/m);
-  if (match) {
-    sentryDsn = match[1].trim();
-  }
-}
+const sentryConfig = getSentryBuildConfig(import.meta.dirname);
 
 // https://vite.dev/config/
 export default defineConfig({
-  envDir: rootDir,
+  // 环境变量单一事实源：Monorepo 全局统一定义在根目录 .env，子包不设独立 .env
+  envDir: sentryConfig.rootDir,
   base: './',
   define: {
-    __APP_VERSION__: JSON.stringify(appVersion),
-    __SENTRY_DSN__: JSON.stringify(sentryDsn),
+    'import.meta.env.APP_VERSION': JSON.stringify(sentryConfig.appVersion),
+    'import.meta.env.SENTRY_DSN': JSON.stringify(sentryConfig.sentryDsn),
+    'import.meta.env.RELEASE_NAME': JSON.stringify(sentryConfig.releaseName),
+    __APP_VERSION__: JSON.stringify(sentryConfig.appVersion),
+    __SENTRY_DSN__: JSON.stringify(sentryConfig.sentryDsn),
   },
   plugins: [
     react(),
@@ -39,13 +31,13 @@ export default defineConfig({
       macroTransform: true,
     }),
     sentryVitePlugin({
-      org: process.env.SENTRY_ORG || '',
-      project: process.env.SENTRY_PROJECT || '',
-      authToken: process.env.SENTRY_AUTH_TOKEN || '',
+      org: sentryConfig.sentryOrg,
+      project: sentryConfig.sentryProject,
+      authToken: sentryConfig.sentryAuthToken,
       telemetry: false,
-      disable: !process.env.SENTRY_AUTH_TOKEN,
+      disable: !sentryConfig.sentryAuthToken,
       release: {
-        name: `electron-react-monorepo-template@${appVersion}`,
+        name: sentryConfig.releaseName,
       },
       sourcemaps: {
         filesToDeleteAfterUpload: ['dist/**/*.map'],

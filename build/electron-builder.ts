@@ -34,17 +34,6 @@ const config: Configuration = {
     '!**/node_modules/**/*.d.ts',
     '!**/node_modules/**/*.d.cts',
     '!**/node_modules/**/*.d.mts',
-    // 排除 Sentry 间接引入的纯构建期编译/CLI/Wasm/AST工具，防止 asar 异常膨胀
-    '!**/node_modules/@sentry/cli*/**',
-    '!**/node_modules/@sentry/bundler-plugins/**',
-    '!**/node_modules/sentry/**',
-    '!**/node_modules/*oxc-parser/**',
-    '!**/node_modules/@oxc-parser/**',
-    '!**/node_modules/@babel/**',
-    '!**/node_modules/caniuse-lite/**',
-    '!**/node_modules/browserslist/**',
-    '!**/node_modules/@sentry/**/esm/**',
-    '!**/node_modules/@sentry/**/*.mjs',
   ],
 };
 

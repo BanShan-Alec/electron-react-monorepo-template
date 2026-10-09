@@ -28,36 +28,47 @@ export function isSentryEnabled(): boolean {
 
 /**
  * 主进程 Sentry 全局初始化
- * 必须在主进程生命周期最早期同步执行
+ * 必须在主进程生命周期最早期同步执行，内部包裹完整容错防止初始化失败导致主进程崩溃
  */
 export function initMainSentry(): void {
-  const dsn = getSentryDsn();
-  const enabled = isSentryEnabled();
+  try {
+    const dsn = getSentryDsn();
+    const enabled = isSentryEnabled();
 
-  if (!enabled || !dsn) {
-    logger.info('[Sentry] 初始化已跳过（未打包或未配置有效 DSN）');
-    return;
+    if (!enabled || !dsn) {
+      logger.info('[Sentry] 初始化已跳过（未打包或未配置有效 DSN）');
+      return;
+    }
+
+    const appVersion =
+      typeof __APP_VERSION__ !== 'undefined' && __APP_VERSION__
+        ? __APP_VERSION__
+        : app.getVersion();
+    const release =
+      typeof __RELEASE_NAME__ !== 'undefined' && __RELEASE_NAME__
+        ? __RELEASE_NAME__
+        : `${app.getName()}@${appVersion}`;
+
+    Sentry.init({
+      dsn,
+      enabled: true,
+      environment: app.isPackaged ? 'production' : process.env.MODE || 'development',
+      release,
+
+      // 彻底关闭行为监控（Breadcrumbs / DOM / Console / Net 轨迹）
+      maxBreadcrumbs: 0,
+      beforeBreadcrumb: () => null,
+      integrations: (defaults) => defaults.filter((i) => !i.name.includes('Breadcrumb')),
+
+      // 彻底关闭性能监控（Tracing / Profiling）
+      tracesSampleRate: 0,
+    });
+
+    logger.info('[Sentry] 主进程初始化成功（仅打包采集 + 行为/性能监控已禁用）');
+  } catch (error) {
+    // 捕获所有初始化异常，绝不允许因监控初始化失败阻断整个 Electron 应用启动
+    logger.error('[Sentry] 主进程初始化异常失败:', error);
   }
-
-  const appVersion =
-    typeof __APP_VERSION__ !== 'undefined' && __APP_VERSION__ ? __APP_VERSION__ : app.getVersion();
-
-  Sentry.init({
-    dsn,
-    enabled: true,
-    environment: app.isPackaged ? 'production' : process.env.MODE || 'development',
-    release: `electron-react-monorepo-template@${appVersion}`,
-
-    // 彻底关闭行为监控（Breadcrumbs / DOM / Console / Net 轨迹）
-    maxBreadcrumbs: 0,
-    beforeBreadcrumb: () => null,
-    integrations: (defaults) => defaults.filter((i) => !i.name.includes('Breadcrumb')),
-
-    // 彻底关闭性能监控（Tracing / Profiling）
-    tracesSampleRate: 0,
-  });
-
-  logger.info('[Sentry] 主进程初始化成功（仅打包采集 + 行为/性能监控已禁用）');
 }
 
 /**
@@ -109,7 +120,9 @@ export class SentryModule implements AppModule {
         let currentUrl = 'unknown';
         try {
           currentUrl = window.webContents.getURL();
-        } catch {}
+        } catch (err) {
+          logger.warn(`[unresponsive] 获取无响应窗口 (id=${window.id}) URL 失败:`, err);
+        }
 
         logger.error(`[unresponsive] 窗口 (id=${window.id}) 发生无响应卡死`);
         Sentry.captureMessage(`[Window Unresponsive] 窗口 (id=${window.id}) 发生无响应卡死`, {

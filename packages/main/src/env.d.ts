@@ -22,3 +22,4 @@ interface ImportMeta {
 
 declare const __APP_VERSION__: string;
 declare const __SENTRY_DSN__: string;
+declare const __RELEASE_NAME__: string;

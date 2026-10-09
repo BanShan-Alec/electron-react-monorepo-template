@@ -9,9 +9,9 @@ import * as Sentry from '@sentry/electron/renderer';
  */
 export function initSentry(): void {
   const dsn =
-    (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__ ? __SENTRY_DSN__ : '') ||
+    import.meta.env.SENTRY_DSN ||
     import.meta.env.VITE_SENTRY_DSN ||
-    '';
+    (typeof __SENTRY_DSN__ !== 'undefined' ? __SENTRY_DSN__ : '');
 
   // 严格守卫：仅打包后且有有效 DSN 时激活
   const isEnabled = import.meta.env.PROD && Boolean(dsn);
@@ -20,13 +20,16 @@ export function initSentry(): void {
     return;
   }
 
-  const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.2.0';
+  const appVersion =
+    import.meta.env.APP_VERSION ||
+    (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown');
+  const release = import.meta.env.RELEASE_NAME || `electron-react-monorepo-template@${appVersion}`;
 
   Sentry.init({
     dsn,
     enabled: true,
     environment: 'production',
-    release: `electron-react-monorepo-template@${appVersion}`,
+    release,
 
     // 彻底关闭行为监控（Breadcrumbs）
     maxBreadcrumbs: 0,

@@ -6,6 +6,8 @@ import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 interface IErrorBoundaryProps {
   children: ReactNode;
+  /** 发生未捕获异常时的自定义业务回调（如自定义日志或状态通知） */
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface IErrorBoundaryState {
@@ -59,12 +61,15 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // 渲染进程崩溃捕获并上报至 Sentry
+    // 1. 渲染进程崩溃捕获并上报至 Sentry
     Sentry.captureException(error, {
       extra: {
         componentStack: errorInfo.componentStack,
       },
     });
+
+    // 2. 执行外部业务传入的 onError 回调
+    this.props.onError?.(error, errorInfo);
   }
 
   resetError = (): void => {

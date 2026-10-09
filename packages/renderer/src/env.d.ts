@@ -13,6 +13,14 @@ declare global {
   }
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: Vite ImportMetaEnv augmentation
+interface ImportMetaEnv {
+  readonly APP_VERSION: string;
+  readonly SENTRY_DSN: string;
+  readonly VITE_SENTRY_DSN: string;
+  readonly RELEASE_NAME: string;
+}
+
 declare module '*.po' {
   import type { Messages } from '@lingui/core';
   export const messages: Messages;
