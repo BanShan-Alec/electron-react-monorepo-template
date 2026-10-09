@@ -59,18 +59,23 @@ export class UpdaterService {
     error: null,
   };
 
-  private windowDelegate: { show: () => Promise<unknown>; hide: () => void } | null = null;
+  private windowDelegate: { show: () => Promise<unknown>; close?: () => void } | null = null;
+  private userDismissedWindow = false;
 
   constructor() {
     this.initElectronUpdater();
   }
 
-  public setWindowDelegate(delegate: { show: () => Promise<unknown>; hide: () => void }): void {
+  public setWindowDelegate(delegate: { show: () => Promise<unknown>; close?: () => void }): void {
     this.windowDelegate = delegate;
   }
 
-  private isDevelopment(): boolean {
-    return isDev;
+  public notifyWindowShown(): void {
+    this.userDismissedWindow = false;
+  }
+
+  public notifyWindowClosed(): void {
+    this.userDismissedWindow = true;
   }
 
   private getAutoUpdater(): AppUpdater {
@@ -94,10 +99,16 @@ export class UpdaterService {
         updater.channel = process.env.VITE_DISTRIBUTION_CHANNEL;
       }
 
+      const owner = process.env.VITE_GITHUB_OWNER || process.env.GITHUB_OWNER || 'BanShan-Alec';
+      const repo =
+        process.env.VITE_GITHUB_REPO ||
+        process.env.GITHUB_REPO ||
+        'electron-react-monorepo-template';
+
       updater.setFeedURL({
         provider: 'github',
-        owner: 'BanShan-Alec',
-        repo: 'electron-react-monorepo-template',
+        owner,
+        repo,
       });
 
       updater.on('checking-for-update', () => {
@@ -166,8 +177,27 @@ export class UpdaterService {
             this.logger.error('Failed to quitAndInstall in orphan mode:', err);
             app.quit();
           }
+        } else if (this.userDismissedWindow) {
+          this.logger.info(
+            'User dismissed window previously, sending system notification instead of popup',
+          );
+          if (Notification.isSupported()) {
+            const isZh = getAppConfigStore().get('language') === 'zh-CN';
+            const notif = new Notification({
+              title: app.getName(),
+              body: isZh
+                ? '新版本已下载完毕，点击立即安装。'
+                : 'New version downloaded. Click to install.',
+            });
+            notif.on('click', () => {
+              this.windowDelegate?.show().catch((err) => {
+                this.logger.error('Failed to show updater window from notification click:', err);
+              });
+            });
+            notif.show();
+          }
         } else {
-          // 主窗口正常存活时，拉起更新窗口提醒用户立即重启安装
+          // 主窗口正常存活且未被主动关闭时，拉起更新窗口提醒用户立即重启安装
           this.windowDelegate?.show().catch((err) => {
             this.logger.error('Failed to show updater window on update-downloaded:', err);
           });
@@ -219,13 +249,14 @@ export class UpdaterService {
       return this.getSnapshot();
     }
 
-    if (this.isDevelopment()) {
+    if (isDev) {
       this.logger.info('Dev mode: running simulated check flow');
       if (this.devSimulationTimer) {
-        clearInterval(this.devSimulationTimer);
+        clearTimeout(this.devSimulationTimer);
         this.devSimulationTimer = null;
       }
-      setTimeout(() => {
+      this.devSimulationTimer = setTimeout(() => {
+        this.devSimulationTimer = null;
         if (this.snapshot.state === 'checking') {
           this.mockEmit({
             type: 'available',
@@ -240,7 +271,7 @@ export class UpdaterService {
             ],
           });
         }
-      }, 800);
+      }, 800) as unknown as NodeJS.Timeout;
       return this.getSnapshot();
     }
 
@@ -280,7 +311,7 @@ export class UpdaterService {
       return;
     }
 
-    if (this.isDevelopment()) {
+    if (isDev) {
       this.logger.info('Dev mode: skipping silent check request');
       return;
     }
@@ -290,7 +321,7 @@ export class UpdaterService {
       const updater = this.getAutoUpdater();
       let timer: NodeJS.Timeout | undefined;
       const timeoutPromise = new Promise((_, reject) => {
-        timer = setTimeout(() => reject(new Error('Silent check timeout (15s)')), 15000);
+        timer = setTimeout(() => reject(new Error('静默检查更新超时（15 秒）')), 15000);
       });
       try {
         await Promise.race([updater.checkForUpdates(), timeoutPromise]);
@@ -320,7 +351,7 @@ export class UpdaterService {
       return this.getSnapshot();
     }
 
-    if (this.isDevelopment()) {
+    if (isDev) {
       this.logger.info('Dev mode: running simulated download flow');
       if (this.devSimulationTimer) {
         clearInterval(this.devSimulationTimer);
@@ -412,7 +443,7 @@ export class UpdaterService {
       return { success: true };
     }
 
-    if (this.isDevelopment()) {
+    if (isDev) {
       this.logger.info('Dev mode: simulated install completed');
       return { success: true };
     }

@@ -21,7 +21,7 @@ export class UpdaterWindowModule implements AppModule {
     // 绑定更新服务的窗口代理
     updaterService.setWindowDelegate({
       show: () => this.show(),
-      hide: () => this.close(),
+      close: () => this.close(),
     });
   }
 
@@ -111,6 +111,8 @@ export class UpdaterWindowModule implements AppModule {
       win = await this.createWindow();
     }
 
+    updaterService.notifyWindowShown();
+
     if (win.isMinimized()) {
       win.restore();
     }
@@ -128,15 +130,12 @@ export class UpdaterWindowModule implements AppModule {
   }
 
   close(): void {
+    updaterService.notifyWindowClosed();
     const win = getWindow(WINDOW_IDS.UPDATER);
     if (win && !win.isDestroyed()) {
       win.close();
       this.logger.info('Updater window closed and destroyed');
     }
-  }
-
-  hide(): void {
-    this.close();
   }
 
   destroy(): void {

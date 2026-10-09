@@ -43,6 +43,7 @@ export async function initApp(initConfig: AppInitConfig) {
   await moduleRunner;
 
   // 应用就绪后若开启自动更新则延迟执行后台静默检查
+  const SILENT_CHECK_DELAY_MS = 3000;
   try {
     const configStore = getAppConfigStore();
     if (configStore.get('autoCheckUpdate')) {
@@ -50,7 +51,7 @@ export async function initApp(initConfig: AppInitConfig) {
         updaterService.checkSilently().catch((err) => {
           log.warn('[AutoUpdater] Silent update check failed:', err);
         });
-      }, 3000);
+      }, SILENT_CHECK_DELAY_MS);
     }
   } catch (err) {
     log.warn('[AutoUpdater] Failed to schedule silent update check:', err);

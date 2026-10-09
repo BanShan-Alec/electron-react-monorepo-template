@@ -99,7 +99,7 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
         >
           {hasNotes ? (
             <ul className="list-disc list-inside space-y-1">
-              {releaseNotes!.map((note, index) => (
+              {releaseNotes?.map((note, index) => (
                 <li key={`${index}-${note.slice(0, 10)}`} className="leading-relaxed">
                   {formatInlineMarkdown(note)}
                 </li>

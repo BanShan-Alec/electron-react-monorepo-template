@@ -6,4 +6,6 @@ import { APP_ENV, type AppEnv } from '@app/shared/constants/env';
  */
 export const isDev: boolean = import.meta.env.DEV;
 export const isProd: boolean = import.meta.env.PROD;
+export const isTest: boolean = import.meta.env.MODE === 'test';
+export const isPackaged: boolean = import.meta.env.PROD;
 export const currentAppEnv: AppEnv = isDev ? APP_ENV.DEVELOPMENT : APP_ENV.PRODUCTION;

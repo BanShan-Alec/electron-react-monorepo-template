@@ -41,7 +41,9 @@ export function getAppEnv(): AppEnv {
 export const currentAppEnv: AppEnv = getAppEnv();
 
 /**
- * 本地开发服务器 URL (若存在且处于开发态)
+ * 本地开发服务器 URL (若存在且严格处于开发态)
  */
 export const devServerUrl: string | undefined =
-  isDev && process.env.VITE_DEV_SERVER_URL ? process.env.VITE_DEV_SERVER_URL : undefined;
+  process.env.MODE === 'development' && process.env.VITE_DEV_SERVER_URL
+    ? process.env.VITE_DEV_SERVER_URL
+    : undefined;

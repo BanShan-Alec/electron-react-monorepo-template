@@ -53,8 +53,10 @@ export const UpdaterFeature: React.FC = () => {
   };
 
   const header = getStatusHeader();
+  // 仅在已获取到版本元数据时渲染变更日志卡片；检查失败且无版本号时走独立的错误提示卡片
+  const hasVersionMetadata = Boolean(snapshot.version);
   const showChangelog =
-    Boolean(snapshot.version) &&
+    hasVersionMetadata &&
     (snapshot.state === 'available' ||
       snapshot.state === 'downloading' ||
       snapshot.state === 'downloaded' ||
@@ -142,6 +144,7 @@ export const UpdaterFeature: React.FC = () => {
           </div>
         )}
 
+        {/* 检查更新网络异常且未拉取到版本元数据时，在此独立渲染错误提示与重试按钮 */}
         {!showChangelog && snapshot.state === 'error' && (
           <div className="flex flex-col gap-2">{renderErrorContent()}</div>
         )}

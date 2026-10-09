@@ -10,8 +10,8 @@ const config: Configuration = {
   generateUpdatesFilesForAllChannels: true,
   publish: {
     provider: 'github',
-    owner: 'BanShan-Alec',
-    repo: 'electron-react-monorepo-template',
+    owner: process.env.GITHUB_OWNER || 'BanShan-Alec',
+    repo: process.env.GITHUB_REPO || 'electron-react-monorepo-template',
     releaseType: 'release',
   },
   win: {
