@@ -3,12 +3,12 @@ import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import { calculateInputSchema } from '@app/shared/schemas/calculator';
 import type { CalculateResult } from '@app/shared/types/calculator';
 import type { Result } from '@app/shared/types/result';
-import { ipcMain } from 'electron';
 import { calculatorService } from '../services/calculator.service';
+import { handleTraced } from '../telemetry/ipc-tracer';
 import { catchToResult, failResult, successResult } from './utils';
 
 export function registerCalculatorControllers(): void {
-  ipcMain.handle(
+  handleTraced(
     IPC_CHANNELS.CALCULATOR_CALCULATE,
     async (_event, rawInput: unknown): Promise<Result<CalculateResult>> => {
       const parseResult = calculateInputSchema.safeParse(rawInput);

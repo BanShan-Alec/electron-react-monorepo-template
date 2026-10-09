@@ -2,13 +2,13 @@ import { ErrorCode } from '@app/shared/constants/error-codes';
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import { type AppConfig, updateConfigInputSchema } from '@app/shared/schemas/config';
 import type { Result } from '@app/shared/types/result';
-import { ipcMain } from 'electron';
 import { broadcast } from '../modules/window/window-registry';
 import { configService } from '../services/config.service';
+import { handleTraced } from '../telemetry/ipc-tracer';
 import { catchToResult, failResult, successResult } from './utils';
 
 export function registerConfigControllers(): void {
-  ipcMain.handle(IPC_CHANNELS.CONFIG_GET, async (): Promise<Result<AppConfig>> => {
+  handleTraced(IPC_CHANNELS.CONFIG_GET, async (): Promise<Result<AppConfig>> => {
     try {
       return successResult(configService.getConfig());
     } catch (err) {
@@ -16,7 +16,7 @@ export function registerConfigControllers(): void {
     }
   });
 
-  ipcMain.handle(
+  handleTraced(
     IPC_CHANNELS.CONFIG_UPDATE,
     async (_event, rawInput: unknown): Promise<Result<AppConfig>> => {
       const parseResult = updateConfigInputSchema.safeParse(rawInput);
@@ -33,7 +33,7 @@ export function registerConfigControllers(): void {
     },
   );
 
-  ipcMain.handle(IPC_CHANNELS.CONFIG_RESET, async (): Promise<Result<AppConfig>> => {
+  handleTraced(IPC_CHANNELS.CONFIG_RESET, async (): Promise<Result<AppConfig>> => {
     try {
       const reset = configService.resetConfig();
       broadcast(IPC_CHANNELS.CONFIG_EVENT_CHANGED, reset);
