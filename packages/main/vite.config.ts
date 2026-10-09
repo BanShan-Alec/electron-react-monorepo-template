@@ -1,8 +1,12 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { defineConfig } from 'vite';
 import { getSentryBuildConfig } from '../../build/sentry-config.ts';
 
-const sentryConfig = getSentryBuildConfig(import.meta.dirname);
+const currentDir =
+  typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+const sentryConfig = getSentryBuildConfig(currentDir);
 
 export default defineConfig({
   define: {

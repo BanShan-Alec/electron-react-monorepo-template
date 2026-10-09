@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { lingui } from '@lingui/vite-plugin';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import react from '@vitejs/plugin-react';
@@ -9,7 +10,9 @@ import { getSentryBuildConfig } from '../../build/sentry-config.ts';
 import { startupShellInlinePlugin } from './plugins/startup-shell';
 import tailwindConfig from './tailwind.config.ts';
 
-const sentryConfig = getSentryBuildConfig(import.meta.dirname);
+const currentDir =
+  typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+const sentryConfig = getSentryBuildConfig(currentDir);
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -26,8 +29,8 @@ export default defineConfig({
   plugins: [
     react(),
     lingui({
-      configPath: path.resolve(__dirname, 'lingui.config.ts'),
-      cwd: __dirname,
+      configPath: path.resolve(currentDir, 'lingui.config.ts'),
+      cwd: currentDir,
       macroTransform: true,
     }),
     sentryVitePlugin({
@@ -44,7 +47,7 @@ export default defineConfig({
       },
     }),
     // 启动壳占位符内联（dev/build 同一形态），契约见 specs/first-screen-loading.md §4.7
-    startupShellInlinePlugin({ root: __dirname }),
+    startupShellInlinePlugin({ root: currentDir }),
   ],
   // 路径别名单一事实源：根 tsconfig.json + Vite 官方原生 tsconfigPaths（零插件）
   tsconfig: '../../tsconfig.json',
@@ -65,8 +68,8 @@ export default defineConfig({
     sourcemap: 'hidden',
     rollupOptions: {
       input: {
-        main: path.resolve(__dirname, 'index.html'),
-        updater: path.resolve(__dirname, 'updater.html'),
+        main: path.resolve(currentDir, 'index.html'),
+        updater: path.resolve(currentDir, 'updater.html'),
       },
     },
   },
