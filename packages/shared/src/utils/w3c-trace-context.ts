@@ -18,14 +18,9 @@ function getRandomHex(bytes: number): string {
     }
     return hex;
   }
-  // 极端后备方案（Node / Electron 下 globalThis.crypto 始终可用）
-  let hex = '';
-  for (let i = 0; i < bytes; i++) {
-    hex += Math.floor(Math.random() * 256)
-      .toString(16)
-      .padStart(2, '0');
-  }
-  return hex;
+  throw new Error(
+    'Secure random number generation (crypto.getRandomValues) is not available in this environment.',
+  );
 }
 
 /**

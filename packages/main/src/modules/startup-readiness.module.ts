@@ -1,6 +1,7 @@
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import type { StartupGateSnapshot, StartupMainReadyPayload } from '@app/shared/types/startup';
 import type { AppModule } from '../AppModule';
+import { handleTraced } from '../telemetry/ipc-tracer';
 import { broadcast } from './window/window-registry';
 
 /**
@@ -15,8 +16,6 @@ import { broadcast } from './window/window-registry';
  * 是 v2 最小埋点集的主进程侧数据；不建上报通道（D6）。
  * 严禁在本模块 enable() 中新增同步耗时（spec §6.4 显示零阻塞）。
  */
-
-import { handleTraced } from '../telemetry/ipc-tracer';
 
 // 私有常量
 let snapshot: StartupGateSnapshot = { mainReady: false, payload: null };

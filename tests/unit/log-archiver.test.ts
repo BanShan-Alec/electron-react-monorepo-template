@@ -140,15 +140,22 @@ describe('Log Archiver', () => {
       expect(fs.readFileSync(path.join(tempDir, files[0]), 'utf-8')).toBe('log line 1\nlog line 2');
     });
 
-    it('should prune older archives when multiple rotations exceed quota', () => {
+    it('should prune older archives when multiple rotations exceed quota', async () => {
       const activeFile = path.join(tempDir, 'main.log');
-      const archiveFn = createCustomArchiveLogFn({ maxDays: 7, maxFilesPerCategory: 3 });
+      const archiveFn = createCustomArchiveLogFn({
+        maxDays: 7,
+        maxFilesPerCategory: 3,
+        asyncCleanup: true,
+      });
 
       // Rotate 5 times
       for (let i = 1; i <= 5; i++) {
         fs.writeFileSync(activeFile, `content version ${i}`);
         archiveFn({ toString: () => activeFile });
       }
+
+      // 等待 setImmediate 异步清理执行完毕
+      await new Promise((resolve) => setImmediate(resolve));
 
       const files = fs.readdirSync(tempDir);
       // Only 3 files should be retained

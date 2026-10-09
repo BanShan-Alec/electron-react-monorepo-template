@@ -25,22 +25,24 @@ export class LogManager implements AppModule {
 
   private readonly injectTraceHook = (message: LogMessage): LogMessage => {
     const ctx = getTracer().getActiveContext();
-    if (ctx && message.data && message.data.length > 0) {
-      const traceTag = `[trace_id:${ctx.traceId} span_id:${ctx.spanId}]`;
-      if (typeof message.data[0] === 'string') {
-        if (!message.data[0].includes('[trace_id:')) {
-          message.data[0] = `${traceTag} ${message.data[0]}`;
-        }
-      } else {
-        message.data.unshift(traceTag);
-      }
+    if (!ctx || !message.data || message.data.length === 0) {
+      return message;
     }
-    return message;
+    const traceTag = `[trace_id:${ctx.traceId} span_id:${ctx.spanId}]`;
+    const data = [...message.data];
+    if (typeof data[0] === 'string') {
+      if (!data[0].includes('[trace_id:')) {
+        data[0] = `${traceTag} ${data[0]}`;
+      }
+    } else {
+      data.unshift(traceTag);
+    }
+    return { ...message, data };
   };
 
   constructor() {
     this.setupLoggers();
-    (globalThis as unknown as { __logManager?: LogManager }).__logManager = this;
+    (globalThis as unknown as { __appLogManager?: LogManager }).__appLogManager = this;
   }
 
   public getWindowLogger(windowName = 'home'): ReturnType<typeof log.create> {
@@ -55,6 +57,11 @@ export class LogManager implements AppModule {
       this.windowLoggers.set(windowName, winLogger);
     }
     return winLogger;
+  }
+
+  public removeWindowLogger(windowName: string): void {
+    if (windowName === 'home') return;
+    this.windowLoggers.delete(windowName);
   }
 
   public get rendererLogger(): ReturnType<typeof log.create> {

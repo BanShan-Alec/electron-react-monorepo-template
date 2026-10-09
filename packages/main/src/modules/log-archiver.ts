@@ -36,10 +36,17 @@ export function getAvailableArchivePath(
   const ts = formatArchiveTimestamp(date);
   let targetPath = path.join(dir, `${base}-${ts}${ext}`);
   let counter = 1;
+  const maxAttempts = 100;
 
-  while (fs.existsSync(targetPath)) {
+  while (fs.existsSync(targetPath) && counter <= maxAttempts) {
     targetPath = path.join(dir, `${base}-${ts}_${counter}${ext}`);
     counter++;
+  }
+
+  // 极端后备防死锁：若 100 次仍冲突，加入随机后缀确保立即生成唯一路径
+  if (fs.existsSync(targetPath)) {
+    const randomSuffix = Math.random().toString(36).slice(2, 6);
+    targetPath = path.join(dir, `${base}-${ts}_${randomSuffix}${ext}`);
   }
 
   return targetPath;
@@ -61,6 +68,8 @@ export function cleanArchivedLogs(logsDir: string, options: CleanArchivedLogsOpt
 
     // 匹配: base-YYYY-MM-DD_HH-mm-ss(_\d+)?.ext
     const archivePattern = /^(.+)-(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}(?:_\d+)?)\.(log|ndjson)$/;
+    // 精确匹配遗留 .old 格式文件（如 main.old.log, traces.old.ndjson 或 xxx.old）
+    const legacyOldPattern = /(?:^|\.)old(?:\.(?:log|ndjson))?$/i;
 
     // 按 base 分组归档文件
     const groups = new Map<string, Array<{ name: string; fullPath: string; mtime: number }>>();
@@ -79,7 +88,7 @@ export function cleanArchivedLogs(logsDir: string, options: CleanArchivedLogsOpt
       }
 
       // 1. 处理遗留的 .old 格式历史文件
-      if (fileName.includes('.old')) {
+      if (legacyOldPattern.test(fileName)) {
         legacyOldFiles.push({ name: fileName, fullPath, mtime: stat.mtimeMs });
         continue;
       }
@@ -136,15 +145,21 @@ export function cleanArchivedLogs(logsDir: string, options: CleanArchivedLogsOpt
   }
 }
 
+export interface CustomArchiveLogOptions {
+  maxDays?: number;
+  maxFilesPerCategory?: number;
+  asyncCleanup?: boolean;
+}
+
 /**
  * 自定义 electron-log archiveLogFn 实现
  */
-export function createCustomArchiveLogFn(options?: {
-  maxDays?: number;
-  maxFilesPerCategory?: number;
-}): (file: { toString: () => string; crop?: (bytes: number) => void }) => void {
+export function createCustomArchiveLogFn(
+  options?: CustomArchiveLogOptions,
+): (file: { toString: () => string; crop?: (bytes: number) => void }) => void {
   const maxDays = options?.maxDays ?? 7;
   const maxFiles = options?.maxFilesPerCategory ?? 5;
+  const asyncCleanup = options?.asyncCleanup ?? true;
 
   return (file) => {
     const oldPath = file.toString();
@@ -170,12 +185,19 @@ export function createCustomArchiveLogFn(options?: {
     }
 
     if (renamed) {
-      // 轮转成功后，即时触发当前分类的超额与过期淘汰
-      cleanArchivedLogs(parsed.dir, {
-        targetBaseName: parsed.name,
-        maxDays,
-        maxFilesPerCategory: maxFiles,
-      });
+      const runCleanup = () => {
+        cleanArchivedLogs(parsed.dir, {
+          targetBaseName: parsed.name,
+          maxDays,
+          maxFilesPerCategory: maxFiles,
+        });
+      };
+
+      if (asyncCleanup) {
+        setImmediate(runCleanup);
+      } else {
+        runCleanup();
+      }
     }
   };
 }

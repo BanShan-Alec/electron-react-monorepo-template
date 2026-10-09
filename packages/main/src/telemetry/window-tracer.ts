@@ -1,6 +1,13 @@
 import type { BrowserWindow } from 'electron';
 import { getTracer } from './tracer';
 
+export const WINDOW_TELEMETRY_EVENTS = {
+  CREATED: 'window.created',
+  DOM_READY: 'window.dom_ready',
+  READY_TO_SHOW: 'window.ready_to_show',
+  CLOSED: 'window.closed',
+} as const;
+
 /**
  * 监听并记录 BrowserWindow 生命周期 Span 与关键事件 (Spec §4.4)
  * 采用双跨度策略：
@@ -18,7 +25,7 @@ export function trackWindowLifecycle(name: string, win: BrowserWindow): void {
       'window.id': winId,
     },
   });
-  lifecycleSpan.addEvent('window.created');
+  lifecycleSpan.addEvent(WINDOW_TELEMETRY_EVENTS.CREATED);
 
   // 2. 窗口启动就绪阶段 Span
   const initSpan = tracer.startManualSpan('window.initialization', {
@@ -27,22 +34,22 @@ export function trackWindowLifecycle(name: string, win: BrowserWindow): void {
       'window.id': winId,
     },
   });
-  initSpan.addEvent('window.created');
+  initSpan.addEvent(WINDOW_TELEMETRY_EVENTS.CREATED);
 
   let initEnded = false;
 
   const onDomReady = () => {
-    lifecycleSpan.addEvent('window.dom_ready');
+    lifecycleSpan.addEvent(WINDOW_TELEMETRY_EVENTS.DOM_READY);
     if (!initEnded) {
-      initSpan.addEvent('window.dom_ready');
+      initSpan.addEvent(WINDOW_TELEMETRY_EVENTS.DOM_READY);
     }
   };
 
   const onReadyToShow = () => {
-    lifecycleSpan.addEvent('window.ready_to_show');
+    lifecycleSpan.addEvent(WINDOW_TELEMETRY_EVENTS.READY_TO_SHOW);
     if (!initEnded) {
       initEnded = true;
-      initSpan.addEvent('window.ready_to_show');
+      initSpan.addEvent(WINDOW_TELEMETRY_EVENTS.READY_TO_SHOW);
       initSpan.end('OK');
     }
   };
@@ -52,7 +59,7 @@ export function trackWindowLifecycle(name: string, win: BrowserWindow): void {
       initEnded = true;
       initSpan.end('OK');
     }
-    lifecycleSpan.addEvent('window.closed');
+    lifecycleSpan.addEvent(WINDOW_TELEMETRY_EVENTS.CLOSED);
     lifecycleSpan.end('OK');
 
     // 及时移除监听器，杜绝内存泄漏

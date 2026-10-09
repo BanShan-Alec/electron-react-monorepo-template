@@ -8,6 +8,7 @@ import { getTracer } from './tracer';
 export type TracedHandler<T = unknown, R = unknown> = (
   event: IpcMainInvokeEvent,
   data: T,
+  windowName?: string,
 ) => Promise<R> | R;
 
 /**
@@ -61,32 +62,27 @@ export function handleTraced<T = unknown, R = unknown>(
       async (span) => {
         const winTag = windowName ? `[${windowName}] ` : windowId ? `[win#${windowId}] ` : '';
         getLogManager().scoped('IPC').info(`${winTag}Handling ${channel}`);
-        try {
-          const result = await handler(event, data);
-          // 若业务返回了 Result 结构体，可辅助记录业务结果状态
-          if (
-            result &&
-            typeof result === 'object' &&
-            'success' in result &&
-            typeof (result as { success: unknown }).success === 'boolean'
-          ) {
-            const res = result as { success: boolean; error?: string; code?: string };
-            span.setAttributes({
-              'app.result_success': res.success,
-              ...(res.code ? { 'app.result_code': res.code } : {}),
+        const result = await handler(event, data, windowName);
+        // 若业务返回了 Result 结构体，可辅助记录业务结果状态
+        if (
+          result &&
+          typeof result === 'object' &&
+          'success' in result &&
+          typeof (result as { success: unknown }).success === 'boolean'
+        ) {
+          const res = result as { success: boolean; error?: string; code?: string };
+          span.setAttributes({
+            'app.result_success': res.success,
+            ...(res.code ? { 'app.result_code': res.code } : {}),
+          });
+          if (!res.success && res.error) {
+            span.addEvent('business_error', {
+              'error.message': res.error,
+              ...(res.code ? { 'error.code': res.code } : {}),
             });
-            if (!res.success && res.error) {
-              span.addEvent('business_error', {
-                'error.message': res.error,
-                ...(res.code ? { 'error.code': res.code } : {}),
-              });
-            }
           }
-          return result;
-        } catch (err) {
-          span.recordException(err);
-          throw err;
         }
+        return result;
       },
     );
   });
