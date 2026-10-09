@@ -1,14 +1,10 @@
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { sentryVitePlugin } from '@sentry/vite-plugin';
-import { defineConfig } from 'vite';
-import { getSentryBuildConfig } from '../../build/sentry-config.ts';
+const { sentryVitePlugin } = require('@sentry/vite-plugin');
+const { defineConfig } = require('vite');
+const { getSentryBuildConfig } = require('../../build/sentry-config.ts');
 
-const currentDir =
-  typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
-const sentryConfig = getSentryBuildConfig(currentDir);
+const sentryConfig = getSentryBuildConfig(__dirname);
 
-export default defineConfig({
+module.exports = defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(sentryConfig.appVersion),
     __SENTRY_DSN__: JSON.stringify(sentryConfig.sentryDsn),

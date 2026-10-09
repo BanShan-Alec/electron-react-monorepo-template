@@ -1,8 +1,14 @@
-import { type ChildProcess, spawn } from 'node:child_process';
-import path from 'node:path';
-import electronPath from 'electron';
-import { build, createServer, type Plugin, type ViteDevServer } from 'vite';
-import { ensurePortsAvailable, killProcessTree } from './port-guard.ts';
+const { spawn } = require('node:child_process');
+
+import type { ChildProcess } from 'node:child_process';
+
+const path = require('node:path');
+const electronPath = require('electron');
+const { build, createServer } = require('vite');
+
+import type { Plugin, ViteDevServer } from 'vite';
+
+const { ensurePortsAvailable, killProcessTree } = require('./port-guard.ts');
 
 /**
  * 默认配置。
@@ -96,7 +102,7 @@ function createElectronLauncherPlugin(): Plugin {
       electronApp = spawn(String(electronPath), [...args, '.'], { stdio: 'inherit' });
 
       /** Stops the watch script when the application has been quit */
-      electronApp.addListener('exit', process.exit);
+      electronApp?.addListener('exit', process.exit);
     },
   };
 }

@@ -1,8 +1,7 @@
-import { existsSync, readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+const { existsSync, readFileSync } = require('node:fs');
+const path = require('node:path');
 
-export interface SentryBuildConfig {
+interface SentryBuildConfig {
   rootDir: string;
   appName: string;
   appVersion: string;
@@ -15,23 +14,10 @@ export interface SentryBuildConfig {
 
 /**
  * 统一解析根目录 package.json 与 .env 中的 Sentry 构建期配置
- * 避免各 workspace 的 vite.config.ts 重复实现与硬编码
+ * 纯 CommonJS 实现，消除 ESM/CJS 兼容垫片与运行时冗余
  */
-export function getSentryBuildConfig(fromDir?: string): SentryBuildConfig {
-  let rootDir = '';
-  if (fromDir) {
-    rootDir = path.resolve(fromDir, '../../');
-  } else {
-    // 自动兜底：当前 sentry-config.ts 位于 <rootDir>/build/ 目录
-    try {
-      const currentFile =
-        typeof __filename !== 'undefined' ? __filename : fileURLToPath(import.meta.url);
-      rootDir = path.resolve(path.dirname(currentFile), '..');
-    } catch {
-      rootDir = process.cwd();
-    }
-  }
-
+function getSentryBuildConfig(fromDir?: string): SentryBuildConfig {
+  const rootDir = fromDir ? path.resolve(fromDir, '../../') : path.resolve(__dirname, '..');
   const rootPkg = JSON.parse(readFileSync(path.join(rootDir, 'package.json'), 'utf-8'));
   const appName: string = rootPkg.name || 'electron-react-monorepo-template';
   const appVersion: string = rootPkg.version || '1.0.0';
@@ -58,3 +44,5 @@ export function getSentryBuildConfig(fromDir?: string): SentryBuildConfig {
     sentryAuthToken: process.env.SENTRY_AUTH_TOKEN || '',
   };
 }
+
+module.exports = { getSentryBuildConfig };

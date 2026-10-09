@@ -8,9 +8,9 @@
  *
  * 前置:gh cli 已安装且完成一次性 `gh auth login` 认证(CICD.md「本地环境」)。
  */
-import { spawnSync } from 'node:child_process';
-import fs from 'node:fs';
-import path from 'node:path';
+const { spawnSync } = require('node:child_process');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const MAIN_BRANCH = 'main';
 const PR_TEMPLATE = path.resolve('.github', 'PULL_REQUEST_TEMPLATE.md');
