@@ -52,38 +52,46 @@ flowchart TD
 
 ## 🤖 3. 与 AI Agent 协同修复的最佳实践
 
-推荐采用**“网页快速决策 ➔ 本地 AI Agent 驱动修复 ➔ 指令闭环”**的高效链路（适用于 Claude Code、Cursor、Windsurf、Antigravity 等各类 Agent 工具）：
+为彻底消除 GitHub PR 讨论区被 Low 级别评论刷屏的痛点，推荐采用**“本地一键拉取高优看板 ➔ 勾选/批注裁决 ➔ AI Agent 闭环修复”**的极简链路：
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Dev as 开发者
-    participant GH as GitHub PR 页面
+    participant Local as 本地终端
+    participant File as .temp/review-dashboard.md
     participant Agent as 本地 AI Agent
-    participant CI as OpenCodeReview CI
+    participant GH as GitHub (CI)
 
-    GH->>Dev: 查看置顶 Summary 看板与问题列表
-    Dev->>Agent: 对话指令："请帮我修复 PR #XX 的第 1、2 条建议"
-    Agent->>Agent: 本地阅读源码、修改代码并执行 pnpm test 自验
-    Agent->>Dev: 修复完成并规范提交
-    Dev->>GH: git push 推送修复分支
-    Dev->>GH: 在 PR 评论框发送 "/review"
-    GH->>CI: 触发增量 Review
-    CI->>GH: 自动 Resolve 刚才修复的评论，看板更新为通过！
+    Local->>GH: 运行 pnpm review:pull (下载并过滤最新 Review 产物)
+    Local->>File: 自动生成高优看板 (聚焦 High/Medium，Low 压缩为一句话)
+    Dev->>File: 打开 Markdown 快速打勾 [x] 并留下一两句批注
+    Dev->>Agent: 发送指令："根据 .temp/review-dashboard.md 修复勾选的 Issue"
+    Agent->>Agent: 本地读源码、执行修复并跑通本地测试
+    Agent->>Local: 修复完成并规范提交
+    Dev->>GH: git push 并在 PR 评论发送 "/review"
+    GH->>GH: 触发增量 Review，自动 Resolve 已修复的讨论！
 ```
 
 ### 协同步骤：
-1. **查看 PR 看板**：打开 PR 页面，浏览置顶的 `OpenCodeReview Summary` 表格。
-2. **快速裁决**：
-   - 需要修复的：记录问题描述或行号。
-   - 虚假报警或业务特殊设计的：无需理会或在 PR 回复说明。
+1. **本地一键拉取高优看板**：
+   ```bash
+   pnpm review:pull
+   ```
+   - 自动匹配当前分支的最新 CI Review 产物；
+   - 彻底屏蔽 Low 噪声（自动总结为 1 句话），仅将 High（高危）与 Medium（中危）条目提取为结构化待办；
+   - 输出至项目本地临时文件 [`.temp/review-dashboard.md`](.temp/review-dashboard.md)（已加入 `.gitignore`）。
+2. **快速裁决与批注**：
+   - 在编辑器中打开 `.temp/review-dashboard.md`；
+   - 对认可的缺陷勾选 `- [x] 采纳修复`；
+   - 如有特殊设计或思路，在 `人工批注 / 修改要求` 下写下一句指示。
 3. **委托 AI Agent 修复**：
-   - 直接在对话框向 AI Agent 下达指令：  
-     > “请参考 PR 看板的建议：修复 `packages/main/src/auth.ts` 中可能存在的空指针异常，并保持原有测试通过。”
-   - AI Agent 会自动定位源码、编写健壮性逻辑并运行本地门禁。
+   - 直接在对话框向 AI Agent 发送：  
+     > “请根据 `.temp/review-dashboard.md` 中勾选采纳的 Issue 进行修复，忽略未勾选与低优项，修改完成后运行本地测试。”
+   - AI Agent 会精确定位源码行号、遵循你的批注完成修复并跑通本地门禁。
 4. **一键闭环**：
-   - 推送代码到分支后，在 PR 评论回复一条 `/review`。
-   - 之前由该问题引起的行内评论将被 Bot **自动关闭**，PR 恢复整洁。
+   - 代码提交推送后，在 PR 评论回复一条 `/review`。
+   - 审查机器人将进行纯增量扫描，并自动将修复了的代码行对应的历史评论标记为 **Resolved**。
 
 ---
 

@@ -70,11 +70,12 @@ pnpm pr:merge --yes     # 等待 CI 门禁全绿后自动 squash 合并，并自
 
 | 命令 | 作用 | AI 权限级别 | 触发前提 |
 | :--- | :--- | :--- | :--- |
-| `pnpm lint` / `typecheck` | 本地质量自检 | ✅ **自主允许** | 随时自检 |
+| `pnpm lint` / `typecheck` / `test` | 本地质量与单测自检 | ✅ **自主允许** | 随时自检 |
 | `pnpm test:e2e` | 端到端自动化测试 | ✅ **自主允许** | 提交代码前必须验证 |
 | `git commit` | 规范提交代码 | ✅ **自主允许** | 需符合 commitlint 规范 |
 | `pnpm pr` | 推送分支并创建 PR | ✅ **自主允许** | 收到用户提 PR / 走 PR 流程意图 |
 | `pnpm pr:status` | 查看 PR 与门禁状态 | ✅ **自主允许** | 随时查询状态 |
+| `pnpm review:pull` | 本地拉取 AI Review 高优看板 | ✅ **自主允许** | 随时拉取最新审查结论 |
 | `pnpm pr:merge` | 合并 PR 到 main 分支 | ⛔ **严格受限** | **必须有用户显式下达的合并指令** |
 | `pnpm release:*` | 版本升级与打 tag | ⛔ **严格受限** | **必须有用户显式下达的发版指令** |
 
