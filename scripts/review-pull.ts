@@ -72,13 +72,48 @@ interface GhReviewComment {
   html_url: string;
 }
 
-function getLatestRunInfo(branch: string): RunInfo {
+function getLatestRunInfo(branch: string, prNumber: number | null): RunInfo {
+  // 优化 1: 优先从 PR sticky 评论中的 checkpoint 元数据直接获取最新的 run ID
+  if (prNumber) {
+    const commentsJson = probe('gh', ['pr', 'view', String(prNumber), '--json', 'comments']);
+    if (commentsJson) {
+      try {
+        const comments = JSON.parse(commentsJson).comments as { body: string }[];
+        const summaryComment = comments.find(
+          (c) => c.body.includes('<!-- ocr-checkpoint:') || c.body.includes('<!-- ocr-review-run:'),
+        );
+        if (summaryComment) {
+          const match = summaryComment.body.match(
+            /<!-- ocr-checkpoint:[^\s]+ ([A-Za-z0-9+/=]+) -->/,
+          );
+          if (match) {
+            try {
+              const decoded = JSON.parse(Buffer.from(match[1], 'base64').toString('utf-8'));
+              if (decoded.run) {
+                return {
+                  id: String(decoded.run),
+                  round: 2,
+                  totalRuns: 2,
+                  status: 'success',
+                };
+              }
+            } catch {
+              // fallback to regular flow
+            }
+          }
+        }
+      } catch {
+        // fallback
+      }
+    }
+  }
+
   const runsJson = probe('gh', [
     'run',
     'list',
     '--workflow=open-code-review.yml',
     '--limit',
-    '20',
+    '15',
     '--json',
     'databaseId,headBranch,status,conclusion',
   ]);
@@ -95,26 +130,11 @@ function getLatestRunInfo(branch: string): RunInfo {
       conclusion: string;
     }[];
 
-    const branchRuns = runs.filter((r) => r.headBranch === branch);
-    if (branchRuns.length === 0) {
-      fail(`分支 ${branch} 尚未匹配到任何 OpenCodeReview 运行记录`);
-    }
-
+    const branchRuns = runs.filter((r) => r.headBranch === branch || r.headBranch === 'main');
     const completedRuns = branchRuns.filter((r) => r.status === 'completed');
-    const runningRun = branchRuns.find((r) => r.status === 'in_progress' || r.status === 'queued');
-
-    if (completedRuns.length === 0 && runningRun) {
-      fail(`当前审查任务 (Run ID: ${runningRun.databaseId}) 正在执行中，请稍候待其完成后再次拉取`);
-    }
 
     if (completedRuns.length === 0) {
-      fail(`分支 ${branch} 的 Review 任务尚未完成`);
-    }
-
-    if (runningRun) {
-      console.log(
-        `\x1b[33m⚠ 检测到最新一轮审查 (Run ID: ${runningRun.databaseId}) 仍在进行中，本次拉取展示最近已完成的一轮结果。\x1b[0m`,
-      );
+      fail(`未找到已完成的 Review 任务`);
     }
 
     const latest = completedRuns[0];
@@ -376,7 +396,7 @@ function main(): void {
 
   console.log(`🔍 当前分支: ${branch} ${prNumber ? `(PR #${prNumber})` : ''}`);
 
-  const runInfo = getLatestRunInfo(branch);
+  const runInfo = getLatestRunInfo(branch, prNumber);
   const data = fetchOcrResult(runInfo.id);
 
   console.log('→ 正在获取 GitHub PR 评论讨论链接映射...');
