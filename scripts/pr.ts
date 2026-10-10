@@ -264,6 +264,37 @@ function statusPr(): void {
   run('gh', ['pr', 'status']);
 }
 
+function reviewPr(): void {
+  requireGh();
+  const currentBranch = probe('git', ['branch', '--show-current']);
+  if (!currentBranch || currentBranch === MAIN_BRANCH) {
+    fail(`无法对 ${currentBranch || '当前'} 分支触发 Review:请切换到具体的特性分支`);
+  }
+  const prJson = probe('gh', ['pr', 'view', currentBranch, '--json', 'number,title,url']);
+  if (!prJson) {
+    fail(`分支 ${currentBranch} 尚未开启 PR:请先运行 pnpm pr`);
+  }
+  let prNum = '';
+  let prTitle = '';
+  let prUrl = '';
+  try {
+    const parsed = JSON.parse(prJson);
+    prNum = parsed.number ? String(parsed.number) : '';
+    prTitle = parsed.title || '';
+    prUrl = parsed.url || '';
+  } catch {
+    // ignore
+  }
+
+  console.log(`→ 正在为 PR #${prNum} (${prTitle || currentBranch}) 触发 OpenCodeReview 审查…`);
+  run('gh', ['pr', 'comment', prNum || currentBranch, '--body', '/review']);
+  console.log(`✓ 审查请求已成功发送！`);
+  console.log(`  PR 链接: ${prUrl}`);
+  console.log(
+    `  提示: GitHub Actions 已在后台启动审查工作流，约 2~3 分钟后可执行 pnpm review:pull 拉取看板。`,
+  );
+}
+
 const command = process.argv[2];
 switch (command) {
   case 'create':
@@ -275,6 +306,11 @@ switch (command) {
   case 'status':
     statusPr();
     break;
+  case 'review':
+    reviewPr();
+    break;
   default:
-    fail('用法:node scripts/pr.ts <create|merge|status>(对应 pnpm pr / pr:merge / pr:status)');
+    fail(
+      '用法:node scripts/pr.ts <create|merge|status|review>(对应 pnpm pr / pr:merge / pr:status / review:trigger)',
+    );
 }

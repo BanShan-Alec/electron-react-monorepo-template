@@ -44,7 +44,8 @@ flowchart TD
 | :--- | :--- | :--- |
 | **新建 PR / Reopen** | ⚡ **自动触发** | PR 创建或从 Draft 转为 Ready 时自动启动首轮全面检查 |
 | **后续提交代码 (Push)** | ⏸️ **静默不触发** | 允许开发者多次 commit 与 push，避免 CI 反复排队和 Token 浪费 |
-| **手动请求复查** | 💬 **PR 评论 `/review` 或 `/ocr`** | 增量审查新增的 commit，刷新置顶看板，并自动 resolve 已修复的问题 |
+| **手动请求复查 (CLI 一键)** | ⌨️ **本地命令 `pnpm review:trigger`** | 自动识别当前分支的 PR 并发送 `/review` 评论，免去切换浏览器 |
+| **手动请求复查 (网页端)** | 💬 **PR 评论 `/review` 或 `/ocr`** | 增量审查新增的 commit，刷新置顶看板，并自动 resolve 已修复的问题 |
 
 > 💡 **小贴士**：如果进行了大面积文件重构，希望跳过 checkpoint 执行从头到尾的全量扫描，可在工作流手动调度中传入 `full_review: true`。
 

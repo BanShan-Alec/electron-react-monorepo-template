@@ -31,6 +31,7 @@
     "pr": "node scripts/pr.ts create",
     "pr:merge": "node scripts/pr.ts merge",
     "pr:status": "node scripts/pr.ts status",
+    "review:trigger": "node scripts/pr.ts review",
     "review:pull": "node scripts/review-pull.ts",
     "i18n:extract": "pnpm --filter @app/renderer exec lingui extract --clean",
     "test": "vitest run -c .config/vitest.config.mts",
