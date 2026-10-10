@@ -16,7 +16,7 @@ out/
 .eslintcache
 .biome/
 .ocr-temp/
-.temp/
+.github/pr-review-tmp/
 
 # Environment & Local Configuration
 .env

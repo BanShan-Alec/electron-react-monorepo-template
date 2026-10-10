@@ -59,14 +59,14 @@ sequenceDiagram
     autonumber
     actor Dev as 开发者
     participant Local as 本地终端
-    participant File as .temp/review-dashboard.md
+    participant File as .github/pr-review-tmp/pr-XX-review.md
     participant Agent as 本地 AI Agent
     participant GH as GitHub (CI)
 
     Local->>GH: 运行 pnpm review:pull (下载并过滤最新 Review 产物)
     Local->>File: 自动生成高优看板 (聚焦 High/Medium，Low 压缩为一句话)
     Dev->>File: 打开 Markdown 快速打勾 [x] 并留下一两句批注
-    Dev->>Agent: 发送指令："根据 .temp/review-dashboard.md 修复勾选的 Issue"
+    Dev->>Agent: 发送指令："根据 .github/pr-review-tmp/pr-XX-review.md 修复勾选的 Issue"
     Agent->>Agent: 本地读源码、执行修复并跑通本地测试
     Agent->>Local: 修复完成并规范提交
     Dev->>GH: git push 并在 PR 评论发送 "/review"
@@ -79,15 +79,15 @@ sequenceDiagram
    pnpm review:pull
    ```
    - 自动匹配当前分支的最新 CI Review 产物；
-   - 彻底屏蔽 Low 噪声（自动总结为 1 句话），仅将 High（高危）与 Medium（中危）条目提取为结构化待办；
-   - 输出至项目本地临时文件 [`.temp/review-dashboard.md`](.temp/review-dashboard.md)（已加入 `.gitignore`）。
+   - 依据当前 PR 编号动态命名产物为 `.github/pr-review-tmp/pr-<PR编号>-review.md`（已加入 `.gitignore`）；
+   - 高中危默认勾选采纳，低优建议完整保留但默认忽略（支持手动勾选），且全面内嵌 GitHub 讨论直达链接。
 2. **快速裁决与批注**：
-   - 在编辑器中打开 `.temp/review-dashboard.md`；
-   - 对认可的缺陷勾选 `- [x] 采纳修复`；
+   - 在编辑器中打开 `.github/pr-review-tmp/pr-<PR编号>-review.md`；
+   - 对认可的缺陷保持默认勾选，若需忽略请取消勾选并批注；
    - 如有特殊设计或思路，在 `人工批注 / 修改要求` 下写下一句指示。
 3. **委托 AI Agent 修复**：
    - 直接在对话框向 AI Agent 发送：  
-     > “请根据 `.temp/review-dashboard.md` 中勾选采纳的 Issue 进行修复，忽略未勾选与低优项，修改完成后运行本地测试。”
+     > “请根据 `.github/pr-review-tmp/pr-<PR编号>-review.md` 中标记的 Issue 进行修复，修改完成后运行本地测试。”
    - AI Agent 会精确定位源码行号、遵循你的批注完成修复并跑通本地门禁。
 4. **一键闭环**：
    - 代码提交推送后，在 PR 评论回复一条 `/review`。

@@ -3,7 +3,7 @@
  *
  * 核心功能：
  * 1. 自动定位当前分支对应的 PR 与最新已完成的 OpenCodeReview CI 运行记录；
- * 2. 依据 PR 编号动态命名产物：.temp/pr-<PR编号>-review.md；
+ * 2. 依据 PR 编号动态命名产物：.github/pr-review-tmp/pr-<PR编号>-review.md；
  * 3. 智能识别二次/多次 Review 轮次：覆盖更新最新审查状态，并在头部明确标注复查轮次与增量结论；
  * 4. 处置规则：
  *    - 🔴 高危 & 🟡 中危：默认全部勾选采纳修复（- [x]），除非开发者批注忽略；
@@ -17,8 +17,8 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const TEMP_DIR = path.resolve('.temp');
-const ARTIFACT_CACHE_DIR = path.join(TEMP_DIR, 'ocr-cache');
+const REVIEW_TMP_DIR = path.resolve('.github', 'pr-review-tmp');
+const ARTIFACT_CACHE_DIR = path.join(REVIEW_TMP_DIR, 'ocr-cache');
 
 function fail(message: string): never {
   console.error(`\x1b[31m✗ ${message}\x1b[0m`);
@@ -207,7 +207,7 @@ function getOutputFilePath(branch: string, prNumber: number | null): string {
   const filename = prNumber
     ? `pr-${prNumber}-review.md`
     : `branch-${branch.replace(/[/\\:]/g, '-')}-review.md`;
-  return path.join(TEMP_DIR, filename);
+  return path.join(REVIEW_TMP_DIR, filename);
 }
 
 function formatDashboard(
@@ -349,7 +349,7 @@ function formatDashboard(
   lines.push('在当前项目与 AI Agent 对话时，直接发送以下指令即可启动精准修复：');
   lines.push('```text');
   lines.push(
-    `请根据 .temp/${targetFilename} 执行代码修复：\n` +
+    `请根据 .github/pr-review-tmp/${targetFilename} 执行代码修复：\n` +
       `1. 对【高危】和【中度】区域标记为 [x] 的项默认全部执行修复，若有勾选忽略或留有人工批注则遵照批注处置；\n` +
       `2. 对【低优】区域默认全部忽略，仅修复被手动勾选 [x] 的项；\n` +
       `3. 修复完成后运行本地测试（pnpm test 与 pnpm test:e2e）验证通过。`,
@@ -382,8 +382,8 @@ function main(): void {
   console.log('→ 正在获取 GitHub PR 评论讨论链接映射...');
   const commentMap = fetchPrComments(ownerRepo, prNumber);
 
-  if (!fs.existsSync(TEMP_DIR)) {
-    fs.mkdirSync(TEMP_DIR, { recursive: true });
+  if (!fs.existsSync(REVIEW_TMP_DIR)) {
+    fs.mkdirSync(REVIEW_TMP_DIR, { recursive: true });
   }
 
   const outputFile = getOutputFilePath(branch, prNumber);
