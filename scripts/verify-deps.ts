@@ -1,13 +1,13 @@
-const fs = require('node:fs');
-const { isBuiltin } = require('node:module');
-const { join } = require('node:path');
+import fs from 'node:fs';
+import { isBuiltin } from 'node:module';
+import { join } from 'node:path';
 
 interface VerificationResult {
   valid: boolean;
   errors: string[];
 }
 
-async function verifyDependencies(): Promise<VerificationResult> {
+export async function verifyDependencies(): Promise<VerificationResult> {
   const rootDir = process.cwd();
   const errors: string[] = [];
 
@@ -50,7 +50,8 @@ async function verifyDependencies(): Promise<VerificationResult> {
   // 解析 packages/main/vite.config.ts 中的 external
   let externalList: string[] = [];
   try {
-    const viteConfig = require('../packages/main/vite.config.ts');
+    const viteConfigMod = await import('../packages/main/vite.config.ts');
+    const viteConfig = viteConfigMod.default || viteConfigMod;
     const rolldownExternal =
       viteConfig?.build?.rolldownOptions?.external ||
       viteConfig?.build?.rollupOptions?.external ||
@@ -59,7 +60,7 @@ async function verifyDependencies(): Promise<VerificationResult> {
     const rawExternal = Array.isArray(rolldownExternal) ? rolldownExternal : [rolldownExternal];
     externalList = rawExternal.filter((item): item is string => typeof item === 'string');
   } catch (err) {
-    console.warn('  ⚠️ 加载 packages/main/vite.config.ts 失败，降级为静态正则解析', err);
+    console.warn('  ⚠️ 动态加载 packages/main/vite.config.ts 失败，降级为静态正则解析', err);
     const viteConfigText = fs.readFileSync(join(rootDir, 'packages/main/vite.config.ts'), 'utf8');
     const match = viteConfigText.match(/external:\s*\[([\s\S]*?)\]/);
     if (match) {
@@ -113,10 +114,11 @@ async function verifyDependencies(): Promise<VerificationResult> {
   return { valid, errors };
 }
 
-module.exports = { verifyDependencies };
-
 // CLI 直启入口
-if (require.main === module) {
+if (
+  import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}` ||
+  process.argv[1]?.endsWith('verify-deps.ts')
+) {
   verifyDependencies()
     .then(({ valid }) => {
       if (!valid) {

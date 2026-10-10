@@ -5,7 +5,7 @@ import { formatDashboard } from '../core/dashboard.ts';
 import { findLatestReviewFile, parseExistingDashboard } from '../core/diff.ts';
 import { fetchOcrResult, fetchPrComments, getLatestRunInfo } from '../core/ocr.ts';
 import { ensureGh, getCurrentBranch, getHeadSha, resolveOwnerRepo } from '../utils/git.ts';
-import { fail, safeParseJson } from '../utils/process.ts';
+import { fail, probe, safeParseJson } from '../utils/process.ts';
 
 // 产物收敛到 packages/pr-review/reviews 目录
 const PACK_ROOT = path.resolve(__dirname, '../..');
@@ -21,7 +21,6 @@ export function runPull(): void {
   const headSha = getHeadSha();
   const ownerRepo = resolveOwnerRepo();
 
-  const { probe } = require('../utils/process.ts');
   const prInfoRaw = probe('gh', ['pr', 'view', branch, '--json', 'number']);
   const prInfo = safeParseJson<{ number?: number }>(prInfoRaw);
   const prNumber: number | null = prInfo?.number ?? null;

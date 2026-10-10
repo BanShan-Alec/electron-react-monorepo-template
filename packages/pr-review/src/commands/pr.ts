@@ -1,5 +1,7 @@
+import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import readline from 'node:readline';
 import { ensureGhAuth, getCurrentBranch } from '../utils/git.ts';
 import { fail, probe, run, sleepSync } from '../utils/process.ts';
 
@@ -181,13 +183,11 @@ export function mergePr(): void {
   run('git', ['fetch', 'origin']);
 
   if (!process.argv.includes('--yes')) {
-    const readline = require('node:readline');
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const answer: string = require('node:child_process')
-      .execSync(`powershell -Command "Read-Host '确认将 ${branch} 合并入 ${MAIN_BRANCH}? (y/N)'"`, {
-        encoding: 'utf-8',
-      })
-      .trim();
+    const answer = execSync(
+      `powershell -Command "Read-Host '确认将 ${branch} 合并入 ${MAIN_BRANCH}? (y/N)'"`,
+      { encoding: 'utf-8' },
+    ).trim();
     rl.close();
     if (!/^y(es)?$/i.test(answer)) {
       console.log('已取消合并操作。');

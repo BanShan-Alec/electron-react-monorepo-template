@@ -1,6 +1,5 @@
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { lingui } from '@lingui/vite-plugin';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import react from '@vitejs/plugin-react';
@@ -14,8 +13,7 @@ import tailwindConfig from './tailwind.config.ts';
 const require = createRequire(import.meta.url);
 const { getSentryBuildConfig } = require('../../build/sentry-config.ts');
 
-const currentDir =
-  typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+const currentDir = import.meta.dirname;
 const sentryConfig = getSentryBuildConfig(currentDir);
 
 // https://vite.dev/config/

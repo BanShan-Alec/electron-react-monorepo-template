@@ -1,7 +1,7 @@
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-const { _electron: electron } = require('@playwright/test');
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { _electron as electron } from '@playwright/test';
 
 interface DistVerificationOptions {
   /**
@@ -179,10 +179,13 @@ async function verifyDist(options: DistVerificationOptions = {}): Promise<void> 
   console.log('🎉 [verify-dist] 打包产物直接运行验证全部通过！\n');
 }
 
-module.exports = { detectUnpackedArtifact, verifyDist };
+export { detectUnpackedArtifact, verifyDist };
 
 // 支持直接作为 CLI 执行
-if (require.main === module) {
+if (
+  import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}` ||
+  process.argv[1]?.endsWith('verify-dist.ts')
+) {
   verifyDist().catch((err) => {
     console.error('❌ [verify-dist] 校验失败:', err);
     process.exit(1);

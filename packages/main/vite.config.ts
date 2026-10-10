@@ -1,10 +1,13 @@
-const { sentryVitePlugin } = require('@sentry/vite-plugin');
-const { defineConfig } = require('vite');
+import { createRequire } from 'node:module';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
+import { defineConfig } from 'vite';
+
+const require = createRequire(import.meta.url);
 const { getSentryBuildConfig } = require('../../build/sentry-config.ts');
 
 const sentryConfig = getSentryBuildConfig(__dirname);
 
-module.exports = defineConfig({
+export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(sentryConfig.appVersion),
     __SENTRY_DSN__: JSON.stringify(sentryConfig.sentryDsn),
