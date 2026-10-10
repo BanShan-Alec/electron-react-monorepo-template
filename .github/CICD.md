@@ -85,4 +85,4 @@ GitHub Actions 流水线（`.github/workflows/ci.yml`）：
 - **`typecheck`**（**Required**）：TypeScript 全局类型检查。
 - **`lint`**（**Required**）：Biome 格式与规则扫描。
 - **`e2e`**（**Required**）：Playwright + Electron 完整回归测试。
-- *CodeQL* 与 *OpenCodeReview*（信息性）：安全漏洞与 AI 代码审查，仅供参考，不阻塞合入。
+- *CodeQL* 与 *OpenCodeReview*（信息性）：安全漏洞与 AI 增量代码审查。新开 PR 自动审查；后续提交可在 PR 评论回复 `/review` 手动触发增量复查，不阻塞合入。
