@@ -6,6 +6,7 @@ import type { AppModule } from '../../AppModule';
 import { appLifecycle } from '../../lifecycle';
 import type { ModuleContext } from '../../ModuleContext';
 import { updaterService } from '../../services/updater.service';
+import { getAppConfigStore } from '../config.module';
 import { getLogManager } from '../log.module';
 import { forgetWindow, getWindow, registerWindow, sendToWindow } from './window-registry';
 
@@ -83,15 +84,22 @@ export class UpdaterWindowModule implements AppModule {
       );
     });
 
-    // 拦截关闭事件为隐藏窗口，保留更新与下载事务上下文；若主窗口已销毁则退出应用
+    // 拦截关闭事件为隐藏窗口，保留更新与下载事务上下文；若无主窗口且无托盘常驻则退出应用
     browserWindow.on('close', (event) => {
+      const configStore = getAppConfigStore();
+      const shouldMinimizeToTray = configStore.get('minimizeToTray');
       const homeWin = getWindow(WINDOW_IDS.HOME);
-      if (!appLifecycle.isQuitting && homeWin && !homeWin.isDestroyed()) {
+      if (
+        !appLifecycle.isQuitting &&
+        (shouldMinimizeToTray || (homeWin && !homeWin.isDestroyed()))
+      ) {
         event.preventDefault();
         browserWindow.hide();
         this.logger.info('Updater window close event intercepted -> hidden');
       } else if (!appLifecycle.isQuitting) {
-        this.logger.info('Home window does not exist, closing updater window will quit app');
+        this.logger.info(
+          'Home window does not exist and tray disabled, closing updater will quit app',
+        );
         app.quit();
       } else {
         this.logger.info('Updater window is closing for quit');
