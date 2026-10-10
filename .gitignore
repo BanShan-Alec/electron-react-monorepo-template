@@ -15,6 +15,7 @@ out/
 *.tsbuildinfo
 .eslintcache
 .biome/
+.ocr-temp/
 
 # Environment & Local Configuration
 .env
