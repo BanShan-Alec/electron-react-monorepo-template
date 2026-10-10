@@ -1,6 +1,6 @@
 # AI 代码审查 (OpenCodeReview) 作业指南
 
-> 本文档规范了本仓库在 Pull Request (PR) 流程中集成 **OpenCodeReview (OCR)** 的运作机制、触发方式、噪声治理策略以及与 AI Agent (agy) 协同修复的最佳实践。
+> 本文档规范了本仓库在 Pull Request (PR) 流程中集成 **OpenCodeReview (OCR)** 的运作机制、触发方式、噪声治理策略以及与各类 AI 编程 Agent 协同修复的最佳实践。
 
 ---
 
@@ -50,22 +50,22 @@ flowchart TD
 
 ---
 
-## 🤖 3. 与 agy 协同修复的最佳实践
+## 🤖 3. 与 AI Agent 协同修复的最佳实践
 
-推荐采用**“网页快速决策 ➔ 本地 agy 驱动修复 ➔ 指令闭环”**的高效链路：
+推荐采用**“网页快速决策 ➔ 本地 AI Agent 驱动修复 ➔ 指令闭环”**的高效链路（适用于 Claude Code、Cursor、Windsurf、Antigravity 等各类 Agent 工具）：
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Dev as 开发者
     participant GH as GitHub PR 页面
-    participant AGY as 本地 agy (Antigravity)
+    participant Agent as 本地 AI Agent
     participant CI as OpenCodeReview CI
 
     GH->>Dev: 查看置顶 Summary 看板与问题列表
-    Dev->>AGY: 对话指令："请帮我修复 PR #XX 的第 1、2 条建议"
-    AGY->>AGY: 本地阅读源码、修改代码并执行 pnpm test 自验
-    AGY->>Dev: 修复完成并规范提交
+    Dev->>Agent: 对话指令："请帮我修复 PR #XX 的第 1、2 条建议"
+    Agent->>Agent: 本地阅读源码、修改代码并执行 pnpm test 自验
+    Agent->>Dev: 修复完成并规范提交
     Dev->>GH: git push 推送修复分支
     Dev->>GH: 在 PR 评论框发送 "/review"
     GH->>CI: 触发增量 Review
@@ -77,10 +77,10 @@ sequenceDiagram
 2. **快速裁决**：
    - 需要修复的：记录问题描述或行号。
    - 虚假报警或业务特殊设计的：无需理会或在 PR 回复说明。
-3. **委托 agy 修复**：
-   - 直接在对话框告诉 agy：  
+3. **委托 AI Agent 修复**：
+   - 直接在对话框向 AI Agent 下达指令：  
      > “请参考 PR 看板的建议：修复 `packages/main/src/auth.ts` 中可能存在的空指针异常，并保持原有测试通过。”
-   - agy 会自动定位源码、编写健壮性逻辑并运行本地门禁。
+   - AI Agent 会自动定位源码、编写健壮性逻辑并运行本地门禁。
 4. **一键闭环**：
    - 推送代码到分支后，在 PR 评论回复一条 `/review`。
    - 之前由该问题引起的行内评论将被 Bot **自动关闭**，PR 恢复整洁。
