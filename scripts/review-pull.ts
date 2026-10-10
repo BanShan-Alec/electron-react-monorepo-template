@@ -72,6 +72,87 @@ interface GhReviewComment {
   html_url: string;
 }
 
+interface HistoricalIssueState {
+  path: string;
+  line: number;
+  summary: string;
+  isIgnored: boolean;
+  userNote: string;
+  fingerprint: string;
+}
+
+/**
+ * 计算 Issue 的核心语义指纹：
+ * 标准化路径 + 提取问题说明的核心语义词，忽略行号微小平移
+ */
+function computeFingerprint(itemPath: string, content: string): string {
+  const normPath = itemPath.replace(/\\/g, '/').toLowerCase();
+  // 提取说明中的核心短语（英文标识符、关键中文短语），去除数字行号等动态噪点
+  const cleanContent = content
+    .replace(/L\d+/gi, '')
+    .replace(/\b\d+\s*行/g, '')
+    .replace(/[^\w\u4e00-\u9fa5]/g, '')
+    .slice(0, 50);
+  return `${normPath}::${cleanContent}`;
+}
+
+/**
+ * 从本地已存在的看板 Markdown 中解析出上一轮的 Issue 状态与人工批注
+ */
+function parseExistingDashboard(filePath: string): Map<string, HistoricalIssueState> {
+  const map = new Map<string, HistoricalIssueState>();
+  if (!fs.existsSync(filePath)) return map;
+
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const sections = content.split(/^##### Issue #\d+:/m);
+
+    for (let i = 1; i < sections.length; i++) {
+      const block = sections[i];
+      // 提取路径与行号：`packages/foo.ts` (123 行)
+      const headerMatch = block.match(/^\s*`([^`]+)`\s*\((\d+)\s*行\)/);
+      if (!headerMatch) continue;
+
+      const itemPath = headerMatch[1].trim();
+      const line = Number.parseInt(headerMatch[2], 10) || 1;
+
+      // 提取问题说明
+      const summaryMatch = block.match(/- \*\*问题说明\*\*:\s*([^\n\r]+)/);
+      const summary = summaryMatch ? summaryMatch[1].trim() : '';
+
+      // 提取是否被标记为忽略：勾选了 [x] 忽略本项，或者未勾选 [ ] 采纳修复
+      const isIgnored =
+        block.includes('- [x] **忽略本项**') ||
+        (block.includes('- [ ] **采纳修复') && !block.includes('- [x] **采纳修复'));
+
+      // 提取人工批注
+      let userNote = '';
+      const noteMatch = block.match(/> \*\*人工批注 \/ 修改要求\*\*:\s*([^\n\r]+)/);
+      if (noteMatch) {
+        const rawNote = noteMatch[1].trim();
+        // 排除默认模板占位提示
+        if (!rawNote.startsWith('_(') && !rawNote.startsWith('(')) {
+          userNote = rawNote;
+        }
+      }
+
+      const fp = computeFingerprint(itemPath, summary);
+      map.set(fp, {
+        path: itemPath,
+        line,
+        summary,
+        isIgnored,
+        userNote,
+        fingerprint: fp,
+      });
+    }
+  } catch {
+    // 容错：解析失败返回空映射
+  }
+
+  return map;
+}
+
 function getLatestRunInfo(branch: string, prNumber: number | null): RunInfo {
   // 优化 1: 优先从 PR sticky 评论中的 checkpoint 元数据直接获取最新的 run ID
   if (prNumber) {
@@ -238,8 +319,23 @@ function formatDashboard(
   runInfo: RunInfo,
   data: OcrResult,
   commentMap: Map<string, string>,
+  historicalMap: Map<string, HistoricalIssueState>,
 ): string {
   const allComments = data.comments ?? [];
+  const currentFingerprints = new Set<string>();
+
+  for (const item of allComments) {
+    currentFingerprints.add(computeFingerprint(item.path, item.content));
+  }
+
+  // 计算【✨ 上一轮已成功修复 (Resolved)】列表：在上一轮存在但在当前轮次已消失的条目
+  const resolvedList: HistoricalIssueState[] = [];
+  for (const [fp, hist] of historicalMap.entries()) {
+    if (!currentFingerprints.has(fp)) {
+      resolvedList.push(hist);
+    }
+  }
+
   const highItems = allComments.filter((c) => c.severity === 'critical' || c.severity === 'high');
   const mediumItems = allComments.filter((c) => c.severity === 'medium');
   const lowItems = allComments.filter((c) => c.severity === 'low');
@@ -256,11 +352,26 @@ function formatDashboard(
     `> **审查轮次**: **第 ${runInfo.round} 轮复查** (Run ID: \`${runInfo.id}\`) | **刷新时间**: ${new Date().toLocaleString()}`,
   );
   lines.push(
-    `> **审查统计**: 审查文件 ${data.summary?.files_reviewed ?? 0} 个 | 发现问题 ${allComments.length} 项 (🔴 高危 ${highItems.length} · 🟡 中危 ${mediumItems.length} · 🟢 低优 ${lowItems.length})`,
+    `> **审查统计**: 审查文件 ${data.summary?.files_reviewed ?? 0} 个 | 发现问题 ${allComments.length} 项 (🔴 高危 ${highItems.length} · 🟡 中危 ${mediumItems.length} · 🟢 低优 ${lowItems.length})${
+      resolvedList.length > 0 ? ` | ✨ **成功解决历史问题**: ${resolvedList.length} 项` : ''
+    }`,
   );
   lines.push('');
   lines.push('---');
   lines.push('');
+
+  // 1. 顶部保留【✨ 上一轮已成功解决】清单（精简删除线格式）
+  if (resolvedList.length > 0) {
+    lines.push(`### ✨ 上一轮已成功解决 (${resolvedList.length} 项)`);
+    lines.push('> 恭喜！以下问题在上一轮提出后已被修复或在新提交中已彻底消除：');
+    lines.push('');
+    for (const res of resolvedList) {
+      lines.push(`- ~~[\`${res.path}\`#L${res.line}] ${res.summary}~~`);
+    }
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+  }
 
   // 处置规则摘要说明
   lines.push('### 📋 处置规则说明');
@@ -268,6 +379,11 @@ function formatDashboard(
     '- **🔴 高危 & 🟡 中度问题**：**默认全部采纳修复 (`[x]`)**。若某项属预期设计或需忽略，请取消勾选并在批注中注明。',
   );
   lines.push('- **🟢 低优常规建议**：**默认全部忽略 (`[ ]`)**。如需修复请手动勾选为 `[x]`。');
+  if (historicalMap.size > 0) {
+    lines.push(
+      '- **💡 状态记忆**：若某项在上一轮已被标记为【忽略】或留有批注，本轮已**自动继承您的记忆**，无需重复操作。',
+    );
+  }
   lines.push('');
 
   // 全绿状态
@@ -288,15 +404,25 @@ function formatDashboard(
     const ghCommentUrl = commentMap.get(commentKey);
     const ghBlobUrl = `https://github.com/${ownerRepo}/blob/${headSha}/${item.path}#L${lineNum}`;
 
+    const fp = computeFingerprint(item.path, item.content);
+    const hist = historicalMap.get(fp);
+    const isNew = !hist;
+    const statusBadge = isNew ? '`[🆕 本轮新增]`' : '`[⏳ 历史未决]`';
+
+    // 状态继承：如果历史记录存在且被标记为忽略，则继承忽略
+    const shouldFix = hist ? !hist.isIgnored : isDefaultFixed;
+    const inheritedNote = hist?.userNote || '';
+
     lines.push(
-      `##### Issue #${idx}: \`${item.path}\` (${lineNum} 行) - [${item.category?.toUpperCase() || 'DEFECT'}]`,
+      `##### Issue #${idx}: ${statusBadge} \`${item.path}\` (${lineNum} 行) - [${item.category?.toUpperCase() || 'DEFECT'}]`,
     );
 
-    if (isDefaultFixed) {
+    if (shouldFix) {
       lines.push(`- [x] **采纳修复 (默认修复)** <!-- action: fix -->`);
       lines.push(`- [ ] **忽略本项** <!-- action: ignore -->`);
     } else {
-      lines.push(`- [ ] **手动采纳修复 (默认忽略)** <!-- action: manual-fix -->`);
+      lines.push(`- [ ] **采纳修复** <!-- action: fix -->`);
+      lines.push(`- [x] **忽略本项 (继承上一轮)** <!-- action: ignore -->`);
     }
 
     // 超链接体系
@@ -327,9 +453,14 @@ function formatDashboard(
       lines.push('</details>');
     }
     lines.push('');
-    lines.push(
-      `> **人工批注 / 修改要求**: _(${isDefaultFixed ? '默认修复；如需忽略或有定制要求请在此说明' : '默认忽略；若勾选修复可在此输入具体要求'})_`,
-    );
+
+    if (inheritedNote) {
+      lines.push(`> **人工批注 / 修改要求**: ${inheritedNote} _(继承上一轮批注)_`);
+    } else {
+      lines.push(
+        `> **人工批注 / 修改要求**: _(${isDefaultFixed ? '默认修复；如需忽略或有定制要求请在此说明' : '默认忽略；若勾选修复可在此输入具体要求'})_`,
+      );
+    }
     lines.push('');
     lines.push('---');
     lines.push('');
@@ -407,7 +538,18 @@ function main(): void {
   }
 
   const outputFile = getOutputFilePath(branch, prNumber);
-  const markdown = formatDashboard(branch, prNumber, ownerRepo, headSha, runInfo, data, commentMap);
+  // 读取本地已存在的看板，提取历史 Issue 状态与人工批注
+  const historicalMap = parseExistingDashboard(outputFile);
+  const markdown = formatDashboard(
+    branch,
+    prNumber,
+    ownerRepo,
+    headSha,
+    runInfo,
+    data,
+    commentMap,
+    historicalMap,
+  );
   fs.writeFileSync(outputFile, markdown, 'utf-8');
 
   // 清理 cache
