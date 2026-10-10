@@ -17,6 +17,7 @@ out/
 .biome/
 .ocr-temp/
 .github/pr-review-tmp/
+packages/pr-review/reviews/
 
 # Environment & Local Configuration
 .env
