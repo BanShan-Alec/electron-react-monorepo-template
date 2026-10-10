@@ -84,7 +84,7 @@ npm run format
 
 ### 4. PR 工作流（`pnpm pr`）
 
-feature 分支一律经 PR 合入 `main`：分支保护锁死 required checks（typecheck / lint / e2e）与 squash-only、拒绝直推，决策背景见 [ADR-0004](docs/adr/0004-pr-only-squash-workflow.md)，完整流程见 [.github/CICD.md](.github/CICD.md) 的「提交与 PR」「合并」章节。
+feature 分支一律经 PR 合入 `main`：分支保护锁死 required checks（typecheck / lint / test / e2e）与 squash-only、拒绝直推，决策背景见 [ADR-0004](docs/adr/0004-pr-only-squash-workflow.md)，完整流程见 [.github/CICD.md](.github/CICD.md) 与 [docs/code-review.md](docs/code-review.md)。
 
 | 命令 | 用途 |
 | :--- | :--- |
