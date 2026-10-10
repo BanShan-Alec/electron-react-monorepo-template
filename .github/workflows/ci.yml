@@ -1,5 +1,5 @@
-# PR / main 分支门禁:类型检查、代码规范、Electron e2e。
-# 三个 job 并行,均为分支保护的 required checks。
+# PR / main 分支门禁:类型检查、代码规范、单元测试、Electron e2e。
+# 四个 job 并行,均为分支保护的 required checks。
 name: CI
 
 on:
@@ -34,6 +34,15 @@ jobs:
       - uses: ./.github/actions/setup-env
       - run: pnpm run lint
       - run: pnpm run verify:deps
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-env
+      - run: pnpm run test
 
   e2e:
     name: e2e

@@ -37,6 +37,7 @@ flowchart TD
 ```bash
 pnpm lint        # Biome 规范与代码格式扫描
 pnpm typecheck   # TypeScript 全工作区类型检查
+pnpm test        # Vitest 快速单元测试
 pnpm test:e2e    # Playwright + Electron 完整端到端测试
 ```
 
@@ -84,5 +85,6 @@ pnpm pr:merge --yes     # 等待 CI 门禁全绿后自动 squash 合并，并自
 GitHub Actions 流水线（`.github/workflows/ci.yml`）：
 - **`typecheck`**（**Required**）：TypeScript 全局类型检查。
 - **`lint`**（**Required**）：Biome 格式与规则扫描。
+- **`test`**（**Required**）：Vitest 快速单元测试。
 - **`e2e`**（**Required**）：Playwright + Electron 完整回归测试。
-- *CodeQL* 与 *OpenCodeReview*（信息性）：安全漏洞与 AI 增量代码审查。新开 PR 自动审查；后续提交可在 PR 评论回复 `/review` 手动触发增量复查，不阻塞合入。
+- *CodeQL* 与 *OpenCodeReview*（信息性）：安全漏洞与 AI 增量代码审查（详见 [AI 代码审查指南](docs/code-review.md)）。新开 PR 自动审查；后续提交可在 PR 评论回复 `/review` 手动触发增量复查，不阻塞合入。
