@@ -14,7 +14,7 @@ interface SentryBuildConfig {
 
 /**
  * 统一解析根目录 package.json 与 .env 中的 Sentry 构建期配置
- * 纯 CommonJS 实现，消除 ESM/CJS 兼容垫片与运行时冗余
+ * 构建期基础设施模块，服务于各进程打包编译
  */
 function getSentryBuildConfig(fromDir?: string): SentryBuildConfig {
   const rootDir = fromDir ? path.resolve(fromDir, '../../') : path.resolve(__dirname, '..');
