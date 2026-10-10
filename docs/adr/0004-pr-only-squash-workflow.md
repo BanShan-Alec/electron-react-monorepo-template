@@ -17,11 +17,11 @@ Status: accepted（2026-10-07）
 - **A. 维持现状：政策成文但不锁**：GitHub 端随时可以 merge commit 或直推 main，政策靠自觉——已在 #11 上失效，否决；
 - **B. PR + squash-only + 分支保护锁死（选定）**：main 线性、回滚干净、changelog 按 feature 粒度；代价是 bootstrap 与紧急场景也要走 PR——hotfix 本就设计为走同一门禁，直推 main 被视为违规而非便利；
 - **C. PR + merge commit**：保留分支内中间提交，但 main 网状、回滚踩 `revert -m 1` 陷阱、changelog 碎——否决；
-- **D. package.json 直连 gh 命令（零包装）**：无前置检查与标题/模板自动化，每次手敲参数，走 PR 的摩擦反而变大——否决，取 `scripts/pr.ts` 封装。
+- **D. package.json 直连 gh 命令（零包装）**：无前置检查与标题/模板自动化，每次手敲参数，走 PR 的摩擦反而变大——否决，取 `@app/pr-review`（`pnpm pr-review`）模块化套件封装。
 
 ## Consequences
 
-- `scripts/pr.ts`（`pnpm pr / pr:merge / pr:status`）成为开 PR 与合并的标准入口；PR 标题自动取分支首个提交 subject——**分支首个提交的措辞升级为「PR 标题」语义**，需维持 conventional 格式（无机器校验，靠自觉）；
+- `@app/pr-review`（`pnpm pr-review create / merge / status / trigger / pull`）成为开 PR 与 Review 闭环的标准入口；PR 标题自动取分支首个提交 subject——**分支首个提交的措辞升级为「PR 标题」语义**，需维持 conventional 格式（无机器校验，靠自觉）；
 - 分支保护以 `gh api` 一次性配置：required status checks（typecheck / lint / e2e）、仅允许 squash、require PR（0 评审即可合并）、`enforce_admins` 使 owner 同样受约束——直推 main 从「习惯」变为「被拒」；
-- 本政策的例外仅一处：PR 工作流工具自身（本 ADR 与 `scripts/pr.ts`）以 chore PR 形式完成首次合入，此后一切改动回归 PR；
-- 合并后的分支清理由 `pr:merge --delete-branch`（远端）与 CICD.md「合并」的收尾命令（本地/worktree）承接，避免 #11 式远端残留。
+- 本政策的例外仅一处：PR 工作流工具自身（本 ADR 与 `@app/pr-review`）以 chore PR 形式完成首次合入，此后一切改动回归 PR；
+- 合并后的分支清理由 `pnpm pr-review merge`（自动带 `--delete-branch` 删远端）与 CICD.md「合并」的收尾命令（本地/worktree）承接，避免 #11 式远端残留。

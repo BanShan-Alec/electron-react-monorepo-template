@@ -1,3 +1,4 @@
+import { APP_ENV } from '@app/shared/constants/env';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import * as Sentry from '@sentry/electron/renderer';
@@ -22,10 +23,9 @@ interface IFallbackProps {
 
 function FallbackView({ error, resetError }: IFallbackProps) {
   useLingui();
+  const isDev = window.__APP_ENV__?.mode === APP_ENV.DEVELOPMENT;
   const errorMessage = error instanceof Error ? error.message : String(error || '');
-  const description = import.meta.env.DEV
-    ? errorMessage || t`渲染进程发生未捕获错误`
-    : t`页面出错啦~`;
+  const description = isDev ? errorMessage || t`渲染进程发生未捕获错误` : t`页面出错啦~`;
 
   const handleReload = (): void => {
     if (resetError) {

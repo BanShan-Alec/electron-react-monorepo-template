@@ -1,11 +1,8 @@
-const { execSync } = require('node:child_process');
-const { parseArgs } = require('node:util');
-const { build } = require('electron-builder');
-
-import type { CliOptions } from 'electron-builder';
-
-const { verifyDependencies } = require('./verify-deps.ts');
-const { verifyDist } = require('./verify-dist.ts');
+import { execSync } from 'node:child_process';
+import { parseArgs } from 'node:util';
+import { build, type CliOptions } from 'electron-builder';
+import { verifyDependencies } from './verify-deps.ts';
+import { verifyDist } from './verify-dist.ts';
 
 /**
  * CLI Argument Parsing

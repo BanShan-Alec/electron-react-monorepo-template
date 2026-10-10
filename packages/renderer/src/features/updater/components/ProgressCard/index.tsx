@@ -41,15 +41,7 @@ export const ProgressCard: React.FC<ProgressCardProps> = ({ progress }) => {
           </span>
         </div>
 
-        <Progress
-          percent={percent}
-          status="active"
-          showInfo={false}
-          strokeColor={{
-            '0%': '#108ee9',
-            '100%': '#87d068',
-          }}
-        />
+        <Progress percent={percent} status="active" showInfo={false} />
 
         <div className="flex items-center justify-between text-[11px] text-foreground-muted">
           <span>

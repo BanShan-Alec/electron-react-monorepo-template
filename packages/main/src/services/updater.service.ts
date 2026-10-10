@@ -9,6 +9,7 @@ import type {
 } from '@app/shared/types/updater';
 import { app, Notification } from 'electron';
 import electronUpdater, { type AppUpdater, CancellationToken } from 'electron-updater';
+import { isDev, isTest } from '../env';
 import { AppError } from '../errors/AppError';
 import { getAppConfigStore } from '../modules/config.module';
 import { getLogManager } from '../modules/log.module';
@@ -48,6 +49,7 @@ export class UpdaterService {
   private readonly logger = getLogManager().scoped('UpdaterService');
   private cancellationToken: CancellationToken | null = null;
   private orphanWatchdogTimer: NodeJS.Timeout | null = null;
+  private devSimulationTimer: NodeJS.Timeout | null = null;
   private isOrphan = false;
   private lastProgressEmitTime = 0;
 
@@ -57,14 +59,31 @@ export class UpdaterService {
     error: null,
   };
 
-  private windowDelegate: { show: () => Promise<unknown>; hide: () => void } | null = null;
+  private windowDelegate: { show: () => Promise<unknown>; close?: () => void } | null = null;
+  private userDismissedWindow = false;
+
+  private clearDevSimulationTimer(): void {
+    if (this.devSimulationTimer) {
+      clearTimeout(this.devSimulationTimer);
+      clearInterval(this.devSimulationTimer);
+      this.devSimulationTimer = null;
+    }
+  }
 
   constructor() {
     this.initElectronUpdater();
   }
 
-  public setWindowDelegate(delegate: { show: () => Promise<unknown>; hide: () => void }): void {
+  public setWindowDelegate(delegate: { show: () => Promise<unknown>; close?: () => void }): void {
     this.windowDelegate = delegate;
+  }
+
+  public notifyWindowShown(): void {
+    this.userDismissedWindow = false;
+  }
+
+  public notifyWindowClosed(): void {
+    this.userDismissedWindow = true;
   }
 
   private getAutoUpdater(): AppUpdater {
@@ -73,7 +92,7 @@ export class UpdaterService {
   }
 
   private initElectronUpdater(): void {
-    if (process.env.NODE_ENV === 'test') {
+    if (isTest) {
       return;
     }
 
@@ -87,6 +106,18 @@ export class UpdaterService {
       if (process.env.VITE_DISTRIBUTION_CHANNEL) {
         updater.channel = process.env.VITE_DISTRIBUTION_CHANNEL;
       }
+
+      const owner = process.env.VITE_GITHUB_OWNER || process.env.GITHUB_OWNER || 'BanShan-Alec';
+      const repo =
+        process.env.VITE_GITHUB_REPO ||
+        process.env.GITHUB_REPO ||
+        'electron-react-monorepo-template';
+
+      updater.setFeedURL({
+        provider: 'github',
+        owner,
+        repo,
+      });
 
       updater.on('checking-for-update', () => {
         this.logger.info('Checking for update...');
@@ -154,6 +185,30 @@ export class UpdaterService {
             this.logger.error('Failed to quitAndInstall in orphan mode:', err);
             app.quit();
           }
+        } else if (this.userDismissedWindow) {
+          this.logger.info(
+            'User dismissed window previously, sending system notification instead of popup',
+          );
+          if (Notification.isSupported()) {
+            const isZh = getAppConfigStore().get('language') === 'zh-CN';
+            const notif = new Notification({
+              title: app.getName(),
+              body: isZh
+                ? '新版本已下载完毕，点击立即安装。'
+                : 'New version downloaded. Click to install.',
+            });
+            notif.on('click', () => {
+              this.windowDelegate?.show().catch((err) => {
+                this.logger.error('Failed to show updater window from notification click:', err);
+              });
+            });
+            notif.show();
+          }
+        } else {
+          // 主窗口正常存活且未被主动关闭时，拉起更新窗口提醒用户立即重启安装
+          this.windowDelegate?.show().catch((err) => {
+            this.logger.error('Failed to show updater window on update-downloaded:', err);
+          });
         }
       });
 
@@ -198,24 +253,88 @@ export class UpdaterService {
     this.snapshot.progress = null;
     this.emitState();
 
-    if (process.env.NODE_ENV === 'test') {
+    if (isTest) {
       return this.getSnapshot();
     }
 
-    if (process.env.NODE_ENV !== 'production') {
-      this.logger.info('Dev mode: skipping external check request');
+    if (isDev) {
+      this.logger.info('Dev mode: running simulated check flow');
+      this.clearDevSimulationTimer();
+      this.devSimulationTimer = setTimeout(() => {
+        this.devSimulationTimer = null;
+        if (this.snapshot.state === 'checking') {
+          this.mockEmit({
+            type: 'available',
+            version: '2.0.0',
+            releaseDate: new Date().toISOString().split('T')[0],
+            releaseNotes: [
+              '【Dev 模式模拟更新】',
+              '统一多平台应用运行图标与安装包图标',
+              '支持 NSIS 自定义安装目录选择',
+              'OTA 窗口采用无边框纯平贴边现代布局与内嵌按钮',
+              '解耦窗口物理销毁与后台静默下载生命周期',
+            ],
+          });
+        }
+      }, 800) as unknown as NodeJS.Timeout;
       return this.getSnapshot();
     }
 
     try {
       const updater = this.getAutoUpdater();
-      await updater.checkForUpdates();
+      let timer: NodeJS.Timeout | undefined;
+      const timeoutPromise = new Promise((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error('检查更新请求超时（15 秒），请检查网络连接后重试')),
+          15000,
+        );
+      });
+      try {
+        await Promise.race([updater.checkForUpdates(), timeoutPromise]);
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
       return this.getSnapshot();
     } catch (err) {
       this.snapshot.state = 'error';
       this.snapshot.error = err instanceof Error ? err.message : String(err);
       this.emitState();
       throw new AppError(this.snapshot.error, ErrorCode.UPDATER_CHECK_FAILED);
+    }
+  }
+
+  /**
+   * 应用启动时的静默检查更新逻辑
+   * 不主动向用户展示报错或无更新状态，仅在发现新版本时触发通知/弹窗
+   */
+  public async checkSilently(): Promise<void> {
+    if (this.snapshot.state === 'checking' || this.snapshot.state === 'downloading') {
+      return;
+    }
+
+    if (isTest) {
+      return;
+    }
+
+    if (isDev) {
+      this.logger.info('Dev mode: skipping silent check request');
+      return;
+    }
+
+    this.logger.info('Starting silent update check on startup...');
+    try {
+      const updater = this.getAutoUpdater();
+      let timer: NodeJS.Timeout | undefined;
+      const timeoutPromise = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('静默检查更新超时（15 秒）')), 15000);
+      });
+      try {
+        await Promise.race([updater.checkForUpdates(), timeoutPromise]);
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
+    } catch (err) {
+      this.logger.warn('Silent update check encountered error (ignored):', err);
     }
   }
 
@@ -233,12 +352,36 @@ export class UpdaterService {
     this.snapshot.error = null;
     this.emitState();
 
-    if (process.env.NODE_ENV === 'test') {
+    if (isTest) {
       return this.getSnapshot();
     }
 
-    if (process.env.NODE_ENV !== 'production') {
-      this.logger.info('Dev mode: simulating download');
+    if (isDev) {
+      this.logger.info('Dev mode: running simulated download flow');
+      this.clearDevSimulationTimer();
+
+      let currentPercent = 0;
+      this.devSimulationTimer = setInterval(() => {
+        if (this.snapshot.state !== 'downloading') {
+          this.clearDevSimulationTimer();
+          return;
+        }
+
+        currentPercent += 10;
+        if (currentPercent >= 100) {
+          this.clearDevSimulationTimer();
+          this.mockEmit({ type: 'downloaded' });
+        } else {
+          this.mockEmit({
+            type: 'progress',
+            percent: currentPercent,
+            bytesPerSecond: 3.5 * 1024 * 1024,
+            transferred: Math.round((currentPercent / 100) * 85 * 1024 * 1024),
+            total: 85 * 1024 * 1024,
+          });
+        }
+      }, 500);
+
       return this.getSnapshot();
     }
 
@@ -260,6 +403,8 @@ export class UpdaterService {
   }
 
   public async cancel(): Promise<UpdaterSnapshot> {
+    this.clearDevSimulationTimer();
+
     if (this.snapshot.state === 'downloading') {
       if (this.cancellationToken) {
         try {
@@ -291,7 +436,12 @@ export class UpdaterService {
     }
 
     this.logger.info('Initiating install: quitAndInstall(false, true)');
-    if (process.env.NODE_ENV === 'test') {
+    if (isTest) {
+      return { success: true };
+    }
+
+    if (isDev) {
+      this.logger.info('Dev mode: simulated install completed');
       return { success: true };
     }
 
@@ -400,22 +550,40 @@ export class UpdaterService {
         this.emitState();
         break;
       }
-      case 'downloaded':
+      case 'downloaded': {
         this.snapshot.state = 'downloaded';
         this.snapshot.progress = null;
         this.snapshot.error = null;
         this.emitState();
-        if (this.isOrphan || !getWindow(WINDOW_IDS.HOME)) {
+        const homeWin = getWindow(WINDOW_IDS.HOME);
+        if (this.isOrphan || !homeWin || homeWin.isDestroyed()) {
           this.stopOrphanWatchdog();
-          if (process.env.NODE_ENV !== 'test') {
+          if (!isTest) {
             try {
               this.getAutoUpdater().quitAndInstall(true, false);
             } catch {
               app.quit();
             }
           }
+        } else if (this.userDismissedWindow) {
+          if (Notification.isSupported()) {
+            const isZh = getAppConfigStore().get('language') === 'zh-CN';
+            const notif = new Notification({
+              title: app.getName(),
+              body: isZh
+                ? '新版本已下载完毕，点击立即安装。'
+                : 'New version downloaded. Click to install.',
+            });
+            notif.on('click', () => {
+              this.windowDelegate?.show().catch(() => {});
+            });
+            notif.show();
+          }
+        } else {
+          this.windowDelegate?.show().catch(() => {});
         }
         break;
+      }
       case 'up-to-date':
         this.snapshot = { state: 'up-to-date', progress: null, error: null };
         this.emitState();

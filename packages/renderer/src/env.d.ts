@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 
+import type { AppRuntimeEnv } from '@app/shared/types/env';
 import type { ElectronApi } from '@shared/types/api';
 
 declare global {
@@ -8,8 +9,12 @@ declare global {
   /** vite.config.ts define 注入的 Sentry DSN */
   const __SENTRY_DSN__: string;
 
+  /** HTML 脚本动态注入的全局只读运行时环境基座 */
+  const __APP_ENV__: AppRuntimeEnv;
+
   interface Window {
     readonly api: ElectronApi;
+    readonly __APP_ENV__: AppRuntimeEnv;
   }
 }
 

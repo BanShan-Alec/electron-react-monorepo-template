@@ -9,8 +9,41 @@ const config: Configuration = {
     buildResources: 'build/resources',
   },
   generateUpdatesFilesForAllChannels: true,
+  publish: {
+    provider: 'github',
+    owner: process.env.GITHUB_OWNER || 'BanShan-Alec',
+    repo: process.env.GITHUB_REPO || 'electron-react-monorepo-template',
+    releaseType: 'release',
+  },
+  win: {
+    target: [
+      {
+        target: 'nsis',
+        arch: ['x64'],
+      },
+    ],
+    icon: 'build/resources/icon.ico',
+  },
+  nsis: {
+    oneClick: false,
+    perMachine: true,
+    allowToChangeInstallationDirectory: true,
+    allowElevation: true,
+    createDesktopShortcut: true,
+    createStartMenuShortcut: true,
+    shortcutName: 'Electron React Template',
+    installerIcon: 'build/resources/icon.ico',
+    uninstallerIcon: 'build/resources/icon.ico',
+    installerHeaderIcon: 'build/resources/icon.ico',
+    deleteAppDataOnUninstall: false,
+  },
+  mac: {
+    target: ['dmg', 'zip'],
+    icon: 'build/resources/icon.icns',
+  },
   linux: {
     target: ['deb'],
+    icon: 'build/resources/icon.png',
   },
   extraResources: [
     {

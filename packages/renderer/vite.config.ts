@@ -1,20 +1,19 @@
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { lingui } from '@lingui/vite-plugin';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import react from '@vitejs/plugin-react';
 import autoprefixer from 'autoprefixer';
 import tailwindcss from 'tailwindcss';
 import { defineConfig } from 'vite';
+import { injectAppEnvPlugin } from './plugins/inject-env.ts';
 import { startupShellInlinePlugin } from './plugins/startup-shell.ts';
 import tailwindConfig from './tailwind.config.ts';
 
 const require = createRequire(import.meta.url);
 const { getSentryBuildConfig } = require('../../build/sentry-config.ts');
 
-const currentDir =
-  typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+const currentDir = import.meta.dirname;
 const sentryConfig = getSentryBuildConfig(currentDir);
 
 // https://vite.dev/config/
@@ -51,6 +50,11 @@ export default defineConfig({
     }),
     // 启动壳占位符内联（dev/build 同一形态），契约见 specs/first-screen-loading.md §4.7
     startupShellInlinePlugin({ root: currentDir }),
+    // 运行时环境基座动态注入 (HTML Head Inlining)
+    injectAppEnvPlugin({
+      appVersion: sentryConfig.appVersion,
+      appName: sentryConfig.appName,
+    }),
   ],
   // 路径别名单一事实源：根 tsconfig.json + Vite 官方原生 tsconfigPaths（零插件）
   tsconfig: '../../tsconfig.json',
