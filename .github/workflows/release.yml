@@ -24,6 +24,10 @@ jobs:
         os: [windows-latest, macos-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG || 'o4512213407105024' }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT || '4512220144730112' }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-env
@@ -80,7 +84,7 @@ jobs:
           merge-multiple: true
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           # 中文标题;正文首行给 CHANGELOG 导航(锚定 tag 版本),generate_release_notes 会把 PR 列表追加在其后
           name: ${{ github.ref_name }} 版本发布

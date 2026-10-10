@@ -152,6 +152,7 @@ main 受分支保护禁直推，发版走 PR 形态：
 
 `build/` —— 生产构建与打包域：
 - [`build/electron-builder.ts`](build/electron-builder.ts)：Electron 生产环境打包配置与过滤规则
+- [`build/sentry-config.ts`](build/sentry-config.ts)：Sentry 构建期公共配置、版本号提取与 DSN 注入器
 - [`build/resources/`](build/resources)：打包资源（应用图标、签名 entitlements 等），经 `extraResources` 复制进安装包
 
 ---
@@ -193,3 +194,20 @@ pnpm -F @app/main up electron-log  # 子包升级
 pnpm remove -w <包名>             # 卸载（-F 同理卸载子包依赖）
 pnpm -F @app/renderer remove <包名>
 ```
+
+---
+
+## 七、Node 脚本与构建配置规范 (纯 CommonJS 模式)
+
+为彻底杜绝 Node 22+ 原生执行 TypeScript 时的 `[MODULE_TYPELESS_PACKAGE_JSON]` 重新解析警告，并消除 `import.meta.url`、`fileURLToPath`、`__dirname` 兼容垫片与动态导入陷阱，本项目制定以下规范：
+
+### 1. 运行环境与模块标准划分
+
+| 目录与文件 | 模块系统 | 规范要求与说明 |
+| :--- | :--- | :--- |
+| **Node 脚本与构建配置**<br>`scripts/*.ts`<br>`build/*.ts`<br>`packages/{main,preload}/vite.config.ts` | **纯 CommonJS** (`require` / `module.exports`) | • 统一使用 `require('node:xxx')` 引入依赖，禁止混入 ESM `import`。<br>• 统一使用原生标准 `__dirname`，严禁编写 `typeof __dirname !== 'undefined'` 等兼容垫片。<br>• 直接使用 `module.exports = { ... }` 导出。<br>• CLI 直接执行入口使用 `if (require.main === module)` 判断。<br>• TypeScript 类型引入使用零运行时的 `import type { ... } from '...'`。 |
+| **纯前端渲染进程**<br>`packages/renderer/`（含 `vite.config.ts`） | **原生 ESM** (`import` / `export`) | • `packages/renderer/package.json` 显式声明 `"type": "module"`，完整支持 Vite 与 React 前端生态。<br>• 若需在渲染端配置中引入 `build/` 下的 CommonJS 模块，通过 `createRequire(import.meta.url)` 桥接载入。 |
+
+### 2. TypeScript 隔离配置
+`scripts/tsconfig.json` 配置了 `"moduleDetection": "force"`，确保即使未显式声明顶层 `export` 的纯 CJS 脚本也能在 TypeScript 中保持独立的模块作用域，杜绝跨文件全局变量污染（如全局 `const fs` 冲突）。
+

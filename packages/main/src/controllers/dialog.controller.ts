@@ -8,13 +8,14 @@ import {
 import { showItemInFolderInputSchema } from '@app/shared/schemas/shell';
 import type { FileDialogResult, SaveFileDialogResult } from '@app/shared/types/dialog';
 import type { Result } from '@app/shared/types/result';
-import { ipcMain, shell } from 'electron';
+import { shell } from 'electron';
 import { isAllowedExternalUrl } from '../modules/security/external-urls';
 import { dialogService } from '../services/dialog.service';
+import { handleTraced } from '../telemetry/ipc-tracer';
 import { catchToResult, failResult, successResult } from './utils';
 
 export function registerDialogControllers(): void {
-  ipcMain.handle(
+  handleTraced(
     IPC_CHANNELS.DIALOG_OPEN_FILE,
     async (_event, rawInput: unknown): Promise<Result<FileDialogResult>> => {
       const parseResult = openFileInputSchema.safeParse(rawInput);
@@ -30,7 +31,7 @@ export function registerDialogControllers(): void {
     },
   );
 
-  ipcMain.handle(
+  handleTraced(
     IPC_CHANNELS.DIALOG_OPEN_DIRECTORY,
     async (_event, rawInput: unknown): Promise<Result<FileDialogResult>> => {
       const parseResult = openDirectoryInputSchema.safeParse(rawInput);
@@ -46,7 +47,7 @@ export function registerDialogControllers(): void {
     },
   );
 
-  ipcMain.handle(
+  handleTraced(
     IPC_CHANNELS.DIALOG_SAVE_FILE,
     async (_event, rawInput: unknown): Promise<Result<SaveFileDialogResult>> => {
       const parseResult = saveFileInputSchema.safeParse(rawInput);
@@ -62,7 +63,7 @@ export function registerDialogControllers(): void {
     },
   );
 
-  ipcMain.handle(
+  handleTraced(
     IPC_CHANNELS.SHELL_SHOW_ITEM_IN_FOLDER,
     async (_event, rawInput: unknown): Promise<Result<{ success: boolean }>> => {
       const parseResult = showItemInFolderInputSchema.safeParse(rawInput);
@@ -78,7 +79,7 @@ export function registerDialogControllers(): void {
     },
   );
 
-  ipcMain.handle(
+  handleTraced(
     IPC_CHANNELS.SHELL_OPEN_EXTERNAL,
     async (_event, url: unknown): Promise<Result<{ success: boolean }>> => {
       if (typeof url !== 'string') {

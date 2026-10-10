@@ -1,14 +1,19 @@
 import { APP_ENV } from '@app/shared/constants/env';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import * as Sentry from '@sentry/react';
+import * as Sentry from '@sentry/electron/renderer';
 import { Button, Empty } from 'antd';
-import type { ReactNode } from 'react';
-
-// 私有常量
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 interface IErrorBoundaryProps {
   children: ReactNode;
+  /** 发生未捕获异常时的自定义业务回调（如自定义日志或状态通知） */
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
+}
+
+interface IErrorBoundaryState {
+  hasError: boolean;
+  error: unknown;
 }
 
 interface IFallbackProps {
@@ -16,7 +21,6 @@ interface IFallbackProps {
   resetError?: () => void;
 }
 
-// 可抽离的逻辑处理函数/组件
 function FallbackView({ error, resetError }: IFallbackProps) {
   useLingui();
   const isDev = window.__APP_ENV__?.mode === APP_ENV.DEVELOPMENT;
@@ -40,15 +44,47 @@ function FallbackView({ error, resetError }: IFallbackProps) {
   );
 }
 
-export function ErrorBoundary({ children }: IErrorBoundaryProps) {
-  return (
-    <Sentry.ErrorBoundary
-      fallback={({ error, resetError }) => <FallbackView error={error} resetError={resetError} />}
-      showDialog={false}
-    >
-      {children}
-    </Sentry.ErrorBoundary>
-  );
+export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundaryState> {
+  constructor(props: IErrorBoundaryProps) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
+    };
+  }
+
+  static getDerivedStateFromError(error: unknown): IErrorBoundaryState {
+    return {
+      hasError: true,
+      error,
+    };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    // 1. 渲染进程崩溃捕获并上报至 Sentry
+    Sentry.captureException(error, {
+      extra: {
+        componentStack: errorInfo.componentStack,
+      },
+    });
+
+    // 2. 执行外部业务传入的 onError 回调
+    this.props.onError?.(error, errorInfo);
+  }
+
+  resetError = (): void => {
+    this.setState({
+      hasError: false,
+      error: null,
+    });
+  };
+
+  render(): ReactNode {
+    if (this.state.hasError) {
+      return <FallbackView error={this.state.error} resetError={this.resetError} />;
+    }
+    return this.props.children;
+  }
 }
 
 export default ErrorBoundary;

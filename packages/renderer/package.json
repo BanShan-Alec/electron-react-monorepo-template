@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build --configLoader bundle",
+    "build": "tsc --noEmit && vite build --configLoader bundle",
     "extract": "lingui extract --clean",
-    "typecheck": "tsc -b",
+    "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "preview": "vite preview"
   },
@@ -16,7 +16,7 @@
     "@app/shared": "workspace:*",
     "@lingui/core": "^6.9.0",
     "@lingui/react": "^6.9.0",
-    "@sentry/react": "^11.0.0",
+    "@sentry/electron": "^8.1.0",
     "ahooks": "^3.10.0",
     "antd": "^6.6.5",
     "clsx": "^2.1.1",

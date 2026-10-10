@@ -7,8 +7,8 @@ import { getLogManager } from '../modules/log.module';
 import { isAllowedExternalUrl } from '../modules/security/external-urls';
 
 export class DiagnosticsService {
-  logMessage(input: LogInput): void {
-    getLogManager().logRendererMessage(input.level, input.message, input.meta);
+  logMessage(input: LogInput, windowName?: string): void {
+    getLogManager().logRendererMessage(input.level, input.message, input.meta, windowName);
   }
 
   async openLogFolder(): Promise<{ success: boolean; path: string }> {

@@ -1,46 +1,59 @@
-import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { lingui } from '@lingui/vite-plugin';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import react from '@vitejs/plugin-react';
 import autoprefixer from 'autoprefixer';
 import tailwindcss from 'tailwindcss';
 import { defineConfig } from 'vite';
-import { injectAppEnvPlugin } from './plugins/inject-env';
-import { startupShellInlinePlugin } from './plugins/startup-shell';
+import { injectAppEnvPlugin } from './plugins/inject-env.ts';
+import { startupShellInlinePlugin } from './plugins/startup-shell.ts';
 import tailwindConfig from './tailwind.config.ts';
 
-// 版本单一事实源 = 根 package.json：构建期 define 注入 renderer，UI 徽章不再硬编码
-const appVersion = (
-  JSON.parse(readFileSync(path.resolve(__dirname, '../../package.json'), 'utf-8')) as {
-    version: string;
-  }
-).version;
+const require = createRequire(import.meta.url);
+const { getSentryBuildConfig } = require('../../build/sentry-config.ts');
+
+const currentDir =
+  typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+const sentryConfig = getSentryBuildConfig(currentDir);
 
 // https://vite.dev/config/
 export default defineConfig({
+  // 环境变量单一事实源：Monorepo 全局统一定义在根目录 .env，子包不设独立 .env
+  envDir: sentryConfig.rootDir,
   base: './',
   define: {
-    __APP_VERSION__: JSON.stringify(appVersion),
+    'import.meta.env.APP_VERSION': JSON.stringify(sentryConfig.appVersion),
+    'import.meta.env.SENTRY_DSN': JSON.stringify(sentryConfig.sentryDsn),
+    'import.meta.env.RELEASE_NAME': JSON.stringify(sentryConfig.releaseName),
+    __APP_VERSION__: JSON.stringify(sentryConfig.appVersion),
+    __SENTRY_DSN__: JSON.stringify(sentryConfig.sentryDsn),
   },
   plugins: [
     react(),
     lingui({
-      configPath: path.resolve(__dirname, 'lingui.config.ts'),
-      cwd: __dirname,
+      configPath: path.resolve(currentDir, 'lingui.config.ts'),
+      cwd: currentDir,
       macroTransform: true,
     }),
     sentryVitePlugin({
-      org: process.env.SENTRY_ORG || '',
-      project: process.env.SENTRY_PROJECT || '',
-      authToken: process.env.SENTRY_AUTH_TOKEN || '',
+      org: sentryConfig.sentryOrg,
+      project: sentryConfig.sentryProject,
+      authToken: sentryConfig.sentryAuthToken,
       telemetry: false,
-      disable: !process.env.SENTRY_AUTH_TOKEN,
+      disable: !sentryConfig.sentryAuthToken,
+      release: {
+        name: sentryConfig.releaseName,
+      },
+      sourcemaps: {
+        filesToDeleteAfterUpload: ['dist/**/*.map'],
+      },
     }),
     // 启动壳占位符内联（dev/build 同一形态），契约见 specs/first-screen-loading.md §4.7
-    startupShellInlinePlugin({ root: __dirname }),
+    startupShellInlinePlugin({ root: currentDir }),
     // 运行时环境基座动态注入 (HTML Head Inlining)
-    injectAppEnvPlugin({ appVersion }),
+    injectAppEnvPlugin({ appVersion: sentryConfig.appVersion }),
   ],
   // 路径别名单一事实源：根 tsconfig.json + Vite 官方原生 tsconfigPaths（零插件）
   tsconfig: '../../tsconfig.json',
@@ -61,8 +74,8 @@ export default defineConfig({
     sourcemap: 'hidden',
     rollupOptions: {
       input: {
-        main: path.resolve(__dirname, 'index.html'),
-        updater: path.resolve(__dirname, 'updater.html'),
+        main: path.resolve(currentDir, 'index.html'),
+        updater: path.resolve(currentDir, 'updater.html'),
       },
     },
   },

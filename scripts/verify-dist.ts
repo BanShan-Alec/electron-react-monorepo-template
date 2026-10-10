@@ -1,10 +1,9 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { _electron as electron } from '@playwright/test';
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { _electron: electron } = require('@playwright/test');
 
-export interface DistVerificationOptions {
+interface DistVerificationOptions {
   /**
    * asar 体积阈值（MB），超过则判定为防劣化门禁失败
    * 默认 10MB（可通过环境变量 MAX_ASAR_SIZE_MB 覆盖）
@@ -25,7 +24,7 @@ interface DetectedArtifact {
 /**
  * 自动跨平台发现 dist 下解包出来的目标二进制与 app.asar
  */
-export function detectUnpackedArtifact(distDir: string): DetectedArtifact | null {
+function detectUnpackedArtifact(distDir: string): DetectedArtifact | null {
   if (!fs.existsSync(distDir)) {
     return null;
   }
@@ -34,7 +33,9 @@ export function detectUnpackedArtifact(distDir: string): DetectedArtifact | null
   const winUnpackedDir = path.join(distDir, 'win-unpacked');
   if (fs.existsSync(winUnpackedDir)) {
     const files = fs.readdirSync(winUnpackedDir);
-    const exeName = files.find((f) => f.endsWith('.exe') && !f.toLowerCase().includes('uninstall'));
+    const exeName = files.find(
+      (f: string) => f.endsWith('.exe') && !f.toLowerCase().includes('uninstall'),
+    );
     const asarPath = path.join(winUnpackedDir, 'resources', 'app.asar');
     if (exeName && fs.existsSync(asarPath)) {
       return {
@@ -49,7 +50,7 @@ export function detectUnpackedArtifact(distDir: string): DetectedArtifact | null
   for (const macDirName of ['mac', 'mac-arm64']) {
     const macDir = path.join(distDir, macDirName);
     if (fs.existsSync(macDir)) {
-      const appFolder = fs.readdirSync(macDir).find((f) => f.endsWith('.app'));
+      const appFolder = fs.readdirSync(macDir).find((f: string) => f.endsWith('.app'));
       if (appFolder) {
         const macOSDir = path.join(macDir, appFolder, 'Contents', 'MacOS');
         const asarPath = path.join(macDir, appFolder, 'Contents', 'Resources', 'app.asar');
@@ -74,7 +75,7 @@ export function detectUnpackedArtifact(distDir: string): DetectedArtifact | null
     if (fs.existsSync(asarPath)) {
       const files = fs.readdirSync(linuxUnpackedDir);
       const ignoredBinaries = new Set(['chrome-sandbox', 'chrome_crashpad_handler']);
-      const binaryName = files.find((f) => {
+      const binaryName = files.find((f: string) => {
         if (ignoredBinaries.has(f)) return false;
         const fullPath = path.join(linuxUnpackedDir, f);
         try {
@@ -100,7 +101,7 @@ export function detectUnpackedArtifact(distDir: string): DetectedArtifact | null
 /**
  * 校验已打包产物完整性与可用性
  */
-export async function verifyDist(options: DistVerificationOptions = {}): Promise<void> {
+async function verifyDist(options: DistVerificationOptions = {}): Promise<void> {
   const distDir = path.resolve(options.distDir || 'dist');
   const maxAsarSizeMb = options.maxAsarSizeMb ?? Number(process.env.MAX_ASAR_SIZE_MB || 10);
 
@@ -178,8 +179,10 @@ export async function verifyDist(options: DistVerificationOptions = {}): Promise
   console.log('🎉 [verify-dist] 打包产物直接运行验证全部通过！\n');
 }
 
+module.exports = { detectUnpackedArtifact, verifyDist };
+
 // 支持直接作为 CLI 执行
-if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+if (require.main === module) {
   verifyDist().catch((err) => {
     console.error('❌ [verify-dist] 校验失败:', err);
     process.exit(1);

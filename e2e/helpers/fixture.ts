@@ -3,6 +3,7 @@ import { type ElectronTestContext, launchElectronApp } from './electron';
 
 type TestFixtures = {
   page: Page;
+  tempUserDataDir: string;
 };
 
 type WorkerFixtures = {
@@ -39,6 +40,10 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   page: async ({ electronCtx }, use) => {
     // 复用已启动的 Electron 主窗口
     await use(electronCtx.page);
+  },
+
+  tempUserDataDir: async ({ electronCtx }, use) => {
+    await use(electronCtx.tempUserDataDir);
   },
 });
 

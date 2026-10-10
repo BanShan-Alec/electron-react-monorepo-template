@@ -32,11 +32,14 @@
     "pr:merge": "node scripts/pr.ts merge",
     "pr:status": "node scripts/pr.ts status",
     "i18n:extract": "pnpm --filter @app/renderer exec lingui extract --clean",
+    "test": "vitest run -c .config/vitest.config.mts",
+    "test:watch": "vitest -c .config/vitest.config.mts",
+    "test:bench": "cross-env BENCHMARK=true vitest run -c .config/vitest.config.mts",
     "test:e2e": "playwright test -c .config/playwright.config.ts",
     "test:e2e:build": "pnpm run build && pnpm run test:e2e",
     "test:dist": "node scripts/verify-dist.ts",
     "verify:deps": "node scripts/verify-deps.ts",
-    "typecheck": "tsc -p scripts/tsconfig.json --noEmit && tsc -p e2e/tsconfig.json --noEmit && pnpm -r run typecheck",
+    "typecheck": "tsc -b --noEmit",
     "lint": "biome check --config-path=.config .",
     "lint:fix": "biome check --write --config-path=.config .",
     "format": "biome format --write --config-path=.config .",
@@ -68,7 +71,8 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.5.0",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "dependencies": {
     "@app/main": "workspace:*"

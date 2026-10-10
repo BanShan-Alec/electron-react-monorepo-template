@@ -3,20 +3,24 @@ import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import { logInputSchema, performActionInputSchema } from '@app/shared/schemas/diagnostics';
 import type { ActionResult, OpenLogFolderResult } from '@app/shared/types/diagnostics';
 import type { Result } from '@app/shared/types/result';
-import { ipcMain } from 'electron';
 import { diagnosticsService } from '../services/diagnostics.service';
+import { handleTraced } from '../telemetry/ipc-tracer';
 import { catchToResult, failResult, successResult } from './utils';
 
 export function registerDiagnosticsControllers(): void {
-  ipcMain.handle(
+  handleTraced(
     IPC_CHANNELS.DIAGNOSTICS_LOG,
-    async (_event, rawInput: unknown): Promise<Result<{ success: boolean }>> => {
+    async (
+      _event,
+      rawInput: unknown,
+      windowName?: string,
+    ): Promise<Result<{ success: boolean }>> => {
       const parseResult = logInputSchema.safeParse(rawInput);
       if (!parseResult.success) {
         return failResult(parseResult.error.issues[0].message, ErrorCode.VALIDATION_ERROR);
       }
       try {
-        diagnosticsService.logMessage(parseResult.data);
+        diagnosticsService.logMessage(parseResult.data, windowName);
         return successResult({ success: true });
       } catch (err) {
         return catchToResult(err);
@@ -24,7 +28,7 @@ export function registerDiagnosticsControllers(): void {
     },
   );
 
-  ipcMain.handle(
+  handleTraced(
     IPC_CHANNELS.DIAGNOSTICS_OPEN_LOG_FOLDER,
     async (): Promise<Result<OpenLogFolderResult>> => {
       try {
@@ -36,7 +40,7 @@ export function registerDiagnosticsControllers(): void {
     },
   );
 
-  ipcMain.handle(
+  handleTraced(
     IPC_CHANNELS.DIAGNOSTICS_PERFORM_ACTION,
     async (_event, rawInput: unknown): Promise<Result<ActionResult>> => {
       const parseResult = performActionInputSchema.safeParse(rawInput);

@@ -42,7 +42,7 @@
 ### 3. 渲染进程（`packages/renderer/package.json`）
 遵循标准 Web 前端工程通用分类习惯，开发者无需受 Electron 内部打包机制干扰：
 - **`dependencies`**：**代码会流向客户端浏览器 bundle 的业务运行时库**。
-  - 例如：`react`, `react-dom`, `antd`, `@ant-design/icons`, `zustand`, `ahooks`, `@sentry/react`, `clsx`, `@lingui/react` 等。
+  - 例如：`react`, `react-dom`, `antd`, `@ant-design/icons`, `zustand`, `ahooks`, `@sentry/electron`, `clsx`, `@lingui/react` 等。
 - **`devDependencies`**：**纯构建工具、编译插件与代码规范库**。
   - 例如：`vite`, `@vitejs/plugin-react`, `tailwindcss`, `postcss`, `autoprefixer`, `typescript`, `@types/*`, `@lingui/cli` 等。
 
@@ -57,7 +57,7 @@ Preload 脚本由 Vite 经 `ssr: { noExternal: true }` 构建为单文件 `dist/
 
 ## 三、深层原理：Vite SSR 与 electron-builder 的逻辑冲突与桥接
 
-在理解这套规则时，很多开发者会疑惑：*为什么主进程既配了 `rolldownOptions.external`，又在 `ssr` 下配置了 `noExternal: ['zod']`？*
+在理解这套规则时，很多开发者会疑惑：*为什么主进程既配了 `rolldownOptions.external`，又在 `ssr` 下配置了 `noExternal: ['zod', /^@sentry\/.*/]`？*
 
 这源于 **Vite SSR（面向 Web 服务端）** 与 **electron-builder（面向离线桌面端）** 天生截然相反的打包心智模型：
 
@@ -69,11 +69,11 @@ Preload 脚本由 Vite 经 `ssr: { noExternal: true }` 构建为单文件 `dist/
 这两套工具如果不做精确调和，就会出现两大典型陷阱：
 
 ### 1. “互相踢皮球”陷阱（导致运行时启动崩溃）
-以 **`zod`** 为例（声明在 `devDependencies`）：
+以 **`zod` 与 `@sentry/electron`** 为例（声明在 `devDependencies`）：
 - **Vite SSR** 以为生产环境有 node_modules，默认不打包它，编译为 `const { z } = require("zod")`；
-- **electron-builder** 发现 `zod` 在 `devDependencies` 中，打包时直接将其丢弃，不拷贝进 `app.asar`；
-- **后果**：两边都没包含 `zod` 的代码！程序在用户机器启动时执行到 `require("zod")`，瞬间抛出 `Cannot find module 'zod'` 报错崩溃。
-- **解法**：在 `vite.config.ts` 中配置 `ssr: { noExternal: ['zod'] }`，强制命令 Vite 必须在编译期将其完整 JS 源码内联打包进 `dist/index.cjs`。
+- **electron-builder** 发现它们在 `devDependencies` 中，打包时直接将其丢弃，不拷贝进 `app.asar`；
+- **后果**：两边都没包含代码！程序在用户机器启动时执行到 `require(...)`，瞬间抛出 `Cannot find module` 报错崩溃。
+- **解法**：在 `vite.config.ts` 中配置 `ssr: { noExternal: ['zod', /^@sentry\/.*/] }`，强制命令 Vite 必须在编译期将其完整 JS 源码内联打包进 `dist/index.cjs` 并执行 Tree-shaking，既能避免运行时缺失，又能避免完整依赖包直接进入 asar 造成体积膨胀（保持在 ~2.54MB）。
 
 ### 2. “争先恐后”陷阱（导致 asar 体积暴增 30 倍）
 以 **`antd`** 为例（误声明在根目录或主进程的 `dependencies` 树中）：

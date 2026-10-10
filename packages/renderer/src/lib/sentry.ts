@@ -1,32 +1,52 @@
 import { APP_ENV } from '@app/shared/constants/env';
-import * as Sentry from '@sentry/react';
+import * as Sentry from '@sentry/electron/renderer';
 
 /**
- * 生产级 Sentry 渲染进程配置（黄金配置模板）
- * 1. 默认留空 DSN，未配置时安全降级为 No-Op 空操作，零网络消耗
- * 2. 采样率与长生命周期内存调优：tracesSampleRate 控制为 10%，maxBreadcrumbs 上限为 50 条
- * 3. 过滤常见网络波动与浏览器非致命噪声（ResizeObserver 等）
- * 4. Session Replay 录屏暂不开启（保持包体积极小且 0 DOM 监控 CPU 开销，后续若需排查顽固 bug 可按注释启用）
+ * 生产级 Sentry 渲染进程配置
+ * 1. 严格仅在生产打包环境（PROD）且有效 DSN 时激活上报，开发阶段零网络开销与侵入
+ * 2. 仅开启致命异常监控（window.onerror / unhandledrejection / React 组件崩溃）
+ * 3. 彻底禁用行为监控（Breadcrumbs / DOM / Console / Net 轨迹），保护隐私与性能
+ * 4. 彻底禁用性能追踪（Tracing / Profiling），采样率为 0
  */
 export function initSentry(): void {
-  const dsn = import.meta.env.VITE_SENTRY_DSN || '';
-  const mode =
-    window.__APP_ENV__?.mode || (import.meta.env.DEV ? APP_ENV.DEVELOPMENT : APP_ENV.PRODUCTION);
-  const isProd = mode === APP_ENV.PRODUCTION;
+  const dsn =
+    import.meta.env.SENTRY_DSN ||
+    import.meta.env.VITE_SENTRY_DSN ||
+    (typeof __SENTRY_DSN__ !== 'undefined' ? __SENTRY_DSN__ : '');
+
+  // 基于 window.__APP_ENV__?.mode 判断是否为生产模式 (兜底 import.meta.env.PROD)
+  const isProd =
+    typeof window !== 'undefined' && window.__APP_ENV__?.mode
+      ? window.__APP_ENV__.mode === APP_ENV.PRODUCTION
+      : import.meta.env.PROD;
+
+  // 严格守卫：仅 prod 模式且有有效 DSN 时激活
+  const isEnabled = isProd && Boolean(dsn);
+
+  if (!isEnabled) {
+    return;
+  }
+
+  const appVersion =
+    import.meta.env.APP_VERSION ||
+    (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown');
+  const release = import.meta.env.RELEASE_NAME || `electron-react-monorepo-template@${appVersion}`;
 
   Sentry.init({
     dsn,
-    // 仅在显式配置了有效 DSN 且在生产环境时才开启网络上报
-    enabled: Boolean(dsn) && isProd,
-    environment: mode,
+    enabled: true,
+    environment: 'production',
+    release,
 
-    // 1. 性能追踪采样率控制在 10%，避免耗尽云端配额
-    tracesSampleRate: 0.1,
+    // 彻底关闭行为监控（Breadcrumbs）
+    maxBreadcrumbs: 0,
+    beforeBreadcrumb: () => null,
+    integrations: (defaults) => defaults.filter((i) => !i.name.includes('Breadcrumb')),
 
-    // 2. 长生命周期内存防泄漏：限制最近用户操作轨迹条数
-    maxBreadcrumbs: 50,
+    // 彻底关闭性能监控（Tracing）
+    tracesSampleRate: 0,
 
-    // 3. 忽略非业务崩溃的常见噪声异常
+    // 过滤常见前端非致命噪声
     ignoreErrors: [
       'ResizeObserver loop completed with undelivered notifications',
       'ResizeObserver loop limit exceeded',
@@ -34,16 +54,7 @@ export function initSentry(): void {
       'Failed to fetch',
       'Load failed',
     ],
-
-    // 4. Session Replay 暂时停用以保证最高性能与最低包体积
-    // 若后续需要开启“仅崩溃时抓取前 30 秒录屏”，可解开以下配置并引入 replayIntegration：
-    // replaysSessionSampleRate: 0,
-    // replaysOnErrorSampleRate: 1.0,
-    // integrations: [
-    //   Sentry.replayIntegration({
-    //     maskAllText: true,
-    //     blockAllMedia: true,
-    //   }),
-    // ],
   });
 }
+
+export { Sentry };

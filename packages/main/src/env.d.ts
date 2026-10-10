@@ -19,3 +19,9 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+declare global {
+  const __APP_VERSION__: string;
+  const __SENTRY_DSN__: string;
+  const __RELEASE_NAME__: string;
+}
