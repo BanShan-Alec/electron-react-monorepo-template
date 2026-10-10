@@ -41,11 +41,11 @@
  * - win32: 原生窗口控制按钮覆盖右上角，右侧按 env(titlebar-area-width) 预留
  * 不强制高度：头部高度由内容决定，overlay 高度走系统默认。
  */
-.platform-darwin .drag-region {
+.platform-darwin .drag-region:not(.no-wco) {
   padding-left: env(titlebar-area-x, 80px);
 }
 
-.platform-win32 .drag-region {
+.platform-win32 .drag-region:not(.no-wco) {
   padding-right: calc(100vw - env(titlebar-area-width, 100vw));
 }
 

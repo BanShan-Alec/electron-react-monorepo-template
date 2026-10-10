@@ -79,17 +79,17 @@ export const UpdaterFeature: React.FC = () => {
 
   return (
     <div className="h-screen w-screen flex flex-col bg-background text-foreground select-none overflow-hidden border border-border">
-      {/* 标题栏区域：贴合边缘，支持拖拽移动窗口，左侧固定更新图标，右上角保留唯一关闭按钮 */}
-      <div className="drag-region flex items-center justify-between px-4 py-3 border-b border-border bg-background select-none cursor-move shrink-0">
+      {/* 标题栏区域：无边框窗口自绘标题栏，通过 no-wco 隔离 WCO 边距，支持拖拽移动窗口 */}
+      <div className="drag-region no-wco flex items-center justify-between px-5 py-3.5 border-b border-border bg-background select-none cursor-move shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-8 h-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center text-base text-primary shrink-0">
             <CloudDownloadOutlined />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-semibold text-foreground tracking-tight m-0 truncate">
+            <h2 className="text-sm font-semibold text-foreground tracking-tight m-0 leading-5 truncate">
               {header.title}
             </h2>
-            <p className="text-[11px] text-foreground-muted m-0 mt-0.5 truncate">
+            <p className="text-xs text-foreground-muted m-0 mt-0.5 leading-4 truncate">
               {header.subtitle}
             </p>
           </div>
@@ -97,15 +97,15 @@ export const UpdaterFeature: React.FC = () => {
         <button
           type="button"
           aria-label="Close"
-          className="no-drag text-foreground-muted hover:text-foreground hover:bg-foreground/10 rounded-md p-1.5 transition-colors duration-150 inline-flex items-center justify-center cursor-pointer focus:outline-none shrink-0"
+          className="no-drag text-foreground-muted hover:text-foreground hover:bg-foreground/10 active:bg-foreground/15 rounded-md w-8 h-8 transition-colors duration-150 inline-flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 shrink-0"
           onClick={handleClose}
         >
           <CloseOutlined className="text-sm" />
         </button>
       </div>
 
-      {/* 主体内容区域：彻底移除独立底部 Footer，业务动作与下载中保持一致置于卡片正下方 */}
-      <div className="flex-1 p-4 flex flex-col gap-3 min-h-0 overflow-y-auto stable-scrollbar">
+      {/* 主体内容区域：对称内边距对齐 Header，移除 stable-scrollbar 消除非溢出下的异常留白 */}
+      <div className="flex-1 p-5 flex flex-col gap-3 min-h-0 overflow-y-auto">
         {snapshot.state === 'checking' && (
           <div className="flex-1 flex flex-col items-center justify-center gap-3 py-12">
             <Spin size="large" />
