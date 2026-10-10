@@ -265,23 +265,28 @@ test.describe
       await newUpdaterPage.waitForLoadState('domcontentloaded');
 
       // 更新窗口重新显示
-      const isVisibleAgain = await electronApp.evaluate(({ BrowserWindow }) => {
-        const wins = BrowserWindow.getAllWindows();
-        const updaterWin = wins.find((w) => {
-          try {
-            return (
-              !w.isDestroyed() &&
-              Boolean(w.webContents) &&
-              !w.webContents.isDestroyed() &&
-              w.webContents.getURL().includes('updater.html')
-            );
-          } catch {
-            return false;
-          }
-        });
-        return updaterWin ? updaterWin.isVisible() : false;
-      });
-      expect(isVisibleAgain).toBe(true);
+      await expect
+        .poll(
+          async () =>
+            electronApp.evaluate(({ BrowserWindow }) => {
+              const wins = BrowserWindow.getAllWindows();
+              const updaterWin = wins.find((w) => {
+                try {
+                  return (
+                    !w.isDestroyed() &&
+                    Boolean(w.webContents) &&
+                    !w.webContents.isDestroyed() &&
+                    w.webContents.getURL().includes('updater.html')
+                  );
+                } catch {
+                  return false;
+                }
+              });
+              return updaterWin ? updaterWin.isVisible() : false;
+            }),
+          { timeout: 5000 },
+        )
+        .toBe(true);
 
       // 断言进度条保持最新连续进度 (85%)
       await expect(newUpdaterPage.getByText('85%')).toBeVisible();

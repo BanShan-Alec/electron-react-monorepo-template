@@ -91,14 +91,10 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
     >
       <div className="text-xs text-foreground-secondary space-y-1.5">
         <div
-          className={
-            expanded
-              ? 'max-h-60 overflow-y-auto pr-1 stable-scrollbar'
-              : 'line-clamp-4 overflow-hidden'
-          }
+          className={expanded ? 'max-h-52 overflow-y-auto pr-1' : 'line-clamp-4 overflow-hidden'}
         >
           {hasNotes ? (
-            <ul className="list-disc list-inside space-y-1">
+            <ul className="list-disc pl-4 space-y-1">
               {releaseNotes?.map((note, index) => (
                 <li key={`${index}-${note.slice(0, 10)}`} className="leading-relaxed">
                   {formatInlineMarkdown(note)}
@@ -110,11 +106,11 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
           )}
         </div>
         {isLongNotes && (
-          <div className="flex justify-end pt-0.5">
+          <div className="flex justify-end pt-1">
             <button
               type="button"
               onClick={() => setExpanded(!expanded)}
-              className="text-primary hover:underline text-[11px] cursor-pointer focus:outline-none"
+              className="text-primary hover:text-primary-hover text-xs font-normal cursor-pointer focus:outline-none transition-colors"
             >
               {expanded ? t`收起` : t`展开全部`}
             </button>
