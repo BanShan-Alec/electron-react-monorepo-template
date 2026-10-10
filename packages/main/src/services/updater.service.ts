@@ -62,6 +62,14 @@ export class UpdaterService {
   private windowDelegate: { show: () => Promise<unknown>; close?: () => void } | null = null;
   private userDismissedWindow = false;
 
+  private clearDevSimulationTimer(): void {
+    if (this.devSimulationTimer) {
+      clearTimeout(this.devSimulationTimer);
+      clearInterval(this.devSimulationTimer);
+      this.devSimulationTimer = null;
+    }
+  }
+
   constructor() {
     this.initElectronUpdater();
   }
@@ -251,10 +259,7 @@ export class UpdaterService {
 
     if (isDev) {
       this.logger.info('Dev mode: running simulated check flow');
-      if (this.devSimulationTimer) {
-        clearTimeout(this.devSimulationTimer);
-        this.devSimulationTimer = null;
-      }
+      this.clearDevSimulationTimer();
       this.devSimulationTimer = setTimeout(() => {
         this.devSimulationTimer = null;
         if (this.snapshot.state === 'checking') {
@@ -353,23 +358,18 @@ export class UpdaterService {
 
     if (isDev) {
       this.logger.info('Dev mode: running simulated download flow');
-      if (this.devSimulationTimer) {
-        clearInterval(this.devSimulationTimer);
-        this.devSimulationTimer = null;
-      }
+      this.clearDevSimulationTimer();
 
       let currentPercent = 0;
       this.devSimulationTimer = setInterval(() => {
         if (this.snapshot.state !== 'downloading') {
-          if (this.devSimulationTimer) clearInterval(this.devSimulationTimer);
-          this.devSimulationTimer = null;
+          this.clearDevSimulationTimer();
           return;
         }
 
         currentPercent += 10;
         if (currentPercent >= 100) {
-          if (this.devSimulationTimer) clearInterval(this.devSimulationTimer);
-          this.devSimulationTimer = null;
+          this.clearDevSimulationTimer();
           this.mockEmit({ type: 'downloaded' });
         } else {
           this.mockEmit({
@@ -403,10 +403,7 @@ export class UpdaterService {
   }
 
   public async cancel(): Promise<UpdaterSnapshot> {
-    if (this.devSimulationTimer) {
-      clearInterval(this.devSimulationTimer);
-      this.devSimulationTimer = null;
-    }
+    this.clearDevSimulationTimer();
 
     if (this.snapshot.state === 'downloading') {
       if (this.cancellationToken) {
@@ -553,12 +550,13 @@ export class UpdaterService {
         this.emitState();
         break;
       }
-      case 'downloaded':
+      case 'downloaded': {
         this.snapshot.state = 'downloaded';
         this.snapshot.progress = null;
         this.snapshot.error = null;
         this.emitState();
-        if (this.isOrphan || !getWindow(WINDOW_IDS.HOME)) {
+        const homeWin = getWindow(WINDOW_IDS.HOME);
+        if (this.isOrphan || !homeWin || homeWin.isDestroyed()) {
           this.stopOrphanWatchdog();
           if (!isTest) {
             try {
@@ -567,8 +565,25 @@ export class UpdaterService {
               app.quit();
             }
           }
+        } else if (this.userDismissedWindow) {
+          if (Notification.isSupported()) {
+            const isZh = getAppConfigStore().get('language') === 'zh-CN';
+            const notif = new Notification({
+              title: app.getName(),
+              body: isZh
+                ? '新版本已下载完毕，点击立即安装。'
+                : 'New version downloaded. Click to install.',
+            });
+            notif.on('click', () => {
+              this.windowDelegate?.show().catch(() => {});
+            });
+            notif.show();
+          }
+        } else {
+          this.windowDelegate?.show().catch(() => {});
         }
         break;
+      }
       case 'up-to-date':
         this.snapshot = { state: 'up-to-date', progress: null, error: null };
         this.emitState();

@@ -1,3 +1,4 @@
+/// <reference path="../env.d.ts" />
 import * as Sentry from '@sentry/electron/main';
 import { app, type BrowserWindow } from 'electron';
 import type { AppModule } from '../AppModule';
@@ -6,10 +7,6 @@ import type { ModuleContext } from '../ModuleContext';
 import { getLogManager } from './log.module';
 
 const logger = getLogManager().scoped('SentryModule');
-
-declare const __SENTRY_DSN__: string | undefined;
-declare const __APP_VERSION__: string | undefined;
-declare const __RELEASE_NAME__: string | undefined;
 
 /**
  * 获取用于 Sentry 初始化的 DSN

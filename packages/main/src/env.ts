@@ -1,4 +1,5 @@
 import { APP_ENV, type AppEnv } from '@app/shared/constants/env';
+import type { AppRuntimeEnv } from '@app/shared/types/env';
 import { app } from 'electron';
 
 /**
@@ -51,11 +52,15 @@ export const devServerUrl: string | undefined =
 /**
  * 获取注入给渲染进程的全局只读运行时环境基座快照
  */
-export function getRuntimeEnvSnapshot(): import('@app/shared/types/env').AppRuntimeEnv {
+export function getRuntimeEnvSnapshot(): AppRuntimeEnv {
+  if (!app.isReady()) {
+    throw new Error('Cannot get runtime env snapshot before app is ready.');
+  }
+
   return {
     mode: currentAppEnv,
-    appVersion: app.isReady() ? app.getVersion() : process.env.npm_package_version || '1.0.0',
-    appName: app.isReady() ? app.getName() : 'Electron App',
+    appVersion: app.getVersion(),
+    appName: app.getName(),
     channel: process.env.VITE_DISTRIBUTION_CHANNEL,
     apiBaseUrl: process.env.VITE_API_BASE_URL,
     systemCode: process.env.VITE_SYSTEM_CODE,
@@ -65,8 +70,6 @@ export function getRuntimeEnvSnapshot(): import('@app/shared/types/env').AppRunt
 /**
  * 将运行时环境快照序列化为深度冻结的内联 HTML 脚本标签
  */
-export function serializeRuntimeEnvScript(
-  env: import('@app/shared/types/env').AppRuntimeEnv = getRuntimeEnvSnapshot(),
-): string {
+export function serializeRuntimeEnvScript(env: AppRuntimeEnv = getRuntimeEnvSnapshot()): string {
   return `<script>window.__APP_ENV__=Object.freeze(${JSON.stringify(env)});</script>`;
 }

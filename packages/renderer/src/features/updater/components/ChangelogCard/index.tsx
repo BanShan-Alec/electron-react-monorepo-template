@@ -91,12 +91,16 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
     >
       <div className="text-xs text-foreground-secondary space-y-1.5">
         <div
-          className={expanded ? 'max-h-52 overflow-y-auto pr-1' : 'line-clamp-4 overflow-hidden'}
+          className={
+            expanded || !isLongNotes
+              ? 'max-h-52 overflow-y-auto pr-1'
+              : 'line-clamp-4 overflow-hidden'
+          }
         >
           {hasNotes ? (
             <ul className="list-disc pl-4 space-y-1">
               {releaseNotes?.map((note, index) => (
-                <li key={`${index}-${note.slice(0, 10)}`} className="leading-relaxed">
+                <li key={index} className="leading-relaxed">
                   {formatInlineMarkdown(note)}
                 </li>
               ))}

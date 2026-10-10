@@ -6,6 +6,7 @@ const ENV_PLACEHOLDER = '<!-- __APP_ENV_INJECTION__ -->';
 
 export interface InjectAppEnvPluginOptions {
   appVersion: string;
+  appName?: string;
 }
 
 /**
@@ -15,7 +16,7 @@ export interface InjectAppEnvPluginOptions {
  * - 生产构建 (build)：保留占位符原样输出到 dist/*.html，由主进程特权自定义协议 (app://) 在运行时动态替换
  */
 export function injectAppEnvPlugin(options: InjectAppEnvPluginOptions): Plugin {
-  const { appVersion } = options;
+  const { appVersion, appName = 'electron-react-monorepo-template' } = options;
 
   return {
     name: 'vite-plugin-inject-app-env',
@@ -30,7 +31,7 @@ export function injectAppEnvPlugin(options: InjectAppEnvPluginOptions): Plugin {
         const runtimeEnv: AppRuntimeEnv = {
           mode,
           appVersion,
-          appName: 'electron-react-monorepo-template',
+          appName,
           channel: process.env.VITE_DISTRIBUTION_CHANNEL,
           apiBaseUrl: process.env.VITE_API_BASE_URL,
           systemCode: process.env.VITE_SYSTEM_CODE,

@@ -59,9 +59,13 @@ export async function initApp(initConfig: AppInitConfig) {
     const configStore = getAppConfigStore();
     if (configStore.get('autoCheckUpdate')) {
       setTimeout(() => {
-        updaterService.checkSilently().catch((err) => {
-          log.warn('[AutoUpdater] Silent update check failed:', err);
-        });
+        try {
+          updaterService.checkSilently().catch((err) => {
+            log.warn('[AutoUpdater] Silent update check failed:', err);
+          });
+        } catch (err) {
+          log.warn('[AutoUpdater] Silent update check invocation failed:', err);
+        }
       }, SILENT_CHECK_DELAY_MS);
     }
   } catch (err) {
