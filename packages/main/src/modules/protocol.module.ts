@@ -2,12 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { protocol } from 'electron';
 import type { AppModule } from '../AppModule';
-import { serializeRuntimeEnvScript } from '../env';
 import type { ModuleContext } from '../ModuleContext';
 import { getLogManager } from './log.module';
 
 const SCHEME = 'app';
-const ENV_PLACEHOLDER = '<!-- __APP_ENV_INJECTION__ -->';
 
 // 在模块加载时预先注册特权模式（若尚未就绪），并在 enable() 中保留幂等防护
 try {
@@ -96,20 +94,10 @@ export class ProtocolModule implements AppModule {
         const ext = path.extname(filePath).toLowerCase();
         const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
-        // 如果是 HTML 请求，动态替换占位符并注入不可变环境基座脚本
+        // 如果是 HTML 请求，直接返回 HTML 内容
         if (ext === '.html') {
           const rawHtml = await fs.promises.readFile(filePath, 'utf-8');
-          const injectedScript = serializeRuntimeEnvScript();
-          let injectedHtml = rawHtml;
-          if (injectedHtml.includes(ENV_PLACEHOLDER)) {
-            injectedHtml = injectedHtml.replaceAll(ENV_PLACEHOLDER, injectedScript);
-          } else if (/<head[^>]*>/i.test(injectedHtml)) {
-            injectedHtml = injectedHtml.replace(/(<head[^>]*>)/i, `$1\n    ${injectedScript}`);
-          } else {
-            injectedHtml = `${injectedScript}\n${injectedHtml}`;
-          }
-
-          return new Response(injectedHtml, {
+          return new Response(rawHtml, {
             status: 200,
             headers: {
               'content-type': 'text/html; charset=utf-8',

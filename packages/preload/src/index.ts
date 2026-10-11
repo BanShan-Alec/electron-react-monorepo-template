@@ -10,10 +10,24 @@ import type { LogInput, PerformActionInput } from '@app/shared/schemas/diagnosti
 import type { OpenDirectoryInput, OpenFileInput, SaveFileInput } from '@app/shared/schemas/dialog';
 import type { ShowItemInFolderInput } from '@app/shared/schemas/shell';
 import type { ElectronApi } from '@app/shared/types/api';
+import type { AppRuntimeEnv } from '@app/shared/types/env';
 import type { StartupGateSnapshot, StartupMainReadyPayload } from '@app/shared/types/startup';
 import type { UpdaterProgress, UpdaterSnapshot } from '@app/shared/types/updater';
+import { APP_ENV_ARG_PREFIX, unpackRuntimeEnv } from '@app/shared/utils/env-packer';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import { invokeTraced } from './telemetry/ipc-tracer';
+
+// 运行时环境基座同步挂载：在页面执行任何脚本前从 argv 快速解包并深度冻结暴露
+const metaArg = process.argv.find((arg) => arg.startsWith(APP_ENV_ARG_PREFIX));
+let runtimeEnv: AppRuntimeEnv | null = null;
+if (metaArg) {
+  try {
+    runtimeEnv = unpackRuntimeEnv(metaArg.slice(APP_ENV_ARG_PREFIX.length));
+  } catch (err) {
+    console.error('[preload] Failed to unpack runtime env from additionalArguments:', err);
+  }
+}
+contextBridge.exposeInMainWorld('__APP_ENV__', Object.freeze(runtimeEnv ?? {}));
 
 // 启动就绪桥（spec §4.6 / ADR-0003）：先拉后推，主进程信号先于窗口时经快照补发不丢。
 // 求值时即预取快照并注册推送监听（不等 onMainReady 被调用）——晚到信号经跨世界
