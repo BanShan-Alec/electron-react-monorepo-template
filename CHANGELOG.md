@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v1.3.1
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.3.0...v1.3.1)
+
+### 🩹 缺陷修复 (Bug Fixes)
+
+- **sentry:** 支持 .env 兜底解析组织与项目名，允许 @sentry/cli 依赖构建 ([#27](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/27))
+
+### ❤️ Contributors
+
+- 半山Alec ([@BanShan-Alec](https://github.com/BanShan-Alec))
+
 ## v1.3.0
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.2.0...v1.3.0)
