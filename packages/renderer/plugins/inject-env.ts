@@ -16,7 +16,7 @@ export interface InjectAppEnvPluginOptions {
  * - 生产构建 (build)：保留占位符原样输出到 dist/*.html，由主进程特权自定义协议 (app://) 在运行时动态替换
  */
 export function injectAppEnvPlugin(options: InjectAppEnvPluginOptions): Plugin {
-  const { appVersion, appName = 'electron-react-monorepo-template' } = options;
+  const { appVersion, appName = 'electron-app' } = options;
 
   return {
     name: 'vite-plugin-inject-app-env',
@@ -32,9 +32,9 @@ export function injectAppEnvPlugin(options: InjectAppEnvPluginOptions): Plugin {
           mode,
           appVersion,
           appName,
-          channel: process.env.VITE_DISTRIBUTION_CHANNEL,
-          apiBaseUrl: process.env.VITE_API_BASE_URL,
-          systemCode: process.env.VITE_SYSTEM_CODE,
+          channel: process.env.DISTRIBUTION_CHANNEL,
+          apiBaseUrl: process.env.API_BASE_URL,
+          systemCode: process.env.SYSTEM_CODE,
         };
         const script = `<script>window.__APP_ENV__=Object.freeze(${JSON.stringify(runtimeEnv)});</script>`;
         return html.replace(ENV_PLACEHOLDER, script);

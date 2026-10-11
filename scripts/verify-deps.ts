@@ -52,10 +52,7 @@ export async function verifyDependencies(): Promise<VerificationResult> {
   try {
     const viteConfigMod = await import('../packages/main/vite.config.ts');
     const viteConfig = viteConfigMod.default || viteConfigMod;
-    const rolldownExternal =
-      viteConfig?.build?.rolldownOptions?.external ||
-      viteConfig?.build?.rollupOptions?.external ||
-      [];
+    const rolldownExternal = viteConfig?.build?.rolldownOptions?.external || [];
 
     const rawExternal = Array.isArray(rolldownExternal) ? rolldownExternal : [rolldownExternal];
     externalList = rawExternal.filter((item): item is string => typeof item === 'string');

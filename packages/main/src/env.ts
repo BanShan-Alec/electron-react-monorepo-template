@@ -61,9 +61,9 @@ export function getRuntimeEnvSnapshot(): AppRuntimeEnv {
     mode: currentAppEnv,
     appVersion: app.getVersion(),
     appName: app.getName(),
-    channel: process.env.VITE_DISTRIBUTION_CHANNEL,
-    apiBaseUrl: process.env.VITE_API_BASE_URL,
-    systemCode: process.env.VITE_SYSTEM_CODE,
+    channel: process.env.DISTRIBUTION_CHANNEL,
+    apiBaseUrl: process.env.API_BASE_URL,
+    systemCode: process.env.SYSTEM_CODE,
   };
 }
 

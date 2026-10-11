@@ -3,6 +3,15 @@ const { join } = require('node:path');
 
 import type { Configuration } from 'electron-builder';
 
+const owner = process.env.GITHUB_OWNER;
+const repo = process.env.GITHUB_REPO;
+
+if (!owner || !repo) {
+  throw new Error(
+    '打包失败: 未配置 GITHUB_OWNER 或 GITHUB_REPO 环境变量。作为通用模板项目，请在 .env 或环境变量中指定目标 GitHub 仓库。',
+  );
+}
+
 const config: Configuration = {
   directories: {
     output: 'dist',
@@ -11,8 +20,8 @@ const config: Configuration = {
   generateUpdatesFilesForAllChannels: true,
   publish: {
     provider: 'github',
-    owner: process.env.GITHUB_OWNER || 'BanShan-Alec',
-    repo: process.env.GITHUB_REPO || 'electron-react-monorepo-template',
+    owner,
+    repo,
     releaseType: 'release',
   },
   win: {

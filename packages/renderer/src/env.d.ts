@@ -22,7 +22,6 @@ declare global {
 interface ImportMetaEnv {
   readonly APP_VERSION: string;
   readonly SENTRY_DSN: string;
-  readonly VITE_SENTRY_DSN: string;
   readonly RELEASE_NAME: string;
 }
 

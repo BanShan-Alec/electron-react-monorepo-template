@@ -103,21 +103,25 @@ export class UpdaterService {
       updater.autoInstallOnAppQuit = false;
       updater.fullChangelog = true;
 
-      if (process.env.VITE_DISTRIBUTION_CHANNEL) {
-        updater.channel = process.env.VITE_DISTRIBUTION_CHANNEL;
+      const channel = process.env.DISTRIBUTION_CHANNEL;
+      if (channel) {
+        updater.channel = channel;
       }
 
-      const owner = process.env.VITE_GITHUB_OWNER || process.env.GITHUB_OWNER || 'BanShan-Alec';
-      const repo =
-        process.env.VITE_GITHUB_REPO ||
-        process.env.GITHUB_REPO ||
-        'electron-react-monorepo-template';
+      const owner = process.env.GITHUB_OWNER;
+      const repo = process.env.GITHUB_REPO;
 
-      updater.setFeedURL({
-        provider: 'github',
-        owner,
-        repo,
-      });
+      if (owner && repo) {
+        updater.setFeedURL({
+          provider: 'github',
+          owner,
+          repo,
+        });
+      } else {
+        this.logger.warn(
+          'Auto-updater skipped setFeedURL: GITHUB_OWNER or GITHUB_REPO not configured.',
+        );
+      }
 
       updater.on('checking-for-update', () => {
         this.logger.info('Checking for update...');
@@ -280,6 +284,16 @@ export class UpdaterService {
       return this.getSnapshot();
     }
 
+    const owner = process.env.GITHUB_OWNER;
+    const repo = process.env.GITHUB_REPO;
+    if (!owner || !repo) {
+      this.logger.warn('Auto-updater check aborted: GITHUB_OWNER or GITHUB_REPO not configured.');
+      this.snapshot.state = 'error';
+      this.snapshot.error = '自动更新未配置仓库信息 (缺少 GITHUB_OWNER 或 GITHUB_REPO)';
+      this.emitState();
+      throw new AppError(this.snapshot.error, ErrorCode.UPDATER_NOT_CONFIGURED);
+    }
+
     try {
       const updater = this.getAutoUpdater();
       let timer: NodeJS.Timeout | undefined;
@@ -318,6 +332,13 @@ export class UpdaterService {
 
     if (isDev) {
       this.logger.info('Dev mode: skipping silent check request');
+      return;
+    }
+
+    const owner = process.env.GITHUB_OWNER;
+    const repo = process.env.GITHUB_REPO;
+    if (!owner || !repo) {
+      this.logger.info('Silent update check skipped: GITHUB_OWNER or GITHUB_REPO not configured.');
       return;
     }
 

@@ -1,5 +1,6 @@
 import { type ChildProcess, spawn } from 'node:child_process';
 import path from 'node:path';
+import 'dotenv/config';
 import electronPath from 'electron';
 import { build, createServer, type Plugin, type ViteDevServer } from 'vite';
 import { ensurePortsAvailable, killProcessTree } from './port-guard.ts';
