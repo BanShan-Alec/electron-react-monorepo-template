@@ -13,7 +13,7 @@ export function computeFingerprint(itemPath: string, content: string): string {
     .replace(/L\d+/gi, '')
     .replace(/\b\d+\s*行/g, '')
     .replace(/[^\w\u4e00-\u9fa5]/g, '')
-    .slice(0, 50);
+    .slice(0, 160);
   return `${normPath}::${cleanContent}`;
 }
 
@@ -50,7 +50,9 @@ export function parseExistingDashboard(filePath: string): Map<string, Historical
       let userNote = '';
       const noteMatch = block.match(/> \*\*人工批注 \/ 修改要求\*\*:\s*([^\n\r]+)/);
       if (noteMatch) {
-        const rawNote = noteMatch[1].trim();
+        let rawNote = noteMatch[1].trim();
+        // 剥离上一轮自动附加的后缀
+        rawNote = rawNote.replace(/\s*\*\(继承自上一轮批注\)\*\s*$/g, '').trim();
         // 排除默认模板占位提示
         if (!rawNote.startsWith('_(') && !rawNote.startsWith('(')) {
           userNote = rawNote;

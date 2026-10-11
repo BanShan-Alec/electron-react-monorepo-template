@@ -25,7 +25,7 @@ export function resolveOwnerRepo(): string {
     }
   }
 
-  return 'BanShan-Alec/electron-react-monorepo-template';
+  return fail('无法解析当前 Git 仓库信息，请检查远程 origin 配置或 gh auth 状态');
 }
 
 export function getCurrentBranch(): string {

@@ -25,7 +25,8 @@ export function getLatestRunInfo(branch: string, prNumber: number | null): RunIn
       }[]
     >(runsJson) || [];
 
-  const branchRuns = allRuns.filter((r) => r.headBranch === branch || r.headBranch === 'main');
+  // 仅匹配当前分支运行，杜绝将 main 上无关运行算入当前 PR
+  const branchRuns = allRuns.filter((r) => r.headBranch === branch);
   const completedRuns = branchRuns.filter((r) => r.status === 'completed');
 
   // 优化 1: 优先从 PR sticky 评论中的 checkpoint 元数据直接获取最新的 run ID

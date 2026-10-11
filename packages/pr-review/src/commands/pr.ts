@@ -1,11 +1,9 @@
-import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import readline from 'node:readline';
 import { ensureGhAuth, getCurrentBranch } from '../utils/git.ts';
 import { fail, probe, run, sleepSync } from '../utils/process.ts';
 
-const MAIN_BRANCH = 'main';
+const MAIN_BRANCH = process.env.DEFAULT_BRANCH || 'main';
 const CHECKS_POLL_INTERVAL_MS = 15_000;
 const CHECKS_MAX_POLLS = 40;
 
@@ -46,7 +44,10 @@ function buildBody(commitList: string[], intent: string): string {
   for (const line of template.split('\n')) {
     if (!line.startsWith('## ')) continue;
     out.push(line, '');
-    const key = Object.keys(fills).find((k) => line.includes(k));
+    const headerTitle = line.replace(/^##\s+/, '').trim();
+    const key = Object.keys(fills).find(
+      (k) => headerTitle.startsWith(k) || headerTitle.includes(k),
+    );
     if (key) out.push(fills[key] ?? '', '');
   }
   return `${out.join('\n').trim()}\n`;
@@ -183,12 +184,15 @@ export function mergePr(): void {
   run('git', ['fetch', 'origin']);
 
   if (!process.argv.includes('--yes')) {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const answer = execSync(
-      `powershell -Command "Read-Host '确认将 ${branch} 合并入 ${MAIN_BRANCH}? (y/N)'"`,
-      { encoding: 'utf-8' },
-    ).trim();
-    rl.close();
+    process.stdout.write(`确认将 ${branch} 合并入 ${MAIN_BRANCH}? (y/N): `);
+    let answer = '';
+    try {
+      const buffer = Buffer.alloc(1024);
+      const bytesRead = fs.readSync(0, buffer, 0, 1024, null);
+      answer = buffer.toString('utf-8', 0, bytesRead).trim();
+    } catch {
+      answer = '';
+    }
     if (!/^y(es)?$/i.test(answer)) {
       console.log('已取消合并操作。');
       process.exit(0);
