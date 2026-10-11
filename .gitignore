@@ -20,9 +20,8 @@ out/
 packages/pr-review/reviews/
 
 # Environment & Local Configuration
-.env
-.env.*
-!.env.example
+.env.local
+.env.*.local
 *.local
 
 # Application Runtime State
