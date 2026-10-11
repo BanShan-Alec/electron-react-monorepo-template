@@ -1,5 +1,5 @@
-const { execSync } = require('node:child_process');
-const readline = require('node:readline/promises');
+import { execSync } from 'node:child_process';
+import readline from 'node:readline/promises';
 
 interface PortItem {
   port?: number;
@@ -7,7 +7,7 @@ interface PortItem {
 }
 
 /** 跨平台树状强制杀死进程及其子进程 */
-async function killProcessTree(pid: number): Promise<void> {
+export async function killProcessTree(pid: number): Promise<void> {
   try {
     if (process.platform === 'win32') {
       execSync(`taskkill /pid ${pid} /T /F`, { stdio: 'ignore' });
@@ -22,7 +22,7 @@ async function killProcessTree(pid: number): Promise<void> {
 }
 
 /** 查询监听指定端口的进程 PID */
-async function findOccupyingPid(port: number): Promise<number | null> {
+export async function findOccupyingPid(port: number): Promise<number | null> {
   try {
     if (process.platform === 'win32') {
       const output = execSync('netstat -ano -p tcp', {
@@ -57,7 +57,7 @@ async function findOccupyingPid(port: number): Promise<number | null> {
 }
 
 /** 获取 PID 对应的进程名（用于友好的终端确认提示） */
-async function getProcessName(pid: number): Promise<string> {
+export async function getProcessName(pid: number): Promise<string> {
   try {
     if (process.platform === 'win32') {
       const output = execSync(`tasklist /FI "PID eq ${pid}" /FO CSV /NH`, {
@@ -78,7 +78,7 @@ async function getProcessName(pid: number): Promise<string> {
 }
 
 /** 提示用户确认是否杀死占用端口的进程 */
-async function promptUserToKill(
+export async function promptUserToKill(
   port: number,
   desc: string,
   pid: number,
@@ -107,7 +107,7 @@ async function promptUserToKill(
 }
 
 /** 检查单个端口是否可用；若被占则交互确认后杀死 */
-async function ensureSinglePortAvailable(port: number, desc: string): Promise<void> {
+export async function ensureSinglePortAvailable(port: number, desc: string): Promise<void> {
   const pid = await findOccupyingPid(port);
   if (pid === null || pid === process.pid) {
     return;
@@ -129,12 +129,10 @@ async function ensureSinglePortAvailable(port: number, desc: string): Promise<vo
 }
 
 /** 批量检查关键端口是否可用；自动过滤未配置端口 */
-async function ensurePortsAvailable(ports: PortItem[]): Promise<void> {
+export async function ensurePortsAvailable(ports: PortItem[]): Promise<void> {
   for (const item of ports) {
     if (typeof item.port === 'number') {
       await ensureSinglePortAvailable(item.port, item.desc);
     }
   }
 }
-
-module.exports = { killProcessTree, ensurePortsAvailable };

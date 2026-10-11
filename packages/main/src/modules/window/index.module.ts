@@ -156,7 +156,7 @@ export class WindowManager implements AppModule {
             'Updater is downloading, keeping updater in background with watchdog (Strategy A)',
           );
           try {
-            getUpdaterWindowModule().hide();
+            getUpdaterWindowModule().close();
           } catch {}
           if (Notification.isSupported()) {
             const isZh = configStore.get('language') === 'zh-CN';

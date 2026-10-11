@@ -1,6 +1,7 @@
-﻿import os from 'node:os';
+import os from 'node:os';
 import process from 'node:process';
 import type { PingResult, SystemInfo } from '@app/shared/types/system';
+import { currentAppEnv, isPackaged } from '../env';
 
 export class SystemService {
   getPing(): PingResult {
@@ -29,6 +30,8 @@ export class SystemService {
       heapUsedMB: Math.round(memUsage.heapUsed / (1024 * 1024)),
       heapTotalMB: Math.round(memUsage.heapTotal / (1024 * 1024)),
       uptimeSeconds: Math.floor(process.uptime()),
+      env: currentAppEnv,
+      isPackaged,
     };
   }
 }

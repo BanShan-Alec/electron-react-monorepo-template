@@ -1,3 +1,5 @@
+import type { AppEnv } from '../constants/env';
+
 export interface PingResult {
   message: string;
   timestamp: number; // Unix 毫秒统一规范
@@ -18,4 +20,6 @@ export interface SystemInfo {
   heapUsedMB: number;
   heapTotalMB: number;
   uptimeSeconds: number;
+  env?: AppEnv;
+  isPackaged?: boolean;
 }

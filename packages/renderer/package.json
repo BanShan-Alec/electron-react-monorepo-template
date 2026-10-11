@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build --configLoader bundle",
+    "build": "tsc --noEmit && vite build",
     "extract": "lingui extract --clean",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",

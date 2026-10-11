@@ -3,6 +3,7 @@ import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import { updaterMockActionSchema } from '@app/shared/schemas/updater';
 import type { Result } from '@app/shared/types/result';
 import type { UpdaterSnapshot } from '@app/shared/types/updater';
+import { isTest } from '../env';
 import { getUpdaterWindowModule } from '../modules/window/updater-window.module';
 import { updaterService } from '../services/updater.service';
 import { handleTraced } from '../telemetry/ipc-tracer';
@@ -69,7 +70,7 @@ export function registerUpdaterControllers(): void {
     IPC_CHANNELS.UPDATER_CLOSE_WINDOW,
     async (): Promise<Result<{ success: boolean }>> => {
       try {
-        getUpdaterWindowModule().hide();
+        getUpdaterWindowModule().close();
         return successResult({ success: true });
       } catch (err) {
         return catchToResult(err);
@@ -78,7 +79,7 @@ export function registerUpdaterControllers(): void {
   );
 
   // 测试环境 Mock 注入通道
-  if (process.env.NODE_ENV === 'test') {
+  if (isTest) {
     handleTraced(
       IPC_CHANNELS.UPDATER_MOCK_EMIT,
       async (_event, rawInput: unknown): Promise<Result<{ success: boolean }>> => {
