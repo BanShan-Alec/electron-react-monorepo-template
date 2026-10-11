@@ -9,7 +9,8 @@ import { useLogging } from './hooks/useLogging';
  */
 function LoggingFeature() {
   // 变量声明、解构
-  const { logStatus, isLoading, handleSendLog, handleOpenLogFolder } = useLogging();
+  const { logStatus, isLoading, handleSendLog, handleOpenLogFolder, handleTriggerSentryError } =
+    useLogging();
 
   // 组件渲染
   return (
@@ -18,6 +19,7 @@ function LoggingFeature() {
       isLoading={isLoading}
       onSendLog={handleSendLog}
       onOpenLogFolder={handleOpenLogFolder}
+      onTriggerSentryError={handleTriggerSentryError}
     />
   );
 }

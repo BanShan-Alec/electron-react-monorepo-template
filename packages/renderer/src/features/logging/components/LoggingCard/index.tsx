@@ -1,4 +1,5 @@
 import {
+  BugOutlined,
   CloseCircleOutlined,
   FileTextOutlined,
   FolderOpenOutlined,
@@ -19,7 +20,7 @@ import { statusBoxClass } from '@/lib/classNames';
 const _LoggingCard = (props: ILoggingCardProps) => {
   useLingui();
   // 变量声明、解构
-  const { logStatus, isLoading, onSendLog, onOpenLogFolder } = props;
+  const { logStatus, isLoading, onSendLog, onOpenLogFolder, onTriggerSentryError } = props;
 
   // 组件状态
 
@@ -80,6 +81,13 @@ const _LoggingCard = (props: ILoggingCardProps) => {
           >
             {t`发送 ERROR`}
           </Button>
+          <Button
+            size="small"
+            icon={<BugOutlined className="text-danger" />}
+            onClick={onTriggerSentryError}
+          >
+            {t`触发 Sentry 异常`}
+          </Button>
         </div>
 
         {logStatus && <div className={statusBoxClass()}>{logStatus}</div>}
@@ -94,6 +102,7 @@ interface ILoggingCardProps {
   isLoading: boolean;
   onSendLog: (level: 'info' | 'warn' | 'error') => void;
   onOpenLogFolder: () => void;
+  onTriggerSentryError?: () => void;
 }
 
 const LoggingCard = memo(_LoggingCard);

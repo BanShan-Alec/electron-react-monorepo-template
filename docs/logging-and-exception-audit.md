@@ -166,3 +166,25 @@ export class LogManager {
 ```
 * 各 Module 直接持有 `#logger = getLogManager().scoped(this)`，调用时无需关注中括号，输出统一且随 Class 名自适应。
 
+---
+
+## 八、 落盘日志语言与用词规范（English-Only Logging）
+
+### 1. 核心原则
+- **强制纯英文（English Only）**：所有落盘持久化到本地日志文件（`main.log`、`renderer.log`、`electron-log`）的日志消息文本，必须严格使用英文。禁止出现中文字符（用户可见的 UI、弹窗与系统通知文案不受此限，维持独立的多语言 i18n 体系）。
+- **用词简单常用（Simple & Standard Vocabulary）**：优先使用基础、标准、高频的技术英语词汇（如 `init`, `start`, `stop`, `ready`, `failed`, `skipped`, `created`, `destroyed`, `restored`），避免生僻、生造词汇或过于复杂的文学修辞。
+- **句子简短易懂（Concise & Clear Sentences）**：以主谓宾或动宾短语为主，句式控制在 3~10 个词以内，重点突出状态和结果，拒绝冗长繁杂的复句。
+- **上下文清晰**：动态参数统一通过模板插值或后缀追加（如 `User clicked update check (version: 1.2.0)`、`Failed to load URL "${url}": ${err}`）。
+
+### 2. 常用句式与词汇推荐
+
+| 场景 | 推荐格式 / 词汇 | 正确示例 | 禁用示例（中文或复杂句） |
+| :--- | :--- | :--- | :--- |
+| **模块初始化** | `Initialized / Starting / Ready` | `Sentry initialized successfully` | `主进程初始化成功` / `Successfully instantiated and prepared the Sentry client` |
+| **条件跳过** | `Skipped (...)` | `Sentry init skipped: not packaged or missing DSN` | `初始化已跳过（未打包或未配置有效 DSN）` |
+| **生命周期** | `Created / Destroyed / Closed` | `Home window closed and destroyed -> running in tray` | `主窗口已销毁并退入托盘后台` |
+| **操作失败** | `Failed to <action>: <reason>` | `Failed to check for updates: ${err}` | `更新检查异常失败` / `Encountered an unexpected error while probing for updates` |
+| **状态恢复** | `Restored / Recovered` | `Window (id=${id}) is responsive again` | `窗口已恢复正常响应` |
+| **异常检测** | `Unexpected <event> / Crash` | `Renderer process gone: reason=${reason}` | `渲染进程非预期退出` |
+
+

@@ -59,10 +59,15 @@ export function useLogging() {
     void runLogAction({ kind: 'openLogFolder', level: 'info' }).catch(() => {});
   };
 
+  const handleTriggerSentryError = () => {
+    throw new Error('Test Sentry exception triggered from UI');
+  };
+
   return {
     logStatus,
     isLoading,
     handleSendLog,
     handleOpenLogFolder,
+    handleTriggerSentryError,
   };
 }
