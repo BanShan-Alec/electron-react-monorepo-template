@@ -23,27 +23,10 @@ export function getSentryBuildConfig(fromDir?: string): SentryBuildConfig {
   const appVersion: string = rootPkg.version || '1.0.0';
   const releaseName = `${appName}@${appVersion}`;
 
-  // 优先从环境变量读取；若环境变量为空字符串（如 CI 注入了空变量），则兜底从根目录 .env 文件解析
-  const envFileConfig: Record<string, string> = {};
-  const envFilePath = path.join(rootDir, '.env');
-  try {
-    const envContent = readFileSync(envFilePath, 'utf-8');
-    for (const line of envContent.split(/\r?\n/)) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) continue;
-      const match = trimmed.match(/^([^=]+)=(.*)$/);
-      if (match) {
-        envFileConfig[match[1].trim()] = match[2].trim();
-      }
-    }
-  } catch {
-    // 忽略 .env 文件不存在或读取异常
-  }
-
-  const sentryDsn = process.env.SENTRY_DSN || envFileConfig.SENTRY_DSN || '';
-  const sentryOrg = process.env.SENTRY_ORG || envFileConfig.SENTRY_ORG || '';
-  const sentryProject = process.env.SENTRY_PROJECT || envFileConfig.SENTRY_PROJECT || '';
-  const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN || envFileConfig.SENTRY_AUTH_TOKEN || '';
+  const sentryDsn = process.env.SENTRY_DSN || '';
+  const sentryOrg = process.env.SENTRY_ORG || '';
+  const sentryProject = process.env.SENTRY_PROJECT || '';
+  const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN || '';
 
   return {
     rootDir,

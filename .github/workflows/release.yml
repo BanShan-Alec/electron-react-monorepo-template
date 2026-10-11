@@ -26,8 +26,6 @@ jobs:
     timeout-minutes: 60
     env:
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ vars.SENTRY_ORG || '' }}
-      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-env
