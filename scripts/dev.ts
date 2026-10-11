@@ -1,9 +1,18 @@
-import { type ChildProcess, spawn } from 'node:child_process';
+import { type ChildProcess, execSync, spawn } from 'node:child_process';
 import path from 'node:path';
 import 'dotenv/config';
 import electronPath from 'electron';
 import { build, createServer, type Plugin, type ViteDevServer } from 'vite';
 import { ensurePortsAvailable, killProcessTree } from './port-guard.ts';
+
+// Windows 平台下将控制台代码页切换为 UTF-8 (65001)，解决 Git Bash 等终端日志中文乱码问题
+if (process.platform === 'win32') {
+  try {
+    execSync('chcp 65001', { stdio: 'ignore' });
+  } catch {
+    // 忽略异常，降级保持原有行为
+  }
+}
 
 /**
  * 默认配置。
