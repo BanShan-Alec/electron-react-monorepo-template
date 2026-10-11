@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useManualRequest } from '@/hooks/useManualRequest';
 import { callIpc } from '@/lib/ipc';
 
+import { Sentry } from '@/lib/sentry';
+
 // 私有常量
 type LogLevel = 'info' | 'warn' | 'error';
 type LoggingAction = 'log' | 'openLogFolder';
@@ -60,7 +62,41 @@ export function useLogging() {
   };
 
   const handleTriggerSentryError = () => {
-    throw new Error('Test Sentry exception triggered from UI');
+    const errorMsg = 'Test Sentry exception triggered from UI';
+    const err = new Error(errorMsg);
+
+    // 1. 记录本地落盘日志到 renderer.log
+    void callIpc('diagnostics.log', window.api.diagnostics.log, [
+      {
+        level: 'error',
+        message: errorMsg,
+        meta: { triggeredFrom: 'UI', timestamp: Date.now() },
+      },
+    ]).catch(() => {});
+
+    // 2. 尝试调用 Sentry 捕获上报
+    let sentryEventId: string | undefined;
+    try {
+      if (Sentry.getClient()) {
+        sentryEventId = Sentry.captureException(err);
+      }
+    } catch {
+      // 容错处理
+    }
+
+    // 3. 及时更新 UI 状态展示与用户反馈
+    if (sentryEventId) {
+      setLogStatus(t`❌ 已触发异常并上报 Sentry (ID: ${sentryEventId})，已写入 renderer.log`);
+      message.success(t`已上报异常到 Sentry (ID: ${sentryEventId})`);
+    } else {
+      setLogStatus(t`⚠️ 已触发异常并写入 renderer.log (Sentry 未激活或未配置有效 DSN)`);
+      message.warning(t`Sentry 未激活，已将异常记录至本地日志`);
+    }
+
+    // 4. 异步抛出异常至全局执行栈，供 window.onerror 全局监听器捕获并在 DevTools 呈现
+    setTimeout(() => {
+      throw err;
+    }, 0);
   };
 
   return {

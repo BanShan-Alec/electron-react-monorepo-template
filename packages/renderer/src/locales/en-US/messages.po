@@ -16,8 +16,16 @@ msgid "@app/shared 共享契约单一事实源"
 msgstr "@app/shared Single Source of Truth for Contracts"
 
 #: src/features/logging/hooks/useLogging.ts
+msgid "⚠️ 已触发异常并写入 renderer.log (Sentry 未激活或未配置有效 DSN)"
+msgstr "⚠️ Exception triggered and logged to renderer.log (Sentry inactive or missing valid DSN)"
+
+#: src/features/logging/hooks/useLogging.ts
 msgid "✅ 已发送 {levelUpper} 日志到 renderer.log"
 msgstr "✅ Sent {levelUpper} log to renderer.log"
+
+#: src/features/logging/hooks/useLogging.ts
+msgid "❌ 已触发异常并上报 Sentry (ID: {sentryEventId})，已写入 renderer.log"
+msgstr "❌ Exception triggered and reported to Sentry (ID: {sentryEventId}), logged to renderer.log"
 
 #. placeholder {0}: data.path
 #: src/features/logging/hooks/useLogging.ts
@@ -84,6 +92,10 @@ msgstr "Preload: Precise Whitelist Bridging"
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "Renderer 进程纯净消费"
 msgstr "Renderer Process: Clean Consumption"
+
+#: src/features/logging/hooks/useLogging.ts
+msgid "Sentry 未激活，已将异常记录至本地日志"
+msgstr "Sentry is inactive, logged test exception to local log file"
 
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "V8 引擎版本"
@@ -237,6 +249,10 @@ msgstr "Failed to reveal"
 #: src/features/updater/components/ChangelogCard/index.tsx
 msgid "展开全部"
 msgstr ""
+
+#: src/features/logging/hooks/useLogging.ts
+msgid "已上报异常到 Sentry (ID: {sentryEventId})"
+msgstr "Reported exception to Sentry (ID: {sentryEventId})"
 
 #: src/features/devtools/hooks/useDevTools.ts
 msgid "已关闭 DevTools"

@@ -21,10 +21,10 @@ export function getSentryDsn(): string {
 
 /**
  * 判断当前是否满足 Sentry 采集条件：
- * 严格限制仅打包后（app.isPackaged）且配置有效 DSN 时才激活
+ * 配置有效 DSN 时激活
  */
 export function isSentryEnabled(): boolean {
-  return app.isPackaged && Boolean(getSentryDsn());
+  return Boolean(getSentryDsn());
 }
 
 /**

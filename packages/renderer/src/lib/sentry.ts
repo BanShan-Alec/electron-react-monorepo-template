@@ -18,8 +18,8 @@ export function initSentry(): void {
       ? window.__APP_ENV__.mode === APP_ENV.PRODUCTION
       : import.meta.env.PROD;
 
-  // 严格守卫：仅 prod 模式且有有效 DSN 时激活
-  const isEnabled = isProd && Boolean(dsn);
+  // 有效 DSN 时激活（生产环境标注 production，开发环境标注 development）
+  const isEnabled = Boolean(dsn);
 
   if (!isEnabled) {
     return;
@@ -35,7 +35,7 @@ export function initSentry(): void {
   Sentry.init({
     dsn,
     enabled: true,
-    environment: 'production',
+    environment: isProd ? 'production' : 'development',
     release,
 
     // 彻底关闭行为监控（Breadcrumbs）
