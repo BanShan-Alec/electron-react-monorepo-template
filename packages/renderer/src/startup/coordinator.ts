@@ -38,6 +38,9 @@ const tryFinishStartup = () => {
   if (finished || pendingGates.size > 0) return;
   finished = true;
   document.body.classList.add(APP_STARTUP_READY_CLASS);
+  try {
+    sessionStorage.setItem('app_startup_done', '1');
+  } catch {}
   window.setTimeout(() => document.getElementById(LOADING_ELEMENT_ID)?.remove(), UNMOUNT_DELAY_MS);
 };
 
@@ -47,9 +50,14 @@ const settleGate = (id: GateId) => {
   tryFinishStartup();
 };
 
-// 门禁一：壳弹出动画（reduced-motion 或元素缺失时直接放行）
+// 门禁一：壳弹出动画（若为页面刷新重试、reduced-motion 或元素缺失时直接放行，避免动画重复播放抽搐）
+const isReload = Boolean(sessionStorage.getItem('app_startup_done'));
 const startupLogoShell = document.querySelector(LOGO_SHELL_SELECTOR);
-if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !startupLogoShell) {
+if (
+  isReload ||
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+  !startupLogoShell
+) {
   settleGate('animation');
 } else {
   startupLogoShell.addEventListener('animationend', () => settleGate('animation'), { once: true });
