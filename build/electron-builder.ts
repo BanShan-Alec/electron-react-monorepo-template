@@ -1,6 +1,5 @@
-const fs = require('node:fs');
-const { join } = require('node:path');
-
+import fs from 'node:fs';
+import { join } from 'node:path';
 import type { Configuration } from 'electron-builder';
 
 const owner = process.env.GITHUB_OWNER;
@@ -80,7 +79,7 @@ const config: Configuration = {
   ],
 };
 
-module.exports = config;
+export default config;
 
 /**
  * 显式读取指定 workspace 子包的 package.json 中的 files 配置，生成打包匹配规则

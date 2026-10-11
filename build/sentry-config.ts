@@ -1,7 +1,7 @@
-const { readFileSync } = require('node:fs');
-const path = require('node:path');
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 
-interface SentryBuildConfig {
+export interface SentryBuildConfig {
   rootDir: string;
   appName: string;
   appVersion: string;
@@ -16,8 +16,8 @@ interface SentryBuildConfig {
  * 统一解析根目录 package.json 与 .env 中的 Sentry 构建期配置
  * 构建期基础设施模块，服务于各进程打包编译
  */
-function getSentryBuildConfig(fromDir?: string): SentryBuildConfig {
-  const rootDir = fromDir ? path.resolve(fromDir, '../../') : path.resolve(__dirname, '..');
+export function getSentryBuildConfig(fromDir?: string): SentryBuildConfig {
+  const rootDir = fromDir ? path.resolve(fromDir, '../../') : path.resolve(process.cwd());
   const rootPkg = JSON.parse(readFileSync(path.join(rootDir, 'package.json'), 'utf-8'));
   const appName: string = rootPkg.name || 'electron-app';
   const appVersion: string = rootPkg.version || '1.0.0';
@@ -39,5 +39,3 @@ function getSentryBuildConfig(fromDir?: string): SentryBuildConfig {
     sentryAuthToken,
   };
 }
-
-module.exports = { getSentryBuildConfig };

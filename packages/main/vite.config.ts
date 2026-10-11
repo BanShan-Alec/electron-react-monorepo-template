@@ -1,9 +1,6 @@
-import { createRequire } from 'node:module';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { defineConfig } from 'vite';
-
-const require = createRequire(import.meta.url);
-const { getSentryBuildConfig } = require('../../build/sentry-config.ts');
+import { getSentryBuildConfig } from '../../build/sentry-config.ts';
 
 const sentryConfig = getSentryBuildConfig(__dirname);
 
