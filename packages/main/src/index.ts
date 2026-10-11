@@ -31,7 +31,7 @@ export async function initApp(initConfig: AppInitConfig) {
     .init(createConfigModule())
     .init(createNativeThemeModule())
     .init(createIPCModule())
-    // 特权自定义协议：在窗口创建前拦截并提供带有不可变环境注入的 HTML 流
+    // 特权自定义协议：在窗口创建前注册并处理生产态静态资源分发与 SPA 回退
     .init(createProtocolModule(rendererDistDir))
     // 主进程就绪源：链位在 WindowManager 之前，信号先于窗口与壳（spec §4.6 / ADR-0003）
     .init(createStartupReadinessModule())

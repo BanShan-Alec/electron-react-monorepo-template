@@ -67,9 +67,11 @@ export function getRuntimeEnvSnapshot(): AppRuntimeEnv {
   };
 }
 
+import { APP_ENV_ARG_PREFIX, packRuntimeEnv } from '@app/shared/utils/env-packer';
+
 /**
- * 将运行时环境快照序列化为深度冻结的内联 HTML 脚本标签
+ * 将运行时环境快照序列化为命令行启动参数（压缩混淆形式）
  */
-export function serializeRuntimeEnvScript(env: AppRuntimeEnv = getRuntimeEnvSnapshot()): string {
-  return `<script>window.__APP_ENV__=Object.freeze(${JSON.stringify(env)});</script>`;
+export function getPackedEnvArgument(env: AppRuntimeEnv = getRuntimeEnvSnapshot()): string {
+  return `${APP_ENV_ARG_PREFIX}${packRuntimeEnv(env)}`;
 }
