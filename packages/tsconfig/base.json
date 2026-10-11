@@ -15,8 +15,6 @@
       "@app/renderer/*": ["../renderer/src/*"],
       "@app/shared/*": ["../shared/src/*"],
       "@shared/*": ["../shared/src/*"],
-      "@build/*": ["../../build/*"],
-      "@build": ["../../build"],
       "@/*": ["../renderer/src/*"]
     }
   }

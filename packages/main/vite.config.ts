@@ -1,6 +1,6 @@
-import { getSentryBuildConfig } from '@build/sentry-config.ts';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { defineConfig } from 'vite';
+import { getSentryBuildConfig } from '../../build/sentry-config.ts';
 
 const sentryConfig = getSentryBuildConfig(__dirname);
 
