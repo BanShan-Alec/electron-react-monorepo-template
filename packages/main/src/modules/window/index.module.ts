@@ -143,10 +143,14 @@ export class WindowManager implements AppModule {
 
     // 支持点击关闭按钮销毁主窗口并退守系统托盘及防僵尸退出闭环
     browserWindow.on('close', () => {
+      if (appLifecycle.isQuitting) {
+        return;
+      }
+
       const configStore = getAppConfigStore();
       const shouldMinimizeToTray = configStore.get('minimizeToTray');
 
-      if (!appLifecycle.isQuitting && shouldMinimizeToTray) {
+      if (shouldMinimizeToTray) {
         // 用户开启了关闭时最小化到托盘：允许窗口自然销毁以彻底释放内存，
         // 不拦截 close 事件（不 event.preventDefault()），亦不触发 app.quit()，
         // 应用进程继续保留系统托盘常驻。
