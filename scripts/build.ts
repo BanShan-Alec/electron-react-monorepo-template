@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
+import 'dotenv/config';
 import { build, type CliOptions } from 'electron-builder';
 import { verifyDependencies } from './verify-deps.ts';
 import { verifyDist } from './verify-dist.ts';
@@ -25,10 +26,21 @@ const { values } = parseArgs({
 });
 
 async function runBuild() {
+  // 0. Ensure production mode is set to guarantee minification & tree-shaking
+  process.env.MODE = 'production';
+  process.env.NODE_ENV = 'production';
+
   // 1. Build workspace packages first unless --skip-build is specified
   if (!values['skip-build']) {
-    console.log('📦 Building workspace packages...');
-    execSync('pnpm -r run build', { stdio: 'inherit' });
+    console.log('📦 Building workspace packages in production mode...');
+    execSync('pnpm -r run build', {
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        MODE: 'production',
+        NODE_ENV: 'production',
+      },
+    });
   }
 
   // 2. Assemble electron-builder packaging options
