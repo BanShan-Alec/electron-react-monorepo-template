@@ -16,16 +16,12 @@ msgid "@app/shared 共享契约单一事实源"
 msgstr "@app/shared 共享契约单一事实源"
 
 #: src/features/logging/hooks/useLogging.ts
-msgid "⚠️ 已触发异常并写入 renderer.log (Sentry 未激活或未配置有效 DSN)"
-msgstr "⚠️ 已触发异常并写入 renderer.log (Sentry 未激活或未配置有效 DSN)"
-
-#: src/features/logging/hooks/useLogging.ts
 msgid "✅ 已发送 {levelUpper} 日志到 renderer.log"
 msgstr "✅ 已发送 {levelUpper} 日志到 renderer.log"
 
 #: src/features/logging/hooks/useLogging.ts
-msgid "❌ 已触发异常并上报 Sentry (ID: {sentryEventId})，已写入 renderer.log"
-msgstr "❌ 已触发异常并上报 Sentry (ID: {sentryEventId})，已写入 renderer.log"
+msgid "❌ 已触发测试异常并写入 renderer.log (生产打包模式下将由全局监听器自动上报 Sentry)"
+msgstr "❌ 已触发测试异常并写入 renderer.log (生产打包模式下将由全局监听器自动上报 Sentry)"
 
 #. placeholder {0}: data.path
 #: src/features/logging/hooks/useLogging.ts
@@ -92,10 +88,6 @@ msgstr "Preload 精准白名单桥接"
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "Renderer 进程纯净消费"
 msgstr "Renderer 进程纯净消费"
-
-#: src/features/logging/hooks/useLogging.ts
-msgid "Sentry 未激活，已将异常记录至本地日志"
-msgstr "Sentry 未激活，已将异常记录至本地日志"
 
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "V8 引擎版本"
@@ -250,10 +242,6 @@ msgstr "定位失败"
 msgid "展开全部"
 msgstr "展开全部"
 
-#: src/features/logging/hooks/useLogging.ts
-msgid "已上报异常到 Sentry (ID: {sentryEventId})"
-msgstr "已上报异常到 Sentry (ID: {sentryEventId})"
-
 #: src/features/devtools/hooks/useDevTools.ts
 msgid "已关闭 DevTools"
 msgstr "已关闭 DevTools"
@@ -273,6 +261,10 @@ msgstr "已开启 DevTools"
 #: src/features/updater/index.tsx
 msgid "已是最新版本"
 msgstr "已是最新版本"
+
+#: src/features/logging/hooks/useLogging.ts
+msgid "已触发测试异常，已写入 renderer.log"
+msgstr "已触发测试异常，已写入 renderer.log"
 
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "已选择文件: {path}"
