@@ -1,7 +1,7 @@
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-const { _electron: electron } = require('@playwright/test');
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { _electron as electron } from '@playwright/test';
 
 interface DistVerificationOptions {
   /**
@@ -98,6 +98,79 @@ function detectUnpackedArtifact(distDir: string): DetectedArtifact | null {
   return null;
 }
 
+interface AsarEntry {
+  size?: number;
+  offset?: string;
+  files?: Record<string, AsarEntry>;
+}
+
+/**
+ * 读取并分析 app.asar 归档内部模块体积分布
+ */
+function analyzeAsarSize(asarPath: string): void {
+  try {
+    const fd = fs.openSync(asarPath, 'r');
+    const sizeBuf = Buffer.alloc(16);
+    fs.readSync(fd, sizeBuf, 0, 16, 0);
+    const headerSize = sizeBuf.readUInt32LE(12);
+    const headerBuf = Buffer.alloc(headerSize);
+    fs.readSync(fd, headerBuf, 0, headerSize, 16);
+    fs.closeSync(fd);
+
+    const header = JSON.parse(headerBuf.toString('utf8')) as AsarEntry;
+
+    // 统计各顶层/主要模块和单文件体积
+    const fileList: Array<{ path: string; size: number }> = [];
+    const moduleSizes: Record<string, number> = {};
+
+    function traverse(node: AsarEntry, curPath: string) {
+      if (typeof node.size === 'number') {
+        fileList.push({ path: curPath, size: node.size });
+
+        // 提取主要模块归属（如 @app/main, @app/renderer, 第三方 node_modules 等）
+        let category = 'other';
+        if (curPath.startsWith('node_modules/@app/')) {
+          const parts = curPath.split('/');
+          category = `${parts[1]}/${parts[2]}`;
+        } else if (curPath.startsWith('node_modules/')) {
+          const parts = curPath.split('/');
+          category = `node_modules/${parts[1]}`;
+        } else if (curPath.startsWith('dist/')) {
+          category = 'dist';
+        }
+        moduleSizes[category] = (moduleSizes[category] || 0) + node.size;
+        return;
+      }
+      if (node.files) {
+        for (const [name, child] of Object.entries(node.files)) {
+          traverse(child, curPath ? `${curPath}/${name}` : name);
+        }
+      }
+    }
+
+    traverse(header, '');
+
+    console.log('\n📈 [verify-dist] ====== asar 体积构成分析 ======');
+    console.log('📌 核心模块体积占比:');
+    const sortedModules = Object.entries(moduleSizes).sort((a, b) => b[1] - a[1]);
+    for (const [mod, size] of sortedModules) {
+      const sizeKb = (size / 1024).toFixed(1);
+      const sizeMb = (size / (1024 * 1024)).toFixed(2);
+      console.log(`   - ${mod.padEnd(30)}: ${sizeMb.padStart(5)} MB (${sizeKb.padStart(7)} KB)`);
+    }
+
+    console.log('\n📌 TOP 5 最大产物文件:');
+    fileList.sort((a, b) => b.size - a.size);
+    for (const item of fileList.slice(0, 5)) {
+      const sizeKb = (item.size / 1024).toFixed(1);
+      console.log(`   - ${`${sizeKb} KB`.padEnd(12)} ${item.path}`);
+    }
+    console.log('==============================================\n');
+  } catch (err) {
+    console.warn('⚠️ [verify-dist] 无法读取 asar 内部结构详情:', err);
+  }
+}
+
 /**
  * 校验已打包产物完整性与可用性
  */
@@ -117,12 +190,14 @@ async function verifyDist(options: DistVerificationOptions = {}): Promise<void> 
   console.log(`📦 [verify-dist] 发现解包产物: ${artifact.executablePath}`);
   console.log(`📄 [verify-dist] 发现 asar 归档: ${artifact.asarPath}`);
 
-  // 1. asar 体积门禁校验
+  // 1. asar 体积门禁校验与详细监控
   const asarStat = fs.statSync(artifact.asarPath);
   const asarSizeMb = asarStat.size / (1024 * 1024);
   console.log(
-    `📊 [verify-dist] asar 体积: ${asarSizeMb.toFixed(2)} MB (${asarStat.size.toLocaleString()} bytes) [阈值上限: ${maxAsarSizeMb.toFixed(2)} MB]`,
+    `📊 [verify-dist] asar 总体积: ${asarSizeMb.toFixed(2)} MB (${asarStat.size.toLocaleString()} bytes) [阈值上限: ${maxAsarSizeMb.toFixed(2)} MB]`,
   );
+
+  analyzeAsarSize(artifact.asarPath);
 
   if (asarSizeMb > maxAsarSizeMb) {
     throw new Error(
@@ -179,10 +254,13 @@ async function verifyDist(options: DistVerificationOptions = {}): Promise<void> 
   console.log('🎉 [verify-dist] 打包产物直接运行验证全部通过！\n');
 }
 
-module.exports = { detectUnpackedArtifact, verifyDist };
+export { detectUnpackedArtifact, verifyDist };
 
 // 支持直接作为 CLI 执行
-if (require.main === module) {
+if (
+  import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}` ||
+  process.argv[1]?.endsWith('verify-dist.ts')
+) {
   verifyDist().catch((err) => {
     console.error('❌ [verify-dist] 校验失败:', err);
     process.exit(1);

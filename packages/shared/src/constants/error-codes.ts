@@ -15,6 +15,7 @@ export const ErrorCode = {
   UPDATER_INSTALL_FAILED: 'UPDATER_INSTALL_FAILED',
   UPDATER_NO_UPDATE: 'UPDATER_NO_UPDATE',
   UPDATER_ALREADY_RUNNING: 'UPDATER_ALREADY_RUNNING',
+  UPDATER_NOT_CONFIGURED: 'UPDATER_NOT_CONFIGURED',
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];

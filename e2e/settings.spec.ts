@@ -117,27 +117,51 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
 
     // 2. 行为验证：当 minimizeToTray 为 true 时，关闭主窗口触发拦截隐藏而非销毁
     const isWindowVisibleBefore = await electronApp.evaluate(({ BrowserWindow }) => {
-      const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
+      const win = BrowserWindow.getAllWindows().find(
+        (w) =>
+          !w.isDestroyed() &&
+          Boolean(w.webContents) &&
+          !w.webContents.isDestroyed() &&
+          !w.webContents.getURL().includes('updater.html'),
+      );
       return win?.isVisible();
     });
     expect(isWindowVisibleBefore).toBe(true);
 
     // 触发窗口 close
     await electronApp.evaluate(({ BrowserWindow }) => {
-      const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
+      const win = BrowserWindow.getAllWindows().find(
+        (w) =>
+          !w.isDestroyed() &&
+          Boolean(w.webContents) &&
+          !w.webContents.isDestroyed() &&
+          !w.webContents.getURL().includes('updater.html'),
+      );
       win?.close();
     });
 
     // 窗口应被 hide，未被 destroy，依然存活
     const isWindowHidden = await electronApp.evaluate(({ BrowserWindow }) => {
-      const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
+      const win = BrowserWindow.getAllWindows().find(
+        (w) =>
+          !w.isDestroyed() &&
+          Boolean(w.webContents) &&
+          !w.webContents.isDestroyed() &&
+          !w.webContents.getURL().includes('updater.html'),
+      );
       return win ? !win.isVisible() : false;
     });
     expect(isWindowHidden).toBe(true);
 
     // 恢复显示主窗口
     await electronApp.evaluate(({ BrowserWindow }) => {
-      const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
+      const win = BrowserWindow.getAllWindows().find(
+        (w) =>
+          !w.isDestroyed() &&
+          Boolean(w.webContents) &&
+          !w.webContents.isDestroyed() &&
+          !w.webContents.getURL().includes('updater.html'),
+      );
       win?.show();
     });
     await expect(page.locator('body')).toBeVisible();

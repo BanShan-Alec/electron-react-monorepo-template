@@ -68,8 +68,9 @@ jobs:
           incremental: 'true'          # 行内评论不重复覆盖历史位置
 
           # ===== 评论治理与看板配置 =====
+          stream_progress: 'true'      # 实时流式输出审查进度至 Actions 控制台日志，避免静默等待
           sticky_summary: 'true'       # 置顶单一看板并原地更新，避免 PR 评论刷屏
-          route_severity_below: 'low'  # 将低优先级建议折叠进 Summary 看板，只发高危行内评论
+          route_severity_below: ''     # 关闭向 Summary 倾倒 Low 建议，避免把看板变成垃圾桶
           resolve_outdated: 'true'     # 代码修复后，自动 resolve 对应的旧 review threads
 
           # 关闭内部无天数限制的上传，改由后续步骤托管

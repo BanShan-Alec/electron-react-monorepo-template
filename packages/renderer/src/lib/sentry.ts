@@ -1,3 +1,4 @@
+import { APP_ENV } from '@app/shared/constants/env';
 import * as Sentry from '@sentry/electron/renderer';
 
 /**
@@ -9,12 +10,16 @@ import * as Sentry from '@sentry/electron/renderer';
  */
 export function initSentry(): void {
   const dsn =
-    import.meta.env.SENTRY_DSN ||
-    import.meta.env.VITE_SENTRY_DSN ||
-    (typeof __SENTRY_DSN__ !== 'undefined' ? __SENTRY_DSN__ : '');
+    import.meta.env.SENTRY_DSN || (typeof __SENTRY_DSN__ !== 'undefined' ? __SENTRY_DSN__ : '');
 
-  // 严格守卫：仅打包后且有有效 DSN 时激活
-  const isEnabled = import.meta.env.PROD && Boolean(dsn);
+  // 基于 window.__APP_ENV__?.mode 判断是否为生产模式 (兜底 import.meta.env.PROD)
+  const isProd =
+    typeof window !== 'undefined' && window.__APP_ENV__?.mode
+      ? window.__APP_ENV__.mode === APP_ENV.PRODUCTION
+      : import.meta.env.PROD;
+
+  // 严格守卫：仅 prod 模式且有有效 DSN 时激活
+  const isEnabled = isProd && Boolean(dsn);
 
   if (!isEnabled) {
     return;
@@ -23,7 +28,9 @@ export function initSentry(): void {
   const appVersion =
     import.meta.env.APP_VERSION ||
     (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown');
-  const release = import.meta.env.RELEASE_NAME || `electron-react-monorepo-template@${appVersion}`;
+  const release =
+    import.meta.env.RELEASE_NAME ||
+    `${(typeof window !== 'undefined' && window.__APP_ENV__?.appName) || 'electron-app'}@${appVersion}`;
 
   Sentry.init({
     dsn,

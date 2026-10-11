@@ -1,3 +1,4 @@
+/// <reference path="../env.d.ts" />
 import * as Sentry from '@sentry/electron/main';
 import { app, type BrowserWindow } from 'electron';
 import type { AppModule } from '../AppModule';

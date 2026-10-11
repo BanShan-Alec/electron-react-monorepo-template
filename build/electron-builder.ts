@@ -1,7 +1,15 @@
-const fs = require('node:fs');
-const { join } = require('node:path');
-
+import fs from 'node:fs';
+import { join } from 'node:path';
 import type { Configuration } from 'electron-builder';
+
+const owner = process.env.GITHUB_OWNER;
+const repo = process.env.GITHUB_REPO;
+
+if (!owner || !repo) {
+  throw new Error(
+    '打包失败: 未配置 GITHUB_OWNER 或 GITHUB_REPO 环境变量。作为通用模板项目，请在 .env 或环境变量中指定目标 GitHub 仓库。',
+  );
+}
 
 const config: Configuration = {
   directories: {
@@ -9,8 +17,41 @@ const config: Configuration = {
     buildResources: 'build/resources',
   },
   generateUpdatesFilesForAllChannels: true,
+  publish: {
+    provider: 'github',
+    owner,
+    repo,
+    releaseType: 'release',
+  },
+  win: {
+    target: [
+      {
+        target: 'nsis',
+        arch: ['x64'],
+      },
+    ],
+    icon: 'build/resources/icon.ico',
+  },
+  nsis: {
+    oneClick: false,
+    perMachine: true,
+    allowToChangeInstallationDirectory: true,
+    allowElevation: true,
+    createDesktopShortcut: true,
+    createStartMenuShortcut: true,
+    shortcutName: 'Electron React Template',
+    installerIcon: 'build/resources/icon.ico',
+    uninstallerIcon: 'build/resources/icon.ico',
+    installerHeaderIcon: 'build/resources/icon.ico',
+    deleteAppDataOnUninstall: false,
+  },
+  mac: {
+    target: ['dmg', 'zip'],
+    icon: 'build/resources/icon.icns',
+  },
   linux: {
     target: ['deb'],
+    icon: 'build/resources/icon.png',
   },
   extraResources: [
     {
@@ -38,7 +79,7 @@ const config: Configuration = {
   ],
 };
 
-module.exports = config;
+export default config;
 
 /**
  * 显式读取指定 workspace 子包的 package.json 中的 files 配置，生成打包匹配规则

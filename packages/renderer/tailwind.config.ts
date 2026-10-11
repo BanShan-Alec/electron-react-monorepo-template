@@ -3,7 +3,7 @@ import type { Config } from 'tailwindcss';
 
 const config: Config = {
   darkMode: 'class',
-  content: [path.resolve(__dirname, './src/**/*.{js,ts,jsx,tsx}')],
+  content: [path.resolve(import.meta.dirname, './src/**/*.{js,ts,jsx,tsx}')],
   theme: {
     extend: {
       colors: {

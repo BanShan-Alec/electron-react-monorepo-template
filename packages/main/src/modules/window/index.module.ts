@@ -2,6 +2,7 @@ import { WINDOW_IDS } from '@app/shared/constants/windows';
 import { app, BrowserWindow, Notification } from 'electron';
 import type { AppInitConfig } from '../../AppInitConfig';
 import type { AppModule } from '../../AppModule';
+import { getPackedEnvArgument } from '../../env';
 import { appLifecycle } from '../../lifecycle';
 import type { ModuleContext } from '../../ModuleContext';
 import { updaterService } from '../../services/updater.service';
@@ -102,6 +103,7 @@ export class WindowManager implements AppModule {
         sandbox: true,
         webviewTag: false,
         preload: this.preload.path,
+        additionalArguments: [getPackedEnvArgument()],
       },
     });
 
@@ -157,7 +159,7 @@ export class WindowManager implements AppModule {
             'Updater is downloading, keeping updater in background with watchdog (Strategy A)',
           );
           try {
-            getUpdaterWindowModule().hide();
+            getUpdaterWindowModule().close();
           } catch {}
           if (Notification.isSupported()) {
             const isZh = configStore.get('language') === 'zh-CN';

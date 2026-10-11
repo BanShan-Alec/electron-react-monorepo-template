@@ -3,6 +3,7 @@ import { WINDOW_IDS } from '@app/shared/constants/windows';
 import { app, BrowserWindow } from 'electron';
 import type { AppInitConfig } from '../../AppInitConfig';
 import type { AppModule } from '../../AppModule';
+import { getPackedEnvArgument } from '../../env';
 import { appLifecycle } from '../../lifecycle';
 import type { ModuleContext } from '../../ModuleContext';
 import { updaterService } from '../../services/updater.service';
@@ -22,7 +23,7 @@ export class UpdaterWindowModule implements AppModule {
     // 绑定更新服务的窗口代理
     updaterService.setWindowDelegate({
       show: () => this.show(),
-      hide: () => this.hide(),
+      close: () => this.close(),
     });
   }
 
@@ -41,18 +42,21 @@ export class UpdaterWindowModule implements AppModule {
     const browserWindow = new BrowserWindow({
       show: false,
       width: 480,
-      height: 480,
-      minWidth: 420,
-      minHeight: 400,
-      resizable: true,
+      height: 460,
+      resizable: false,
       maximizable: false,
+      minimizable: false,
       fullscreenable: false,
+      frame: false,
+      transparent: false,
+      hasShadow: true,
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
         sandbox: true,
         webviewTag: false,
         preload: this.preload.path,
+        additionalArguments: [getPackedEnvArgument()],
       },
     });
 
@@ -102,7 +106,7 @@ export class UpdaterWindowModule implements AppModule {
         );
         app.quit();
       } else {
-        this.logger.info('Updater window is closing for quit');
+        this.logger.info('Updater window closing and destroying');
       }
     });
 
@@ -121,6 +125,8 @@ export class UpdaterWindowModule implements AppModule {
       win = await this.createWindow();
     }
 
+    updaterService.notifyWindowShown();
+
     if (win.isMinimized()) {
       win.restore();
     }
@@ -137,17 +143,12 @@ export class UpdaterWindowModule implements AppModule {
     return win;
   }
 
-  hide(): void {
-    const homeWin = getWindow(WINDOW_IDS.HOME);
-    if (!homeWin || homeWin.isDestroyed()) {
-      this.logger.info('Home window does not exist, hide() will quit app to prevent zombie');
-      app.quit();
-      return;
-    }
+  close(): void {
+    updaterService.notifyWindowClosed();
     const win = getWindow(WINDOW_IDS.UPDATER);
-    if (win && !win.isDestroyed() && win.isVisible()) {
-      win.hide();
-      this.logger.info('Updater window hidden');
+    if (win && !win.isDestroyed()) {
+      win.close();
+      this.logger.info('Updater window closed and destroyed');
     }
   }
 

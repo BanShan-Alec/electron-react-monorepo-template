@@ -1,3 +1,4 @@
+import { APP_ENV } from '@app/shared/constants/env';
 import type { Result } from '@shared/types/result';
 
 /**
@@ -23,15 +24,16 @@ const IPC_LOG_PREFIX = '[ipc]';
  * 严禁打印入参 body——config 含本地路径、dialog 含 URL。
  */
 function logIpc(channel: string, ok: boolean, durationMs: number, error?: unknown) {
+  const isDev = window.__APP_ENV__?.mode === APP_ENV.DEVELOPMENT;
   const cost = `${durationMs.toFixed(1)}ms`;
   if (ok) {
-    if (import.meta.env.DEV) {
+    if (isDev) {
       console.info(`${IPC_LOG_PREFIX} ${channel} ok ${cost}`);
     }
     return;
   }
   const line = `${IPC_LOG_PREFIX} ${channel} failed ${cost}`;
-  if (import.meta.env.DEV) {
+  if (isDev) {
     console.warn(line, error);
     return;
   }
