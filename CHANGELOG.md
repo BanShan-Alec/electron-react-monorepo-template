@@ -1,6 +1,27 @@
 # Changelog
 
 
+## v1.3.0
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.2.0...v1.3.0)
+
+### 🚀 新增特性 (Features)
+
+- **telemetry:** 实现 Mini-OTel 轻量遥测系统与多窗口独立日志落盘 ([#23](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/23))
+- **assets:** 统一多平台应用图标并设计全新安装包矢量图标 ([#25](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/25))
+
+### 💅 代码重构 (Refactoring)
+
+- **sentry:** 重构监控方案为 @sentry/electron 轻量内联模式并接入 CI ([#21](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/21))
+
+### 🤖 持续集成 (CI/CD)
+
+- **ocr:** 优化增量代码审查与手动触发机制 ([#24](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/24))
+
+### ❤️ Contributors
+
+- 半山Alec ([@BanShan-Alec](https://github.com/BanShan-Alec))
+
 ## v1.2.0
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.1.1...v1.2.0)
