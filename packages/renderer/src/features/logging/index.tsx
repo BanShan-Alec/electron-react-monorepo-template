@@ -9,8 +9,20 @@ import { useLogging } from './hooks/useLogging';
  */
 function LoggingFeature() {
   // 变量声明、解构
-  const { logStatus, isLoading, handleSendLog, handleOpenLogFolder, handleTriggerSentryError } =
-    useLogging();
+  const {
+    logStatus,
+    isLoading,
+    shouldCrashRender,
+    handleSendLog,
+    handleOpenLogFolder,
+    handleTriggerSentryError,
+    handleTriggerErrorBoundaryCrash,
+  } = useLogging();
+
+  // 若触发了 ErrorBoundary 测试，在组件渲染阶段抛出异常以供 ErrorBoundary 捕获
+  if (shouldCrashRender) {
+    throw new Error('Test React ErrorBoundary component crash');
+  }
 
   // 组件渲染
   return (
@@ -20,6 +32,7 @@ function LoggingFeature() {
       onSendLog={handleSendLog}
       onOpenLogFolder={handleOpenLogFolder}
       onTriggerSentryError={handleTriggerSentryError}
+      onTriggerErrorBoundaryCrash={handleTriggerErrorBoundaryCrash}
     />
   );
 }

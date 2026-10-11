@@ -84,11 +84,29 @@ export function useLogging() {
     }, 0);
   };
 
+  const [shouldCrashRender, setShouldCrashRender] = useState(false);
+
+  const handleTriggerErrorBoundaryCrash = () => {
+    const errorMsg = 'Test React ErrorBoundary component crash triggered from UI';
+    // 记录本地落盘日志
+    void callIpc('diagnostics.log', window.api.diagnostics.log, [
+      {
+        level: 'error',
+        message: errorMsg,
+        meta: { triggeredFrom: 'UI', timestamp: Date.now() },
+      },
+    ]).catch(() => {});
+
+    setShouldCrashRender(true);
+  };
+
   return {
     logStatus,
     isLoading,
+    shouldCrashRender,
     handleSendLog,
     handleOpenLogFolder,
     handleTriggerSentryError,
+    handleTriggerErrorBoundaryCrash,
   };
 }

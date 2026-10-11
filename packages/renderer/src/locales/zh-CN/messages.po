@@ -516,6 +516,10 @@ msgid "获取系统信息失败: {0}"
 msgstr "获取系统信息失败: {0}"
 
 #: src/features/logging/components/LoggingCard/index.tsx
+msgid "触发 ErrorBoundary 崩溃"
+msgstr "触发 ErrorBoundary 崩溃"
+
+#: src/features/logging/components/LoggingCard/index.tsx
 msgid "触发 Sentry 异常"
 msgstr "触发 Sentry 异常"
 
