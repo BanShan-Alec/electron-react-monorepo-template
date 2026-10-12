@@ -81,6 +81,21 @@ export default defineConfig({
         home: path.resolve(currentDir, 'src/entries/home/index.html'),
         updater: path.resolve(currentDir, 'src/entries/updater/index.html'),
       },
+      output: {
+        chunkFileNames: 'assets/[name]-[hash].js',
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            // 1. 最稳定核心运行时：React 系列
+            if (id.includes('react') || id.includes('scheduler')) {
+              return 'vendor-react';
+            }
+            // 2. UI 框架：Ant Design 及其样式/图标/底层 RC 库
+            if (id.includes('antd') || id.includes('@ant-design') || id.includes('rc-')) {
+              return 'vendor-antd';
+            }
+          }
+        },
+      },
     },
   },
   css: {
