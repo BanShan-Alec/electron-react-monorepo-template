@@ -72,7 +72,7 @@ async function runBuild() {
   // 4. Verify packaged artifact integrity & run smoke check unless --skip-verify is specified
   if (!values['skip-verify']) {
     try {
-      await verifyDist();
+      await verifyDist({ distDir: process.env.DIST_DIR || 'dist' });
     } catch (verifyError) {
       console.error('❌ Post-packaging verification failed:', verifyError);
       process.exit(1);

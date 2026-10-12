@@ -6,6 +6,7 @@ import { NativeDialogsFeature } from '@/features/native-dialogs';
 import { PingFeature } from '@/features/ping';
 import { SettingsFeature } from '@/features/settings';
 import { SystemInfoFeature } from '@/features/system-info';
+import { UsbFeature } from '@/features/usb';
 
 /**
  * 总览看板域入口：组合编排看板各核心功能卡片
@@ -15,6 +16,7 @@ function DashboardFeature() {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       <PingFeature />
       <SystemInfoFeature />
+      <UsbFeature />
       <CounterFeature />
       <CalculatorFeature />
       <SettingsFeature />
