@@ -8,7 +8,7 @@ interface VerificationResult {
 }
 
 export async function verifyDependencies(): Promise<VerificationResult> {
-  const rootDir = process.cwd();
+  const rootDir = join(__dirname, '..');
   const errors: string[] = [];
 
   console.log('🔍 [verify-deps] 开始校验 Monorepo 依赖拓扑与主进程 external 对应关系...');

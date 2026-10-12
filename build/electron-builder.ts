@@ -3,15 +3,18 @@ import fs from 'node:fs';
 import { join } from 'node:path';
 import type { Configuration } from 'electron-builder';
 
+// 基于当前构建脚本目录确定全局确定的根目录
+const ROOT_DIR = join(__dirname, '..');
+
 // 首次克隆守护：若工作区子包尚未编译（如直接运行 electron-builder），自动执行构建
-const mainDistPath = join(process.cwd(), 'packages', 'main', 'dist', 'index.cjs');
+const mainDistPath = join(ROOT_DIR, 'packages', 'main', 'dist', 'index.cjs');
 if (!fs.existsSync(mainDistPath)) {
   console.log('⚡ [electron-builder] 检测到工作区子包尚未编译，正在自动执行预热构建...');
-  execSync('pnpm -r run build', { stdio: 'inherit' });
+  execSync('pnpm -r run build', { cwd: ROOT_DIR, stdio: 'inherit' });
 }
 
 // 读取根目录 package.json 作为默认事实源
-const rootPkgPath = join(process.cwd(), 'package.json');
+const rootPkgPath = join(ROOT_DIR, 'package.json');
 const rootPkg = fs.existsSync(rootPkgPath) ? JSON.parse(fs.readFileSync(rootPkgPath, 'utf8')) : {};
 
 /**
@@ -121,7 +124,7 @@ export default config;
 function getListOfFilesFromEachWorkspace(
   workspaces: string[],
 ): Array<{ from: string; to: string; filter: string[] }> {
-  const packagesDir = join(process.cwd(), 'packages');
+  const packagesDir = join(ROOT_DIR, 'packages');
   const allFilesToInclude: Array<{ from: string; to: string; filter: string[] }> = [];
 
   for (const workspace of workspaces) {

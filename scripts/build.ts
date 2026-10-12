@@ -1,10 +1,14 @@
 import { execSync } from 'node:child_process';
+import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { loadEnv } from 'vite';
 
+// 统一基于 __dirname 向上锁定仓库物理根目录，摆脱对执行终端工作目录 (process.cwd()) 的脆弱依赖
+const ROOT_DIR = join(__dirname, '..');
+
 // 统一由 Vite loadEnv 加载项目多模式环境变量至 process.env
 const buildMode = process.env.MODE || 'production';
-Object.assign(process.env, loadEnv(buildMode, process.cwd(), ''));
+Object.assign(process.env, loadEnv(buildMode, ROOT_DIR, ''));
 
 import { build, type CliOptions } from 'electron-builder';
 import { verifyDependencies } from './verify-deps.ts';

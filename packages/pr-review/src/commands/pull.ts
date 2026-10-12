@@ -97,8 +97,9 @@ export function runPull(): void {
     console.log(
       `📊 简报概览: 🔴 高危 ${highCount} 项 (默认修) | 🟡 中度 ${mediumCount} 项 (默认修) | 🟢 低优 ${lowCount} 项 (需手动勾选)`,
     );
+    const rootDir = path.resolve(__dirname, '../../../../');
     console.log(
-      `👉 可在编辑器中打开 ${path.relative(process.cwd(), outputFile)} 审阅批注，随后交由 AI Agent 自动闭环修复。\n`,
+      `👉 可在编辑器中打开 ${path.relative(rootDir, outputFile)} 审阅批注，随后交由 AI Agent 自动闭环修复。\n`,
     );
   } finally {
     // 确保清理临时下载缓存
