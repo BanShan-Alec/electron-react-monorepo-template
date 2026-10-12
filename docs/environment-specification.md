@@ -104,14 +104,17 @@ export const devServerUrl: string | undefined =
   isDev && process.env.VITE_DEV_SERVER_URL ? process.env.VITE_DEV_SERVER_URL : undefined;
 ```
 
-### 3. 渲染进程统一门面 (`packages/renderer/src/lib/env.ts`)
-渲染进程组件与逻辑统一从 [`packages/renderer/src/lib/env.ts`](../packages/renderer/src/lib/env.ts) 消费：
-```ts
-import { APP_ENV, type AppEnv } from '@app/shared/constants/env';
+### 3. 渲染进程环境访问规范（`window.__APP_ENV__` 与 `import.meta.env`）
+渲染进程处于浏览器沙箱环境中，环境状态通过双轨机制提供：
+1. **运行时不可变环境**：由主进程在窗口创建时经混淆参数下发，并在 Preload 同步解冻挂载为全局深度冻结对象 `window.__APP_ENV__`（包含 `mode`、`apiBaseUrl`、`version` 等运行时状态）；
+2. **构建期编译常量**：针对前端死代码剔除与静态逻辑，使用 Vite 标准常量 `import.meta.env.DEV` 与 `import.meta.env.PROD`。
 
-export const isDev: boolean = import.meta.env.DEV;
-export const isProd: boolean = import.meta.env.PROD;
-export const currentAppEnv: AppEnv = isDev ? APP_ENV.DEVELOPMENT : APP_ENV.PRODUCTION;
+在渲染进程业务逻辑中（如 `packages/renderer/src/lib/ipc.ts`），按需读取：
+```ts
+import { APP_ENV } from '@app/shared/constants/env';
+
+// 运行时判断是否为开发态
+const isDev = window.__APP_ENV__?.mode === APP_ENV.DEVELOPMENT;
 ```
 
 ---
@@ -154,5 +157,5 @@ export const currentAppEnv: AppEnv = isDev ? APP_ENV.DEVELOPMENT : APP_ENV.PRODU
    - 所有在 E2E 体系下拉起 Electron 的代码（如 `e2e/helpers/electron.ts`），必须确保注入 `MODE: 'test'`。
 
 ### 🟢 推荐实践 (Best Practices)
-1. **新增环境相关状态**：统一在 `packages/main/src/env.ts`（主进程）或 `packages/renderer/src/lib/env.ts`（渲染进程）中扩充导出，禁止在具体 Service 内部自行计算。
+1. **新增环境相关状态**：统一在 `packages/main/src/env.ts`（主进程权威门面）或通过主进程向 `window.__APP_ENV__` 注入扩充字段，禁止在具体业务中自行猜测计算。
 2. **底层探针暴露**：主进程底层探针（如 `SystemService.getSystemInfo()`）应主动返回 `{ env: currentAppEnv, isPackaged }`，供渲染端与调试卡片排查问题。

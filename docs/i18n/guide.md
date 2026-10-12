@@ -223,7 +223,7 @@ msgstr ""
 
 如未来业务拓展需要接入第三种语言（以韩语 `ko-KR` 为例），只需标准化执行以下 4 步：
 
-1. **更新配置文件**：在 [packages/renderer/lingui.config.ts](file:///h:/electron-app-temp5/packages/renderer/lingui.config.ts) 中增加语言代码：
+1. **更新配置文件**：在 [packages/renderer/lingui.config.ts](../../packages/renderer/lingui.config.ts) 中增加语言代码：
    ```ts
    locales: ['zh-CN', 'en-US', 'ko-KR'],
    ```
@@ -232,7 +232,7 @@ msgstr ""
    pnpm i18n:extract
    ```
    CLI 会自动在 `packages/renderer/src/locales/ko-KR/messages.po` 生成待翻译骨架。
-3. **注册动态 Chunk 加载**：在 [packages/renderer/src/locales/i18n.ts](file:///h:/electron-app-temp5/packages/renderer/src/locales/i18n.ts) 中增加分支：
+3. **注册动态 Chunk 加载**：在 [packages/renderer/src/locales/i18n.ts](../../packages/renderer/src/locales/i18n.ts) 中增加分支：
    ```ts
    export const SUPPORTED_LOCALES = ['zh-CN', 'en-US', 'ko-KR'] as const;
 

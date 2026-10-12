@@ -1,198 +1,105 @@
-# Electron React Monorepo Template
+<div align="center">
 
-> 基于 **Electron 41 + Vite 8 + React 19 + ContextBridge (Typed IPC) + LinguiJS (中文优先 i18n) + TailwindCSS + Playwright + Biome** 构建的现代化、高性能、安全类型友好的桌面应用 Monorepo 模板。
+# ⚡ Electron React Monorepo Template
 
----
+**面向现代化企业级生产环境、严苛工程约束与 AI Agent 协同打造的 Electron 桌面端解决方案**
 
-## 🗺️ 架构导航与文档索引 (Architecture Hub)
+[![Electron 41](https://img.shields.io/badge/Electron-41.0.0-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
+[![React 19](https://img.shields.io/badge/React-19.0.0-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Vite 8](https://img.shields.io/badge/Vite-8.0.0-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![TypeScript 5.8](https://img.shields.io/badge/TypeScript-5.8.2-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Biome](https://img.shields.io/badge/Linter-Biome-60A5FA?logo=biome&logoColor=white)](https://biomejs.dev/)
+[![LinguiJS](https://img.shields.io/badge/i18n-LinguiJS_5-E535AB)](https://lingui.dev/)
+[![Playwright](https://img.shields.io/badge/Testing-Playwright-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-本项目严格采用技术分层与自包含领域划分，根目录作为全景导航入口，各子包职责与独立文档规范索引如下：
-
-| 模块 / 子包 / 文档 | 物理路径 | 核心职责 | 详细指南 |
-| :--- | :--- | :--- | :--- |
-| **`@app/shared`** | [`packages/shared/`](packages/shared) | **跨端契约单一事实源**：统一管理 Zod 运行时 Schema、IPC Channel 常量、纯 TypeScript 返回接口与 `Result<T>` 契约模型（无桶文件直出） | [Shared 架构指南](packages/shared/README.md) |
-| **`@app/main`** | [`packages/main/`](packages/main) | **本地微型后端**：基于 ModuleRunner 流水线管理窗口与系统生命周期，采用 `Controller ➔ Service` 严格分层处理 IPC 请求与原生系统交互 | [Main 架构指南](packages/main/README.md) |
-| **`@app/preload`** | [`packages/preload/`](packages/preload) | **安全隔离桥接**：在 Context Isolation 沙箱保护下，将强类型的 `apiBridge` 通过 `contextBridge` 安全暴露为 `window.api` | [Preload 架构指南](packages/preload/README.md) |
-| **`@app/renderer`** | [`packages/renderer/`](packages/renderer) | **现代前端界面**：React 19 + TailwindCSS + antd + LinguiJS，采用自包含 Feature 驱动架构，统一通过 `useIpc` 消费数据 | [Renderer 架构指南](packages/renderer/README.md) |
-| **🌐 多语言架构** | [`docs/i18n/`](docs/i18n) | **中文优先现代国际化**：LinguiJS 6、Source-as-Key 理念、Vite 8 AST 宏优化、按需独立 Chunk 拆分与跨进程原生托盘联动 | [i18n 架构指南](docs/i18n/architecture.md) · [实操 SOP](docs/i18n/guide.md) |
-| **🧪 E2E 自动化测试** | [`e2e/`](e2e) | **端到端质量防护**：基于 Playwright 驱动真实打包/运行态 Electron 进程，常态化保障主题、多语言、托盘及防冲刷逻辑 | [测试用例集](e2e/settings.spec.ts) |
-| **📜 日志与防护** | [`docs/logging-and-exception-audit.md`](docs/logging-and-exception-audit.md) | **系统容灾与调试**：进程隔离落盘、5MB 自动轮转、大 Payload 截断保护与未捕获异常分级处置指南 | [日志系统指南](docs/logging-and-exception-audit.md) |
-| **🚀 首屏渐进式加载** | [`specs/first-screen-loading.md`](specs/first-screen-loading.md) | **启动体验设计定稿**：窗口即时呈现（废除 ready-to-show 门禁）、内联启动壳与双门禁就绪协调、win32 无边框重绘守护与主题底色同源 | [首屏加载规范](specs/first-screen-loading.md) · [ADR-0001 窗口材质裁决](docs/adr/0001-first-screen-keeps-opaque-wco-window.md) |
-| **🪟 WCO 标题栏接入** | [`docs/wco-native-titlebar-integration.md`](docs/wco-native-titlebar-integration.md) | **跨项目一体化标题栏指南**：平台契约矩阵（darwin/win32/linux）、三条铁律与运行时更新约束，参照本仓 `titlebar-overlay.ts` 落地 | [WCO 接入指南](docs/wco-native-titlebar-integration.md) |
-| **📦 依赖拓扑与打包隔离** | [`docs/dependency-rules.md`](docs/dependency-rules.md) | **Monorepo 依赖分层与防膨胀门禁**：根目录仅允许 `@app/main`，主进程 dependencies 与 Vite external 100% 对齐，Renderer 遵循通用 Web 规范，配合 CI 自动化门禁保障 | [依赖与打包隔离规范](docs/dependency-rules.md) |
-| **🌐 运行环境与模式规范** | [`docs/environment-specification.md`](docs/environment-specification.md) | **全栈运行环境与模式控制**：彻底统一基于 `MODE`（dev/prod/test），解耦物理打包态 `app.isPackaged`，建立 `@app/shared`、Main、Renderer 三级门面与测试隔离防护 | [环境控制规范](docs/environment-specification.md) |
-| **工程质量规范** | [`CONTRIBUTING.md`](CONTRIBUTING.md) | **研发与提交守则**：全库 Biome 静态检查与格式化、桶文件禁令（noBarrelFile）、Conventional Commits 提交校验及 changelogen 自动化发布 | [团队工程规范](CONTRIBUTING.md) |
-| **⚙️ CI/CD 与工作流** | [`.github/`](.github) | **自动化研发管线**：PR 门禁（typecheck / lint / e2e）、OpenCodeReview AI 审查、CodeQL 安全扫描、tag 驱动的三平台自动发版与 `pnpm pr` 工作流命令 | [CI/CD 流程指南](.github/CICD.md) |
-| **🎨 模板定制速查** | [`docs/template-customization-guide.md`](docs/template-customization-guide.md) | **新项目品牌重塑指南**：从模板派生新应用时，关于应用标识、包名、多端原生图标及环境变量替换的轻量级速查清单 | [定制与替换速查表](docs/template-customization-guide.md) |
+</div>
 
 ---
 
-## 🔄 跨端 IPC 通信拓扑模型
+## 🌟 为什么选择本模板？
 
-```mermaid
-flowchart LR
-    subgraph Renderer["渲染进程 (Renderer)"]
-        UI["Feature UI 组件"] --> Hook["useIpc / useManualRequest"]
-        Hook --> WindowApi["window.api (类型推导)"]
-    end
+市面上现存的大多数 Electron 模板停留在“能跑起来”的玩具阶段，在面对复杂的工业生产、合规安全与 AI 协同开发时暴露出大量工程痛点。本模板通过架构裁决（ADR）解决了一系列核心难题：
 
-    subgraph Preload["预加载沙箱 (Preload)"]
-        WindowApi -.-> Bridge["contextBridge.exposeInMainWorld"]
-        Bridge --> Invoke["ipcRenderer.invoke(CHANNEL, input)"]
-    end
-
-    subgraph Main["主进程 (Main - 本地微型后端)"]
-        Invoke -.-> Controller["Controller (Zod.safeParse 校验)"]
-        Controller --> Service["Service (纯业务/原生能力)"]
-        Service --> PackResult["catchToResult ➔ Result&lt;T&gt;"]
-    end
-
-    subgraph Shared["契约共享层 (Shared - 单一事实源)"]
-        Schema["Zod Schemas"] -.-> Controller
-        Channels["IPC_CHANNELS"] -.-> Preload
-        Channels -.-> Controller
-        Types["ElectronApi &amp; Result&lt;T&gt;"] -.-> Renderer
-        Types -.-> Preload
-    end
-
-    PackResult -.-> Hook
-```
+| 传统脚手架痛点 | 本模板的工程解决方案 | 核心收益 |
+| :--- | :--- | :--- |
+| **首屏加载白闪、黑屏** | 采用构建期占位符内联与启动就绪门禁协同（ADR-0001/0002/0003） | 窗口呈现瞬间立即可见无闪烁，骨架屏平滑过渡 |
+| **IPC 散装裸写、参数无校验、易崩溃** | 契约先行：`Zod 校验 ➔ Service 业务 ➔ Result<T>` 4 阶段流水线 | 渲染端完全类型安全，主进程统一防御性兜底 |
+| **打包体积膨胀、asar 泄露源码** | 根依赖严格隔离、SourceMap 自动剥离与 CI 产物安全门禁 (`verify-dist`) | 最小化最终分发体积，杜绝源代码泄露风险 |
+| **原生 C++ 模块难引入、易报错** | 主进程单独声明 + Vite external 双向严格对齐门禁 (`verify-deps`) | 轻松引入 `node-usb`、`serialport` 等硬件底层库 |
+| **AI Agent 协同频繁幻觉、乱加依赖** | 全球首发根目录 `AGENT.md` 与跨进程分布式追踪日志手册 | Agent 严格守规，秒级通过 TraceId 排查异常 |
 
 ---
 
-## 🛠️ 全栈端到端功能开发 SOP (End-to-End Pipeline)
+## ⚡ 30 秒极速上手
 
-当需要新增一个业务领域（以新增 `notes` 便签领域为例）时，请严格遵照以下 **4 阶段标准流水线** 进行端到端开发：
+### 1. 环境准备
+- **Node.js**: `>= 22.12.0`（推荐 `v22.22.x`）
+- **包管理器**: `pnpm >= 10.0.0`
 
-```
-[Phase 1: Shared 契约] ➔ [Phase 2: Main 逻辑] ➔ [Phase 3: Preload 桥接] ➔ [Phase 4: Renderer 消费]
-```
+> [!NOTE]
+> 国内网络环境下，请确保已配置 npmmirror 源。
 
-1. **Phase 1：在 `@app/shared` 声明跨端契约**
-   - 在 `schemas/notes.ts` 中定义 Zod 入参校验模型并推导类型；
-   - 在 `types/notes.ts` 中定义返回数据接口 `NoteItem`；
-   - 在 `constants/ipc-channels.ts` 中注册唯一通道常量 `IPC_CHANNELS.NOTES_CREATE`；
-   - 在 `types/api.ts` 中扩充 `ElectronApi` 声明。
-   - 📖 *完整代码模板请参考：[Shared 规范 - 新增业务开发范式](packages/shared/README.md#4-新增业务领域开发范式-sop)*
+### 2. 克隆与安装依赖
 
-2. **Phase 2：在 `@app/main` 实现主进程能力**
-   - 编写 `services/notes.service.ts` 实现业务逻辑与持久化（单例导出，不感知 IPC）；
-   - 编写 `controllers/notes.controller.ts` 执行 Zod `.safeParse()` 校验入参，并调用 `notesService`，异常统一包装为 `Result<T>`；
-   - 在 `controllers/index.ts` 中显式挂载注册 `registerNotesControllers()`。
-   - 📖 *完整代码模板请参考：[Main 规范 - 新增业务开发范式](packages/main/README.md#4-新增业务领域标准开发范式-sop)*
-
-3. **Phase 3：在 `@app/preload` 挂载安全桥接**
-   - 在 `src/index.ts` 的 `apiBridge` 中对齐 `ElectronApi.notes` 的方法实现，调用 `ipcRenderer.invoke(IPC_CHANNELS.NOTES_CREATE, input)`。
-   - 📖 *安全约束请参考：[Preload 规范](packages/preload/README.md)*
-
-4. **Phase 4：在 `@app/renderer` 构建自包含 Feature 消费**
-   - 在 `src/features/notes/` 下建立自包含域（`index.tsx`、`hooks/`、`components/`）；
-   - 在 hook 中调用 `useIpc('notes.create', window.api.notes.create)`，自动获得解构后的 `data` 与异常捕获，传递给展示卡片；
-   - 界面多语言文案编写与一键提取请参考 [多语言实操手册](docs/i18n/guide.md)。
-   - 📖 *组件分层规范请参考：[Renderer 规范](packages/renderer/README.md#feature-规范)*
-
----
-
-## 📂 项目全局结构
-
-```text
-electron-react-monorepo-template/
-├── .config/                  # 工程工具链配置（Biome、Commitlint、changelogen、Playwright）
-├── build/                    # 打包配置与原生静态资源（图标、entitlements 等）
-├── docs/                     # 架构深度原理与开发指南
-│   ├── adr/                  # [架构决策] ADR-0001 首屏窗口保持不透明与 WCO 材质裁决
-│   ├── i18n/                 # [多语言] 架构设计 (architecture.md) 与实操 SOP (guide.md)
-│   ├── logging-and-exception-audit.md # 日志轮转与跨进程异常分级防护指南
-│   └── wco-native-titlebar-integration.md # WCO 原生标题栏跨项目接入指南
-├── e2e/                      # Playwright E2E 自动化测试套件（真实 Electron 运行态驱动）
-│   ├── helpers/              # Electron 启动器、隔离用户数据目录与生命周期夹具
-│   ├── first-screen.spec.ts  # 首屏渐进式加载验收用例（AC-1~AC-5）
-│   └── settings.spec.ts      # 主题、多语言、托盘及防冲刷自动化测试用例
-├── packages/
-│   ├── main/                 # [主进程] Controller/Service 分层、窗口与系统生命周期
-│   ├── preload/              # [Preload] 安全沙箱桥接、暴露 window.api 契约
-│   ├── renderer/             # [渲染进程] React 19 + Tailwind 前端应用 (Feature 驱动 + LinguiJS)
-│   ├── shared/               # [共享层] 跨进程契约、Zod Schemas、IPC 常量与类型定义
-│   └── tsconfig/             # 共享的 TypeScript 基础配置
-├── scripts/                  # 工程构建与启动脚本（TS 编写）
-│   ├── dev.ts                # 开发服务启动与热重启编排
-│   └── build.ts              # 跨平台打包构建 CLI
-├── specs/                    # 特性设计规范（first-screen-loading.md 首屏渐进式加载）
-├── pnpm-workspace.yaml       # pnpm monorepo 与依赖 Catalog 配置
-├── package.json              # 根项目元数据与通用脚本
-└── CONTRIBUTING.md           # 团队工程规范、Git 提交指南与版本发布
-```
-
----
-
-## 🚀 快速上手
-
-> [!TIP]
-> 如果你是首次从本模板创建新项目，建议先阅读 **[模板新项目定制速查清单](docs/template-customization-guide.md)**，快速完成应用名称、App ID、多端图标及发布源的个性化替换。
-
-### 环境要求
-- **Node.js**: `>= 22.0.0`
-- **pnpm**: `>= 10.0.0`
-
-### 1. 安装依赖
 ```bash
+git clone https://github.com/your-org/electron-react-monorepo-template.git my-desktop-app
+cd my-desktop-app
+
+# 安装工作区所有依赖
 pnpm install
 ```
 
-> [!NOTE]
-> 根目录已预设 `.npmrc`，内置国内淘宝镜像源与 pnpm 隔离布局（`node-linker=isolated`）策略。跨包通用依赖版本由 `pnpm-workspace.yaml` 的 `catalog:` 集中收敛（详见 [CONTRIBUTING.md](CONTRIBUTING.md)）。
+### 3. 启动开发模式
 
-### 2. 启动本地开发
 ```bash
 pnpm start
 ```
-执行后将自动启动 Vite Dev Server 并唤起 Electron 窗口。主进程代码改动将自动增量编译并重启应用；前端页面改动享受即时 HMR。
-
-> [!NOTE]
-> dev server 固定端口 `5173`（strictPort）：重复执行 `pnpm start` 会检测到端口已占用并直接复用运行中的实例。开放 renderer CDP 端点 `9222`（主进程 inspect 为 `9229`）。
+Vite 开发服务器与 Electron 主进程将自动编译启动，默认开启双向 HMR 与热重载。
 
 ---
 
-## 🛠️ 构建与打包
+## 🎨 快速定制为你自己的应用
 
-本项目将打包逻辑收拢于 `scripts/build.ts` 与 `build/electron-builder.ts`：
+克隆本模板后，只需几个简单步骤即可重命名并定制为你自己的商业应用：
 
-```bash
-# 仅编译各 Package 产物并打包为原生应用目录（快速调试）
-pnpm run build:dir
-
-# 打包 Windows 安装程序 (.exe / NSIS)
-pnpm run build:win
-
-# 打包 macOS 安装程序 (.dmg)
-pnpm run build:mac
-
-# 打包 Linux 安装包 (.deb)
-pnpm run build:linux
-```
-
-打包产物输出至根目录下的 `dist/` 文件夹中。
+1. **一键定制指导**：请查阅 👉 [**项目定制与品牌重塑指南**](docs/template-customization-guide.md)，修改应用名、包名、AppID 与图标；
+2. **多语言配置**：请查阅 👉 [**国际化 (i18n) 开发手册**](docs/i18n/guide.md)，源码直接书写中文，一键宏提取；
+3. **依赖规范**：请查阅 👉 [**依赖安装与引入铁律**](docs/dependency-rules.md)。
 
 ---
 
-## 📋 质量保障与工程规范
+## 🤖 AI Agent 协同与调试开发
 
-- **静态检查与格式化**：全库由 Biome 驱动，秒级完成代码质量巡检。
-  ```bash
-  pnpm run lint       # 检查格式与规范
-  pnpm run lint:fix   # 自动修复格式与 Lint 问题
-  pnpm run typecheck  # 执行全项目 TypeScript 类型检查
-  ```
-- **多语言词条增量提取**：
-  ```bash
-  pnpm run i18n:extract   # 扫描全工程 AST 并增量更新中英文 PO 字典
-  ```
-- **端到端自动化测试（Playwright E2E）**：
-  ```bash
-  pnpm run test:e2e       # 运行现有 E2E 测试套件
-  pnpm run test:e2e:build # 重新全量编译并在真实 Electron 窗口中运行 E2E 验证
-  ```
-- **禁止桶文件（No Barrel Files）**：全库开启 `performance.noBarrelFile: "error"`，跨模块导入必须直达具体文件。
-- **提交规范**：遵循 Conventional Commits 规范，提交说明**强制要求包含简体中文**（由 Commitlint + Husky 拦截校验）。
-- **版本发布与 Changelog**：通过 `pnpm run release` 自动推导语义化版本号并生成变更日志。
-- 更多详细规则请参考 **[CONTRIBUTING.md](CONTRIBUTING.md)**。
+如果你正在使用 **Cursor**, **Windsurf**, **Claude Code**, **Gemini Antigravity** 等 AI 编程助手：
+
+- **AI 智能体行动守则**：直接为 Agent 加载 👉 [**`AGENT.md`**](AGENT.md)；
+- **排错与日志分析**：查阅 👉 [**AI Agent 日志与排错手册**](docs/guides/agent-debugging-and-logs.md)，通过 `trace_id` 关联跨进程日志，秒级排查报错。
+
+---
+
+## 📖 实战开发指南矩阵 (`docs/guides/`)
+
+我们为你准备了生产开发全流程的最佳实践实操文档：
+
+- 🔌 [**原生 C++ 模块接入与打包指南（以 USB 为例）**](docs/guides/native-modules.md)：学习如何安全引入原生硬件扩展模块；
+- 🚀 [**新增业务功能端到端开发 SOP**](docs/guides/new-feature-sop.md)：从 Shared 到 Renderer 的 4 阶段强契约开发流水线；
+- 🪟 [**多窗口与 MPA 架构开发指南**](docs/guides/multi-window.md)：如何优雅实现多窗口隔离与新增独立功能窗口；
+- 📦 [**打包构建、发版与 OTA 自动更新指南**](docs/guides/release-and-ota.md)：涵盖跨平台打包、GitHub Releases 与热更新。
+
+---
+
+## 🏛️ 架构深度解析
+
+想要深入探究本模板背后的技术裁决、跨进程 IPC 模型、启动协调机制与安全防护？  
+请阅读我们的架构全景文档与决策记录：
+
+- 📐 [**架构深度全景指南 (Architecture Overview)**](docs/architecture-overview.md)
+- 📜 [**架构决策记录 (ADR 索引)**](docs/adr/)
+- 🤝 [**贡献指南与 PR 评审规范**](CONTRIBUTING.md)
+
+---
+
+## 📄 开源许可证
+
+本项目基于 [MIT License](LICENSE) 开源发布。

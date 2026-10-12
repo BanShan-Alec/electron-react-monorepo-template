@@ -8,6 +8,8 @@ Preload 脚本运行在拥有部分 Node.js 能力的独立预加载环境中，
 
 - **安全沙箱隔离**：在 `contextIsolation: true` 与 `sandbox: true` 约束下，严禁向渲染进程泄露任何 Node.js 原生模块（如 `fs`、`child_process`、`electron` 原始对象）。
 - **契约对齐**：实现 [`@app/shared/types/api`](../shared/src/types/api.ts) 中定义的 `ElectronApi` 接口，通过 `contextBridge.exposeInMainWorld('api', apiBridge)` 暴露类型安全的 `window.api`。
+- **运行时环境注入**：在页面执行任何脚本前，同步从 `additionalArguments` 解包环境参数，并通过 `contextBridge.exposeInMainWorld('__APP_ENV__', Object.freeze(runtimeEnv))` 暴露不可变运行时基座。
+- **启动就绪事件桥**：注册 `APP_STARTUP_MAIN_READY_EVENT` 事件流与快照预取，支撑前端内联启动壳就绪协调。
 - **文件路径安全桥接**：遵循 Electron 官方安全实践，通过 `webUtils.getPathForFile(file)` 获取拖拽或选中的真实系统文件路径，而非直接暴露文件对象属性。
 
 ---
