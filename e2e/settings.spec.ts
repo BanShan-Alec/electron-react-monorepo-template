@@ -97,7 +97,11 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     await expect(page.getByText('IPC 计数器 (Counter)')).toBeVisible();
   });
 
-  test('用例 3：点击关闭时最小化到托盘交互与关闭拦截', async ({ page, electronApp }) => {
+  test('用例 3：点击关闭时最小化到托盘交互与关闭拦截', async ({
+    page,
+    electronApp,
+    electronCtx,
+  }) => {
     // 1. 验证整行/文本可点击性：点击“点击关闭时最小化到托盘”文案或整行可触发开关
     const toggleRow = page.locator('.settings-toggle-row', {
       hasText: '点击关闭时最小化到托盘',
@@ -115,7 +119,7 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     await toggleRow.locator('label[for="tray-switch"]').click();
     await expect(switchEl).toHaveAttribute('aria-checked', 'true');
 
-    // 2. 行为验证：当 minimizeToTray 为 true 时，关闭主窗口触发拦截隐藏而非销毁
+    // 2. 行为验证：当 minimizeToTray 为 true 时，关闭主窗口触发销毁以释放内存
     const isWindowVisibleBefore = await electronApp.evaluate(({ BrowserWindow }) => {
       const win = BrowserWindow.getAllWindows().find(
         (w) =>
@@ -140,31 +144,37 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
       win?.close();
     });
 
-    // 窗口应被 hide，未被 destroy，依然存活
-    const isWindowHidden = await electronApp.evaluate(({ BrowserWindow }) => {
-      const win = BrowserWindow.getAllWindows().find(
-        (w) =>
-          !w.isDestroyed() &&
-          Boolean(w.webContents) &&
-          !w.webContents.isDestroyed() &&
-          !w.webContents.getURL().includes('updater'),
-      );
-      return win ? !win.isVisible() : false;
-    });
-    expect(isWindowHidden).toBe(true);
+    // 窗口应被 destroy 销毁以释放内存，不再存活
+    await expect
+      .poll(
+        async () =>
+          electronApp.evaluate(({ BrowserWindow }) => {
+            const win = BrowserWindow.getAllWindows().find(
+              (w) =>
+                !w.isDestroyed() &&
+                Boolean(w.webContents) &&
+                !w.webContents.isDestroyed() &&
+                !w.webContents.getURL().includes('updater'),
+            );
+            return win === undefined;
+          }),
+        { timeout: 5000 },
+      )
+      .toBe(true);
 
-    // 恢复显示主窗口
-    await electronApp.evaluate(({ BrowserWindow }) => {
-      const win = BrowserWindow.getAllWindows().find(
-        (w) =>
-          !w.isDestroyed() &&
-          Boolean(w.webContents) &&
-          !w.webContents.isDestroyed() &&
-          !w.webContents.getURL().includes('updater'),
-      );
-      win?.show();
-    });
-    await expect(page.locator('body')).toBeVisible();
+    // 模拟从系统托盘唤醒恢复主窗口（重新创建窗口）
+    const [restoredPage] = await Promise.all([
+      electronApp.waitForEvent('window'),
+      electronApp.evaluate(() => {
+        // biome-ignore lint/suspicious/noExplicitAny: internal windowManager hook
+        (globalThis as any).__windowManager?.restoreOrCreateWindow(true);
+      }),
+    ]);
+    await restoredPage.waitForLoadState('domcontentloaded');
+    await expect(restoredPage.locator('body')).toBeVisible();
+
+    // 更新 fixture 中的全局 page 句柄供后续测试复用
+    electronCtx.page = restoredPage;
   });
 
   test('★ 核心用例 4：连续修改多个 Feature 互不干扰（防冲刷与防重置）', async ({

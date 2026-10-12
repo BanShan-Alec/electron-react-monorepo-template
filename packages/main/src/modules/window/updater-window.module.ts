@@ -88,25 +88,23 @@ export class UpdaterWindowModule implements AppModule {
       );
     });
 
-    // 拦截关闭事件为隐藏窗口，保留更新与下载事务上下文；若无主窗口且无托盘常驻则退出应用
-    browserWindow.on('close', (event) => {
+    // 支持点击关闭/隐藏到后台时销毁更新窗口以释放内存；若无主窗口且未开启托盘常驻则退出应用
+    browserWindow.on('close', () => {
+      updaterService.notifyWindowClosed();
       const configStore = getAppConfigStore();
       const shouldMinimizeToTray = configStore.get('minimizeToTray');
       const homeWin = getWindow(WINDOW_IDS.HOME);
       if (
         !appLifecycle.isQuitting &&
-        (shouldMinimizeToTray || (homeWin && !homeWin.isDestroyed()))
+        !shouldMinimizeToTray &&
+        (!homeWin || homeWin.isDestroyed())
       ) {
-        event.preventDefault();
-        browserWindow.hide();
-        this.logger.info('Updater window close event intercepted -> hidden');
-      } else if (!appLifecycle.isQuitting) {
         this.logger.info(
           'Home window does not exist and tray disabled, closing updater will quit app',
         );
         app.quit();
       } else {
-        this.logger.info('Updater window closing and destroying');
+        this.logger.info('Updater window closed and destroyed');
       }
     });
 
