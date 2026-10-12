@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v1.4.0
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.3.1...v1.4.0)
+
+### 🚀 新增特性 (Features)
+
+- **tray:** 关闭到托盘时销毁主窗口以释放内存 ([#29](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/29))
+
+### ❤️ Contributors
+
+- 半山Alec ([@BanShan-Alec](https://github.com/BanShan-Alec))
+
 ## v1.3.1
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.3.0...v1.3.1)
