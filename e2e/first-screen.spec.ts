@@ -72,8 +72,8 @@ test.describe('首屏渐进式加载 (First Screen Loading) E2E 验证', () => {
     page,
     electronApp,
   }) => {
-    // updater.html 是独立入口，未接壳（spec Out of Scope 第 4 条），打开回归验证
-    const existing = electronApp.windows().find((w) => w.url().includes('updater.html'));
+    // updater 是独立入口，未接壳（spec Out of Scope 第 4 条），打开回归验证
+    const existing = electronApp.windows().find((w) => w.url().includes('updater'));
     let updaterPage = existing;
     if (!updaterPage) {
       const [win] = await Promise.all([
@@ -83,7 +83,7 @@ test.describe('首屏渐进式加载 (First Screen Loading) E2E 验证', () => {
       await win.waitForLoadState('domcontentloaded');
       updaterPage = win;
     }
-    expect(updaterPage.url()).toContain('updater.html');
+    expect(updaterPage.url()).toContain('updater');
     expect(await updaterPage.locator('#loading').count()).toBe(0);
     await updaterPage.close();
   });

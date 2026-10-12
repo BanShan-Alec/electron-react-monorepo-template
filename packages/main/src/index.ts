@@ -79,10 +79,12 @@ const devServer = devServerUrl;
 
 initApp({
   windows: {
-    home: devServer ? new URL(devServer) : { path: require.resolve('@app/renderer') },
+    home: devServer
+      ? new URL('src/entries/home/index.html', devServer)
+      : { path: require.resolve('@app/renderer') },
     updater: devServer
-      ? new URL(`${devServer.endsWith('/') ? devServer : `${devServer}/`}updater.html`)
-      : { path: require.resolve('@app/renderer/updater.html') },
+      ? new URL('src/entries/updater/index.html', devServer)
+      : { path: require.resolve('@app/renderer/updater') },
   },
   preload: {
     path: require.resolve('@app/preload'),

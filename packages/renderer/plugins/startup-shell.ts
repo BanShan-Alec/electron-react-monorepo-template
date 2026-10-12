@@ -33,7 +33,7 @@ export interface StartupShellInlinePluginOptions {
 
 export function startupShellInlinePlugin(options: StartupShellInlinePluginOptions): Plugin {
   const { root } = options;
-  const indexEntry = normalizePath(path.resolve(root, 'index.html')).toLowerCase();
+  const indexEntry = normalizePath(path.resolve(root, 'src/entries/home/index.html')).toLowerCase();
   const coordinatorEntry = path.resolve(root, 'src/startup/coordinator.ts');
   const logoFile = path.resolve(root, 'src/assets/startup-logo.svg');
 

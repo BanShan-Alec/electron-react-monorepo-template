@@ -59,7 +59,17 @@ export function useLogging() {
     void runLogAction({ kind: 'openLogFolder', level: 'info' }).catch(() => {});
   };
 
+  const [isTriggeringSentry, setIsTriggeringSentry] = useState(false);
+
   const handleTriggerSentryError = () => {
+    if (isTriggeringSentry) {
+      return;
+    }
+    setIsTriggeringSentry(true);
+    setTimeout(() => {
+      setIsTriggeringSentry(false);
+    }, 1500);
+
     const errorMsg = 'Test Sentry exception triggered from UI';
     const err = new Error(errorMsg);
 
@@ -103,6 +113,7 @@ export function useLogging() {
   return {
     logStatus,
     isLoading,
+    isTriggeringSentry,
     shouldCrashRender,
     handleSendLog,
     handleOpenLogFolder,

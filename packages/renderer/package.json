@@ -40,17 +40,21 @@
     "typescript": "catalog:",
     "vite": "catalog:"
   },
-  "main": "./dist/index.html",
+  "main": "./dist/src/entries/home/index.html",
   "files": [
     "dist/**",
     "package.json"
   ],
   "exports": {
     ".": {
-      "default": "./dist/index.html"
+      "default": "./dist/src/entries/home/index.html"
+    },
+    "./updater": {
+      "default": "./dist/src/entries/updater/index.html"
     },
     "./updater.html": {
-      "default": "./dist/updater.html"
-    }
+      "default": "./dist/src/entries/updater/index.html"
+    },
+    "./package.json": "./package.json"
   }
 }

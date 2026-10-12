@@ -240,7 +240,7 @@ msgstr "Failed to reveal"
 
 #: src/features/updater/components/ChangelogCard/index.tsx
 msgid "展开全部"
-msgstr ""
+msgstr "Expand All"
 
 #: src/features/devtools/hooks/useDevTools.ts
 msgid "已关闭 DevTools"
@@ -346,7 +346,7 @@ msgstr "Operand B"
 
 #: src/features/updater/components/ChangelogCard/index.tsx
 msgid "收起"
-msgstr ""
+msgstr "Collapse"
 
 #: src/features/updater/index.tsx
 msgid "新版本已完成下载，重启应用后即可完成升级。"

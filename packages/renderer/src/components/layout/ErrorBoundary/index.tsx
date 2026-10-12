@@ -1,3 +1,4 @@
+import { APP_ENV } from '@app/shared/constants/env';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import * as Sentry from '@sentry/electron/renderer';
@@ -23,12 +24,13 @@ interface IFallbackProps {
 
 function FallbackView({ error, resetError }: IFallbackProps) {
   useLingui();
+  const isDev = window.__APP_ENV__?.mode === APP_ENV.DEVELOPMENT || import.meta.env.DEV;
   const errorMessage = error instanceof Error ? error.message : String(error || '');
 
   const description = (
     <div className="flex flex-col items-center gap-2">
       <span className="text-base font-medium text-foreground">{t`页面出错啦~`}</span>
-      {errorMessage ? (
+      {isDev && errorMessage ? (
         <span className="text-xs text-muted-foreground font-mono max-w-lg break-all text-center">
           {errorMessage}
         </span>
@@ -40,6 +42,9 @@ function FallbackView({ error, resetError }: IFallbackProps) {
     if (resetError) {
       resetError();
     }
+    const url = new URL(window.location.href);
+    url.searchParams.set('skip_animation', '1');
+    window.location.replace(url.toString());
   };
 
   return (

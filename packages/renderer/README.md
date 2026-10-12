@@ -14,15 +14,16 @@ pnpm --filter @app/renderer lint       # Biome 代码规范与格式化检查
 
 ```
 src/
-├── main.tsx                # 挂载入口：createRoot + StrictMode + 全局样式
-├── App.tsx                 # 应用壳层：I18nProvider + ConfigProvider + 编排面板与主题
+├── entries/                # 窗口独立入口目录（MPA 对称架构）
+│   ├── home/               #   主窗口入口（index.html + index.tsx 挂载 + App.tsx 界面编排）
+│   └── updater/            #   更新窗口入口（index.html + index.tsx 挂载 + App.tsx 视图）
 ├── components/             # 跨 feature 复用的通用 UI（一组件一文件夹）
 │   ├── ui/                 #   无业务语义的展示原子（CardTitle）
 │   └── layout/             #   全局骨架与全局兜底（Header、ErrorBoundary，含 useLingui 响应式多语言订阅）
 ├── features/               # 业务域：一个域 = 一个自包含目录
 │   ├── counter/            #   计数器域（CounterFeature，多语言与主进程状态联动）
 │   ├── settings/           #   应用配置域（SettingsFeature，主题/语言/托盘持久化）
-│   └── …（calculator / native-dialogs / logging / devtools / architecture）
+│   └── …（calculator / native-dialogs / logging / devtools / architecture / updater）
 ├── hooks/                  # 跨 feature 的基础 hooks
 │   ├── useManualRequest.ts # ahooks useRequest 的 manual-only 封装
 │   ├── useIpc.ts           # 请求层：channel + api 函数 + 状态解构
@@ -44,11 +45,12 @@ src/
 **第二层：按有无副作用切**——`features/<domain>/hooks/` 持有状态与 IPC 副作用，返回 view model（`{ state, handlers }`）；
 `features/<domain>/components/` 纯展示，只靠 props 进入、callback 出去，不碰 IPC、不持有跨卡片状态。
 
-**依赖方向单向**：`App.tsx → features → 跨域层`；feature 之间禁止互相 import（可独立删除/新增）。
+**依赖方向单向**：`entries → features → 跨域层`；feature 之间禁止互相 import（可独立删除/新增）。
 
 | 目录 | 职责 |
 | --- | --- |
-| `src/App.tsx` | 只做编排：tab 状态、面板布局、主题 Provider；不实例化 feature hook，不透传 feature props |
+| `src/entries/home/App.tsx` | 主窗口编排：tab 状态、面板布局、主题 Provider；不实例化 feature hook，不透传 feature props |
+| `src/entries/updater/App.tsx` | 更新窗口顶层视图封装 |
 | `src/hooks/useTheme.ts` | 应用级主题联动：resolvedTheme 写入 `documentElement.dataset.theme`，`system` 模式下跟随 OS 偏好 |
 | `src/hooks/useIpc.ts` | 单一 IPC channel 的请求 hook：类型从 api 函数推导，内部完成 Result 解构与日志 |
 | `src/hooks/useManualRequest.ts` | ahooks useRequest 的 manual-only 封装，自动触发能力从编译期到运行期均不存在 |
