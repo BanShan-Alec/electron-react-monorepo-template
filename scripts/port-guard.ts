@@ -12,6 +12,11 @@ export async function killProcessTree(pid: number): Promise<void> {
     if (process.platform === 'win32') {
       execSync(`taskkill /pid ${pid} /T /F`, { stdio: 'ignore' });
     } else {
+      // 1. 尝试先向子进程发送终止信号 (POSIX 通用)
+      try {
+        execSync(`pkill -TERM -P ${pid}`, { stdio: 'ignore' });
+      } catch {}
+      // 2. 尝试向进程组发 SIGKILL，若非组长进程则直接杀目标进程
       try {
         process.kill(-pid, 'SIGKILL');
       } catch {
@@ -25,7 +30,8 @@ export async function killProcessTree(pid: number): Promise<void> {
 export async function findOccupyingPid(port: number): Promise<number | null> {
   try {
     if (process.platform === 'win32') {
-      const output = execSync('netstat -ano -p tcp', {
+      // Windows: 使用 netstat -ano，同时覆盖 IPv4 与 IPv6 (TCPv6)
+      const output = execSync('netstat -ano', {
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'ignore'],
       });
@@ -43,13 +49,41 @@ export async function findOccupyingPid(port: number): Promise<number | null> {
         }
       }
     } else {
-      const output = execSync(`lsof -i :${port} -t -sTCP:LISTEN`, {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      }).trim();
-      if (output) {
-        const pid = Number.parseInt(output.split('\n')[0], 10);
-        if (!Number.isNaN(pid) && pid > 0) return pid;
+      // POSIX: 优先使用 lsof（macOS 标配及大部分 Linux 系统）
+      try {
+        const output = execSync(`lsof -i :${port} -t -sTCP:LISTEN`, {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        }).trim();
+        if (output) {
+          const pid = Number.parseInt(output.split('\n')[0], 10);
+          if (!Number.isNaN(pid) && pid > 0) return pid;
+        }
+      } catch {
+        // Linux 最小化环境降级：无 lsof 时尝试使用 ss 命令 (iproute2)
+        try {
+          const ssOutput = execSync(`ss -lptn "sport = :${port}"`, {
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'ignore'],
+          });
+          const match = ssOutput.match(/pid=(\d+)/);
+          if (match) {
+            const pid = Number.parseInt(match[1], 10);
+            if (!Number.isNaN(pid) && pid > 0) return pid;
+          }
+        } catch {
+          // Linux 进一步降级：尝试使用 fuser
+          try {
+            const fuserOutput = execSync(`fuser ${port}/tcp`, {
+              encoding: 'utf8',
+              stdio: ['ignore', 'pipe', 'ignore'],
+            }).trim();
+            if (fuserOutput) {
+              const pid = Number.parseInt(fuserOutput.split(/\s+/)[0], 10);
+              if (!Number.isNaN(pid) && pid > 0) return pid;
+            }
+          } catch {}
+        }
       }
     }
   } catch {}
