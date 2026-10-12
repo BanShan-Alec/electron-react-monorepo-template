@@ -144,6 +144,9 @@ export class WindowManager implements AppModule {
     // 支持点击关闭按钮销毁主窗口并退守系统托盘及防僵尸退出闭环
     browserWindow.on('close', () => {
       if (appLifecycle.isQuitting) {
+        try {
+          getUpdaterWindowModule().destroy();
+        } catch {}
         return;
       }
 

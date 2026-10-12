@@ -1,4 +1,3 @@
-import path from 'node:path';
 import log from 'electron-log/main';
 import type { AppInitConfig } from './AppInitConfig';
 import { devServerUrl } from './env';
@@ -8,7 +7,6 @@ import { createConfigModule, getAppConfigStore } from './modules/config.module';
 import { createIPCModule } from './modules/ipc.module';
 import { createLogModule } from './modules/log.module';
 import { createNativeThemeModule } from './modules/native-theme.module';
-import { createProtocolModule } from './modules/protocol.module';
 import { allowInternalOrigins } from './modules/security/block-origins';
 import { allowExternalUrls } from './modules/security/external-urls';
 import { createSentryModule, initMainSentry } from './modules/sentry.module';
@@ -23,16 +21,12 @@ import { updaterService } from './services/updater.service';
 initMainSentry();
 
 export async function initApp(initConfig: AppInitConfig) {
-  const rendererDistDir = path.dirname(require.resolve('@app/renderer'));
-
   const moduleRunner = createModuleRunner()
     .init(createLogModule())
     .init(createSentryModule())
     .init(createConfigModule())
     .init(createNativeThemeModule())
     .init(createIPCModule())
-    // 特权自定义协议：在窗口创建前注册并处理生产态静态资源分发与 SPA 回退
-    .init(createProtocolModule(rendererDistDir))
     // 主进程就绪源：链位在 WindowManager 之前，信号先于窗口与壳（spec §4.6 / ADR-0003）
     .init(createStartupReadinessModule())
     .init(createWindowManagerModule({ initConfig }))
@@ -44,7 +38,14 @@ export async function initApp(initConfig: AppInitConfig) {
     // Security
     .init(
       allowInternalOrigins(
-        new Set(devServer ? [new URL(devServer).origin] : ['app://bundle', 'null']),
+        new Set(
+          devServer
+            ? [new URL(devServer).origin]
+            : [
+                initConfig.windows.home instanceof URL ? initConfig.windows.home.origin : 'file://',
+                'null',
+              ],
+        ),
       ),
     )
     .init(
@@ -78,10 +79,10 @@ const devServer = devServerUrl;
 
 initApp({
   windows: {
-    home: devServer ? new URL(devServer) : new URL('app://bundle/index.html'),
+    home: devServer ? new URL(devServer) : { path: require.resolve('@app/renderer') },
     updater: devServer
       ? new URL(`${devServer.endsWith('/') ? devServer : `${devServer}/`}updater.html`)
-      : new URL('app://bundle/updater.html'),
+      : { path: require.resolve('@app/renderer/updater.html') },
   },
   preload: {
     path: require.resolve('@app/preload'),

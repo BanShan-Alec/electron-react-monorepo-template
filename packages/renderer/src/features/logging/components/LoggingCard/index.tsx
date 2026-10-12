@@ -7,6 +7,7 @@ import {
   InfoCircleOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
+import { APP_ENV } from '@app/shared/constants/env';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Button, Card } from 'antd';
@@ -20,10 +21,13 @@ import { statusBoxClass } from '@/lib/classNames';
 
 const _LoggingCard = (props: ILoggingCardProps) => {
   useLingui();
+  const isDev = window.__APP_ENV__?.mode === APP_ENV.DEVELOPMENT || import.meta.env.DEV;
+
   // 变量声明、解构
   const {
     logStatus,
     isLoading,
+    isTriggeringSentry,
     onSendLog,
     onOpenLogFolder,
     onTriggerSentryError,
@@ -89,20 +93,25 @@ const _LoggingCard = (props: ILoggingCardProps) => {
           >
             {t`发送 ERROR`}
           </Button>
-          <Button
-            size="small"
-            icon={<BugOutlined className="text-danger" />}
-            onClick={onTriggerSentryError}
-          >
-            {t`触发 Sentry 异常`}
-          </Button>
-          <Button
-            size="small"
-            icon={<AlertOutlined className="text-danger" />}
-            onClick={onTriggerErrorBoundaryCrash}
-          >
-            {t`触发 ErrorBoundary 崩溃`}
-          </Button>
+          {isDev ? (
+            <>
+              <Button
+                size="small"
+                icon={<BugOutlined className="text-danger" />}
+                loading={isTriggeringSentry}
+                onClick={onTriggerSentryError}
+              >
+                {t`触发 Sentry 异常`}
+              </Button>
+              <Button
+                size="small"
+                icon={<AlertOutlined className="text-danger" />}
+                onClick={onTriggerErrorBoundaryCrash}
+              >
+                {t`触发 ErrorBoundary 崩溃`}
+              </Button>
+            </>
+          ) : null}
         </div>
 
         {logStatus && <div className={statusBoxClass()}>{logStatus}</div>}
@@ -115,6 +124,7 @@ const _LoggingCard = (props: ILoggingCardProps) => {
 interface ILoggingCardProps {
   logStatus: string;
   isLoading: boolean;
+  isTriggeringSentry?: boolean;
   onSendLog: (level: 'info' | 'warn' | 'error') => void;
   onOpenLogFolder: () => void;
   onTriggerSentryError?: () => void;
