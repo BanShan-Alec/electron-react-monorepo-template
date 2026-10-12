@@ -3,13 +3,16 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Badge, Segmented } from 'antd';
 import { memo } from 'react';
+import { useLocation } from 'wouter';
 
 // 可抽离的逻辑处理函数/组件
 
-const _Header = (props: IHeaderProps) => {
+const _Header = (_props: IHeaderProps) => {
   useLingui();
+  const [location, navigate] = useLocation();
+
   // 变量声明、解构
-  const { activeTab, onTabChange } = props;
+  const activeTab: HeaderTab = location === '/architecture' ? '/architecture' : '/dashboard';
 
   // 组件状态
 
@@ -17,13 +20,13 @@ const _Header = (props: IHeaderProps) => {
 
   // 数据转换
   const tabOptions = [
-    { label: t`总览看板`, value: 'dashboard' },
-    { label: t`架构全貌`, value: 'architecture' },
+    { label: t`总览看板`, value: '/dashboard' },
+    { label: t`架构全貌`, value: '/architecture' },
   ];
 
   // 逻辑处理函数
   const handleTabChange = (value: string | number) => {
-    onTabChange(value as HeaderTab);
+    navigate(String(value));
   };
 
   // 组件Effect
@@ -60,12 +63,9 @@ const _Header = (props: IHeaderProps) => {
 };
 
 // props 类型定义
-export type HeaderTab = 'dashboard' | 'architecture';
+export type HeaderTab = '/dashboard' | '/architecture';
 
-interface IHeaderProps {
-  activeTab: HeaderTab;
-  onTabChange: (tab: HeaderTab) => void;
-}
+type IHeaderProps = Record<string, never>;
 
 const Header = memo(_Header);
 
