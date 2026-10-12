@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { LoggingCard } from './components/LoggingCard';
 import { useLogging } from './hooks/useLogging';
 
@@ -12,6 +13,7 @@ function LoggingFeature() {
   const {
     logStatus,
     isLoading,
+    isTriggeringSentry,
     shouldCrashRender,
     handleSendLog,
     handleOpenLogFolder,
@@ -19,16 +21,19 @@ function LoggingFeature() {
     handleTriggerErrorBoundaryCrash,
   } = useLogging();
 
-  // 若触发了 ErrorBoundary 测试，在组件渲染阶段抛出异常以供 ErrorBoundary 捕获
-  if (shouldCrashRender) {
-    throw new Error('Test React ErrorBoundary component crash');
-  }
+  // 若触发了 ErrorBoundary 测试，在 useEffect 生命周期中抛出异常以供 ErrorBoundary 捕获（避免 Render 阶段副作用）
+  useEffect(() => {
+    if (shouldCrashRender) {
+      throw new Error('Test React ErrorBoundary component crash');
+    }
+  }, [shouldCrashRender]);
 
   // 组件渲染
   return (
     <LoggingCard
       logStatus={logStatus}
       isLoading={isLoading}
+      isTriggeringSentry={isTriggeringSentry}
       onSendLog={handleSendLog}
       onOpenLogFolder={handleOpenLogFolder}
       onTriggerSentryError={handleTriggerSentryError}
