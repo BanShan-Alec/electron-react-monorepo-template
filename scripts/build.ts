@@ -1,6 +1,11 @@
 import { execSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
-import 'dotenv/config';
+import { loadEnv } from 'vite';
+
+// 统一由 Vite loadEnv 加载项目多模式环境变量至 process.env
+const buildMode = process.env.MODE || 'production';
+Object.assign(process.env, loadEnv(buildMode, process.cwd(), ''));
+
 import { build, type CliOptions } from 'electron-builder';
 import { verifyDependencies } from './verify-deps.ts';
 import { verifyDist } from './verify-dist.ts';
