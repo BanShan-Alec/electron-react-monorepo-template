@@ -14,9 +14,9 @@ pnpm --filter @app/renderer lint       # Biome 代码规范与格式化检查
 
 ```
 src/
-├── entries/                # 窗口独立入口目录（MPA 对称架构）
+├── entries/                # 窗口独立入口目录（MPA 架构）
 │   ├── home/               #   主窗口入口（index.html + index.tsx 挂载 + App.tsx 界面编排）
-│   └── updater/            #   更新窗口入口（index.html + index.tsx 挂载 + App.tsx 视图）
+│   └── updater/            #   更新窗口入口（index.html + index.tsx 挂载 UpdaterFeature）
 ├── components/             # 跨 feature 复用的通用 UI（一组件一文件夹）
 │   ├── ui/                 #   无业务语义的展示原子（CardTitle）
 │   └── layout/             #   全局骨架与全局兜底（Header、ErrorBoundary，含 useLingui 响应式多语言订阅）
@@ -50,7 +50,6 @@ src/
 | 目录 | 职责 |
 | --- | --- |
 | `src/entries/home/App.tsx` | 主窗口编排：tab 状态、面板布局、主题 Provider；不实例化 feature hook，不透传 feature props |
-| `src/entries/updater/App.tsx` | 更新窗口顶层视图封装 |
 | `src/hooks/useTheme.ts` | 应用级主题联动：resolvedTheme 写入 `documentElement.dataset.theme`，`system` 模式下跟随 OS 偏好 |
 | `src/hooks/useIpc.ts` | 单一 IPC channel 的请求 hook：类型从 api 函数推导，内部完成 Result 解构与日志 |
 | `src/hooks/useManualRequest.ts` | ahooks useRequest 的 manual-only 封装，自动触发能力从编译期到运行期均不存在 |
