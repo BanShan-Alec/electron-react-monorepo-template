@@ -20,6 +20,7 @@
   },
   "scripts": {
     "build": "pnpm -r run build",
+    "generate:icons": "tsx scripts/generate-icons.ts",
     "build:app": "tsx scripts/build.ts",
     "build:dir": "tsx scripts/build.ts --dir",
     "build:win": "tsx scripts/build.ts --win",
