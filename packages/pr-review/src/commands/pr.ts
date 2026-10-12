@@ -8,7 +8,8 @@ const CHECKS_POLL_INTERVAL_MS = 15_000;
 const CHECKS_MAX_POLLS = 40;
 
 function getPrTemplatePath(): string {
-  return path.resolve(process.cwd(), '.github', 'PULL_REQUEST_TEMPLATE.md');
+  // packages/pr-review/src/commands/pr.ts -> 向上三级定位到仓库根目录
+  return path.resolve(__dirname, '../../../../.github/PULL_REQUEST_TEMPLATE.md');
 }
 
 function preflight(): string {

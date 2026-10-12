@@ -18,7 +18,7 @@ export interface SentryBuildConfig {
  * 构建期基础设施模块，服务于各进程打包编译
  */
 export function getSentryBuildConfig(fromDir?: string): SentryBuildConfig {
-  const rootDir = fromDir ? path.resolve(fromDir, '../../') : path.resolve(process.cwd());
+  const rootDir = fromDir ? path.resolve(fromDir, '../../') : path.resolve(__dirname, '..');
   const rootPkg = JSON.parse(readFileSync(path.join(rootDir, 'package.json'), 'utf-8'));
   const appName: string = rootPkg.name || 'electron-app';
   const appVersion: string = rootPkg.version || '1.0.0';

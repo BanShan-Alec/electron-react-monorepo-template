@@ -2,8 +2,11 @@ import fs from 'node:fs';
 import { join } from 'node:path';
 import type { Configuration } from 'electron-builder';
 
+// 基于当前构建脚本目录确定全局确定的根目录
+const ROOT_DIR = join(__dirname, '..');
+
 // 读取根目录 package.json 作为默认事实源
-const rootPkgPath = join(__dirname, '../package.json');
+const rootPkgPath = join(ROOT_DIR, 'package.json');
 const rootPkg = fs.existsSync(rootPkgPath) ? JSON.parse(fs.readFileSync(rootPkgPath, 'utf8')) : {};
 
 // 优先级：.env 环境变量覆盖 > package.json 事实源 > 零配置回退占位
@@ -95,7 +98,7 @@ export default config;
 function getListOfFilesFromEachWorkspace(
   workspaces: string[],
 ): Array<{ from: string; to: string; filter: string[] }> {
-  const packagesDir = join(process.cwd(), 'packages');
+  const packagesDir = join(ROOT_DIR, 'packages');
   const allFilesToInclude: Array<{ from: string; to: string; filter: string[] }> = [];
 
   for (const workspace of workspaces) {
