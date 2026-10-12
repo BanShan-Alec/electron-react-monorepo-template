@@ -23,6 +23,7 @@
 | **🌐 运行环境与模式规范** | [`docs/environment-specification.md`](docs/environment-specification.md) | **全栈运行环境与模式控制**：彻底统一基于 `MODE`（dev/prod/test），解耦物理打包态 `app.isPackaged`，建立 `@app/shared`、Main、Renderer 三级门面与测试隔离防护 | [环境控制规范](docs/environment-specification.md) |
 | **工程质量规范** | [`CONTRIBUTING.md`](CONTRIBUTING.md) | **研发与提交守则**：全库 Biome 静态检查与格式化、桶文件禁令（noBarrelFile）、Conventional Commits 提交校验及 changelogen 自动化发布 | [团队工程规范](CONTRIBUTING.md) |
 | **⚙️ CI/CD 与工作流** | [`.github/`](.github) | **自动化研发管线**：PR 门禁（typecheck / lint / e2e）、OpenCodeReview AI 审查、CodeQL 安全扫描、tag 驱动的三平台自动发版与 `pnpm pr` 工作流命令 | [CI/CD 流程指南](.github/CICD.md) |
+| **🎨 模板定制速查** | [`docs/template-customization-guide.md`](docs/template-customization-guide.md) | **新项目品牌重塑指南**：从模板派生新应用时，关于应用标识、包名、多端原生图标及环境变量替换的轻量级速查清单 | [定制与替换速查表](docs/template-customization-guide.md) |
 
 ---
 
@@ -125,6 +126,9 @@ electron-react-monorepo-template/
 ---
 
 ## 🚀 快速上手
+
+> [!TIP]
+> 如果你是首次从本模板创建新项目，建议先阅读 **[模板新项目定制速查清单](docs/template-customization-guide.md)**，快速完成应用名称、App ID、多端图标及发布源的个性化替换。
 
 ### 环境要求
 - **Node.js**: `>= 22.0.0`

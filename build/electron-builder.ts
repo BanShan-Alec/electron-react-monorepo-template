@@ -1,17 +1,51 @@
+import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import { join } from 'node:path';
 import type { Configuration } from 'electron-builder';
 
-const owner = process.env.GITHUB_OWNER;
-const repo = process.env.GITHUB_REPO;
-
-if (!owner || !repo) {
-  throw new Error(
-    '打包失败: 未配置 GITHUB_OWNER 或 GITHUB_REPO 环境变量。作为通用模板项目，请在 .env 或环境变量中指定目标 GitHub 仓库。',
-  );
+// 首次克隆守护：若工作区子包尚未编译（如直接运行 electron-builder），自动执行构建
+const mainDistPath = join(process.cwd(), 'packages', 'main', 'dist', 'index.cjs');
+if (!fs.existsSync(mainDistPath)) {
+  console.log('⚡ [electron-builder] 检测到工作区子包尚未编译，正在自动执行预热构建...');
+  execSync('pnpm -r run build', { stdio: 'inherit' });
 }
 
+// 读取根目录 package.json 作为默认事实源
+const rootPkgPath = join(process.cwd(), 'package.json');
+const rootPkg = fs.existsSync(rootPkgPath) ? JSON.parse(fs.readFileSync(rootPkgPath, 'utf8')) : {};
+
+/**
+ * 从 GitHub 仓库 URL 中解析 owner 与 repo
+ * 支持 https://github.com/owner/repo.git、git@github.com:owner/repo.git 等格式
+ */
+function parseGitHubRepo(repoUrl?: string): { owner?: string; repo?: string } {
+  if (!repoUrl) return {};
+  const match = repoUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)(?:\.git)?/);
+  if (match) {
+    return { owner: match[1], repo: match[2] };
+  }
+  return {};
+}
+
+const parsedRepo = parseGitHubRepo(
+  typeof rootPkg.repository === 'string' ? rootPkg.repository : rootPkg.repository?.url,
+);
+
+// 优先级：.env 环境变量覆盖 > package.json 事实源 > 零配置回退占位
+const owner = process.env.GITHUB_OWNER || parsedRepo.owner;
+const repo = process.env.GITHUB_REPO || parsedRepo.repo;
+const appId =
+  process.env.APP_ID || rootPkg.appId || `com.template.${rootPkg.name || 'electron-app'}`;
+const productName =
+  process.env.APP_NAME || rootPkg.productName || rootPkg.name || 'Electron React Template';
+
+// 未配置时使用 'local' / 'app' 占位，保证更新元数据生成且绝不阻断打包
+const resolvedOwner = owner || 'local';
+const resolvedRepo = repo || 'app';
+
 const config: Configuration = {
+  appId,
+  productName,
   directories: {
     output: 'dist',
     buildResources: 'build/resources',
@@ -19,8 +53,8 @@ const config: Configuration = {
   generateUpdatesFilesForAllChannels: true,
   publish: {
     provider: 'github',
-    owner,
-    repo,
+    owner: resolvedOwner,
+    repo: resolvedRepo,
     releaseType: 'release',
   },
   win: {
@@ -39,7 +73,7 @@ const config: Configuration = {
     allowElevation: true,
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
-    shortcutName: 'Electron React Template',
+    shortcutName: productName,
     installerIcon: 'build/resources/icon.ico',
     uninstallerIcon: 'build/resources/icon.ico',
     installerHeaderIcon: 'build/resources/icon.ico',
