@@ -47,7 +47,7 @@ const config: Configuration = {
   appId,
   productName,
   directories: {
-    output: 'dist',
+    output: process.env.DIST_DIR || 'dist',
     buildResources: 'build/resources',
   },
   generateUpdatesFilesForAllChannels: true,
@@ -100,10 +100,12 @@ const config: Configuration = {
    */
   // biome-ignore lint/suspicious/noTemplateCurlyInString: electron-builder placeholder template
   artifactName: '${productName}-${version}-${os}-${arch}.${ext}',
+  asarUnpack: ['**/node_modules/@node-usb/**/*'],
   files: [
     'LICENSE*',
     '!node_modules/@app/**',
     ...getListOfFilesFromEachWorkspace(['main', 'preload', 'renderer']),
+    ...getNativePrebuildFiles(),
     '!**/*.map', // 严禁将 SourceMap 源码映射文件打包进 asar，彻底防止源码泄露
     '!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,changelog.md}',
     '!**/node_modules/*/{test,__tests__,tests,docs,example,examples}/**',
@@ -114,6 +116,40 @@ const config: Configuration = {
 };
 
 export default config;
+
+/**
+ * 扫描 pnpm 虚拟存储并收集所有原生预编译包（如 @node-usb），映射到最终 node_modules/@node-usb
+ */
+function getNativePrebuildFiles(): Array<{ from: string; to: string; filter: string[] }> {
+  const pnpmDir = join(process.cwd(), 'node_modules', '.pnpm');
+  const files: Array<{ from: string; to: string; filter: string[] }> = [];
+  if (!fs.existsSync(pnpmDir)) return files;
+
+  const entries = fs.readdirSync(pnpmDir);
+  for (const entry of entries) {
+    if (entry.startsWith('@node-usb+')) {
+      const pkgParent = join(pnpmDir, entry, 'node_modules', '@node-usb');
+      if (fs.existsSync(pkgParent)) {
+        for (const sub of fs.readdirSync(pkgParent)) {
+          const relativeFrom = join(
+            'node_modules',
+            '.pnpm',
+            entry,
+            'node_modules',
+            '@node-usb',
+            sub,
+          ).replace(/\\/g, '/');
+          files.push({
+            from: relativeFrom,
+            to: `node_modules/@node-usb/${sub}`,
+            filter: ['package.json', '*.node', '!**/*.map'],
+          });
+        }
+      }
+    }
+  }
+  return files;
+}
 
 /**
  * 显式读取指定 workspace 子包的 package.json 中的 files 配置，生成打包匹配规则
