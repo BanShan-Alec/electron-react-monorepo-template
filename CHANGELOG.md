@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v1.5.0
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.4.0...v1.5.0)
+
+### 🚀 新增特性 (Features)
+
+- **renderer:** 主窗口接入 wouter 路由管理与 CSP 安全配置 ([#32](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/32))
+
+### ❤️ Contributors
+
+- 半山Alec ([@BanShan-Alec](https://github.com/BanShan-Alec))
+
 ## v1.4.0
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.3.1...v1.4.0)
