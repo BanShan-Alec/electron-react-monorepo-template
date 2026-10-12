@@ -7,12 +7,14 @@ import { useLocation } from 'wouter';
 
 // 可抽离的逻辑处理函数/组件
 
-const _Header = (_props: IHeaderProps) => {
+const _Header = (props: IHeaderProps) => {
   useLingui();
   const [location, navigate] = useLocation();
 
   // 变量声明、解构
-  const activeTab: HeaderTab = location === '/architecture' ? '/architecture' : '/dashboard';
+  const activeTab: HeaderTab = location.startsWith('/architecture')
+    ? '/architecture'
+    : '/dashboard';
 
   // 组件状态
 
@@ -26,7 +28,9 @@ const _Header = (_props: IHeaderProps) => {
 
   // 逻辑处理函数
   const handleTabChange = (value: string | number) => {
-    navigate(String(value));
+    const nextTab = value as HeaderTab;
+    navigate(nextTab);
+    props.onTabChange?.(nextTab);
   };
 
   // 组件Effect
@@ -65,7 +69,9 @@ const _Header = (_props: IHeaderProps) => {
 // props 类型定义
 export type HeaderTab = '/dashboard' | '/architecture';
 
-type IHeaderProps = Record<string, never>;
+interface IHeaderProps {
+  onTabChange?: (tab: HeaderTab) => void;
+}
 
 const Header = memo(_Header);
 

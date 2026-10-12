@@ -4,6 +4,7 @@ import { cleanOldReviewFiles } from '../core/cleaner.ts';
 import { formatDashboard } from '../core/dashboard.ts';
 import { findLatestReviewFile, parseExistingDashboard } from '../core/diff.ts';
 import { fetchOcrResult, fetchPrComments, getLatestRunInfo } from '../core/ocr.ts';
+import type { CiCheckItem } from '../types.ts';
 import { ensureGh, getCurrentBranch, getHeadSha, resolveOwnerRepo } from '../utils/git.ts';
 import { fail, probe, safeParseJson } from '../utils/process.ts';
 
@@ -21,9 +22,26 @@ export function runPull(): void {
   const headSha = getHeadSha();
   const ownerRepo = resolveOwnerRepo();
 
-  const prInfoRaw = probe('gh', ['pr', 'view', branch, '--json', 'number']);
-  const prInfo = safeParseJson<{ number?: number }>(prInfoRaw);
+  const prInfoRaw = probe('gh', ['pr', 'view', branch, '--json', 'number,statusCheckRollup']);
+  const prInfo = safeParseJson<{
+    number?: number;
+    statusCheckRollup?: Array<{
+      name?: string;
+      context?: string;
+      status?: string;
+      conclusion?: string | null;
+      detailsUrl?: string;
+      workflowName?: string;
+    }>;
+  }>(prInfoRaw);
   const prNumber: number | null = prInfo?.number ?? null;
+  const ciChecks: CiCheckItem[] = (prInfo?.statusCheckRollup ?? []).map((c) => ({
+    name: c.name ?? c.context ?? 'unknown',
+    status: c.status ?? '',
+    conclusion: c.conclusion ?? null,
+    detailsUrl: c.detailsUrl,
+    workflowName: c.workflowName,
+  }));
 
   console.log(`🔍 当前分支: ${branch} ${prNumber ? `(PR #${prNumber})` : ''}`);
 
@@ -59,6 +77,7 @@ export function runPull(): void {
       data,
       commentMap,
       historicalMap,
+      ciChecks,
     );
     fs.writeFileSync(outputFile, markdown, 'utf-8');
 

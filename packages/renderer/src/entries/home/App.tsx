@@ -8,7 +8,7 @@ import { DashboardFeature } from '@/features/dashboard';
  * 应用主界面内容编排（传统 Switch/Route 声明式切换）。
  * 壳层 Provider 已由 AppProviders 与 Router 统包。
  */
-const _App = (_props: IProps) => {
+const _App = () => {
   return (
     <div className="h-screen flex flex-col bg-background text-foreground selection:bg-primary/20">
       {/* App Header & Navigation */}
@@ -35,9 +35,6 @@ const _App = (_props: IProps) => {
     </div>
   );
 };
-
-// props 类型定义
-type IProps = Record<string, never>;
 
 const App = memo(_App);
 

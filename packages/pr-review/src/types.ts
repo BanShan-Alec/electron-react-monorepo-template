@@ -41,3 +41,11 @@ export interface HistoricalIssueState {
   userNote: string;
   fingerprint: string;
 }
+
+export interface CiCheckItem {
+  name: string;
+  status?: string;
+  conclusion?: string | null;
+  detailsUrl?: string;
+  workflowName?: string;
+}

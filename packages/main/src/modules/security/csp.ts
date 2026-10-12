@@ -35,7 +35,18 @@ export class ContentSecurityPolicyModule implements AppModule {
     defaultSession.webRequest.onHeadersReceived((details, callback) => {
       const responseHeaders = { ...details.responseHeaders };
 
-      responseHeaders['Content-Security-Policy'] = [cspPolicy];
+      // 检查响应中是否已存在 CSP 头（大小写不敏感匹配）
+      const existingKey = Object.keys(responseHeaders).find(
+        (key) => key.toLowerCase() === 'content-security-policy',
+      );
+
+      if (existingKey) {
+        const existingVal = responseHeaders[existingKey];
+        const existingArray = Array.isArray(existingVal) ? existingVal : [existingVal];
+        responseHeaders[existingKey] = [...existingArray, cspPolicy];
+      } else {
+        responseHeaders['Content-Security-Policy'] = [cspPolicy];
+      }
 
       callback({ responseHeaders });
     });
