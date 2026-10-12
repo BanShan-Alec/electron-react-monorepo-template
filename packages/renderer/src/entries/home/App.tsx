@@ -25,11 +25,8 @@ const _App = (_props: IProps) => {
             <Route path="/architecture">
               <ArchitectureFeature />
             </Route>
-            {/* 默认与未知路径重定向到 /dashboard */}
-            <Route path="/">
-              <Redirect to="/dashboard" replace />
-            </Route>
-            <Route>
+            {/* 默认根路径与未知路径统一重定向到 /dashboard */}
+            <Route path="/*">
               <Redirect to="/dashboard" replace />
             </Route>
           </Switch>
