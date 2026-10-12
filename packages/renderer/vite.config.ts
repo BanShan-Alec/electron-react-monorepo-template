@@ -17,13 +17,7 @@ export default defineConfig({
   // 环境变量单一事实源：Monorepo 全局统一定义在根目录 .env，子包不设独立 .env
   envDir: sentryConfig.rootDir,
   base: './',
-  define: {
-    'import.meta.env.APP_VERSION': JSON.stringify(sentryConfig.appVersion),
-    'import.meta.env.SENTRY_DSN': JSON.stringify(sentryConfig.sentryDsn),
-    'import.meta.env.RELEASE_NAME': JSON.stringify(sentryConfig.releaseName),
-    __APP_VERSION__: JSON.stringify(sentryConfig.appVersion),
-    __SENTRY_DSN__: JSON.stringify(sentryConfig.sentryDsn),
-  },
+  // 运行时环境单一事实源：由 Preload 通过 additionalArguments 注入至 window.__APP_ENV__，前端不走编译期 define
   plugins: [
     react(),
     lingui({
@@ -80,6 +74,21 @@ export default defineConfig({
       input: {
         home: path.resolve(currentDir, 'src/entries/home/index.html'),
         updater: path.resolve(currentDir, 'src/entries/updater/index.html'),
+      },
+      output: {
+        chunkFileNames: 'assets/[name]-[hash].js',
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            // 1. 最稳定核心运行时：React 系列
+            if (id.includes('react') || id.includes('scheduler')) {
+              return 'vendor-react';
+            }
+            // 2. UI 框架：Ant Design 及其样式/图标/底层 RC 库
+            if (id.includes('antd') || id.includes('@ant-design') || id.includes('rc-')) {
+              return 'vendor-antd';
+            }
+          }
+        },
       },
     },
   },

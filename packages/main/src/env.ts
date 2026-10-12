@@ -50,6 +50,30 @@ export const devServerUrl: string | undefined =
     ? process.env.VITE_DEV_SERVER_URL
     : undefined;
 
+import type { EnvKey } from './env.d';
+
+/**
+ * 读取动态环境配置：
+ * 优先级 1：外部动态注入的带前缀环境变量 process.env[`${__ENV_PREFIX__}${key}`] (如 APP_API_BASE_URL)
+ * 优先级 2：调用处传入的显式 fallback (若提供)
+ * 优先级 3：编译期 Vite define 注入的静态默认值快照 __ENV_DEFAULTS__[key]
+ */
+export function getEnv(key: EnvKey, fallback?: string): string {
+  const prefix = typeof __ENV_PREFIX__ !== 'undefined' ? __ENV_PREFIX__ : 'APP_';
+  const prefixedKey = `${prefix}${key}`;
+  const envVal = process.env[prefixedKey];
+  if (envVal !== undefined && envVal !== '') {
+    return envVal;
+  }
+  if (fallback !== undefined) {
+    return fallback;
+  }
+  if (typeof __ENV_DEFAULTS__ !== 'undefined' && __ENV_DEFAULTS__[key] !== undefined) {
+    return __ENV_DEFAULTS__[key];
+  }
+  return '';
+}
+
 /**
  * 获取注入给渲染进程的全局只读运行时环境基座快照
  */
@@ -62,9 +86,13 @@ export function getRuntimeEnvSnapshot(): AppRuntimeEnv {
     mode: currentAppEnv,
     appVersion: app.getVersion(),
     appName: app.getName(),
-    channel: process.env.DISTRIBUTION_CHANNEL,
-    apiBaseUrl: process.env.API_BASE_URL,
-    systemCode: process.env.SYSTEM_CODE,
+    channel: getEnv('DISTRIBUTION_CHANNEL') || undefined,
+    apiBaseUrl: getEnv('API_BASE_URL') || undefined,
+    systemCode: getEnv('SYSTEM_CODE') || undefined,
+    sentryDsn:
+      getEnv('SENTRY_DSN') ||
+      (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__ ? __SENTRY_DSN__ : undefined),
+    releaseName: typeof __RELEASE_NAME__ !== 'undefined' ? __RELEASE_NAME__ : undefined,
   };
 }
 

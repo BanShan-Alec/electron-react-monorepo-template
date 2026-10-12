@@ -71,17 +71,29 @@ export class TrayManager implements AppModule {
 
     try {
       const iconPath = this.resolveIconPath();
-      let icon = iconPath ? nativeImage.createFromPath(iconPath) : nativeImage.createEmpty();
-      if (icon.isEmpty()) {
-        icon = nativeImage.createEmpty();
+      if (!iconPath) {
+        this.tray = new Tray(nativeImage.createEmpty());
+      } else if (process.platform === 'win32' && iconPath.endsWith('.ico')) {
+        // Windows 平台直接使用包含完整 DPI 阶梯 (16, 20, 24, 32, 48, 256) 的 .ico 文件路径，
+        // 由 Windows 系统底层的 Shell_NotifyIcon 自动匹配当前屏幕缩放比例的最佳图标，
+        // 彻底杜绝通过 nativeImage 强行 resize(16, 16) 导致的高分屏插值模糊与像素锯齿。
+        this.tray = new Tray(iconPath);
       } else {
-        if (process.platform === 'darwin') {
-          icon.setTemplateImage(true);
+        let icon = nativeImage.createFromPath(iconPath);
+        if (icon.isEmpty()) {
+          icon = nativeImage.createEmpty();
+        } else {
+          if (process.platform === 'darwin') {
+            icon.setTemplateImage(true);
+            icon = icon.resize({ width: 16, height: 16, quality: 'best' });
+          } else if (process.platform === 'win32') {
+            icon = icon.resize({ width: 32, height: 32, quality: 'best' });
+          } else {
+            icon = icon.resize({ width: 24, height: 24, quality: 'best' });
+          }
         }
-        icon = icon.resize({ width: 16, height: 16 });
+        this.tray = new Tray(icon);
       }
-
-      this.tray = new Tray(icon);
       this.updateLanguage('zh-CN');
 
       // 单击/双击托盘图标激活并唤起主窗口（若已销毁则重建）
@@ -133,16 +145,7 @@ export class TrayManager implements AppModule {
 
   private resolveIconPath(): string {
     const isWin = process.platform === 'win32';
-    const isMac = process.platform === 'darwin';
-
-    const iconNames: string[] = [];
-    if (isWin) {
-      iconNames.push('icon.ico', 'icon.png');
-    } else if (isMac) {
-      iconNames.push('iconTemplate.png', 'icon.png');
-    } else {
-      iconNames.push('icon.png');
-    }
+    const iconNames = isWin ? ['icon.ico', 'icon.png'] : ['icon.png'];
 
     const baseDirs: string[] = [];
     if (process.resourcesPath) {

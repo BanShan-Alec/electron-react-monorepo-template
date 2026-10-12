@@ -1,58 +1,40 @@
-import { memo, useState } from 'react';
-import { Header, type HeaderTab } from '@/components/layout/Header';
+import { memo } from 'react';
+import { Redirect, Route, Switch } from 'wouter';
+import { Header } from '@/components/layout/Header';
 import { ArchitectureFeature } from '@/features/architecture';
-import { CalculatorFeature } from '@/features/calculator';
-import { CounterFeature } from '@/features/counter';
-import { DevToolsFeature } from '@/features/devtools';
-import { LoggingFeature } from '@/features/logging';
-import { NativeDialogsFeature } from '@/features/native-dialogs';
-import { PingFeature } from '@/features/ping';
-import { SettingsFeature } from '@/features/settings';
-import { SystemInfoFeature } from '@/features/system-info';
-
-// 私有常量
-const DEFAULT_TAB: HeaderTab = 'dashboard';
+import { DashboardFeature } from '@/features/dashboard';
 
 /**
- * 应用主界面内容编排（tab 状态、面板摆放）。
- * 壳层 Provider 已由 AppProviders 统包。
+ * 应用主界面内容编排（传统 Switch/Route 声明式切换）。
+ * 壳层 Provider 已由 AppProviders 与 Router 统包。
  */
-const _App = (_props: IProps) => {
-  const [activeTab, setActiveTab] = useState<HeaderTab>(DEFAULT_TAB);
-  const isDashboard = activeTab === 'dashboard';
-
+const _App = () => {
   return (
     <div className="h-screen flex flex-col bg-background text-foreground selection:bg-primary/20">
       {/* App Header & Navigation */}
-      <Header activeTab={activeTab} onTabChange={setActiveTab} />
+      <Header />
 
       {/* Main Content Area */}
       {/* 滚动容器必须全宽：max-w/mx-auto 一旦挂回 main，宽窗口下滚动条会随内容区一起被居中推离窗口右缘 */}
       <main className="flex-1 min-h-0 w-full overflow-y-auto stable-scrollbar">
         <div className="max-w-7xl mx-auto p-6">
-          {/* 两块面板均保持挂载、仅切换显隐：卸载会丢失域内状态并重复发起 IPC（README「已知取舍」） */}
-          <div className={`grid grid-cols-1 lg:grid-cols-2 gap-5${isDashboard ? '' : ' hidden'}`}>
-            <PingFeature />
-            <SystemInfoFeature />
-            <CounterFeature />
-            <CalculatorFeature />
-            <SettingsFeature />
-            <NativeDialogsFeature />
-            <LoggingFeature />
-            <DevToolsFeature />
-          </div>
-
-          <div className={isDashboard ? 'hidden' : undefined}>
-            <ArchitectureFeature />
-          </div>
+          <Switch>
+            <Route path="/dashboard">
+              <DashboardFeature />
+            </Route>
+            <Route path="/architecture">
+              <ArchitectureFeature />
+            </Route>
+            {/* 默认根路径与未知路径统一重定向到 /dashboard */}
+            <Route path="/*">
+              <Redirect to="/dashboard" replace />
+            </Route>
+          </Switch>
         </div>
       </main>
     </div>
   );
 };
-
-// props 类型定义
-type IProps = Record<string, never>;
 
 const App = memo(_App);
 

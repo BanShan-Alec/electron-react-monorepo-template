@@ -9,8 +9,7 @@ import * as Sentry from '@sentry/electron/renderer';
  * 4. 彻底禁用性能追踪（Tracing / Profiling），采样率为 0
  */
 export function initSentry(): void {
-  const dsn =
-    import.meta.env.SENTRY_DSN || (typeof __SENTRY_DSN__ !== 'undefined' ? __SENTRY_DSN__ : '');
+  const dsn = (typeof window !== 'undefined' && window.__APP_ENV__?.sentryDsn) || '';
 
   // 基于 window.__APP_ENV__?.mode 判断是否为生产模式 (兜底 import.meta.env.PROD)
   const isProd =
@@ -25,11 +24,9 @@ export function initSentry(): void {
     return;
   }
 
-  const appVersion =
-    import.meta.env.APP_VERSION ||
-    (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown');
+  const appVersion = (typeof window !== 'undefined' && window.__APP_ENV__?.appVersion) || 'unknown';
   const release =
-    import.meta.env.RELEASE_NAME ||
+    (typeof window !== 'undefined' && window.__APP_ENV__?.releaseName) ||
     `${(typeof window !== 'undefined' && window.__APP_ENV__?.appName) || 'electron-app'}@${appVersion}`;
 
   Sentry.init({

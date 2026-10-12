@@ -12,6 +12,8 @@ describe('env-packer Codec', () => {
       channel: 'stable',
       apiBaseUrl: 'https://api.example.com',
       systemCode: 'ERP-CORE',
+      sentryDsn: 'https://key@sentry.io/123',
+      releaseName: 'template@1.2.0',
     };
 
     const packed = packRuntimeEnv(original);
@@ -43,6 +45,8 @@ describe('env-packer Codec', () => {
       channel: undefined,
       apiBaseUrl: undefined,
       systemCode: undefined,
+      sentryDsn: undefined,
+      releaseName: undefined,
     });
   });
 

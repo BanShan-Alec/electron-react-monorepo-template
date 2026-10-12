@@ -44,6 +44,8 @@ export function packRuntimeEnv(env: AppRuntimeEnv): string {
     env.channel ?? '',
     env.apiBaseUrl ?? '',
     env.systemCode ?? '',
+    env.sentryDsn ?? '',
+    env.releaseName ?? '',
   ];
   const jsonStr = JSON.stringify(tuple);
   const bytes = new TextEncoder().encode(jsonStr);
@@ -62,7 +64,8 @@ export function unpackRuntimeEnv(encodedStr: string): AppRuntimeEnv {
     bytes[i] ^= XOR_MASK;
   }
   const jsonStr = new TextDecoder().decode(bytes);
-  const [mode, appVersion, appName, channel, apiBaseUrl, systemCode] = JSON.parse(jsonStr);
+  const [mode, appVersion, appName, channel, apiBaseUrl, systemCode, sentryDsn, releaseName] =
+    JSON.parse(jsonStr);
 
   return {
     mode: mode as AppEnv,
@@ -71,5 +74,7 @@ export function unpackRuntimeEnv(encodedStr: string): AppRuntimeEnv {
     channel: channel ? String(channel) : undefined,
     apiBaseUrl: apiBaseUrl ? String(apiBaseUrl) : undefined,
     systemCode: systemCode ? String(systemCode) : undefined,
+    sentryDsn: sentryDsn ? String(sentryDsn) : undefined,
+    releaseName: releaseName ? String(releaseName) : undefined,
   };
 }

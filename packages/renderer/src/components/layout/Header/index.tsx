@@ -3,13 +3,18 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Badge, Segmented } from 'antd';
 import { memo } from 'react';
+import { useLocation } from 'wouter';
 
 // 可抽离的逻辑处理函数/组件
 
 const _Header = (props: IHeaderProps) => {
   useLingui();
+  const [location, navigate] = useLocation();
+
   // 变量声明、解构
-  const { activeTab, onTabChange } = props;
+  const activeTab: HeaderTab = location.startsWith('/architecture')
+    ? '/architecture'
+    : '/dashboard';
 
   // 组件状态
 
@@ -17,13 +22,15 @@ const _Header = (props: IHeaderProps) => {
 
   // 数据转换
   const tabOptions = [
-    { label: t`总览看板`, value: 'dashboard' },
-    { label: t`架构全貌`, value: 'architecture' },
+    { label: t`总览看板`, value: '/dashboard' },
+    { label: t`架构全貌`, value: '/architecture' },
   ];
 
   // 逻辑处理函数
   const handleTabChange = (value: string | number) => {
-    onTabChange(value as HeaderTab);
+    const nextTab = value as HeaderTab;
+    navigate(nextTab);
+    props.onTabChange?.(nextTab);
   };
 
   // 组件Effect
@@ -40,7 +47,10 @@ const _Header = (props: IHeaderProps) => {
             <h1 className="text-lg font-semibold text-foreground tracking-tight">
               Electron + Vite + Fullstack IPC
             </h1>
-            <Badge count={__APP_VERSION__} color="var(--color-primary)" />
+            <Badge
+              count={window.__APP_ENV__?.appVersion || 'v0.0.0'}
+              color="var(--color-primary)"
+            />
           </div>
           <p className="text-xs text-foreground-secondary mt-0.5">
             {t`企业级端到端类型安全桌面客户端脚手架`}
@@ -60,11 +70,10 @@ const _Header = (props: IHeaderProps) => {
 };
 
 // props 类型定义
-export type HeaderTab = 'dashboard' | 'architecture';
+export type HeaderTab = '/dashboard' | '/architecture';
 
 interface IHeaderProps {
-  activeTab: HeaderTab;
-  onTabChange: (tab: HeaderTab) => void;
+  onTabChange?: (tab: HeaderTab) => void;
 }
 
 const Header = memo(_Header);

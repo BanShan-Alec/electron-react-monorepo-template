@@ -8,6 +8,7 @@ import { createIPCModule } from './modules/ipc.module';
 import { createLogModule } from './modules/log.module';
 import { createNativeThemeModule } from './modules/native-theme.module';
 import { allowInternalOrigins } from './modules/security/block-origins';
+import { createContentSecurityPolicyModule } from './modules/security/csp';
 import { allowExternalUrls } from './modules/security/external-urls';
 import { createSentryModule, initMainSentry } from './modules/sentry.module';
 import { disallowMultipleAppInstance } from './modules/single-instance.module';
@@ -36,6 +37,7 @@ export async function initApp(initConfig: AppInitConfig) {
     .init(terminateAppOnLastWindowClose())
 
     // Security
+    .init(createContentSecurityPolicyModule())
     .init(
       allowInternalOrigins(
         new Set(

@@ -1,5 +1,56 @@
-import type { HistoricalIssueState, OcrComment, OcrResult, RunInfo } from '../types.ts';
+import type {
+  CiCheckItem,
+  HistoricalIssueState,
+  OcrComment,
+  OcrResult,
+  RunInfo,
+} from '../types.ts';
 import { computeFingerprint } from './diff.ts';
+
+const CHECK_PRIORITY: Record<string, number> = {
+  lint: 1,
+  typecheck: 2,
+  test: 3,
+  e2e: 4,
+  'Analyze (javascript-typescript)': 5,
+  CodeQL: 6,
+  'AI Code Review': 7,
+};
+
+function formatCheckStatus(item: CiCheckItem): { badge: string; desc: string } {
+  const conc = (item.conclusion || '').toUpperCase();
+  const stat = (item.status || '').toUpperCase();
+
+  let badge = '⏳ Pending';
+  if (conc === 'SUCCESS') {
+    badge = '✅ Pass';
+  } else if (conc === 'FAILURE' || conc === 'ERROR') {
+    badge = '❌ Fail';
+  } else if (conc === 'CANCELLED') {
+    badge = '⚪ Cancelled';
+  } else if (conc === 'SKIPPED') {
+    badge = '⏭️ Skipped';
+  } else if (conc === 'TIMED_OUT') {
+    badge = '⏰ Timed out';
+  } else if (stat === 'IN_PROGRESS') {
+    badge = '🟡 Running';
+  } else if (stat === 'QUEUED') {
+    badge = '⚪ Queued';
+  }
+
+  const nameDescMap: Record<string, string> = {
+    lint: '代码规范与格式检查 (Biome)',
+    typecheck: 'TypeScript 全局类型检查 (tsc)',
+    test: 'Vitest 单元测试',
+    e2e: 'Playwright 端到端集成测试',
+    'Analyze (javascript-typescript)': 'CodeQL 静态代码安全漏洞分析',
+    CodeQL: 'CodeQL 安全分析',
+    'AI Code Review': 'OpenCodeReview AI 代码审查',
+  };
+
+  const desc = nameDescMap[item.name] || (item.workflowName ? `工作流: ${item.workflowName}` : '-');
+  return { badge, desc };
+}
 
 export function formatDashboard(
   branch: string,
@@ -10,6 +61,7 @@ export function formatDashboard(
   data: OcrResult,
   commentMap: Map<string, string>,
   historicalMap: Map<string, HistoricalIssueState>,
+  ciChecks?: CiCheckItem[],
 ): string {
   const allComments = data.comments ?? [];
 
@@ -47,6 +99,28 @@ export function formatDashboard(
   lines.push('');
   lines.push('---');
   lines.push('');
+
+  // 0. 最前面展示【🚦 CI Checks 整体状态】
+  if (ciChecks && ciChecks.length > 0) {
+    const sortedChecks = [...ciChecks].sort((a, b) => {
+      const pA = CHECK_PRIORITY[a.name] ?? 99;
+      const pB = CHECK_PRIORITY[b.name] ?? 99;
+      return pA - pB;
+    });
+
+    lines.push('### 🚦 CI Checks 整体状态');
+    lines.push('');
+    lines.push('| Check 名称 | 状态 | 说明 / 关联工作流 | 详情链接 |');
+    lines.push('| :--- | :--- | :--- | :--- |');
+    for (const check of sortedChecks) {
+      const { badge, desc } = formatCheckStatus(check);
+      const link = check.detailsUrl ? `[查看详情](${check.detailsUrl})` : '-';
+      lines.push(`| **${check.name}** | ${badge} | ${desc} | ${link} |`);
+    }
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+  }
 
   // 1. 顶部保留【✨ 上一轮已成功解决】清单（精简删除线格式）
   if (resolvedList.length > 0) {

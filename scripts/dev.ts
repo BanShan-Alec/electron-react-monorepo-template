@@ -1,9 +1,12 @@
 import { type ChildProcess, execSync, spawn } from 'node:child_process';
 import path from 'node:path';
-import 'dotenv/config';
 import electronPath from 'electron';
-import { build, createServer, type Plugin, type ViteDevServer } from 'vite';
+import { build, createServer, loadEnv, type Plugin, type ViteDevServer } from 'vite';
 import { ensurePortsAvailable, killProcessTree } from './port-guard.ts';
+
+// 统一由 Vite loadEnv 加载项目多模式环境变量至 process.env
+const devMode = process.env.MODE || 'development';
+Object.assign(process.env, loadEnv(devMode, process.cwd(), ''));
 
 // Windows 平台下将控制台代码页切换为 UTF-8 (65001)，解决 Git Bash 等终端日志中文乱码问题
 if (process.platform === 'win32') {

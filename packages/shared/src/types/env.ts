@@ -26,4 +26,8 @@ export interface AppRuntimeEnv {
   readonly apiBaseUrl?: string;
   /** 系统编号 / 业务标识 */
   readonly systemCode?: string;
+  /** 生产监控 Sentry DSN (若已配置) */
+  readonly sentryDsn?: string;
+  /** 生产监控 Sentry Release 标识名称 */
+  readonly releaseName?: string;
 }
