@@ -40,7 +40,10 @@ const _App = (_props: IProps) => {
       <main className="flex-1 min-h-0 w-full overflow-y-auto stable-scrollbar">
         <div className="max-w-7xl mx-auto p-6">
           {/* 两块面板均保持挂载、仅通过 KeepAliveRoute 切换显隐：卸载会丢失域内状态并重复发起 IPC（README「已知取舍」） */}
-          <KeepAliveRoute path="/dashboard" className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <KeepAliveRoute
+            path={['/', '/dashboard']}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-5"
+          >
             <PingFeature />
             <SystemInfoFeature />
             <CounterFeature />
