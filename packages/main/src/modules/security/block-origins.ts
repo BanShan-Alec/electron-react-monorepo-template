@@ -22,11 +22,12 @@ export class BlockNotAllowedOrigins extends AbstractSecurityRule {
 
   applyRule(contents: Electron.WebContents): Promise<void> | void {
     contents.on('will-navigate', (event, url) => {
-      if (url.startsWith('app://')) {
+      const parsed = new URL(url);
+      if (parsed.protocol === 'file:') {
         return;
       }
 
-      const { origin } = new URL(url);
+      const { origin } = parsed;
       if (this.allowedOrigins.has(origin)) {
         return;
       }

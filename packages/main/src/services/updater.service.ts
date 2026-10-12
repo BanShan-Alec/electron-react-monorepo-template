@@ -176,12 +176,11 @@ export class UpdaterService {
         this.cancellationToken = null;
         this.emitState();
 
-        // 判定孤儿态（主窗口已关闭）
-        const homeWin = getWindow(WINDOW_IDS.HOME);
-        if (this.isOrphan || !homeWin || homeWin.isDestroyed()) {
+        // 判定孤儿态（在退出流程中后台下载完成）
+        if (this.isOrphan) {
           this.stopOrphanWatchdog();
           this.logger.info(
-            'Home window destroyed. Executing Strategy A: quitAndInstall(true, false)',
+            'App closing orphan mode: Executing Strategy A: quitAndInstall(true, false)',
           );
           try {
             updater.quitAndInstall(true, false);
@@ -224,8 +223,7 @@ export class UpdaterService {
         this.cancellationToken = null;
         this.emitState();
 
-        const homeWin = getWindow(WINDOW_IDS.HOME);
-        if (this.isOrphan || !homeWin) {
+        if (this.isOrphan) {
           this.stopOrphanWatchdog();
           this.logger.error('Orphan download failed with error, quitting app');
           app.quit();
@@ -576,8 +574,7 @@ export class UpdaterService {
         this.snapshot.progress = null;
         this.snapshot.error = null;
         this.emitState();
-        const homeWin = getWindow(WINDOW_IDS.HOME);
-        if (this.isOrphan || !homeWin || homeWin.isDestroyed()) {
+        if (this.isOrphan) {
           this.stopOrphanWatchdog();
           if (!isTest) {
             try {
@@ -614,7 +611,7 @@ export class UpdaterService {
         this.snapshot.error = action.message;
         this.snapshot.progress = null;
         this.emitState();
-        if (this.isOrphan || !getWindow(WINDOW_IDS.HOME)) {
+        if (this.isOrphan) {
           this.stopOrphanWatchdog();
           app.quit();
         }

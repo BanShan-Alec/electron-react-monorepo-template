@@ -47,9 +47,16 @@ const settleGate = (id: GateId) => {
   tryFinishStartup();
 };
 
-// 门禁一：壳弹出动画（reduced-motion 或元素缺失时直接放行）
+// 门禁一：壳弹出动画（跳过动画、reduced-motion 或元素缺失时直接放行）
 const startupLogoShell = document.querySelector(LOGO_SHELL_SELECTOR);
-if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !startupLogoShell) {
+const skipAnimation =
+  window.location.search.includes('skip_animation') ||
+  document.documentElement.classList.contains('skip-startup-animation');
+if (
+  skipAnimation ||
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+  !startupLogoShell
+) {
   settleGate('animation');
 } else {
   startupLogoShell.addEventListener('animationend', () => settleGate('animation'), { once: true });

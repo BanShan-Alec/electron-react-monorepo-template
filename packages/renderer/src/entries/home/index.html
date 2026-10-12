@@ -5,6 +5,11 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>renderer</title>
+    <script>
+      if (window.location.search.includes('skip_animation')) {
+        document.documentElement.classList.add('skip-startup-animation');
+      }
+    </script>
     <style>
       html,
       body,
@@ -42,6 +47,15 @@
         opacity: 0;
       }
 
+      html.skip-startup-animation #loading {
+        display: none !important;
+      }
+
+      html.skip-startup-animation #root {
+        opacity: 1 !important;
+        transition: none !important;
+      }
+
       .startup-logo-shell {
         position: relative;
         display: flex;
@@ -73,9 +87,11 @@
           transform: scale(1.045);
         }
         58% {
+          opacity: 1;
           transform: scale(0.985);
         }
         76% {
+          opacity: 1;
           transform: scale(1.008);
         }
         100% {
@@ -103,6 +119,6 @@
       </div>
     </div>
     <!-- __APP_STARTUP_COORDINATOR__ -->
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="./index.tsx"></script>
   </body>
 </html>

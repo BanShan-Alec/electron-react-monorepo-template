@@ -4,15 +4,16 @@ import { app } from 'electron';
 
 /**
  * 是否处于自动化测试环境 (Playwright / Vitest)
- * 由测试启动器注入 MODE=test
+ * 由测试启动器注入 MODE=test 或 Vitest/NODE_ENV 运行环境
  */
-export const isTest: boolean = process.env.MODE === 'test';
+export const isTest: boolean =
+  process.env.MODE === 'test' || process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
 
 /**
  * 是否处于已打包二进制分发形态 (.exe / .app / AppImage)
  * Electron 官方权威判定，打包后二进制恒为 true
  */
-export const isPackaged: boolean = app.isPackaged;
+export const isPackaged: boolean = Boolean(app?.isPackaged);
 
 /**
  * 是否处于本地开发态

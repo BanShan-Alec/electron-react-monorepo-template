@@ -59,10 +59,65 @@ export function useLogging() {
     void runLogAction({ kind: 'openLogFolder', level: 'info' }).catch(() => {});
   };
 
+  const [isTriggeringSentry, setIsTriggeringSentry] = useState(false);
+
+  const handleTriggerSentryError = () => {
+    if (isTriggeringSentry) {
+      return;
+    }
+    setIsTriggeringSentry(true);
+    setTimeout(() => {
+      setIsTriggeringSentry(false);
+    }, 1500);
+
+    const errorMsg = 'Test Sentry exception triggered from UI';
+    const err = new Error(errorMsg);
+
+    // 1. 记录本地落盘日志到 renderer.log
+    void callIpc('diagnostics.log', window.api.diagnostics.log, [
+      {
+        level: 'error',
+        message: errorMsg,
+        meta: { triggeredFrom: 'UI', timestamp: Date.now() },
+      },
+    ]).catch(() => {});
+
+    // 2. 更新 UI 状态提示
+    setLogStatus(
+      t`❌ 已触发测试异常并写入 renderer.log (生产打包模式下将由全局监听器自动上报 Sentry)`,
+    );
+    message.error(t`已触发测试异常，已写入 renderer.log`);
+
+    // 3. 异步抛出异常至全局执行栈，交由 window.onerror 全局监听器捕获
+    setTimeout(() => {
+      throw err;
+    }, 0);
+  };
+
+  const [shouldCrashRender, setShouldCrashRender] = useState(false);
+
+  const handleTriggerErrorBoundaryCrash = () => {
+    const errorMsg = 'Test React ErrorBoundary component crash triggered from UI';
+    // 记录本地落盘日志
+    void callIpc('diagnostics.log', window.api.diagnostics.log, [
+      {
+        level: 'error',
+        message: errorMsg,
+        meta: { triggeredFrom: 'UI', timestamp: Date.now() },
+      },
+    ]).catch(() => {});
+
+    setShouldCrashRender(true);
+  };
+
   return {
     logStatus,
     isLoading,
+    isTriggeringSentry,
+    shouldCrashRender,
     handleSendLog,
     handleOpenLogFolder,
+    handleTriggerSentryError,
+    handleTriggerErrorBoundaryCrash,
   };
 }

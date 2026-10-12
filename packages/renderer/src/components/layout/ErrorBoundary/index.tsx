@@ -3,7 +3,7 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import * as Sentry from '@sentry/electron/renderer';
 import { Button, Empty } from 'antd';
-import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Component, type ErrorInfo, Fragment, type ReactNode } from 'react';
 
 interface IErrorBoundaryProps {
   children: ReactNode;
@@ -14,6 +14,7 @@ interface IErrorBoundaryProps {
 interface IErrorBoundaryState {
   hasError: boolean;
   error: unknown;
+  resetKey: number;
 }
 
 interface IFallbackProps {
@@ -23,19 +24,31 @@ interface IFallbackProps {
 
 function FallbackView({ error, resetError }: IFallbackProps) {
   useLingui();
-  const isDev = window.__APP_ENV__?.mode === APP_ENV.DEVELOPMENT;
+  const isDev = window.__APP_ENV__?.mode === APP_ENV.DEVELOPMENT || import.meta.env.DEV;
   const errorMessage = error instanceof Error ? error.message : String(error || '');
-  const description = isDev ? errorMessage || t`渲染进程发生未捕获错误` : t`页面出错啦~`;
+
+  const description = (
+    <div className="flex flex-col items-center gap-2">
+      <span className="text-base font-medium text-foreground">{t`页面出错啦~`}</span>
+      {isDev && errorMessage ? (
+        <span className="text-xs text-muted-foreground font-mono max-w-lg break-all text-center">
+          {errorMessage}
+        </span>
+      ) : null}
+    </div>
+  );
 
   const handleReload = (): void => {
     if (resetError) {
       resetError();
     }
-    window.location.reload();
+    const url = new URL(window.location.href);
+    url.searchParams.set('skip_animation', '1');
+    window.location.replace(url.toString());
   };
 
   return (
-    <div className="h-full min-h-[360px] w-full flex flex-col items-center justify-center gap-6 p-6">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 p-6 bg-background text-foreground">
       <Empty image={Empty.PRESENTED_IMAGE_DEFAULT} description={description} />
       <Button type="primary" onClick={handleReload}>
         {t`刷新重试`}
@@ -50,10 +63,11 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
     this.state = {
       hasError: false,
       error: null,
+      resetKey: 0,
     };
   }
 
-  static getDerivedStateFromError(error: unknown): IErrorBoundaryState {
+  static getDerivedStateFromError(error: unknown): Partial<IErrorBoundaryState> {
     return {
       hasError: true,
       error,
@@ -73,17 +87,18 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
   }
 
   resetError = (): void => {
-    this.setState({
+    this.setState((prev) => ({
       hasError: false,
       error: null,
-    });
+      resetKey: prev.resetKey + 1,
+    }));
   };
 
   render(): ReactNode {
     if (this.state.hasError) {
       return <FallbackView error={this.state.error} resetError={this.resetError} />;
     }
-    return this.props.children;
+    return <Fragment key={this.state.resetKey}>{this.props.children}</Fragment>;
   }
 }
 

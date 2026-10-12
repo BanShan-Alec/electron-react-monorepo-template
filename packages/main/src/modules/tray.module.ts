@@ -7,6 +7,7 @@ import { appLifecycle } from '../lifecycle';
 import type { ModuleContext } from '../ModuleContext';
 import { updaterService } from '../services/updater.service';
 import { getLogManager } from './log.module';
+import { getWindowManager } from './window/index.module';
 import { getUpdaterWindowModule } from './window/updater-window.module';
 import { getWindow } from './window/window-registry';
 
@@ -83,7 +84,7 @@ export class TrayManager implements AppModule {
       this.tray = new Tray(icon);
       this.updateLanguage('zh-CN');
 
-      // 单击/双击托盘图标切换窗口显示或隐藏
+      // 单击/双击托盘图标激活并唤起主窗口（若已销毁则重建）
       this.tray.on('click', () => {
         this.toggleMainWindow();
       });
@@ -101,25 +102,32 @@ export class TrayManager implements AppModule {
 
   public toggleMainWindow(): void {
     const win = getWindow(WINDOW_IDS.HOME);
-    if (!win) {
+    if (!win || win.isDestroyed()) {
       this.restoreMainWindow();
       return;
     }
-    if (win.isVisible() && !win.isMinimized()) {
-      win.hide();
-    } else {
-      this.restoreMainWindow();
+    if (win.isMinimized()) {
+      win.restore();
     }
+    win.show();
+    win.focus();
   }
 
   public restoreMainWindow(): void {
     const win = getWindow(WINDOW_IDS.HOME);
-    if (win) {
+    if (win && !win.isDestroyed()) {
       if (win.isMinimized()) {
         win.restore();
       }
       win.show();
       win.focus();
+    } else {
+      const windowManager = getWindowManager();
+      if (windowManager) {
+        windowManager.restoreOrCreateWindow(true).catch((err) => {
+          this.logger.error('Failed to restoreOrCreateWindow from tray:', err);
+        });
+      }
     }
   }
 

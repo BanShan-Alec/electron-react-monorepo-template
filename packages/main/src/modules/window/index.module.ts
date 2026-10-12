@@ -141,15 +141,23 @@ export class WindowManager implements AppModule {
       logger.error(`Preload script failed to load at "${preloadPath}":`, error);
     });
 
-    // 支持点击关闭按钮最小化到系统托盘及防僵尸退出闭环
-    browserWindow.on('close', (event) => {
+    // 支持点击关闭按钮销毁主窗口并退守系统托盘及防僵尸退出闭环
+    browserWindow.on('close', () => {
+      if (appLifecycle.isQuitting) {
+        try {
+          getUpdaterWindowModule().destroy();
+        } catch {}
+        return;
+      }
+
       const configStore = getAppConfigStore();
       const shouldMinimizeToTray = configStore.get('minimizeToTray');
 
-      if (!appLifecycle.isQuitting && shouldMinimizeToTray) {
-        event.preventDefault();
-        browserWindow.hide();
-        logger.info('Home window closed event intercepted -> minimized to tray');
+      if (shouldMinimizeToTray) {
+        // 用户开启了关闭时最小化到托盘：允许窗口自然销毁以彻底释放内存，
+        // 不拦截 close 事件（不 event.preventDefault()），亦不触发 app.quit()，
+        // 应用进程继续保留系统托盘常驻。
+        logger.info('Home window closed and destroyed -> running in tray');
       } else {
         logger.info('Home window is closing');
         const updaterState = updaterService.getState();
@@ -202,7 +210,7 @@ export class WindowManager implements AppModule {
   async restoreOrCreateWindow(show = false) {
     let window = getWindow(WINDOW_IDS.HOME);
 
-    if (window === undefined) {
+    if (window === undefined || window.isDestroyed()) {
       window = await this.createWindow();
     }
 
@@ -221,10 +229,19 @@ export class WindowManager implements AppModule {
   }
 }
 
+let singletonWindowManager: WindowManager | null = null;
+
+export function getWindowManager(): WindowManager | null {
+  return singletonWindowManager;
+}
+
 export function createWindowManagerModule(
   ...args: ConstructorParameters<typeof WindowManager>
 ): WindowManager {
-  return new WindowManager(...args);
+  singletonWindowManager = new WindowManager(...args);
+  (globalThis as unknown as { __windowManager?: WindowManager }).__windowManager =
+    singletonWindowManager;
+  return singletonWindowManager;
 }
 
 export type { WindowState };

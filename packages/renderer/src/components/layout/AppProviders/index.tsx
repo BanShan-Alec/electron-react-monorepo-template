@@ -46,16 +46,16 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children
   }, [setThemeMode, setLanguage]);
 
   return (
-    <ErrorBoundary>
-      <I18nProvider i18n={i18n}>
-        <ConfigProvider
-          button={{ autoInsertSpace: false }}
-          theme={getAntdThemeConfig(resolvedTheme)}
-          locale={getAntdLocale(language)}
-        >
-          <AntdApp>{children}</AntdApp>
-        </ConfigProvider>
-      </I18nProvider>
-    </ErrorBoundary>
+    <I18nProvider i18n={i18n}>
+      <ConfigProvider
+        button={{ autoInsertSpace: false }}
+        theme={getAntdThemeConfig(resolvedTheme)}
+        locale={getAntdLocale(language)}
+      >
+        <AntdApp>
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </AntdApp>
+      </ConfigProvider>
+    </I18nProvider>
   );
 };

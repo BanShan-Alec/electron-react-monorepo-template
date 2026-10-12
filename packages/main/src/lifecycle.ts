@@ -4,6 +4,8 @@ export const appLifecycle = {
   isQuitting: false,
 };
 
-app.on('before-quit', () => {
-  appLifecycle.isQuitting = true;
-});
+if (typeof app?.on === 'function') {
+  app.on('before-quit', () => {
+    appLifecycle.isQuitting = true;
+  });
+}

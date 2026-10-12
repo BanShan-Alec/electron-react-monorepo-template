@@ -22,7 +22,7 @@ test.describe
       electronApp: ElectronApplication,
       mainPage: Page,
     ): Promise<Page> {
-      const existing = electronApp.windows().find((w) => w.url().includes('updater.html'));
+      const existing = electronApp.windows().find((w) => w.url().includes('updater'));
       if (existing) {
         return existing;
       }
@@ -38,13 +38,13 @@ test.describe
       // 1. 在主窗口 Settings 区域点击「检查更新」按钮，并监听捕获新的 updater 窗口
       updaterPage = await ensureUpdaterWindow(electronApp, page);
 
-      // 2. 断言其 URL 包含 updater.html
-      expect(updaterPage.url()).toContain('updater.html');
+      // 2. 断言其 URL 包含 updater
+      expect(updaterPage.url()).toContain('updater');
 
       // 3. 断言窗口在 Electron 主进程中可见
       const isVisibleInMain = await electronApp.evaluate(({ BrowserWindow }) => {
         const wins = BrowserWindow.getAllWindows();
-        const updaterWin = wins.find((w) => w.webContents.getURL().includes('updater.html'));
+        const updaterWin = wins.find((w) => w.webContents.getURL().includes('updater'));
         return updaterWin ? updaterWin.isVisible() : false;
       });
       expect(isVisibleInMain).toBe(true);
@@ -233,7 +233,7 @@ test.describe
               !w.isDestroyed() &&
               Boolean(w.webContents) &&
               !w.webContents.isDestroyed() &&
-              w.webContents.getURL().includes('updater.html')
+              w.webContents.getURL().includes('updater')
             );
           } catch {
             return false;
@@ -276,7 +276,7 @@ test.describe
                     !w.isDestroyed() &&
                     Boolean(w.webContents) &&
                     !w.webContents.isDestroyed() &&
-                    w.webContents.getURL().includes('updater.html')
+                    w.webContents.getURL().includes('updater')
                   );
                 } catch {
                   return false;

@@ -44,6 +44,18 @@ export default defineConfig({
         filesToDeleteAfterUpload: ['dist/**/*.map'],
       },
     }),
+    // 开发态根路径自动重定向至 home 窗口入口，便于浏览器直接访问 dev server
+    {
+      name: 'html-entry-redirect',
+      configureServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          if (req.url === '/' || req.url === '/index.html') {
+            req.url = '/src/entries/home/index.html';
+          }
+          next();
+        });
+      },
+    },
     // 启动壳占位符内联（dev/build 同一形态），契约见 specs/first-screen-loading.md §4.7
     startupShellInlinePlugin({ root: currentDir }),
   ],
@@ -66,8 +78,8 @@ export default defineConfig({
     sourcemap: 'hidden',
     rollupOptions: {
       input: {
-        main: path.resolve(currentDir, 'index.html'),
-        updater: path.resolve(currentDir, 'updater.html'),
+        home: path.resolve(currentDir, 'src/entries/home/index.html'),
+        updater: path.resolve(currentDir, 'src/entries/updater/index.html'),
       },
     },
   },

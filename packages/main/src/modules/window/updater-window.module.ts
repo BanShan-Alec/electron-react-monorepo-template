@@ -7,6 +7,7 @@ import { getPackedEnvArgument } from '../../env';
 import { appLifecycle } from '../../lifecycle';
 import type { ModuleContext } from '../../ModuleContext';
 import { updaterService } from '../../services/updater.service';
+import { getAppConfigStore } from '../config.module';
 import { getLogManager } from '../log.module';
 import { forgetWindow, getWindow, registerWindow, sendToWindow } from './window-registry';
 
@@ -87,14 +88,23 @@ export class UpdaterWindowModule implements AppModule {
       );
     });
 
-    // 关闭更新窗口：销毁窗口实体，若主窗口已销毁则退出应用
+    // 支持点击关闭/隐藏到后台时销毁更新窗口以释放内存；若无主窗口且未开启托盘常驻则退出应用
     browserWindow.on('close', () => {
+      updaterService.notifyWindowClosed();
+      const configStore = getAppConfigStore();
+      const shouldMinimizeToTray = configStore.get('minimizeToTray');
       const homeWin = getWindow(WINDOW_IDS.HOME);
-      if (!appLifecycle.isQuitting && (!homeWin || homeWin.isDestroyed())) {
-        this.logger.info('Home window does not exist, closing updater window will quit app');
+      if (
+        !appLifecycle.isQuitting &&
+        !shouldMinimizeToTray &&
+        (!homeWin || homeWin.isDestroyed())
+      ) {
+        this.logger.info(
+          'Home window does not exist and tray disabled, closing updater will quit app',
+        );
         app.quit();
       } else {
-        this.logger.info('Updater window closing and destroying');
+        this.logger.info('Updater window closed and destroyed');
       }
     });
 

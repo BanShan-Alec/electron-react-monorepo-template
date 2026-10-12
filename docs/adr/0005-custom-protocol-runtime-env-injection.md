@@ -1,6 +1,6 @@
 # 特权自定义协议 (app://) 替代传统 file 协议与运行时不可变环境注入
 
-Status: accepted（2026-10-10）
+Status: superseded by [ADR-0006](0006-return-to-native-file-protocol.md)（2026-10-12）
 
 ## 背景与设计初衷
 

@@ -1,9 +1,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import './styles/index.css';
-import { AppProviders } from './components/layout/AppProviders';
-import { UpdaterFeature } from './features/updater';
-import { initSentry } from './lib/sentry';
+import '@/styles/index.css';
+import { AppProviders } from '@/components/layout/AppProviders';
+import { UpdaterFeature } from '@/features/updater';
+import { initSentry } from '@/lib/sentry';
 
 initSentry();
 

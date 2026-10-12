@@ -37,7 +37,7 @@ export function initMainSentry(): void {
     const enabled = isSentryEnabled();
 
     if (!enabled || !dsn) {
-      logger.info('[Sentry] 初始化已跳过（未打包或未配置有效 DSN）');
+      logger.info('Initialization skipped: not packaged or missing DSN');
       return;
     }
 
@@ -65,10 +65,10 @@ export function initMainSentry(): void {
       tracesSampleRate: 0,
     });
 
-    logger.info('[Sentry] 主进程初始化成功（仅打包采集 + 行为/性能监控已禁用）');
+    logger.info('Initialized successfully in main process');
   } catch (error) {
     // 捕获所有初始化异常，绝不允许因监控初始化失败阻断整个 Electron 应用启动
-    logger.error('[Sentry] 主进程初始化异常失败:', error);
+    logger.error('Failed to initialize in main process:', error);
   }
 }
 
@@ -83,7 +83,7 @@ export class SentryModule implements AppModule {
 
     // 1. 全局监听渲染进程崩溃 (render-process-gone)
     app.on('render-process-gone', (_event, webContents, details) => {
-      logger.error('[render-process-gone] 渲染进程非预期退出:', details);
+      logger.error('Renderer process gone unexpectedly:', details);
 
       if (appLifecycle.isQuitting || details.reason === 'clean-exit') {
         return;
@@ -122,11 +122,11 @@ export class SentryModule implements AppModule {
         try {
           currentUrl = window.webContents.getURL();
         } catch (err) {
-          logger.warn(`[unresponsive] 获取无响应窗口 (id=${window.id}) URL 失败:`, err);
+          logger.warn(`Failed to get URL for unresponsive window (id=${window.id}):`, err);
         }
 
-        logger.error(`[unresponsive] 窗口 (id=${window.id}) 发生无响应卡死`);
-        Sentry.captureMessage(`[Window Unresponsive] 窗口 (id=${window.id}) 发生无响应卡死`, {
+        logger.error(`Window (id=${window.id}) is unresponsive`);
+        Sentry.captureMessage(`[Window Unresponsive] Window (id=${window.id}) is unresponsive`, {
           level: 'error',
           tags: {
             process: 'window',
@@ -139,7 +139,7 @@ export class SentryModule implements AppModule {
       });
 
       window.on('responsive', () => {
-        logger.info(`[responsive] 窗口 (id=${window.id}) 已恢复正常响应`);
+        logger.info(`Window (id=${window.id}) is responsive again`);
       });
     });
   }
