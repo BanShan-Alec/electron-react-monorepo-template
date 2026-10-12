@@ -17,13 +17,7 @@ export default defineConfig({
   // 环境变量单一事实源：Monorepo 全局统一定义在根目录 .env，子包不设独立 .env
   envDir: sentryConfig.rootDir,
   base: './',
-  define: {
-    'import.meta.env.APP_VERSION': JSON.stringify(sentryConfig.appVersion),
-    'import.meta.env.SENTRY_DSN': JSON.stringify(sentryConfig.sentryDsn),
-    'import.meta.env.RELEASE_NAME': JSON.stringify(sentryConfig.releaseName),
-    __APP_VERSION__: JSON.stringify(sentryConfig.appVersion),
-    __SENTRY_DSN__: JSON.stringify(sentryConfig.sentryDsn),
-  },
+  // 运行时环境单一事实源：由 Preload 通过 additionalArguments 注入至 window.__APP_ENV__，前端不走编译期 define
   plugins: [
     react(),
     lingui({

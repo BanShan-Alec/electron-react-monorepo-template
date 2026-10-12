@@ -47,7 +47,10 @@ const _Header = (props: IHeaderProps) => {
             <h1 className="text-lg font-semibold text-foreground tracking-tight">
               Electron + Vite + Fullstack IPC
             </h1>
-            <Badge count={__APP_VERSION__} color="var(--color-primary)" />
+            <Badge
+              count={window.__APP_ENV__?.appVersion || 'v0.0.0'}
+              color="var(--color-primary)"
+            />
           </div>
           <p className="text-xs text-foreground-secondary mt-0.5">
             {t`企业级端到端类型安全桌面客户端脚手架`}

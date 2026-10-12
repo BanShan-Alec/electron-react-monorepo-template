@@ -9,7 +9,7 @@ import type {
 } from '@app/shared/types/updater';
 import { app, Notification } from 'electron';
 import electronUpdater, { type AppUpdater, CancellationToken } from 'electron-updater';
-import { isDev, isTest } from '../env';
+import { getEnv, isDev, isPackaged, isTest } from '../env';
 import { AppError } from '../errors/AppError';
 import { getAppConfigStore } from '../modules/config.module';
 import { getLogManager } from '../modules/log.module';
@@ -103,24 +103,28 @@ export class UpdaterService {
       updater.autoInstallOnAppQuit = false;
       updater.fullChangelog = true;
 
-      const channel = process.env.DISTRIBUTION_CHANNEL;
+      const channel = getEnv('DISTRIBUTION_CHANNEL');
       if (channel) {
         updater.channel = channel;
       }
 
-      const owner = process.env.GITHUB_OWNER;
-      const repo = process.env.GITHUB_REPO;
+      // 已打包生产态 (app.isPackaged) 下由 electron-updater 自动读取 resources/app-update.yml；
+      // 仅在未打包形态（源码运行）时若配置了 GITHUB_OWNER/REPO 才手动 setFeedURL
+      if (!isPackaged) {
+        const owner = getEnv('GITHUB_OWNER');
+        const repo = getEnv('GITHUB_REPO');
 
-      if (owner && repo) {
-        updater.setFeedURL({
-          provider: 'github',
-          owner,
-          repo,
-        });
-      } else {
-        this.logger.warn(
-          'Auto-updater skipped setFeedURL: GITHUB_OWNER or GITHUB_REPO not configured.',
-        );
+        if (owner && repo) {
+          updater.setFeedURL({
+            provider: 'github',
+            owner,
+            repo,
+          });
+        } else {
+          this.logger.warn(
+            'Auto-updater skipped setFeedURL: GITHUB_OWNER or GITHUB_REPO not configured in unpackaged mode.',
+          );
+        }
       }
 
       updater.on('checking-for-update', () => {
@@ -282,14 +286,19 @@ export class UpdaterService {
       return this.getSnapshot();
     }
 
-    const owner = process.env.GITHUB_OWNER;
-    const repo = process.env.GITHUB_REPO;
-    if (!owner || !repo) {
-      this.logger.warn('Auto-updater check aborted: GITHUB_OWNER or GITHUB_REPO not configured.');
-      this.snapshot.state = 'error';
-      this.snapshot.error = '自动更新未配置仓库信息 (缺少 GITHUB_OWNER 或 GITHUB_REPO)';
-      this.emitState();
-      throw new AppError(this.snapshot.error, ErrorCode.UPDATER_NOT_CONFIGURED);
+    // 仅在未打包形态下检查仓库配置（已打包状态直接由 electron-updater 读取 resources/app-update.yml）
+    if (!isPackaged) {
+      const owner = getEnv('GITHUB_OWNER');
+      const repo = getEnv('GITHUB_REPO');
+      if (!owner || !repo) {
+        this.logger.warn(
+          'Auto-updater check aborted: GITHUB_OWNER or GITHUB_REPO not configured in unpackaged mode.',
+        );
+        this.snapshot.state = 'error';
+        this.snapshot.error = '自动更新未配置仓库信息 (缺少 GITHUB_OWNER 或 GITHUB_REPO)';
+        this.emitState();
+        throw new AppError(this.snapshot.error, ErrorCode.UPDATER_NOT_CONFIGURED);
+      }
     }
 
     try {
@@ -333,11 +342,15 @@ export class UpdaterService {
       return;
     }
 
-    const owner = process.env.GITHUB_OWNER;
-    const repo = process.env.GITHUB_REPO;
-    if (!owner || !repo) {
-      this.logger.info('Silent update check skipped: GITHUB_OWNER or GITHUB_REPO not configured.');
-      return;
+    if (!isPackaged) {
+      const owner = getEnv('GITHUB_OWNER');
+      const repo = getEnv('GITHUB_REPO');
+      if (!owner || !repo) {
+        this.logger.info(
+          'Silent update check skipped: GITHUB_OWNER or GITHUB_REPO not configured in unpackaged mode.',
+        );
+        return;
+      }
     }
 
     this.logger.info('Starting silent update check on startup...');
