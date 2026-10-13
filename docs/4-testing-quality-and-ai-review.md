@@ -1,40 +1,65 @@
-# 阶段四：质量保障、调试与 AI 自动化
+# 阶段四：质量工程、分布式追踪与 AI 自动化协同
 
-本文档阐述模板在运行时可观测性、自动化测试矩阵与 AI 代码审查闭环上的核心机制与设计理由。
+本文档对比 electron-vite 空白模板，阐述 W3C 分布式日志追踪、全栈自动化测试以及 Agent-Ready AI 协同体系的设计。
 
-## 1. 解决什么工程痛点
+## 1. W3C 分布式日志追踪与链路染色
 
-桌面应用在运维与迭代阶段往往遭遇以下严重挑战：
-- **客户端黑盒**：用户电脑发生闪退、白屏或硬件调用失败时，研发团队无法获取现场上下文，难以在本地复现。
-- **集成测试成本极高**：常规单元测试无法验证 Electron 的真实多进程行为与窗口渲染，全靠人工点击回归耗时耗力。
-- **协同与审查效率低下**：多包单体仓库在多人协作或 AI 协同开发时，代码风格漂移，PR 审查周期长且容易忽略隐蔽的架构违规。
+### electron-vite 现状
+开发者习惯使用 `console.log` 打印日志。在打包发布后，由于日志未持久化落盘，一旦客户端发生崩溃或硬件调用失败，运维与研发人员面对黑盒无法定位问题。此外，日志没有请求上下文关联，无法理清跨进程调用链。
 
-## 2. 本模板做了什么
+### 本模板的设计
+本模板在主进程构建了 W3C 标准的分布式追踪与结构化滚动日志系统：
 
-本模板构建了从本地调试到 CI 自动化门禁的完整质量防线：
+```mermaid
+sequenceDiagram
+    participant UI as Renderer (Trace Header)
+    participant Tracer as Main Tracer (AsyncLocalStorage)
+    participant Log as electron-log (本地文件)
+    participant Sentry as Sentry APM (云端上报)
 
-### 跨进程结构化日志与可观测性
-- 统一集成滚动文件日志机制，日志按日期与大小在用户本地目录安全落盘。
-- 支持自动将 TraceId 与上下文元数据注入跨进程通信管道，实现单次用户操作在渲染层与主进程中的全链路关联。
-- 原生支持 Sentry 生产级崩溃捕获，自动捕获未经处理的异常并脱敏上传堆栈。
+    UI->>Tracer: 发起 IPC 请求 (自动携带/生成 trace_id)
+    Tracer->>Tracer: 创建子 Span 并注入上下文
+    Tracer->>Log: 写入纯英文结构化日志 [trace_id:xxx span_id:yyy]
+    Tracer->>Sentry: 遇到未捕获异常时自动带全链路上下文脱敏上传
+```
 
-### 覆盖全面的测试金字塔
-- **极速代码校验 (Biome)**：毫秒级完成语法解析、规范检查与代码格式化，杜绝低级错误。
-- **轻量单元测试 (Vitest)**：利用 Vite 共享模块解析图，高效执行工具库与状态计算逻辑的单元验证。
-- **黑盒桌面测试 (Playwright)**：启动真实的 Electron 桌面程序，模拟真实用户操作，验证启动首屏、窗口加载与核心交互。
+- **链路染色 (`telemetry/tracer.ts`)**：
+  基于 Node.js 原生 `AsyncLocalStorage` 实现。每次 IPC 调用均分配 `trace_id` 与 `span_id`，异步调用链自动向下传递，无需显式传参。
+- **纯英文滚动落盘**：
+  主进程日志使用 `electron-log` 按日期轮转安全落盘。落盘日志强制使用全英文与 ASCII 字符，避免在非中文 Windows 系统上发生编码乱码。
 
-### AI 驱动的 PR 审查闭环工作流 (`@app/pr-review`)
-- 项目内置专用的 PR 生命周期套件，提供标准命令（`create`, `status`, `pull`, `trigger`, `merge`）。
-- 深度联动 GitHub Actions 与 OpenCodeReview 引擎，自动提取代码改动缺陷并在本地生成 Markdown 独立审查看板。
-- 为开发者与 AI Agent 提供机器可读的结构化修复上下文，形成增量复查闭环。
+---
 
-## 3. 为什么这样设计
+## 2. 自动化测试金字塔 (Vitest + Playwright)
 
-- **为什么落盘日志强制全英文并注入结构化元数据？**  
-  中文或其他非 ASCII 字符在部分未配置语言包的 Windows 系统上极易发生编码乱码；结构化的 TraceId 能够让开发者在海量日志中一键过滤出单次操作的全部调用链条。
+### electron-vite 现状
+脚手架几乎零测试配置。由于 Electron 兼具 Node.js 运行时与浏览器窗口，开发者常常不知道如何对真实桌面窗口执行自动化测试。
 
-- **为什么引入 Playwright 执行黑盒 E2E 测试而不是仅依赖纯单元测试？**  
-  Electron 的诸多致命问题（如首屏白屏、Preload 注入失败、跨域策略冲突、WCO 布局穿透）无法通过虚拟 DOM 或纯 Node.js 单元测试发现。唯有启动真实 Electron 实例进行黑盒探测，才能保障发布质量。
+### 本模板的设计
+本模板建立了分层测试金字塔：
 
-- **为什么封装独立的 pr-review 工具套件而不是散装拼凑脚本？**  
-  在 AI Agent 辅助开发时代，AI 容易随意猜测或滥用未经验证的 Git/GitHub 命令导致分支污染。统一封装的 CLI 收敛了工作流规范、前置安全门禁与结构化看板下载，保障代码合并流程的确定性。
+```mermaid
+flowchart TD
+    E2E["Playwright 桌面端黑盒 E2E 测试<br>(启动真实 Electron 窗口，验证首屏白屏、WCO 贴靠、真实 UI)"]
+    Unit["Vitest 单元测试<br>(复用 Vite 配置，覆盖纯逻辑、Zod 校验与 Zustand 状态)"]
+    Lint["Biome 静态语法检查<br>(毫秒级全量代码与类型门禁)"]
+    
+    Lint --> Unit --> E2E
+```
+
+- **Vitest 单元测试**：直接复用 Vite 模块解析机制，执行快速，测试纯函数与业务模型。
+- **Playwright 真实窗口测试**：通过 Playwright 的 `_electron.launch` 直接拉起真实的 Electron 实例，探测虚拟 DOM 无法捕获的严重缺陷（如首屏白屏、预加载脚本注入失败、跨域隔离拦截）。
+
+---
+
+## 3. AI Agent 协同工程化 (`AGENT.md` + `@app/pr-review`)
+
+### electron-vite 现状
+面对 Cursor、Claude Code 等 AI 编程助手时没有任何约束体系。AI Agent 常常产生幻觉，滥加无用依赖、生成非安全代码或破坏已有代码风格。
+
+### 本模板的设计
+本模板是业界领先的 **Agent-Ready (SE 3.0)** 实践：
+- **`AGENT.md` 注入硬性红线**：
+  在仓库根目录声明不可逾越的五大红线（如禁止私加根目录依赖、禁止使用桶文件聚合导出、禁止裸写非安全 IPC、严禁使用 `process.cwd()`），将 AI 的探索空间锁死在合规管道内。
+- **`@app/pr-review` 自动化闭环**：
+  统一封装 `pnpm pr-review` CLI 命令（`create`, `status`, `pull`, `trigger`, `merge`）。与 GitHub Actions 和 OpenCodeReview 深度联动，自动拉取审查缺陷并在本地生成结构化的 Markdown 看板，指导 AI 进行确定性修复。

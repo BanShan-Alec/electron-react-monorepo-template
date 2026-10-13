@@ -1,39 +1,65 @@
-# 阶段一：项目初始化与品牌定制
+# 阶段一：根目录拓扑与工程规范体系
 
-本文档阐述模板在项目初始化、工程约束与品牌配置上的底层能力与设计理由。
+本文档对比 electron-vite 空白模板，阐述本模板在根目录治理、配置收敛与 TypeScript 继承基座上的设计。
 
-## 1. 解决什么工程痛点
+```mermaid
+graph TD
+    Root[仓库根目录] --> Config[".config/ (所有工具链配置收敛)"]
+    Root --> Scripts["scripts/ (开发调度与门禁验证)"]
+    Root --> Build["build/ (打包与资源)"]
+    Root --> Packages["packages/ (物理隔离工作区)"]
+    
+    Packages --> Main["@app/main (主进程)"]
+    Packages --> Preload["@app/preload (安全网关)"]
+    Packages --> Renderer["@app/renderer (前端界面)"]
+    Packages --> Shared["@app/shared (纯契约)"]
+    Packages --> TSConfig["@app/tsconfig (全局继承基座)"]
+    Packages --> PRReview["@app/pr-review (自动化工具)"]
+```
 
-在企业级桌面应用研发中，初始化阶段普遍存在以下问题：
-- **配置分散**：更换应用名称或标识符需要改动十几处代码与构建脚本，极易遗漏。
-- **环境安全失控**：生产环境密钥或后端地址容易意外打包进前端代码，造成泄露。
-- **依赖安装慢且不稳定**：不同平台环境网络差，未锁定包管理器导致团队版本不一致。
+## 1. 根目录拓扑治理 (收敛设计)
 
-## 2. 本模板做了什么
+### electron-vite 现状
+在标准的 electron-vite 脚手架中，所有配置文件随意散落在根目录（如 `eslint.config.js`, `prettier.config.js`, `tsconfig.web.json`, `tsconfig.node.json`）。根目录文件繁杂，容易造成视觉混乱和误删。
 
-本模板为初始化与品牌定制提供了全自动化基座：
+### 本模板的设计
+本模板实行严格的目录职责收敛：
+- **`.config/` 目录**：统一收敛所有工具链配置。包括 `biome.json`、`vitest.config.ts`、`playwright.config.ts`、`commitlint.config.ts`。根目录不再堆叠繁杂的 dot-files。
+- **`scripts/` 目录**：统一管理开发调度与自动化验证脚本。包括 `dev.ts`、`port-guard.ts`、`verify-dist.ts`、`verify-deps.ts`。
+- **`build/` 目录**：收敛平台图标资源与强类型打包脚本（`electron-builder.ts`、`sentry-config.ts`）。
+- **`packages/` 目录**：承载业务多包物理隔离。
 
-### 单点数据源自动同步 (Single Source of Truth)
-- 根目录 `package.json` 中的 `productName`、`name`、`appId` 是唯一元数据源。
-- 窗口标题、托盘提示、日志存储路径、打包目录与安装引导程序在运行时和构建期自动读取该元数据。
-- 开发者只需要在一处修改，全系统所有平台和进程自动对齐。
+> **包管理器选型**：使用 `pnpm Workspaces`。依靠其符号链接内容寻址机制，物理杜绝幽灵依赖，确保子包依赖严格隔离。
 
-### 运行时环境严格分层隔离
-- 分立 `.env`、`.env.development` 与 `.env.production`。
-- Vite 在编译期严格校验前缀：只有带 `VITE_` 前缀的环境变量才允许注入到渲染前端代码中。
-- 主进程通过类型安全的配置服务在启动时统一校验关键环境变量，缺失必填配置时触发防御性停机。
+---
 
-### 确定性包管理与原生源配置
-- 强制锁定 Node.js 22+ 与 pnpm 10+。
-- 根目录内置 `.npmrc`，直接配置原生镜像源与 `public-hoist-pattern` 原生模块提升规则。
+## 2. 全局 TypeScript 配置继承基座 (`@app/tsconfig`)
 
-## 3. 为什么这样设计
+### electron-vite 现状
+每个子目录重复书写大量相同编译选项（如 `target`, `module`, `strict`, `paths`）。一旦需要升级 TypeScript 规范或调整输出规则，必须逐一修改所有文件，极易产生配置漂移。
 
-- **为什么坚持单点数据源而不是多处配置？**  
-  分散配置容易导致运行时标题与打包安装包名称不一致，增加发布前的人工核对成本。单点数据源消除了同步遗漏的可能性。
+### 本模板的设计
+本模板建立专属的基础包 `packages/tsconfig`，统一向外导出三套标准化配置：
+- **`base.json`**：定义公共严格类型检查规则、装饰器支持与增量构建缓存。
+- **`node.json`**：针对主进程和构建脚本，配置 Node.js 运行时模块解析。
+- **`react.json`**：针对渲染进程，配置 JSX 运行时与 DOM 类型库。
 
-- **为什么严格限制前端环境变量注入？**  
-  Electron 的渲染进程本质是 Web 视图，其代码打包在 asar 归档中容易被逆向。避免自动注入全部系统环境变量，防止将数据库凭据或签名密钥打包进客户端。
+```mermaid
+flowchart TD
+    Base["@app/tsconfig/base.json (基础规则)"] --> Node["@app/tsconfig/node.json"]
+    Base --> React["@app/tsconfig/react.json"]
+    Node --> Main["packages/main/tsconfig.json"]
+    Node --> Preload["packages/preload/tsconfig.json"]
+    React --> Renderer["packages/renderer/tsconfig.json"]
+```
 
-- **为什么选择 pnpm 作为强制包管理器？**  
-  pnpm 拥有严格的内容寻址存储与依赖树隔离。它能有效杜绝由于 npm/yarn 的扁平化目录导致的幽灵依赖（Phantom Dependencies），确保多包 monorepo 的依赖边界清晰。
+子包只需通过 `extends: "@app/tsconfig/node.json"` 声明继承。此方案确立了单点事实源，全库编译标准始终保持一致。
+
+---
+
+## 3. 极速代码质量与提交防护 (Rust Biome)
+
+### 为什么选择 Biome 替代 ESLint + Prettier？
+- **极速性能**：Biome 基于 Rust 编写。单进程格式化与检查 200 个文件仅需几十毫秒，运行速度比 ESLint + Prettier 快 20 倍以上。
+- **单一工具链**：消除 ESLint 与 Prettier 之间的规则冲突与重复 AST 解析开销。
+- **自动化卡点**：配合 `lint-staged` 与 `commitlint`，在代码暂存与 Git 提交阶段强制执行 Conventional Commits 汉字规范校验，防止劣质代码混入主干。

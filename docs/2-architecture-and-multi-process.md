@@ -1,40 +1,83 @@
-# 阶段二：多进程架构与安全通信
+# 阶段二：多进程通信契约与主进程开发调度
 
-本文档阐述模板在多进程架构、安全防线与进程间通信 (IPC) 上的底层机制与设计理由。
+本文档对比 electron-vite 空白模板，阐述跨进程 IPC 管道、双进程开发态调度以及主进程自研微内核的设计。
 
-## 1. 解决什么工程痛点
+## 1. 契约先行 (Contract-First) 四阶段 IPC 管道
 
-Electron 架构如果缺乏治理，往往导致严重的稳定性与安全灾难：
-- **安全防线形同虚设**：许多项目为了图省事关闭 `contextIsolation` 或开启 `nodeIntegration`，一旦页面加载恶意内容或触发 XSS，攻击者即可在宿主机执行任意命令。
-- **IPC 散装裸写无校验**：IPC 字符串到处硬编码，调用参数缺少类型检查与格式校验，导致主进程经常因非法入参抛出未捕获异常而整体崩溃。
-- **自定义窗口体验粗糙**：自绘标题栏常常失去原生操作系统的双击最大化、拖拽吸附与 Windows 11 Snap 贴靠布局支持。
+### electron-vite 现状
+开发者通常在渲染端直接使用 `ipcRenderer.send('some-channel', payload)` 裸写通道名称。主进程监听函数直接处理入参。这导致通道名称容易拼错、入参缺乏类型校验，一旦主进程抛出异常，会导致整个 Electron 进程闪退。
 
-## 2. 本模板做了什么
+### 本模板的设计
+本模板建立了严格的四阶段 IPC 调用流水线：
 
-本模板构建了企业级安全防御与强契约通信基础设施：
+```mermaid
+sequenceDiagram
+    participant R as Renderer (useIpc)
+    participant P as Preload (contextBridge)
+    participant S as Shared (契约/Zod)
+    participant M as Main (BaseController)
 
-### 零信任沙箱化三层分层模型
-- **渲染层 (`packages/renderer`)**：运行在 Chromium 严格沙箱中，物理隔绝任何 Node.js API，只负责 UI 呈现与用户交互。
-- **网关层 (`packages/preload`)**：作为受限网关，通过 `contextBridge.exposeInMainWorld` 仅向渲染上下文注入受控的业务函数，严禁透传原始通信接口。
-- **系统层 (`packages/main`)**：承载核心业务，主进程划分为 Controller（路由与校验层）、Service（业务实现层）与 Module（系统能力扩展层）。
+    Note over S: 1. 定义 IPC_CHANNELS 与强类型接口
+    R->>P: 2. 调用 window.api.device.getList()
+    P->>M: 3. 转发至主进程安全网关
+    Note over M: 4. BaseController 自动校验参数并兜底异常
+    M-->>R: 5. 统一返回 Result<T> (包装错误与数据)
+```
 
-### 端到端类型安全 IPC 管道
-- 契约由跨进程共享包 `packages/shared` 统一定义，包含强类型通道常量 `IPC_CHANNELS` 与接口类型。
-- 主进程通过 `BaseController` 提供自动注册与异常捕获防护，避免未经捕获的错误拖垮主进程。
-- 渲染层提供基于 React Hook 的统一客户端包装，实现完整的 TypeScript 类型推导与自动加载状态管理。
+1. **`@app/shared`**：统一声明通道常量与类型定义，杜绝手写散装字符串。
+2. **`@app/preload`**：通过 `contextBridge` 仅对外暴露白名单业务函数，严禁将原始 `ipcRenderer` 透传给界面。
+3. **`packages/main/src/controllers`**：控制器继承 `BaseController`。自动使用 Zod 校验入参，统一将返回值封装为 `Result<T>`，彻底阻断未捕获异常拖垮主进程。
+4. **`packages/renderer/src/lib/ipc.ts`**：封装 `useIpc` 与 `callIpc` Hook，提供全链路 TypeScript 自动推导。
 
-### 原生 Window Controls Overlay (WCO) 深度融合
-- 模板原生启用 WCO，而不是使用普通的无边框窗口。
-- 保留操作系统原生窗口操作按钮与完整的窗口贴靠布局 (Snap Layout)。
-- 内容区域向上延伸至标题栏，兼顾视觉一体化与系统原生行为。
+---
 
-## 3. 为什么这样设计
+## 2. 开发态调度器与 CDP 调试基座 (`scripts/dev.ts`)
 
-- **为什么彻底隔绝渲染进程的 Node.js 能力？**  
-  将 Node.js 能力暴露给渲染进程是绝大多数 Electron 远程代码执行 (RCE) 漏洞的根源。严格隔离确保了即使 UI 渲染层遭遇前端安全漏洞，攻击者也无法突破到操作系统层面。
+### electron-vite 现状
+通过并发命令同时拉起 Vite 服务器与 Electron。如果 Vite 端口被其他应用占用，两端通信就会断开。此外，默认不暴露调试端口，外部自动化测试工具与远程调试器无法接入。
 
-- **为什么拒绝在 Preload 中直接导出 `ipcRenderer`？**  
-  如果直接暴露 `ipcRenderer.send`，渲染进程就获得了向主进程发送任意未授权消息的权力。通过细粒度业务函数代理，主进程可以精准控制调用范围并实施白名单审计。
+### 本模板的设计
+本模板通过 `scripts/dev.ts` 实现智能有序调度：
+- **智能端口守护 (`scripts/port-guard.ts`)**：启动前自动检测预设端口可用性，遇冲突智能清理或提示。
+- **有序启动控制**：确保 Vite Dev Server 准备就绪后，再启动 Electron 主进程，避免主进程加载空页面。
+- **原生 Chrome DevTools Protocol (CDP) 暴露**：
+  主进程启动时自动注入调试参数：
+  ```ts
+  '--remote-debugging-port=9222'
+  ```
+  该机制为 Playwright 黑盒测试与外部 Chrome DevTools 提供了标准化的底层控制通道，大幅简化自动化测试编写。
 
-- **为什么采用 WCO 而不是完全自绘标题栏？**  
-  完全自绘的无边框窗口需要手写最小化、最大化与关闭按钮，无法原生响应系统的高对比度主题、无障碍阅读以及 Windows 11 的分屏吸附操作。WCO 在保留原生系统级能力的同时，允许开发者自由利用标题栏区域。
+---
+
+## 3. 主进程微内核架构 (`ModuleRunner` + `Controller/Service`)
+
+### electron-vite 现状
+所有主进程代码通常堆砌在单一的 `main/index.ts` 中。窗口生命周期、托盘事件、快捷键、自动更新与 IPC 逻辑高度耦合，代码长达上千行，无法针对单个系统能力编写独立的单元测试。
+
+### 本模板的设计
+本模板采用自研的微内核模块链式执行器与控制器分层：
+
+```mermaid
+flowchart LR
+    Runner[ModuleRunner 链式执行器] --> LogMod[LogModule]
+    Runner --> SingleMod[SingleInstanceModule]
+    Runner --> WinMod[WindowModule]
+    Runner --> IpcMod[IpcModule]
+    
+    IpcMod --> Controllers[Controllers 路由层]
+    Controllers --> Services[Services 纯业务层]
+```
+
+- **`ModuleRunner` 微内核**：
+  在 `main/src/index.ts` 中通过纯链式调用注册能力模块：
+  ```ts
+  createModuleRunner()
+    .init(new LogModule())
+    .init(new SingleInstanceModule())
+    .init(new WindowModule())
+    .init(new IpcModule());
+  ```
+  每个 `AppModule` 拥有独立的 `enable(context)` 生命周期，系统能力可自由插拔。
+- **Controller 与 Service 职责分立**：
+  - **Controller**：仅负责挂载 IPC 路由、入参校验与格式包装。
+  - **Service**：承载纯 Node.js 或硬件交互逻辑。Service 完全脱离 Electron 窗口与 IPC 上下文，可在测试中直接实例化验证。

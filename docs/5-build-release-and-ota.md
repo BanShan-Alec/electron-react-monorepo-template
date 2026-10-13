@@ -1,42 +1,76 @@
-# 阶段五：打包构建、签名与增量热更
+# 阶段五：性能防御、构建交付与 CI/CD 自动化门禁
 
-本文档阐述模板在客户端打包流水线、跨平台代码签名与增量 OTA 升级上的底层能力与设计理由。
+本文档对比 electron-vite 空白模板，阐述性能分包、asar 体积门禁、TypeScript 动态打包以及 GitHub CI/CD 流水线的设计。
 
-## 1. 解决什么工程痛点
+## 1. 性能分包策略与 asar 体积防劣化门禁
 
-在生产环境打包与发布环节，桌面应用通常面临以下挑战：
-- **静态配置臃肿僵化**：常规 `electron-builder.json` 包含大量重复硬编码，无法根据动态环境灵活组合构建产物。
-- **构建体积失控与代码泄露**：开发依赖意外打入生产包导致安装包动辄上百兆；源代码直接打包进 asar 中容易被逆向工程轻易提取。
-- **升级体验断层**：每次发布都需要引导用户全量重新下载数十兆的完整安装包，更新阻力大，老版本存量碎片化严重。
+### electron-vite 现状
+默认打包将所有依赖打入单一大 chunk 中。此外，对最终构建出的 `app.asar` 归档体积缺乏监控，一旦开发者意外引入数十兆的无用依赖，安装包体积暴增却无人感知。
 
-## 2. 本模板做了什么
+### 本模板的设计
+本模板建立了“编译期分包 + 打包后体积探测”双重防线：
 
-本模板设计了高度灵活、体积可控且支持热更的完整交付体系：
+```mermaid
+flowchart LR
+    ViteBuild["Vite 打包构建"] --> ManualChunks["manualChunks 拆包策略"]
+    ManualChunks --> ReactChunk["vendor-react.js (核心渲染运行时)"]
+    ManualChunks --> AntdChunk["vendor-antd.js (重型 UI 库)"]
+    
+    ReactChunk --> AsarPack["electron-builder 生成 app.asar"]
+    AntdChunk --> AsarPack
+    
+    AsarPack --> VerifyDist["verify-dist.ts 门禁探测"]
+    VerifyDist --> SizeCheck{"asar 体积 <= 10MB ?"}
+    SizeCheck -- 超过阈值 --> Fail[拦截流水线并告警]
+    SizeCheck -- 通过 --> Pass[执行静默烟雾探测启动]
+```
 
-### 动态零配置打包流水线 (`build/electron-builder.ts`)
-- 废弃冗长的静态配置文件，采用强类型 TypeScript 构建脚本。
-- 动态读取版本、环境参数与平台特性，自动组装最优构建配置。
-- 自动化过滤 SourceMap 与开发专属资源，最大程度压缩安装包体积。
+- **Vite 智能分包 (`packages/renderer/vite.config.ts`)**：
+  配置 `output.manualChunks`，显式拆离最稳定的核心库：
+  - `vendor-react`：提取 React 运行时与调度器。
+  - `vendor-antd`：提取 Ant Design 及其图标组件。
+- **asar 体积防劣化门禁 (`scripts/verify-dist.ts`)**：
+  构建完成后自动解包，扫描 `app.asar` 真实体积。系统内置阈值校验（默认 10MB），若体积膨胀超出阈值，立即中断流程，防止安装包体积劣化。
 
-### 生产产物完整性检验门禁 (`verify-dist`)
-- 在构建完成后，自动运行校验脚本，解压并扫描产物内部依赖与二进制文件。
-- 自动化启动真实打包出的二进制进行静默烟雾探测（Smoke Test），验证根挂载与核心接口无运行时缺失。
+---
 
-### 跨平台代码签名自动化
-- 脚本化集成 Windows 平台 Authenticode 代码签名（支持 PFX 证书与密码注入）。
-- 原生支持 macOS 平台 hardened runtime 与 Apple Notarization 公证流水线，杜绝系统安全警告拦截。
+## 2. TypeScript 动态打包与产物完整性校验 (`verify-dist`)
 
-### 开箱即用的增量 OTA 升级闭环
-- 深度整合 `electron-updater` 与差分发布机制，自动生成并在客户端校验 `latest.yml` / `latest-mac.yml`。
-- 主进程提供完整的检查更新、静默下载、下载进度事件派发以及无感重启安装生命周期。
+### electron-vite 现状
+采用静态的 `electron-builder.json` 配置文件。静态 JSON 无法读取多环境变量，也无法动态执行操作系统特性分支判断；打完包后直接结束，不能证明生成的二进制文件在真实机器上能否正常运行。
 
-## 3. 为什么这样设计
+### 本模板的设计
+- **强类型动态构建脚本 (`build/electron-builder.ts`)**：
+  采用强类型 TypeScript 编写配置逻辑。自动读取 `package.json` 中的应用名称和版本，动态配置 `asarUnpack: ['**/*.node']` 保证原生 C++ 模块正常加载，并在打包期自动过滤 SourceMap 防止源码泄露。
+- **真机二进制烟雾探测 (Smoke Test)**：
+  打包完成后，`verify-dist.ts` 会自动在当前操作系统静默拉起刚刚打包生成的原生二进制可执行文件（`.exe` / `.app`），验证窗口根挂载与核心接口，确认可执行文件能够正常启动。
 
-- **为什么采用 TypeScript 动态生成构建配置而不是静态 JSON？**  
-  静态 JSON 无法读取多环境变量，也无法动态执行操作系统或分支判断。使用 TypeScript 编写打包脚本不仅能够复用类型定义，还能在打包阶段直接执行动态计算与路径校验。
+---
 
-- **为什么引入打包产物校验门禁 (`verify-dist`)？**  
-  本地 `pnpm dev` 成功并不能代表生产打包成功。构建打包过程包含文件精简、Vite 打包产物重定向与 asar 打包，只有在构建后对最终的机器可执行文件执行黑盒启动验证，才能确保交付零事故。
+## 3. GitHub CI/CD 五大门禁与差分 OTA 闭环
 
-- **为什么必须提供差分增量 OTA 更新？**  
-  对于企业级或高频迭代桌面应用，全量更新要求用户重复下载整个安装包并重新执行安装向导，流失率极高。基于差分包的增量热更仅需要下载几兆的改动补丁，并在后台静默就绪，极大提升了用户升级意愿与版本收敛速度。
+### electron-vite 现状
+没有现成的 CI/CD 流水线，合并分支全靠人肉拉取代码和人工打包，容易因为不同环境的差异导致上线后崩溃。
+
+### 本模板的设计
+本模板在 `.github/workflows/` 中内置了工业级自动化流水线：
+
+```mermaid
+flowchart TD
+    PR[Pull Request 触发] --> CIJob[CI 流水线验证]
+    
+    CIJob --> CheckLint["1. Lint (Biome 检查)"]
+    CIJob --> CheckType["2. TypeCheck (tsc 全局类型检查)"]
+    CIJob --> CheckTest["3. Test (Vitest 单元测试)"]
+    CIJob --> CheckE2E["4. E2E (Playwright 真实窗口测试)"]
+    CIJob --> CheckCodeQL["5. CodeQL (静态安全扫描)"]
+    
+    CheckLint & CheckType & CheckTest & CheckE2E & CheckCodeQL --> GatePass{五大门禁全绿?}
+    GatePass -- 是 --> AllowMerge[允许合入主干]
+    GatePass -- 否 --> BlockMerge[拦截合并并通知]
+```
+
+- **全自动化门禁卡点**：
+  在代码合入前，CI 流水线强制执行代码规范、TypeScript 全局类型检查、单元测试、Playwright 真实窗口 E2E 测试与 CodeQL 安全漏洞扫描。任何一项失败均禁止合并。
+- **差分增量 OTA 升级闭环**：
+  结合 `electron-updater`，发布时自动生成差分补丁与 `latest.yml`。客户端在启动时静默检查并下载轻量增量补丁，实现用户无感平滑升级。
