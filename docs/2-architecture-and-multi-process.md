@@ -1,88 +1,40 @@
 # 阶段二：多进程架构与安全通信
 
-本文档说明主进程、预加载脚本与渲染进程的职责分工，以及进程间通信方式。
+本文档阐述模板在多进程架构、安全防线与进程间通信 (IPC) 上的底层机制与设计理由。
 
-## 1. 解决什么问题
+## 1. 解决什么工程痛点
 
-在 Electron 应用中，开发者经常遇到这三个问题：
-- 主进程与渲染进程代码混杂，容易产生安全漏洞。
-- IPC 通信参数缺少类型校验，接口变更时无法提前感知错误。
-- 自定义无边框窗口无法拖拽，在 Windows 系统上缺少最大化贴靠布局。
+Electron 架构如果缺乏治理，往往导致严重的稳定性与安全灾难：
+- **安全防线形同虚设**：许多项目为了图省事关闭 `contextIsolation` 或开启 `nodeIntegration`，一旦页面加载恶意内容或触发 XSS，攻击者即可在宿主机执行任意命令。
+- **IPC 散装裸写无校验**：IPC 字符串到处硬编码，调用参数缺少类型检查与格式校验，导致主进程经常因非法入参抛出未捕获异常而整体崩溃。
+- **自定义窗口体验粗糙**：自绘标题栏常常失去原生操作系统的双击最大化、拖拽吸附与 Windows 11 Snap 贴靠布局支持。
 
-本模板采用分层设计与类型安全 IPC，解决上述问题。
+## 2. 本模板做了什么
 
-## 2. 进程分层模型
+本模板构建了企业级安全防御与强契约通信基础设施：
 
-项目包含三个运行层级，各司其职：
+### 零信任沙箱化三层分层模型
+- **渲染层 (`packages/renderer`)**：运行在 Chromium 严格沙箱中，物理隔绝任何 Node.js API，只负责 UI 呈现与用户交互。
+- **网关层 (`packages/preload`)**：作为受限网关，通过 `contextBridge.exposeInMainWorld` 仅向渲染上下文注入受控的业务函数，严禁透传原始通信接口。
+- **系统层 (`packages/main`)**：承载核心业务，主进程划分为 Controller（路由与校验层）、Service（业务实现层）与 Module（系统能力扩展层）。
 
-```text
-packages/renderer  (React 界面层：只负责 UI 呈现与用户交互)
-       ↓ (调用 window.api)
-packages/preload   (安全隔离层：通过 contextBridge 暴露有限白名单方法)
-       ↓ (IPC 消息转发)
-packages/main      (系统核心层：Controller 处理请求，Service 处理业务)
-```
+### 端到端类型安全 IPC 管道
+- 契约由跨进程共享包 `packages/shared` 统一定义，包含强类型通道常量 `IPC_CHANNELS` 与接口类型。
+- 主进程通过 `BaseController` 提供自动注册与异常捕获防护，避免未经捕获的错误拖垮主进程。
+- 渲染层提供基于 React Hook 的统一客户端包装，实现完整的 TypeScript 类型推导与自动加载状态管理。
 
-### 职责边界规则
-1. 渲染进程严禁直接调用 Node.js 原生 API。
-2. 预加载脚本严禁直接透传 `ipcRenderer.send`。必须包装为具体业务函数。
-3. 业务逻辑与系统操作必须写在 `packages/main` 中。
+### 原生 Window Controls Overlay (WCO) 深度融合
+- 模板原生启用 WCO，而不是使用普通的无边框窗口。
+- 保留操作系统原生窗口操作按钮与完整的窗口贴靠布局 (Snap Layout)。
+- 内容区域向上延伸至标题栏，兼顾视觉一体化与系统原生行为。
 
-## 3. 端到端类型安全 IPC 通信
+## 3. 为什么这样设计
 
-编写一个 IPC 接口需要完成三个步骤：
+- **为什么彻底隔绝渲染进程的 Node.js 能力？**  
+  将 Node.js 能力暴露给渲染进程是绝大多数 Electron 远程代码执行 (RCE) 漏洞的根源。严格隔离确保了即使 UI 渲染层遭遇前端安全漏洞，攻击者也无法突破到操作系统层面。
 
-### 步骤一：在 shared 包中定义通道与类型
-打开 `packages/shared/src/types/`，定义请求参数与返回值类型，并在 `IPC_CHANNELS` 登记：
+- **为什么拒绝在 Preload 中直接导出 `ipcRenderer`？**  
+  如果直接暴露 `ipcRenderer.send`，渲染进程就获得了向主进程发送任意未授权消息的权力。通过细粒度业务函数代理，主进程可以精准控制调用范围并实施白名单审计。
 
-```typescript
-export const IPC_CHANNELS = {
-  USER_GET_PROFILE: 'user:get-profile',
-} as const;
-
-export interface UserProfile {
-  id: string;
-  name: string;
-}
-```
-
-### 步骤二：在 main 包中实现控制器
-在 `packages/main/src/controllers/` 下继承 `BaseController` 处理消息：
-
-```typescript
-export class UserController extends BaseController {
-  constructor(private readonly userService: UserService) {
-    super();
-  }
-
-  public registerRoutes(): void {
-    this.handle(IPC_CHANNELS.USER_GET_PROFILE, async () => {
-      return this.userService.getProfile();
-    });
-  }
-}
-```
-
-### 步骤三：在 renderer 包中发起调用
-在 React 组件或 Hook 中使用封装好的 `useIpc`：
-
-```typescript
-const { data, loading, run } = useIpc(
-  window.api.user.getProfile,
-  { manual: false }
-);
-```
-
-## 4. 原生贴靠与窗口控制 (WCO)
-
-项目默认使用 Window Controls Overlay (WCO) 原生标题栏：
-- 保留系统原生最小化、最大化和关闭按钮。
-- Windows 11 系统完美支持贴靠布局 (Snap Layout)。
-- 可拖拽区域使用 CSS 声明：`-webkit-app-region: drag`。
-- 交互按钮区域必须排除拖拽：`-webkit-app-region: no-drag`。
-
-## 5. 避坑指南
-
-- 永远不要在渲染进程中导入 `electron` 模块。
-- 注册 IPC 事件监听时，使用 `this.handle` 而不是 `ipcMain.on`，确保调用支持异步等待。
-- 窗口拖拽区域内如果包含点击按钮，必须设置 `-webkit-app-region: no-drag`，否则按钮无法点击。
+- **为什么采用 WCO 而不是完全自绘标题栏？**  
+  完全自绘的无边框窗口需要手写最小化、最大化与关闭按钮，无法原生响应系统的高对比度主题、无障碍阅读以及 Windows 11 的分屏吸附操作。WCO 在保留原生系统级能力的同时，允许开发者自由利用标题栏区域。
