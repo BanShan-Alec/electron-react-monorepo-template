@@ -26,6 +26,7 @@ packages/shared/
     │   ├── result.ts        # 全栈通用 Result<T> 响应包装器
     │   ├── api.ts           # Window.api (ElectronApi) 跨端调用契约
     │   ├── system.ts        # 系统与硬件信息返回接口
+    │   ├── usb.ts           # 原生 USB 硬件设备信息返回接口
     │   ├── counter.ts       # 计数器领域返回接口
     │   ├── calculator.ts    # 计算器领域返回接口
     │   ├── diagnostics.ts   # 诊断与行为返回接口
@@ -76,7 +77,7 @@ packages/shared/
 
 ### 2.5 运行环境事实标准与跨端门面契约
 - **单一事实源**：在 `constants/env.ts` 与 `types/env.ts` 中定义 `APP_ENV`（`'development' | 'production' | 'test'`）与 `AppEnv` 类型。
-- **严禁散装读取**：主进程 (`packages/main/src/env.ts`) 与渲染进程 (`packages/renderer/src/lib/env.ts`) 基于此契约分别提供权威门面，项目 100% 基于 `MODE` 变量，严禁业务代码直接读取原生 `process.env.*`。
+- **严禁散装读取**：主进程 (`packages/main/src/env.ts`) 提供权威门面，渲染进程通过 `window.__APP_ENV__` 同步解冻消费，项目 100% 基于 `MODE` 变量，严禁业务代码直接读取原生 `process.env.*`。
 - **详细规范**：参见全局架构文档 [全栈运行环境与模式控制规范](../../docs/environment-specification.md)。
 
 ---

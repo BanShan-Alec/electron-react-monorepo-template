@@ -79,6 +79,7 @@ export class WindowManager implements AppModule {
     const isWin = process.platform === 'win32';
 
     const browserWindow = new BrowserWindow({
+      title: app.getName(),
       // 首屏渐进式加载：不设 show:false 门禁，窗口创建即可见，
       // 首个可视内容为 backgroundColor 主题底色（与 WCO overlay 同源），禁止白屏期
       x: savedState.x,

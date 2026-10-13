@@ -12,11 +12,15 @@ import type { Result } from './result';
 import type { StartupGateSnapshot, StartupMainReadyPayload } from './startup';
 import type { PingResult, SystemInfo } from './system';
 import type { UpdaterProgress, UpdaterSnapshot } from './updater';
+import type { UsbDeviceItem } from './usb';
 
 /**
  * Window.api 跨端统一契约接口 (ElectronApi)
  */
 export interface ElectronApi {
+  usb: {
+    getDeviceList: () => Promise<Result<UsbDeviceItem[]>>;
+  };
   system: {
     ping: () => Promise<Result<PingResult>>;
     getSystemInfo: () => Promise<Result<SystemInfo>>;

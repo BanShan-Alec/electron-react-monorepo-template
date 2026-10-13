@@ -82,15 +82,15 @@ npm run format
 - 冒号 `:` 后面必须有一个英文空格；
 - 示例：`feat: 增加文件选择原生对话框` 或 `fix(ipc): 修复外部链接协议未校验的安全隐患`。
 
-### 4. PR 工作流（`pnpm pr`）
+### 4. PR 工作流（`pnpm pr-review`）
 
-feature 分支一律经 PR 合入 `main`：分支保护锁死 required checks（typecheck / lint / test / e2e）与 squash-only、拒绝直推，决策背景见 [ADR-0004](docs/adr/0004-pr-only-squash-workflow.md)，完整流程见 [.github/CICD.md](.github/CICD.md) 与 [docs/code-review.md](docs/code-review.md)。
+feature 分支一律经 PR 合入 `main`：分支保护锁死 required checks（typecheck / lint / test / e2e）与 squash-only、拒绝直推，决策背景见 [ADR-0004](docs/adr/0004-pr-only-squash-workflow.md)，完整流程见 [.github/CICD.md](.github/CICD.md) 与 [packages/pr-review/README.md](packages/pr-review/README.md)。
 
 | 命令 | 用途 |
 | :--- | :--- |
-| `pnpm pr` | 前置检查 → push → 开 PR（标题取分支首个提交，正文读模板） |
-| `pnpm pr:merge` | 等门禁全绿 → squash 合并 → 删远端分支 |
-| `pnpm pr:status` | 当前仓库 PR 与 checks 概览 |
+| `pnpm pr-review create` | 前置检查 → push → 开 PR（标题取分支首个提交，正文读模板） |
+| `pnpm pr-review merge` | 等门禁全绿 → squash 合并 → 删远端分支 |
+| `pnpm pr-review status` | 当前仓库 PR 与 checks 概览 |
 
 PR 标题沿用本节 Conventional Commits 格式（squash 后即 main 提交信息、进 changelog），分支首个提交的 subject 请按此措辞。
 
@@ -115,24 +115,24 @@ PR 标题沿用本节 Conventional Commits 格式（squash 后即 main 提交信
 ### 1. 常用版本管理指令
 ```bash
 # 1. 预览即将生成的 CHANGELOG（不修改任何文件）
-npm run changelog
+pnpm changelog
 
 # 2. 自动根据 Commit 历史推导语义化版本（feat 触发 minor，fix 触发 patch），
 #    并自动更新 package.json、生成 CHANGELOG.md、执行 git commit 以及创建 git tag
-npm run release
+pnpm release
 
 # 3. 显式指定版本步长进行 Release：
-npm run release:patch   # 补丁升级（如 3.1.0 -> 3.1.1）
-npm run release:minor   # 次版本升级（如 3.1.0 -> 3.2.0）
-npm run release:major   # 主版本升级（如 3.1.0 -> 4.0.0）
+pnpm release:patch   # 补丁升级（如 3.1.0 -> 3.1.1）
+pnpm release:minor   # 次版本升级（如 3.1.0 -> 3.2.0）
+pnpm release:major   # 主版本升级（如 3.1.0 -> 4.0.0）
 ```
 
 ### 2. 发布流程规范（PR 化）
 
 main 受分支保护禁直推，发版走 PR 形态：
 
-1. 从 main 切 `chore/release-vX.Y.Z` 分支；确认 lint / typecheck 为 0 错误后运行 Release 命令（如 `npm run release:minor`，生成版本号与 CHANGELOG 提交）；
-2. `pnpm pr` 开发版 PR；**删除分支上的本地 tag**（`git tag -d vX.Y.Z`，squash 合并会改变提交 SHA，旧 tag 作废）；
+1. 从 main 切 `chore/release-vX.Y.Z` 分支；确认 lint / typecheck 为 0 错误后运行 Release 命令（如 `pnpm release:minor`，生成版本号与 CHANGELOG 提交）；
+2. `pnpm pr-review create` 开发版 PR；**删除分支上的本地 tag**（`git tag -d vX.Y.Z`，squash 合并会改变提交 SHA，旧 tag 作废）；
 3. PR 合并后在 main 上重新打 tag 并推送：
    ```bash
    git pull && git tag vX.Y.Z && git push origin vX.Y.Z

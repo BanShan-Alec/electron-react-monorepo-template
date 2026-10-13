@@ -58,7 +58,7 @@ async function runDialogAction(
           {
             title: t`另存为示例`,
             defaultPath: 'example.txt',
-            content: 'Hello from Electron React Template!\n',
+            content: `Hello from ${window.__APP_ENV__?.appName || 'Electron React Template'}!\n`,
           },
         ]);
         if (!data.canceled && data.filePath) {

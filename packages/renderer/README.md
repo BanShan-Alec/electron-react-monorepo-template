@@ -21,9 +21,9 @@ src/
 │   ├── ui/                 #   无业务语义的展示原子（CardTitle）
 │   └── layout/             #   全局骨架与全局兜底（Header、ErrorBoundary，含 useLingui 响应式多语言订阅）
 ├── features/               # 业务域：一个域 = 一个自包含目录
-│   ├── counter/            #   计数器域（CounterFeature，多语言与主进程状态联动）
-│   ├── settings/           #   应用配置域（SettingsFeature，主题/语言/托盘持久化）
-│   └── …（calculator / native-dialogs / logging / devtools / architecture / updater）
+│   ├── dashboard/          #   总览看板域（组合编排 8 大核心功能卡片）
+│   ├── architecture/       #   架构总览拓扑域
+│   └── …（counter / settings / calculator / native-dialogs / logging / devtools / ping / system-info / updater）
 ├── hooks/                  # 跨 feature 的基础 hooks
 │   ├── useManualRequest.ts # ahooks useRequest 的 manual-only 封装
 │   ├── useIpc.ts           # 请求层：channel + api 函数 + 状态解构
@@ -49,7 +49,7 @@ src/
 
 | 目录 | 职责 |
 | --- | --- |
-| `src/entries/home/App.tsx` | 主窗口编排：tab 状态、面板布局、主题 Provider；不实例化 feature hook，不透传 feature props |
+| `src/entries/home/App.tsx` | 主窗口编排：wouter 声明式路由（`/dashboard`, `/architecture`）、导航 Header 与容器滚动；不实例化 feature hook |
 | `src/hooks/useTheme.ts` | 应用级主题联动：resolvedTheme 写入 `documentElement.dataset.theme`，`system` 模式下跟随 OS 偏好 |
 | `src/hooks/useIpc.ts` | 单一 IPC channel 的请求 hook：类型从 api 函数推导，内部完成 Result 解构与日志 |
 | `src/hooks/useManualRequest.ts` | ahooks useRequest 的 manual-only 封装，自动触发能力从编译期到运行期均不存在 |
@@ -180,13 +180,11 @@ const { runAsync: runCounterOp } = useManualRequest(async (action: CounterAction
 - 🛠️ **开发者日常开发与维护手册**：[docs/i18n/guide.md](../../docs/i18n/guide.md)
 - 📖 **多语言全链路架构设计指南**：[docs/i18n/architecture.md](../../docs/i18n/architecture.md)
 
-## 已知取舍
+## 架构取舍与设计裁决
 
-- **dashboard 常驻 + `hidden` 切换**：hook 已随 feature 收敛，若 tab 切换时卸载面板，counter 等本地状态会丢失、
-  system-info/settings 会重复请求。因此两个面板都保持挂载，仅切换显隐。
-- **暂不引入路由与全局业务 store**：当前 7 个域无共享 state，按第 3 条规则保持状态局部化；
-  出现第二个消费者再下沉。
-- **不建第二份 API map**：类型全部从 `ElectronApi`（`@shared/types/api`）推导，避免手写表与真实契约漂移。
+- **轻量级声明式路由 (`wouter`)**：主窗口通过极简的 `wouter`（Switch / Route / Redirect）编排 `/dashboard` 与 `/architecture` 面板，替代传统侵入式的大型路由库。
+- **状态局部化驱动**：各 feature 自包含状态与 hook，仅跨 feature 共享的主题与语言状态收敛至 `stores/useAppStore.ts`。
+- **单一事实源 API 推导**：前端零冗余手写类型，全部从 `ElectronApi`（`@app/shared/types/api`）推导，避免契约漂移。
 
 ## 跨包与文档关联
 

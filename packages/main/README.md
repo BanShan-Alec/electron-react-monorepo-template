@@ -50,8 +50,8 @@ packages/main/src/
 
 - ❌ **禁止在 Controller 中写实质业务**（如操作数据库、复杂运算、读写文件），Controller 只做参数校验、调用与返回。
 - ❌ **禁止裸传错误**：不得返回裸 Error 对象，必须映射为带 `ErrorCode` 的 `Result<never>`。
-- ❌ **禁止私自创建桶文件（Barrel Files）**：严禁在 `services/`、`modules/` 随意建立 `index.ts` 做聚合 `export *`。
-- ❌ **禁止反向依赖 Renderer**：主进程代码仅消费 `@app/shared`，绝不得包含任何对 `@app/renderer` 路径的引用。
+- ❌ **禁止业务层反向依赖 Renderer**：Service 与 Controller 纯业务层严禁感知或引用 Renderer 的代码与组件；仅 `index.ts` 进程装配阶段通过 `require.resolve('@app/renderer')` 获取生产静态 HTML 产物物理路径。
+- ❌ **禁止遗漏 C++ 原生模块 external 对齐**：主进程声明的生产依赖（如 `usb`, `electron-log`, `electron-updater`）必须 100% 在 `packages/main/vite.config.ts` 的 `rolldownOptions.external` 中排除，受 `pnpm run verify:deps` 自动化门禁保护。
 
 ---
 

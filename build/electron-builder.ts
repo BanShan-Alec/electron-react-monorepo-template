@@ -2,25 +2,35 @@ import fs from 'node:fs';
 import { join } from 'node:path';
 import type { Configuration } from 'electron-builder';
 
+// 基于当前构建脚本目录确定全局确定的根目录
+const ROOT_DIR = join(__dirname, '..');
+
+// 读取根目录 package.json 作为默认事实源
+const rootPkgPath = join(ROOT_DIR, 'package.json');
+const rootPkg = fs.existsSync(rootPkgPath) ? JSON.parse(fs.readFileSync(rootPkgPath, 'utf8')) : {};
+
+// 优先级：.env 环境变量覆盖 > package.json 事实源 > 零配置回退占位
 const owner = process.env.GITHUB_OWNER;
 const repo = process.env.GITHUB_REPO;
+const appId = process.env.APP_ID || rootPkg.appId || `com.template.${rootPkg.name}`;
+const productName = process.env.APP_NAME || rootPkg.productName || rootPkg.name;
 
-if (!owner || !repo) {
-  throw new Error(
-    '打包失败: 未配置 GITHUB_OWNER 或 GITHUB_REPO 环境变量。作为通用模板项目，请在 .env 或环境变量中指定目标 GitHub 仓库。',
-  );
-}
+// 未配置时使用 'local' / 'app' 占位，保证更新元数据生成且绝不阻断打包
+const resolvedOwner = owner || 'local';
+const resolvedRepo = repo || 'app';
 
 const config: Configuration = {
+  appId,
+  productName,
   directories: {
-    output: 'dist',
+    output: process.env.DIST_DIR || 'dist',
     buildResources: 'build/resources',
   },
   generateUpdatesFilesForAllChannels: true,
   publish: {
     provider: 'github',
-    owner,
-    repo,
+    owner: resolvedOwner,
+    repo: resolvedRepo,
     releaseType: 'release',
   },
   win: {
@@ -39,7 +49,7 @@ const config: Configuration = {
     allowElevation: true,
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
-    shortcutName: 'Electron React Template',
+    shortcutName: productName,
     installerIcon: 'build/resources/icon.ico',
     uninstallerIcon: 'build/resources/icon.ico',
     installerHeaderIcon: 'build/resources/icon.ico',
@@ -66,6 +76,7 @@ const config: Configuration = {
    */
   // biome-ignore lint/suspicious/noTemplateCurlyInString: electron-builder placeholder template
   artifactName: '${productName}-${version}-${os}-${arch}.${ext}',
+  asarUnpack: ['**/*.node'],
   files: [
     'LICENSE*',
     '!node_modules/@app/**',
@@ -87,7 +98,7 @@ export default config;
 function getListOfFilesFromEachWorkspace(
   workspaces: string[],
 ): Array<{ from: string; to: string; filter: string[] }> {
-  const packagesDir = join(process.cwd(), 'packages');
+  const packagesDir = join(ROOT_DIR, 'packages');
   const allFilesToInclude: Array<{ from: string; to: string; filter: string[] }> = [];
 
   for (const workspace of workspaces) {

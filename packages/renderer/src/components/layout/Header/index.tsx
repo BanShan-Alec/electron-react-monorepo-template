@@ -45,7 +45,7 @@ const _Header = (props: IHeaderProps) => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-semibold text-foreground tracking-tight">
-              Electron + Vite + Fullstack IPC
+              {window.__APP_ENV__?.appName || 'Electron App'}
             </h1>
             <Badge
               count={window.__APP_ENV__?.appVersion || 'v0.0.0'}

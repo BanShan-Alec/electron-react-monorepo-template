@@ -1,12 +1,15 @@
 import path from 'node:path';
 import { defineConfig } from '@playwright/test';
 
+// 基于配置文件自身位置向上锁定仓库物理根目录
+const ROOT_DIR = path.resolve(__dirname, '..');
+
 /**
  * Playwright E2E Configuration for Electron
  * Placed in .config/ for clean repository root structure.
  */
 export default defineConfig({
-  testDir: path.resolve(process.cwd(), 'e2e'),
+  testDir: path.resolve(ROOT_DIR, 'e2e'),
   timeout: 45000,
   expect: {
     timeout: 10000,
@@ -15,9 +18,9 @@ export default defineConfig({
   workers: 1, // Electron E2E must run sequentially to avoid display/process lock conflicts
   reporter: [
     ['list'],
-    ['html', { outputFolder: path.resolve(process.cwd(), 'playwright-report'), open: 'never' }],
+    ['html', { outputFolder: path.resolve(ROOT_DIR, 'playwright-report'), open: 'never' }],
   ],
-  outputDir: path.resolve(process.cwd(), 'test-results'),
+  outputDir: path.resolve(ROOT_DIR, 'test-results'),
   use: {
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
