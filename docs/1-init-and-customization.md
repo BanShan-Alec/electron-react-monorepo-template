@@ -2,19 +2,21 @@
 
 本文档对比 electron-vite 空白模板，阐述本模板在根目录治理、配置收敛与 TypeScript 继承基座上的设计。
 
-```mermaid
-graph TD
-    Root[仓库根目录] --> Config[".config/ (所有工具链配置收敛)"]
-    Root --> Scripts["scripts/ (开发调度与门禁验证)"]
-    Root --> Build["build/ (打包与资源)"]
-    Root --> Packages["packages/ (物理隔离工作区)"]
-    
-    Packages --> Main["@app/main (主进程)"]
-    Packages --> Preload["@app/preload (安全网关)"]
-    Packages --> Renderer["@app/renderer (前端界面)"]
-    Packages --> Shared["@app/shared (纯契约)"]
-    Packages --> TSConfig["@app/tsconfig (全局继承基座)"]
-    Packages --> PRReview["@app/pr-review (自动化工具)"]
+```text
+h:\electron-app-temp5\
+├── .config/                    # 🎯 工具链配置收敛：Biome、Vitest、Playwright、Commitlint
+├── .github/                    # 🛡️ 研发工作流与 CI/CD 门禁流水线
+├── build/                      # 📦 打包脚本、Sentry 动态映射与平台应用图标
+├── scripts/                    # 🚀 开发调度 (dev.ts)、端口守护与产物验证 (verify-dist.ts)
+├── packages/
+│   ├── main/                   # 🖥️ 主进程（基于 ModuleRunner 的分层服务与控制器）
+│   ├── preload/                # 🌉 预加载脚本（安全 API 白名单网关）
+│   ├── renderer/               # 🎨 渲染进程（MPA Entries + Feature 架构）
+│   ├── shared/                 # 📜 跨端纯契约（通道、Schema 与类型定义）
+│   ├── tsconfig/               # ⚙️ 全局 TypeScript 基础配置包
+│   └── pr-review/              # 🤖 本地 AI 代码审查与 PR 全生命周期命令行套件
+├── AGENT.md                    # 🤖 AI Agent 协同硬性红线与拓扑指引
+└── README.md                   # 🌟 极简高能项目落地页
 ```
 
 ## 1. 根目录拓扑治理 (收敛设计)
