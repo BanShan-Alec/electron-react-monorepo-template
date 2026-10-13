@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { ensureGhAuth, getCurrentBranch } from '../utils/git.ts';
+import { ensureGhAuth, getCurrentBranch, getRepoRoot } from '../utils/git.ts';
 import { fail, probe, run, sleepSync } from '../utils/process.ts';
 
 const MAIN_BRANCH = process.env.DEFAULT_BRANCH || 'main';
@@ -8,8 +8,7 @@ const CHECKS_POLL_INTERVAL_MS = 15_000;
 const CHECKS_MAX_POLLS = 40;
 
 function getPrTemplatePath(): string {
-  // packages/pr-review/src/commands/pr.ts -> 向上三级定位到仓库根目录
-  return path.resolve(__dirname, '../../../../.github/PULL_REQUEST_TEMPLATE.md');
+  return path.join(getRepoRoot(), '.github/PULL_REQUEST_TEMPLATE.md');
 }
 
 function preflight(): string {

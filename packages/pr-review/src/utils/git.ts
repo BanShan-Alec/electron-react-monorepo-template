@@ -1,4 +1,9 @@
+import path from 'node:path';
 import { fail, probe } from './process.ts';
+
+export function getRepoRoot(): string {
+  return path.resolve(__dirname, '../../../..');
+}
 
 export function ensureGh(): void {
   if (probe('gh', ['--version']) === null) {

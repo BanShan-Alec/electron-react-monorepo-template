@@ -5,7 +5,13 @@ import { formatDashboard } from '../core/dashboard.ts';
 import { findLatestReviewFile, parseExistingDashboard } from '../core/diff.ts';
 import { fetchOcrResult, fetchPrComments, getLatestRunInfo } from '../core/ocr.ts';
 import type { CiCheckItem } from '../types.ts';
-import { ensureGh, getCurrentBranch, getHeadSha, resolveOwnerRepo } from '../utils/git.ts';
+import {
+  ensureGh,
+  getCurrentBranch,
+  getHeadSha,
+  getRepoRoot,
+  resolveOwnerRepo,
+} from '../utils/git.ts';
 import { fail, probe, safeParseJson } from '../utils/process.ts';
 
 // 产物收敛到 packages/pr-review/reviews 目录
@@ -97,7 +103,7 @@ export function runPull(): void {
     console.log(
       `📊 简报概览: 🔴 高危 ${highCount} 项 (默认修) | 🟡 中度 ${mediumCount} 项 (默认修) | 🟢 低优 ${lowCount} 项 (需手动勾选)`,
     );
-    const rootDir = path.resolve(__dirname, '../../../../');
+    const rootDir = getRepoRoot();
     console.log(
       `👉 可在编辑器中打开 ${path.relative(rootDir, outputFile)} 审阅批注，随后交由 AI Agent 自动闭环修复。\n`,
     );
