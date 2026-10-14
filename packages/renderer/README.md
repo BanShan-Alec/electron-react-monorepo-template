@@ -18,23 +18,30 @@ src/
 │   ├── home/               #   主窗口入口（index.html + index.tsx 挂载 + App.tsx 界面编排）
 │   └── updater/            #   更新窗口入口（index.html + index.tsx 挂载 UpdaterFeature）
 ├── components/             # 跨 feature 复用的通用 UI（一组件一文件夹）
-│   ├── ui/                 #   无业务语义的展示原子（CardTitle）
-│   └── layout/             #   全局骨架与全局兜底（Header、ErrorBoundary，含 useLingui 响应式多语言订阅）
+│   ├── ui/                 #   无业务语义的展示原子（CardTitle、CodeHighlight）
+│   ├── layout/             #   全局骨架与全局兜底（Header、ErrorBoundary、AppProviders，含 useLingui 响应式多语言订阅）
+│   └── startup/            # StartupReadyNotifier：React 首帧就绪信号派发
 ├── features/               # 业务域：一个域 = 一个自包含目录
-│   ├── dashboard/          #   总览看板域（组合编排 8 大核心功能卡片）
+│   ├── dashboard/          #   总览看板域（组合编排 9 个 feature 的功能卡片）
 │   ├── architecture/       #   架构总览拓扑域
-│   └── …（counter / settings / calculator / native-dialogs / logging / devtools / ping / system-info / updater）
+│   └── …（counter / settings / calculator / native-dialogs / logging / devtools / ping / system-info / updater / usb）
 ├── hooks/                  # 跨 feature 的基础 hooks
 │   ├── useManualRequest.ts # ahooks useRequest 的 manual-only 封装
 │   ├── useIpc.ts           # 请求层：channel + api 函数 + 状态解构
-│   └── useTheme.ts         # 应用级主题联动（明暗 + OS 偏好 + Tailwind dark class 同步）
+│   ├── useTheme.ts         # 应用级主题联动（明暗 + OS 偏好 + Tailwind dark class 同步）
+│   └── usePlatform.ts      # 平台类名注入（documentElement dataset）
 ├── locales/                # 国际化模块（LinguiJS Source-as-Key 驱动）
 │   ├── i18n.ts             # dynamicActivate 动态按需加载语言包 Chunk
 │   ├── zh-CN/messages.po   # 简体中文单一事实源与上下文标记
 │   └── en-US/messages.po   # 英文对照翻译字典
-├── lib/ipc.ts              # IPC 调用与 Result 解构、IpcError、日志
-├── stores/                 # 全局 zustand store（主题状态 themeMode 与语言状态 language）
-└── styles/                 # tokens.css（antd 设计令牌镜像）+ antd-theme.ts
+├── lib/                    # 跨域能力原语
+│   ├── ipc.ts              # IPC 调用与 Result 解构、IpcError、日志
+│   ├── classNames.ts       # 状态类名工具（statusBoxClass）
+│   └── sentry.ts           # 渲染进程 Sentry 初始化
+├── stores/                 # 全局 zustand store（themeMode / resolvedTheme / language）
+├── styles/                 # tokens.css（antd 设计令牌镜像）+ antd-theme.ts + base.css + index.css
+├── startup/                # 首屏启动壳协调器（三源门禁，构建期内联进 index.html）
+└── plugins/                # 构建期插件（startup-shell：启动壳占位符内联）
 ```
 
 ## 分层依据
@@ -45,7 +52,7 @@ src/
 **第二层：按有无副作用切**——`features/<domain>/hooks/` 持有状态与 IPC 副作用，返回 view model（`{ state, handlers }`）；
 `features/<domain>/components/` 纯展示，只靠 props 进入、callback 出去，不碰 IPC、不持有跨卡片状态。
 
-**依赖方向单向**：`entries → features → 跨域层`；feature 之间禁止互相 import（可独立删除/新增）。
+**依赖方向单向**：`entries → features → 跨域层`；feature 之间禁止互相 import（可独立删除/新增），唯一合法例外是 `dashboard` 组合编排域——跨域组合一律收敛至此，不在其他 feature 内互相引用。
 
 | 目录 | 职责 |
 | --- | --- |
@@ -54,7 +61,7 @@ src/
 | `src/hooks/useIpc.ts` | 单一 IPC channel 的请求 hook：类型从 api 函数推导，内部完成 Result 解构与日志 |
 | `src/hooks/useManualRequest.ts` | ahooks useRequest 的 manual-only 封装，自动触发能力从编译期到运行期均不存在 |
 | `src/lib/ipc.ts` | `IpcError`（保留 `Result.code`）+ `callIpc`（解构 + 耗时 + 日志），多 channel 编排的拼装原语 |
-| `src/stores/useAppStore.ts` | 唯一全局状态：`themeMode` / `resolvedTheme` |
+| `src/stores/useAppStore.ts` | 唯一全局 store：`themeMode` / `resolvedTheme` / `language` |
 
 ## Feature 规范
 
@@ -83,13 +90,11 @@ API 耦合，随 feature 数量线性劣化。真正出现第二个消费者时�
 
 ### 4. 一个域可以有多张卡片
 
-入口可以返回 Fragment 渲染多张卡片（如 `system-info` 的 PingCard + SystemInfoCard、`diagnostics` 的 LoggingCard +
-DevToolsCard）。拆分或合并域的标准是**两张卡片是否共享同一份状态与生命周期**，而不是数量。
+入口可以返回 Fragment 渲染多张卡片（如 `updater` 域的 ChangelogCard + ProgressCard 共享同一份 `useUpdater` 状态）。拆分或合并域的标准是**两张卡片是否共享同一份状态与生命周期**，而不是数量。
 
 ### 5. 共享提取规则（第二个消费者）
 
-不要预抽取。只有当第二个消费者真实出现时才把 UI 提到 `components/ui|layout/`、把纯函数提到 `lib/`、
-把 hook 提到 `hooks/`。当前 `CardTitle`（7 处复用）、`lib/statusBoxClass`（3 处复用）都符合该规则。
+不要预抽取。只有当第二个消费者真实出现时才把 UI 提到 `components/ui|layout/`、把纯函数提到 `lib/`、把 hook 提到 `hooks/`。当前 `CardTitle`（10 处复用）、`lib/statusBoxClass`（3 处复用）都符合该规则。
 
 ### 6. 子域组织（`sections/`）
 
@@ -152,8 +157,7 @@ const { runAsync: runCounterOp } = useManualRequest(async (action: CounterAction
 | 失败属于业务流程而非异常（如用户取消对话框） | 业务 hook 内自行转成状态，不要抛给 useIpc |
 | 非 Result 形态的 api（`getPathForFile`） | 直接调用，不走请求层 |
 
-**日志纪律**：dev 下打印 channel + 耗时 + 结果；生产仅保留一行 `console.info`（与 vite 构建剔除 `console.log` 的约定一致）。
-禁止打印入参 body——config 含本地路径、dialog 含 URL。日志反映 IPC 的真实结果，过期响应由 ahooks 丢弃。
+**日志纪律**：dev 下打印 channel + 耗时 + 结果；生产仅在失败时保留一行 `console.warn`，成功调用零日志。禁止打印入参 body——config 含本地路径、dialog 含 URL。日志反映 IPC 的真实结果，过期响应由 ahooks 丢弃。
 
 ## 组件书写约定
 
@@ -171,25 +175,27 @@ const { runAsync: runCounterOp } = useManualRequest(async (action: CounterAction
 - 展示卡片（`features/*/components/**`）：`const _X = (props) => …` + `const X = memo(_X)` + `export { X }` + `export default X`。
 - 容器入口（`features/*/index.tsx`）：直接 `function XFeature()`，不套 memo——内部持有 hook，memo 无收益；
   导出用 `export { XFeature }` + `export default XFeature`（勿与 `export function` 并用，TS 会报重复导出）。
-- 别名：`@/` → `packages/renderer/src/*`，`@shared/` → `packages/shared/src/*`（单一事实源在根 tsconfig.json）。
-- 跨端契约只从 `@shared/types` / `@shared/schemas` 消费，不反向依赖。
+- 别名：`@/` → `packages/renderer/src/*`，`@shared/` → `packages/shared/src/*`（paths 单一事实源在 `packages/tsconfig/base.json`，根 tsconfig.json extends 后对全 monorepo 生效）。
+- 跨端契约从 `@shared/types` / `@shared/schemas` 或等价的 `@app/shared/*` 子路径消费（二者经 tsconfig paths 同指 `packages/shared/src`，代码惯例以 `@shared/` 为主），不反向依赖。
 
 ## 国际化 (i18n)
 
-渲染进程采用 **LinguiJS（中文优先 Source-as-Key）** 方案，文案编写、词条提取与架构设计细节请直接查阅专用文档：
-- 🛠️ **开发者日常开发与维护手册**：[docs/i18n/guide.md](../../docs/i18n/guide.md)
-- 📖 **多语言全链路架构设计指南**：[docs/i18n/architecture.md](../../docs/i18n/architecture.md)
+渲染进程采用 **LinguiJS v6（中文优先 Source-as-Key）** 方案：
+
+- **源码直书中文**：文案以 `t` 宏包裹直接写在源码里，msgid 即中文原文，不存在嵌套 JSON 键名
+- **编译期提取**：`macroTransform` 在构建期自动提取词条生成 PO 文件（`pnpm --filter @app/renderer extract`），漏译在编译期暴露
+- **按需加载**：`locales/i18n.ts` 经 `dynamicActivate` 动态 import 语言包 Chunk，antd 组件库 locale 同步切换
+- **切换订阅**：卡片经 `useLingui()` 订阅语言上下文，全局语言状态收敛在 `stores/useAppStore.ts`
 
 ## 架构取舍与设计裁决
 
 - **轻量级声明式路由 (`wouter`)**：主窗口通过极简的 `wouter`（Switch / Route / Redirect）编排 `/dashboard` 与 `/architecture` 面板，替代传统侵入式的大型路由库。
 - **状态局部化驱动**：各 feature 自包含状态与 hook，仅跨 feature 共享的主题与语言状态收敛至 `stores/useAppStore.ts`。
-- **单一事实源 API 推导**：前端零冗余手写类型，全部从 `ElectronApi`（`@app/shared/types/api`）推导，避免契约漂移。
+- **单一事实源 API 推导**：前端零冗余手写类型，全部从 `ElectronApi`（`@shared/types/api`）推导，避免契约漂移。
+- **首屏启动壳**：`startup/coordinator.ts` 以动画 / React 首帧 / 主进程就绪三源门禁（各带兜底超时）控制揭幕时机，构建期内联进 index.html，杜绝白屏与卡壳。
 
 ## 跨包与文档关联
 
-- 多语言架构深度指南：参见 [docs/i18n/architecture.md](../../docs/i18n/architecture.md)
-- 多语言日常实操 SOP：参见 [docs/i18n/guide.md](../../docs/i18n/guide.md)
 - 契约源头：参见 [packages/shared/README.md](../shared/README.md)
 - 安全桥接：参见 [packages/preload/README.md](../preload/README.md)
 - 主进程实现：参见 [packages/main/README.md](../main/README.md)
