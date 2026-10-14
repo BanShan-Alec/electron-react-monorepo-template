@@ -44,7 +44,7 @@ npm run format
 
 ### 5. 构建工具链时代规则（Vite 8 / Rolldown / Oxc）
 
-本仓已进入 Vite 8（rolldown 内核）时代：**新增构建期转换、插件与编译能力一律使用 Vite 8 / Rolldown / Oxc 原生 API**，禁止引入 esbuild、babel 等旧工具链依赖。存量 `@rolldown/plugin-babel` 仅限 lingui 既有用途，不扩用。选型参照 [ADR-0002](docs/adr/0002-startup-shell-build-time-inline.md)：单文件转译用 `transformWithOxc`（注意不打包 import），需打包时用程序化 `build()`（`configFile:false` + `write:false`）内存产出。
+本仓已进入 Vite 8（rolldown 内核）时代：**新增构建期转换、插件与编译能力一律使用 Vite 8 / Rolldown / Oxc 原生 API**，禁止引入 esbuild、babel 等旧工具链依赖。存量 `@rolldown/plugin-babel` 仅限 lingui 既有用途，不扩用。选型参照 ADR-0002（启动壳构建期内联决策）：单文件转译用 `transformWithOxc`（注意不打包 import），需打包时用程序化 `build()`（`configFile:false` + `write:false`）内存产出。
 
 ---
 
@@ -84,7 +84,7 @@ npm run format
 
 ### 4. PR 工作流（`pnpm pr-review`）
 
-feature 分支一律经 PR 合入 `main`：分支保护锁死 required checks（typecheck / lint / test / e2e）与 squash-only、拒绝直推，决策背景见 [ADR-0004](docs/adr/0004-pr-only-squash-workflow.md)，完整流程见 [.github/CICD.md](.github/CICD.md) 与 [packages/pr-review/README.md](packages/pr-review/README.md)。
+feature 分支一律经 PR 合入 `main`：分支保护锁死 required checks（typecheck / lint / e2e）与 squash-only、拒绝直推，决策背景见 ADR-0004（PR-only + squash 工作流决策），完整流程见 [.github/CICD.md](.github/CICD.md) 与 [packages/pr-review/README.md](packages/pr-review/README.md)。
 
 | 命令 | 用途 |
 | :--- | :--- |
@@ -210,4 +210,15 @@ pnpm -F @app/renderer remove <包名>
 
 ### 2. TypeScript 隔离配置
 `scripts/tsconfig.json` 配置了 `"moduleDetection": "force"`，确保即使未显式声明顶层 `export` 的纯 CJS 脚本也能在 TypeScript 中保持独立的模块作用域，杜绝跨文件全局变量污染（如全局 `const fs` 冲突）。
+
+---
+
+## 八、文档同步纪律（README 与代码同源）
+
+包级 README 是该包的架构契约文档，与代码同源维护，不允许长期处于“写着 A、做着 B”的状态：
+
+- 新增 / 删除目录、模块、导出、脚本或依赖时，必须在同一 PR 内同步更新对应包的 `README.md`（目录树、exports 片段、命令表、铁律表述）；
+- 新增跨端能力（新 IPC 域、新契约类型）时，同步 `packages/shared/README.md` 的契约速览与 `packages/main/README.md` 的 SOP 模板；
+- 规范类表述（铁律 / 禁令）与代码现实冲突时，先改文档使其可执行，再评估是否值得改代码；
+- 根 `README.md` 特性区的每条论断以源码为准，行为变更后同步核对。
 
