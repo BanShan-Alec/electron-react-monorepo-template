@@ -13,9 +13,9 @@ runs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '22'
+        node-version: '24'
 
-    # pnpm 版本由根 package.json 的 packageManager 字段决定,Node 22 自带 corepack
+    # pnpm 版本由根 package.json 的 packageManager 字段决定,Node 24 自带 corepack
     - name: Enable corepack
       run: corepack enable
       shell: bash

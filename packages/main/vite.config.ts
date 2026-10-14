@@ -55,7 +55,7 @@ export default defineConfig({
     minify: process.env.MODE === 'development' ? false : 'oxc',
     outDir: 'dist',
     assetsDir: '.',
-    target: 'node22',
+    target: 'node24',
     lib: {
       entry: 'src/index.ts',
       formats: ['cjs'],

@@ -199,7 +199,7 @@ pnpm -F @app/renderer remove <包名>
 
 ## 七、Node 脚本与构建配置规范 (纯 CommonJS 模式)
 
-为彻底杜绝 Node 22+ 原生执行 TypeScript 时的 `[MODULE_TYPELESS_PACKAGE_JSON]` 重新解析警告，并消除 `import.meta.url`、`fileURLToPath`、`__dirname` 兼容垫片与动态导入陷阱，本项目制定以下规范：
+为彻底杜绝 Node 24+ 原生执行 TypeScript 时的 `[MODULE_TYPELESS_PACKAGE_JSON]` 重新解析警告，并消除 `import.meta.url`、`fileURLToPath`、`__dirname` 兼容垫片与动态导入陷阱，本项目制定以下规范：
 
 ### 1. 运行环境与模块标准划分
 
