@@ -30,15 +30,23 @@ packages/shared/
     │   ├── counter.ts       # 计数器领域返回接口
     │   ├── calculator.ts    # 计算器领域返回接口
     │   ├── diagnostics.ts   # 诊断与行为返回接口
-    │   └── dialog.ts        # 原生对话框返回接口
+    │   ├── dialog.ts        # 原生对话框返回接口
+    │   ├── startup.ts       # 启动就绪快照与主进程就绪载荷
+    │   ├── telemetry.ts     # 追踪契约（SpanContext / TraceCarrier / TracedIpcPayload）
+    │   └── updater.ts       # 自动更新状态、进度与发布信息
     │
-    └── schemas/             # Zod 运行时数据校验模型及派生输入类型
-        ├── counter.ts       # 计数器输入 Schema 与 StepInput
-        ├── calculator.ts    # 计算器入参 Schema 与 CalculateInput
-        ├── config.ts        # 应用配置 Schema、类型及默认值 DEFAULT_CONFIG
-        ├── diagnostics.ts   # 日志与操作入参 Schema 及推导类型
-        ├── dialog.ts        # 原生文件/目录对话框配置入参 Schema
-        └── shell.ts         # Shell 唤起入参 Schema 及类型
+    ├── schemas/             # Zod 运行时数据校验模型及派生输入类型
+    │   ├── counter.ts       # 计数器输入 Schema 与 StepInput
+    │   ├── calculator.ts    # 计算器入参 Schema 与 CalculateInput
+    │   ├── config.ts        # 应用配置 Schema、类型及默认值 DEFAULT_CONFIG
+    │   ├── diagnostics.ts   # 日志与操作入参 Schema 及推导类型
+    │   ├── dialog.ts        # 原生文件/目录对话框配置入参 Schema
+    │   ├── shell.ts         # Shell 唤起入参 Schema 及类型
+    │   └── updater.ts       # 更新状态/进度/快照 Schema 及推导类型
+    │
+    └── utils/               # 跨端纯函数工具（零 Electron 依赖）
+        ├── env-packer.ts    # 运行时环境编解码（XOR 掩码 + Base64URL，--app-meta= 参数）
+        └── w3c-trace-context.ts # W3C traceparent 生成 / 解析 / 序列化
 ```
 
 ---
@@ -47,7 +55,7 @@ packages/shared/
 
 ### 2.1 Schema 与推导类型就近原则
 - **输入参数校验规则必须由 Zod 驱动**，禁止手写重复的 TypeScript 类型。
-- 凡是由 `z.infer<typeof schema>` 推导出的类型，**必须且仅允许**在其对应的 `schemas/*.ts` 文件内定义并导出。
+- 凡是由 `z.infer<typeof schema>` 推导出的类型，默认在其对应的 `schemas/*.ts` 文件内定义并导出；跨端事件负载类类型（如 `updater` 的状态 / 进度 / 快照）经评审后可例外地在 `types/` 内派生，避免 schemas 与 types 双向缠绕。
 - 确保“运行时入参校验逻辑”与“编译期类型安全”拥有唯一的源头。
 
 ### 2.2 纯返回接口归入 `types/`
@@ -64,7 +72,8 @@ packages/shared/
   "exports": {
     "./constants/*": "./src/constants/*.ts",
     "./schemas/*": "./src/schemas/*.ts",
-    "./types/*": "./src/types/*.ts"
+    "./types/*": "./src/types/*.ts",
+    "./utils/*": "./src/utils/*.ts"
   }
   ```
 - 消费端（`main`、`preload`、`renderer`）按需直达具体文件。主进程与 preload 为 CJS 出包、无 tree-shaking，根入口会把整张契约图（含 schemas→zod）拖进 require 链，故取消根桶：
@@ -77,8 +86,16 @@ packages/shared/
 
 ### 2.5 运行环境事实标准与跨端门面契约
 - **单一事实源**：在 `constants/env.ts` 与 `types/env.ts` 中定义 `APP_ENV`（`'development' | 'production' | 'test'`）与 `AppEnv` 类型。
-- **严禁散装读取**：主进程 (`packages/main/src/env.ts`) 提供权威门面，渲染进程通过 `window.__APP_ENV__` 同步解冻消费，项目 100% 基于 `MODE` 变量，严禁业务代码直接读取原生 `process.env.*`。
-- **详细规范**：参见全局架构文档 [全栈运行环境与模式控制规范](../../docs/environment-specification.md)。
+- **门面消费**：主进程 (`packages/main/src/env.ts`) 提供权威读取门面，渲染进程通过 `window.__APP_ENV__` 同步消费；运行环境以 `MODE` 变量为唯一驱动源，业务代码原则上不得直接读取原生 `process.env.*`（已知例外：`sentry.module.ts` 初始化处的 `SENTRY_DSN` / `MODE` 直读）。
+- **跨端传递**：运行时环境由 `utils/env-packer.ts` 编解码，主进程经 `additionalArguments` 注入、preload 解包冻结后暴露，改配置不触发重新编译。
+
+### 2.6 跨端能力契约速览
+
+- **`utils/` 零依赖纯函数**：`env-packer`（`packRuntimeEnv` / `unpackRuntimeEnv`）负责运行环境在 `--app-meta=` 参数中的编解码；`w3c-trace-context`（`generateTraceId` / `serializeTraceParent` / `parseTraceParent` 等）是全链路追踪的 W3C 信封实现，被 main 与 preload 共同消费。
+- **`updater` 全领域契约**：`schemas/updater.ts` 提供状态 / 进度 / 快照的 zod 模型，`types/updater.ts` 提供派生类型，`IPC_CHANNELS` 中的 `UPDATER_*` 通道覆盖检查、进度、完成与事件广播。
+- **`startup` 就绪契约**：`constants/startup.ts` 定义 `APP_STARTUP_READY_CLASS` 等 DOM 事件 / 键名常量，`types/startup.ts` 定义就绪快照与主进程载荷，支撑首屏启动壳的“先拉后推”信号桥。
+- **`telemetry` 追踪契约**：`types/telemetry.ts` 定义 `SpanContext` / `SpanRecord` / `TraceCarrier` / `TracedIpcPayload`，是 traceparent 跨进程传播与 span 落盘的数据结构基准。
+- **`ElectronApi` 特殊成员**：除领域方法外还包含 `getPathForFile`（文件路径安全桥）与 `invokeTraced`（泛型追踪调用），两者均非 `Result<T>` 形态，渲染层直接消费。
 
 ---
 
