@@ -1,4 +1,5 @@
 import { APP_ENV } from '@app/shared/constants/env';
+import { APP_DOMAINS, buildSentryTags, SENTRY_TAGS } from '@app/shared/constants/telemetry';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import * as Sentry from '@sentry/electron/renderer';
@@ -77,6 +78,9 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // 1. 渲染进程崩溃捕获并上报至 Sentry
     Sentry.captureException(error, {
+      tags: buildSentryTags(APP_DOMAINS.RENDERER_HOME, {
+        [SENTRY_TAGS.PROCESS]: 'renderer',
+      }),
       extra: {
         componentStack: errorInfo.componentStack,
       },

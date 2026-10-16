@@ -1,3 +1,4 @@
+import { APP_DOMAINS } from '@app/shared/constants/telemetry';
 import { WINDOW_IDS } from '@app/shared/constants/windows';
 import type { AppConfig } from '@app/shared/schemas/config';
 import { nativeTheme } from 'electron';
@@ -17,7 +18,7 @@ import { getWindow } from './window/window-registry';
 // 私有常量
 
 // 可抽离的逻辑处理函数/组件
-const logger = getLogManager().scoped('NativeTheme');
+const logger = getLogManager().scoped(APP_DOMAINS.THEME.logger);
 
 export function applyNativeThemeSource(theme: AppConfig['theme']): void {
   try {

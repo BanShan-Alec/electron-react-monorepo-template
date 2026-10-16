@@ -1,5 +1,6 @@
 import { ErrorCode } from '@app/shared/constants/error-codes';
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
+import { APP_DOMAINS, buildSentryTags, SENTRY_TAGS } from '@app/shared/constants/telemetry';
 import { WINDOW_IDS } from '@app/shared/constants/windows';
 import type {
   UpdaterMockAction,
@@ -53,7 +54,7 @@ function normalizeReleaseNotes(raw: unknown): string[] {
 }
 
 export class UpdaterService {
-  private readonly logger = getLogManager().scoped('UpdaterService');
+  private readonly logger = getLogManager().scoped(APP_DOMAINS.OTA.logger);
   private cancellationToken: CancellationToken | null = null;
   private orphanWatchdogTimer: NodeJS.Timeout | null = null;
   private devSimulationTimer: NodeJS.Timeout | null = null;
@@ -88,12 +89,11 @@ export class UpdaterService {
       import('@sentry/electron/main')
         .then((Sentry) => {
           Sentry.captureException(errorObj, {
-            tags: {
-              feature: 'ota',
-              ota_stage: stage,
-              target_version: this.snapshot.version || 'unknown',
-              current_version: app.getVersion(),
-            },
+            tags: buildSentryTags(APP_DOMAINS.OTA, {
+              [SENTRY_TAGS.STAGE]: stage,
+              [SENTRY_TAGS.TARGET_VERSION]: this.snapshot.version || 'unknown',
+              [SENTRY_TAGS.CURRENT_VERSION]: app.getVersion(),
+            }),
             extra: {
               rawMessage: errorObj.message,
               snapshotState: this.snapshot.state,
@@ -115,12 +115,11 @@ export class UpdaterService {
         .then((Sentry) => {
           Sentry.captureMessage(message, {
             level: 'info',
-            tags: {
-              feature: 'ota',
-              ota_stage: stage,
-              target_version: targetVersion || 'unknown',
-              current_version: app.getVersion(),
-            },
+            tags: buildSentryTags(APP_DOMAINS.OTA, {
+              [SENTRY_TAGS.STAGE]: stage,
+              [SENTRY_TAGS.TARGET_VERSION]: targetVersion || 'unknown',
+              [SENTRY_TAGS.CURRENT_VERSION]: app.getVersion(),
+            }),
           });
         })
         .catch((sentryErr) => {

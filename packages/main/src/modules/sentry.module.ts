@@ -1,4 +1,6 @@
 /// <reference path="../env.d.ts" />
+
+import { APP_DOMAINS, buildSentryTags, SENTRY_TAGS } from '@app/shared/constants/telemetry';
 import * as Sentry from '@sentry/electron/main';
 import { app, type BrowserWindow } from 'electron';
 import type { AppModule } from '../AppModule';
@@ -6,7 +8,7 @@ import { appLifecycle } from '../lifecycle';
 import type { ModuleContext } from '../ModuleContext';
 import { getLogManager } from './log.module';
 
-const logger = getLogManager().scoped('SentryModule');
+const logger = getLogManager().scoped(APP_DOMAINS.SENTRY.logger);
 
 /**
  * 获取用于 Sentry 初始化的 DSN
@@ -102,11 +104,12 @@ export class SentryModule implements AppModule {
         ),
         {
           level: 'fatal',
-          tags: {
-            process: 'renderer',
-            crash_reason: details.reason,
-            exit_code: String(details.exitCode),
-          },
+          tags: buildSentryTags(APP_DOMAINS.WINDOW, {
+            [SENTRY_TAGS.LOGGER]: APP_DOMAINS.SENTRY.logger,
+            [SENTRY_TAGS.PROCESS]: 'renderer',
+            [SENTRY_TAGS.CRASH_REASON]: details.reason,
+            [SENTRY_TAGS.EXIT_CODE]: details.exitCode,
+          }),
           extra: {
             details,
             url: currentUrl,
@@ -128,10 +131,11 @@ export class SentryModule implements AppModule {
         logger.error(`Window (id=${window.id}) is unresponsive`);
         Sentry.captureMessage(`[Window Unresponsive] Window (id=${window.id}) is unresponsive`, {
           level: 'error',
-          tags: {
-            process: 'window',
-            window_id: String(window.id),
-          },
+          tags: buildSentryTags(APP_DOMAINS.WINDOW, {
+            [SENTRY_TAGS.LOGGER]: APP_DOMAINS.SENTRY.logger,
+            [SENTRY_TAGS.PROCESS]: 'window',
+            [SENTRY_TAGS.WINDOW_ID]: window.id,
+          }),
           extra: {
             url: currentUrl,
           },

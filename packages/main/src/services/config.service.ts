@@ -1,3 +1,4 @@
+import { APP_DOMAINS } from '@app/shared/constants/telemetry';
 import type { AppConfig, UpdateConfigInput } from '@app/shared/schemas/config';
 import { getAppConfigStore } from '../modules/config.module';
 import { getLogManager } from '../modules/log.module';
@@ -5,7 +6,7 @@ import { applyNativeThemeSource } from '../modules/native-theme.module';
 import { getTrayManager } from '../modules/tray.module';
 
 export class ConfigService {
-  private readonly logger = getLogManager().scoped('Config');
+  private readonly logger = getLogManager().scoped(APP_DOMAINS.CONFIG.logger);
 
   getConfig(): AppConfig {
     return getAppConfigStore().getAll();
