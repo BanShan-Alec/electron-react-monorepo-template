@@ -13,7 +13,7 @@ Status: superseded by [ADR-0006](0006-return-to-native-file-protocol.md)（2026-
    - 若通过构建期编译（如 Vite 的 `import.meta.env`），环境变量在打包时被静态硬编码，更换渠道、分发环境或应用名称时必须重新编译；
    - 若通过 Preload 脚本或异步 IPC（如 `ipcRenderer.invoke('get-env')`）在应用启动时索取，会导致渲染层在 React 首帧渲染、Sentry 异常监控初始化、网络客户端装配等阶段面临严重的异步竞态（Race Condition）。
 
-基于上述痛点，本架构在 [protocol.module.ts](../../packages/main/src/modules/protocol.module.ts) 中裁决：**在生产态注册特权自定义协议 `app://`，接管渲染进程的静态资源分发与 SPA 路由支撑；环境变量分发则解耦为通过 Chromium `additionalArguments` 紧凑混淆传参，并由 Preload 在首帧前同步解包注入 `window.__APP_ENV__`。**
+基于上述痛点，本架构在 `protocol.module.ts` 中裁决：**在生产态注册特权自定义协议 `app://`，接管渲染进程的静态资源分发与 SPA 路由支撑；环境变量分发则解耦为通过 Chromium `additionalArguments` 紧凑混淆传参，并由 Preload 在首帧前同步解包注入 `window.__APP_ENV__`。**
 
 ---
 
@@ -67,7 +67,7 @@ Status: superseded by [ADR-0006](0006-return-to-native-file-protocol.md)（2026-
 
 ## 结论与后果（Consequences）
 
-1. [packages/main/src/modules/protocol.module.ts](../../packages/main/src/modules/protocol.module.ts) 作为生产态静态资源分发与 SPA 路由支撑模块，不得随意弱化或拆解；
+1. `packages/main/src/modules/protocol.module.ts` 作为生产态静态资源分发与 SPA 路由支撑模块，不得随意弱化或拆解；
 2. 环境变量通过 `env-packer.ts` 与 `additionalArguments` 在全环境（开发、生产、测试）统一传递，彻底解除协议层与 HTML 占位符的耦合；
 3. 路径安全越界防护（`path.relative` 校验）作为安全红线永久保留；
 4. 若未来应用引入大型多媒体音视频流，需遵循本文档规划的 `net.fetch` 流式重构路径。

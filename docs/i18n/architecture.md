@@ -101,7 +101,7 @@ flowchart TD
   所有宏与编译依赖在打包后**完全消失**，主产物体积瞬间缩减 **536KB**。
 
 ### 2. 独立 Chunk 代码分割（Runtime Code-Splitting）
-语言包绝不随着 `index.html` 首次请求一次性下载全量字典。在 [packages/renderer/src/locales/i18n.ts](file:///h:/electron-app-temp5/packages/renderer/src/locales/i18n.ts) 中通过动态按需导入：
+语言包绝不随着 `index.html` 首次请求一次性下载全量字典。在 [packages/renderer/src/locales/i18n.ts](../../packages/renderer/src/locales/i18n.ts) 中通过动态按需导入：
 
 ```ts
 export async function dynamicActivate(locale: SupportedLocale): Promise<void> {
@@ -124,7 +124,7 @@ export async function dynamicActivate(locale: SupportedLocale): Promise<void> {
 
 ### 3. Windows 跨平台路径与 CWD 锁定
 - **Glob 反斜杠问题**：Windows 系统下 `path.resolve` 输出 `\` 反斜杠，这会使 Glob 模式引擎将其视作转义符而无法匹配。在 `vite.config.ts` 中采用稳健的正则表达式过滤器：`include: [/\.[jt]sx?$/]`。
-- **Monorepo CWD 漂移治理**：在工程根目录运行开发服务（`pnpm start`）时，`process.cwd()` 为根路径。为了防止 Lingui 查找器从根目录单向向上查找而漏掉子包配置，在 [packages/renderer/vite.config.ts](file:///h:/electron-app-temp5/packages/renderer/vite.config.ts) 中显式传入绝对路径与 `cwd`：
+- **Monorepo CWD 漂移治理**：在工程根目录运行开发服务（`pnpm start`）时，`process.cwd()` 为根路径。为了防止 Lingui 查找器从根目录单向向上查找而漏掉子包配置，在 [packages/renderer/vite.config.ts](../../packages/renderer/vite.config.ts) 中显式传入绝对路径与 `cwd`：
   ```ts
   const linguiConfigOpts = {
     configPath: path.resolve(__dirname, 'lingui.config.ts'),
@@ -189,7 +189,7 @@ const _Header = (props: IHeaderProps) => {
 ## 五、 质量守护与防冲刷架构原则
 
 ### 1. Zod Schema 防冲刷隔离设计
-本工程彻底杜绝了修改某项配置意外导致其他配置被“恢复出厂默认值”的深坑。在 [packages/shared/src/schemas/config.ts](file:///h:/electron-app-temp5/packages/shared/src/schemas/config.ts) 中严格遵循基底分离模式：
+本工程彻底杜绝了修改某项配置意外导致其他配置被“恢复出厂默认值”的深坑。在 [packages/shared/src/schemas/config.ts](../../packages/shared/src/schemas/config.ts) 中严格遵循基底分离模式：
 
 ```ts
 // 1. 无默认值的基底属性约束
