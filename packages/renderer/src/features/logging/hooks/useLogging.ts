@@ -22,14 +22,8 @@ export function useLogging() {
     async (action: { kind: LoggingAction; level: LogLevel }) => {
       const levelUpper = action.level.toUpperCase();
       if (action.kind === 'log') {
-        await callIpc('diagnostics.log', window.api.diagnostics.log, [
-          {
-            level: action.level,
-            message: `Test ${levelUpper} log emitted from Renderer`,
-            meta: { timestamp: Date.now() },
-          },
-        ]);
-        return t`✅ 已发送 ${levelUpper} 日志到 renderer.log`;
+        logger[action.level](`Test ${levelUpper} log emitted from Renderer`);
+        return t`✅ 已发送 ${levelUpper} 日志到 renderer-home.log`;
       }
       const data = await callIpc(
         'diagnostics.openLogFolder',
@@ -73,20 +67,14 @@ export function useLogging() {
     const errorMsg = 'Test Sentry exception triggered from UI';
     const err = new Error(errorMsg);
 
-    // 1. 记录本地落盘日志到 renderer.log
-    void callIpc('diagnostics.log', window.api.diagnostics.log, [
-      {
-        level: 'error',
-        message: errorMsg,
-        meta: { triggeredFrom: 'UI', timestamp: Date.now() },
-      },
-    ]).catch(() => {});
+    // 1. 记录本地落盘日志到 renderer-home.log
+    logger.error(errorMsg, { triggeredFrom: 'UI' });
 
     // 2. 更新 UI 状态提示
     setLogStatus(
-      t`❌ 已触发测试异常并写入 renderer.log (生产打包模式下将由全局监听器自动上报 Sentry)`,
+      t`❌ 已触发测试异常并写入 renderer-home.log (生产打包模式下将由全局监听器自动上报 Sentry)`,
     );
-    message.error(t`已触发测试异常，已写入 renderer.log`);
+    message.error(t`已触发测试异常，已写入 renderer-home.log`);
 
     // 3. 异步抛出异常至全局执行栈，交由 window.onerror 全局监听器捕获
     setTimeout(() => {
@@ -99,13 +87,7 @@ export function useLogging() {
   const handleTriggerErrorBoundaryCrash = () => {
     const errorMsg = 'Test React ErrorBoundary component crash triggered from UI';
     // 记录本地落盘日志
-    void callIpc('diagnostics.log', window.api.diagnostics.log, [
-      {
-        level: 'error',
-        message: errorMsg,
-        meta: { triggeredFrom: 'UI', timestamp: Date.now() },
-      },
-    ]).catch(() => {});
+    logger.error(errorMsg, { triggeredFrom: 'UI' });
 
     setShouldCrashRender(true);
   };

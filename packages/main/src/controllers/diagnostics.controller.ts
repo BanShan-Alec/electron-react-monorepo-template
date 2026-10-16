@@ -11,7 +11,7 @@ export function registerDiagnosticsControllers(): void {
   handleTraced(
     IPC_CHANNELS.DIAGNOSTICS_LOG,
     async (
-      _event,
+      event,
       rawInput: unknown,
       windowName?: string,
     ): Promise<Result<{ success: boolean }>> => {
@@ -20,7 +20,7 @@ export function registerDiagnosticsControllers(): void {
         return failResult(parseResult.error.issues[0].message, ErrorCode.VALIDATION_ERROR);
       }
       try {
-        diagnosticsService.logMessage(parseResult.data, windowName);
+        diagnosticsService.logMessage(parseResult.data, windowName, event.sender.id);
         return successResult({ success: true });
       } catch (err) {
         return catchToResult(err);

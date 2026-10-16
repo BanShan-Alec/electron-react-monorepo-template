@@ -105,7 +105,7 @@ export const devServerUrl: string | undefined =
 ```
 
 ### 3. 渲染进程统一门面 (`packages/renderer/src/lib/env.ts`)
-渲染进程组件与逻辑统一从 [`packages/renderer/src/lib/env.ts`](../packages/renderer/src/lib/env.ts) 消费：
+渲染进程组件与逻辑统一从 `packages/renderer/src/lib/env.ts` 消费：
 ```ts
 import { APP_ENV, type AppEnv } from '@app/shared/constants/env';
 

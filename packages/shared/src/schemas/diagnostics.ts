@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const logInputSchema = z.object({
   level: z.enum(['info', 'warn', 'error', 'debug']).default('info'),
   message: z.string(),
-  meta: z.unknown().optional(),
+  args: z.array(z.unknown()).optional(),
 });
 
 export type LogInput = z.infer<typeof logInputSchema>;
