@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v1.6.0
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.5.0...v1.6.0)
+
+### 🚀 新增特性 (Features)
+
+- **window:** 主窗口初始尺寸自适应高缩放比屏幕并实现任务栏工作区视觉居中 ([#35](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/35))
+
+### ❤️ Contributors
+
+- 半山Alec <627649674@qq.com>
+
 ## v1.5.0
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.4.0...v1.5.0)

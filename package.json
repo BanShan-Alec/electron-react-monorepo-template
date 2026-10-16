@@ -3,7 +3,7 @@
   "productName": "Electron React Template",
   "appId": "com.template.electron-react-monorepo",
   "description": "Type-safe Electron monorepo template powered by Vite, React and ContextBridge IPC",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "author": {
     "name": "BanShan-Alec",
     "email": "627649674@qq.com"
