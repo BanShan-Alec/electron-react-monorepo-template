@@ -2,6 +2,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { app, type BrowserWindow, type Display, screen } from 'electron';
+import {
+  DEFAULT_WINDOW_HEIGHT,
+  DEFAULT_WINDOW_WIDTH,
+  MIN_WINDOW_HEIGHT,
+  MIN_WINDOW_WIDTH,
+  resolveWindowBounds,
+} from './window-size';
 
 export interface WindowState {
   x?: number;
@@ -12,41 +19,39 @@ export interface WindowState {
 }
 
 export const DEFAULT_WINDOW_STATE: WindowState = {
-  width: 1024,
-  height: 768,
+  width: DEFAULT_WINDOW_WIDTH,
+  height: DEFAULT_WINDOW_HEIGHT,
   isMaximized: false,
 };
 
 /**
- * 校验并矫正窗口状态，防止外接显示器断开后坐标飞出屏幕可见区域
+ * 校验并矫正窗口状态，基于目标显示器有效工作区进行边界截断与超屏重置
  */
 export function validateWindowState(
   state: Partial<WindowState> | null | undefined,
   displays: Display[],
 ): WindowState {
-  const width = Math.max(state?.width ?? DEFAULT_WINDOW_STATE.width, 400);
-  const height = Math.max(state?.height ?? DEFAULT_WINDOW_STATE.height, 300);
-  const isMaximized = Boolean(state?.isMaximized);
-
-  if (state?.x === undefined || state?.y === undefined || displays.length === 0) {
-    return { width, height, isMaximized };
+  if (!displays || displays.length === 0) {
+    return {
+      width: Math.max(state?.width ?? DEFAULT_WINDOW_WIDTH, MIN_WINDOW_WIDTH),
+      height: Math.max(state?.height ?? DEFAULT_WINDOW_HEIGHT, MIN_WINDOW_HEIGHT),
+      isMaximized: Boolean(state?.isMaximized),
+      ...(typeof state?.x === 'number' ? { x: state.x } : {}),
+      ...(typeof state?.y === 'number' ? { y: state.y } : {}),
+    };
   }
 
-  const { x, y } = state;
+  // 寻找与当前坐标最匹配的目标显示器，若无匹配则使用主屏或首选显示器
+  const targetDisplay =
+    displays.find((display) => {
+      if (typeof state?.x !== 'number' || typeof state?.y !== 'number') return false;
+      const { x: dx, y: dy, width: dw, height: dh } = display.workArea;
+      return (
+        state.x >= dx - 50 && state.x < dx + dw - 50 && state.y >= dy - 10 && state.y < dy + dh - 50
+      );
+    }) ?? displays[0];
 
-  // 检查窗口至少有部分标题栏处于某个显示器的有效工作区内
-  const isVisibleOnAnyDisplay = displays.some((display) => {
-    const { x: dx, y: dy, width: dw, height: dh } = display.workArea;
-    // 窗口左上角或右上角在显示器内部，且标题栏 y 轴可见
-    return x >= dx - 50 && x < dx + dw - 50 && y >= dy - 10 && y < dy + dh - 50;
-  });
-
-  if (isVisibleOnAnyDisplay) {
-    return { x, y, width, height, isMaximized };
-  }
-
-  // 越界则清除坐标，由 Electron 默认居中显示在主显示器
-  return { width, height, isMaximized };
+  return resolveWindowBounds(state, targetDisplay);
 }
 
 export class WindowStateKeeper {
@@ -101,8 +106,8 @@ export class WindowStateKeeper {
         }
         // 冷启动 screen 尚未就绪时，安全保留已存储的尺寸与坐标，不调用 screen.getAllDisplays()
         return {
-          width: Math.max(parsed?.width ?? DEFAULT_WINDOW_STATE.width, 400),
-          height: Math.max(parsed?.height ?? DEFAULT_WINDOW_STATE.height, 300),
+          width: Math.max(parsed?.width ?? DEFAULT_WINDOW_STATE.width, MIN_WINDOW_WIDTH),
+          height: Math.max(parsed?.height ?? DEFAULT_WINDOW_STATE.height, MIN_WINDOW_HEIGHT),
           isMaximized: Boolean(parsed?.isMaximized),
           ...(typeof parsed?.x === 'number' ? { x: parsed.x } : {}),
           ...(typeof parsed?.y === 'number' ? { y: parsed.y } : {}),
@@ -134,23 +139,24 @@ export class WindowStateKeeper {
     if (this.saveTimer) {
       clearTimeout(this.saveTimer);
     }
+    // 250ms 防抖（参考 ZCode/VS Code），过滤拖拽缩放时的高频渲染帧 I/O
     this.saveTimer = setTimeout(() => {
       this.saveStateSync();
-    }, 500);
+    }, 250);
   }
 
   public track(browserWindow: BrowserWindow): void {
     const updateBounds = () => {
       if (browserWindow.isDestroyed()) return;
-      if (!browserWindow.isMaximized() && !browserWindow.isMinimized()) {
-        const bounds = browserWindow.getBounds();
-        this.state = {
-          ...this.state,
-          ...bounds,
-          isMaximized: false,
-        };
-        this.scheduleSave();
-      }
+      // 关键隔离：最大化窗口的当前 bounds 等于显示器工作区，
+      // 始终读取 normal bounds，防止最大化尺寸污染常规窗口大小
+      const bounds = browserWindow.getNormalBounds();
+      this.state = {
+        ...this.state,
+        ...bounds,
+        isMaximized: browserWindow.isMaximized(),
+      };
+      this.scheduleSave();
     };
 
     browserWindow.on('resize', updateBounds);
@@ -158,20 +164,25 @@ export class WindowStateKeeper {
 
     browserWindow.on('maximize', () => {
       this.state.isMaximized = true;
-      this.scheduleSave();
+      this.saveStateSync();
     });
 
     browserWindow.on('unmaximize', () => {
       this.state.isMaximized = false;
-      this.scheduleSave();
+      this.saveStateSync();
     });
 
     browserWindow.on('close', () => {
-      if (!browserWindow.isDestroyed() && !browserWindow.isMaximized()) {
-        const bounds = browserWindow.getBounds();
+      if (this.saveTimer) {
+        clearTimeout(this.saveTimer);
+        this.saveTimer = null;
+      }
+      if (!browserWindow.isDestroyed()) {
+        const bounds = browserWindow.getNormalBounds();
         this.state = {
           ...this.state,
           ...bounds,
+          isMaximized: browserWindow.isMaximized(),
         };
       }
       this.saveStateSync();

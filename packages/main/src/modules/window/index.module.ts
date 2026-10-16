@@ -1,5 +1,5 @@
 import { WINDOW_IDS } from '@app/shared/constants/windows';
-import { app, BrowserWindow, Notification } from 'electron';
+import { app, BrowserWindow, Notification, screen } from 'electron';
 import type { AppInitConfig } from '../../AppInitConfig';
 import type { AppModule } from '../../AppModule';
 import { getPackedEnvArgument } from '../../env';
@@ -12,6 +12,7 @@ import { getTitleBarOverlayOptions, getWindowBackgroundColor } from './titlebar-
 import { getUpdaterWindowModule } from './updater-window.module';
 import { forgetWindow, getWindow, registerWindow } from './window-registry';
 import { attachWindowsWindowRepaint } from './window-repaint';
+import { MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, resolveWindowBounds } from './window-size';
 import { DEFAULT_WINDOW_STATE, type WindowState, WindowStateKeeper } from './window-state-keeper';
 
 export interface WindowManagerOptions {
@@ -60,10 +61,23 @@ export class WindowManager implements AppModule {
   }
 
   async createWindow(): Promise<BrowserWindow> {
-    const savedState: WindowState =
+    const rawState: WindowState =
       this.keepState && this.windowStateKeeper
         ? this.windowStateKeeper.getState()
         : DEFAULT_WINDOW_STATE;
+
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const targetDisplay =
+      typeof rawState.x === 'number' && typeof rawState.y === 'number' && screen.getDisplayMatching
+        ? screen.getDisplayMatching({
+            x: rawState.x,
+            y: rawState.y,
+            width: rawState.width,
+            height: rawState.height,
+          })
+        : primaryDisplay;
+
+    const savedState = resolveWindowBounds(rawState, targetDisplay);
 
     const logger = getLogManager().scoped('WindowManager');
 
@@ -87,8 +101,8 @@ export class WindowManager implements AppModule {
       width: savedState.width,
       height: savedState.height,
       // 最小尺寸下限，防止窗口缩到布局不可用（updater 窗口为 420×400）
-      minWidth: 720,
-      minHeight: 480,
+      minWidth: MIN_WINDOW_WIDTH,
+      minHeight: MIN_WINDOW_HEIGHT,
       backgroundColor: getWindowBackgroundColor(),
       ...(isMac ? { titleBarStyle: 'hidden', titleBarOverlay: true } : {}),
       ...(isWin
