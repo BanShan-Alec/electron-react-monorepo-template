@@ -1,5 +1,4 @@
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
-import { APP_DOMAINS } from '@app/shared/constants/telemetry';
 import { WINDOW_IDS } from '@app/shared/constants/windows';
 import { app, BrowserWindow } from 'electron';
 import type { AppInitConfig } from '../../AppInitConfig';
@@ -15,7 +14,7 @@ import { forgetWindow, getWindow, registerWindow, sendToWindow } from './window-
 export class UpdaterWindowModule implements AppModule {
   private readonly preload: { path: string };
   private readonly renderer: { path: string } | URL;
-  private readonly logger = getLogManager().scoped(APP_DOMAINS.UPDATER_WINDOW.logger);
+  private readonly logger = getLogManager().scoped(this);
 
   constructor({ initConfig }: { initConfig: AppInitConfig }) {
     this.preload = initConfig.preload;

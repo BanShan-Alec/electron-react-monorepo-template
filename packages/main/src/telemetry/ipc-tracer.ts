@@ -1,4 +1,3 @@
-import { APP_DOMAINS } from '@app/shared/constants/telemetry';
 import type { SpanContext, TracedIpcPayload } from '@app/shared/types/telemetry';
 import type { IpcMainInvokeEvent } from 'electron';
 import { BrowserWindow, ipcMain } from 'electron';
@@ -62,7 +61,7 @@ export function handleTraced<T = unknown, R = unknown>(
       },
       async (span) => {
         const winTag = windowName ? `[${windowName}] ` : windowId ? `[win#${windowId}] ` : '';
-        getLogManager().scoped(APP_DOMAINS.IPC.logger).info(`${winTag}Handling ${channel}`);
+        getLogManager().scoped('IPC').info(`${winTag}Handling ${channel}`);
         const result = await handler(event, data, windowName);
         // 若业务返回了 Result 结构体，可辅助记录业务结果状态
         if (

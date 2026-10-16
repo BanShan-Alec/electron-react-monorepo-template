@@ -1,4 +1,3 @@
-import { APP_DOMAINS } from '@app/shared/constants/telemetry';
 import { WINDOW_IDS } from '@app/shared/constants/windows';
 import { app, BrowserWindow, Notification, screen } from 'electron';
 import type { AppInitConfig } from '../../AppInitConfig';
@@ -80,7 +79,7 @@ export class WindowManager implements AppModule {
 
     const savedState = resolveWindowBounds(rawState, targetDisplay);
 
-    const logger = getLogManager().scoped(APP_DOMAINS.WINDOW.logger);
+    const logger = getLogManager().scoped(this);
 
     logger.info('Creating browser window with state:', savedState);
 
