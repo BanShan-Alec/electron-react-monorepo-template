@@ -46,6 +46,14 @@ describe('window-size 纯算法模块', () => {
       expect(size.height).toBe(DEFAULT_WINDOW_HEIGHT);
     });
 
+    it('在极窄临界屏幕（如 740x520）下严格截断在工作区可用尺寸内', () => {
+      const size = calculateAdaptiveInitialSize({ width: 740, height: 520 });
+      expect(size.width).toBeLessThanOrEqual(740);
+      expect(size.height).toBeLessThanOrEqual(520);
+      expect(size.width).toBe(720);
+      expect(size.height).toBe(480);
+    });
+
     it('在极端狭小屏幕下不低于最小下限 minWidth/minHeight', () => {
       const size = calculateAdaptiveInitialSize({ width: 600, height: 400 });
       expect(size.width).toBe(MIN_WINDOW_WIDTH);

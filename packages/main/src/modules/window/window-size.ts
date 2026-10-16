@@ -20,9 +20,18 @@ export function clampDimension(value: number, minimum: number, available: number
 }
 
 /**
+ * 窗口处于屏幕可视边缘内的容差常量（逻辑像素 DIPs）
+ * 确保至少有 50px 标题栏宽度和 10px 顶部抓取区处于屏幕内
+ */
+export const POSITION_TOLERANCE_X = 50;
+export const POSITION_TOLERANCE_Y_TOP = 10;
+export const POSITION_TOLERANCE_Y_BOTTOM = 50;
+
+/**
  * 宽度优先自适应尺寸计算（用于冷启动无历史状态或历史尺寸超屏重置）
  * - 宽度优先满足 1024px，为 Dashboard 卡片和头部导航保留横向空间（不超过可用宽度 95%）
  * - 高度在小屏幕或 150% 缩放下动态压缩至工作区 85% 以内（如 1280x672 下约为 571px）
+ * - 使用 clampDimension 确保尺寸在极小工作区下严格受控于 [MIN_WINDOW_*, workAreaSize.*]
  */
 export function calculateAdaptiveInitialSize(workAreaSize: Pick<Rectangle, 'width' | 'height'>): {
   width: number;
@@ -31,8 +40,14 @@ export function calculateAdaptiveInitialSize(workAreaSize: Pick<Rectangle, 'widt
   const maxAllowedWidth = Math.floor(workAreaSize.width * 0.95);
   const maxAllowedHeight = Math.floor(workAreaSize.height * MAX_WORK_AREA_RATIO);
 
-  const width = Math.max(MIN_WINDOW_WIDTH, Math.min(DEFAULT_WINDOW_WIDTH, maxAllowedWidth));
-  const height = Math.max(MIN_WINDOW_HEIGHT, Math.min(DEFAULT_WINDOW_HEIGHT, maxAllowedHeight));
+  const targetWidth = Math.max(MIN_WINDOW_WIDTH, Math.min(DEFAULT_WINDOW_WIDTH, maxAllowedWidth));
+  const targetHeight = Math.max(
+    MIN_WINDOW_HEIGHT,
+    Math.min(DEFAULT_WINDOW_HEIGHT, maxAllowedHeight),
+  );
+
+  const width = clampDimension(targetWidth, MIN_WINDOW_WIDTH, workAreaSize.width);
+  const height = clampDimension(targetHeight, MIN_WINDOW_HEIGHT, workAreaSize.height);
 
   return { width, height };
 }
@@ -95,10 +110,10 @@ export function resolveWindowBounds(
     isOversized ||
     x === undefined ||
     y === undefined ||
-    x < workArea.x - 50 ||
-    x > workArea.x + workArea.width - 50 ||
-    y < workArea.y - 10 ||
-    y > workArea.y + workArea.height - 50;
+    x < workArea.x - POSITION_TOLERANCE_X ||
+    x > workArea.x + workArea.width - POSITION_TOLERANCE_X ||
+    y < workArea.y - POSITION_TOLERANCE_Y_TOP ||
+    y > workArea.y + workArea.height - POSITION_TOLERANCE_Y_BOTTOM;
 
   if (isPositionInvalid) {
     const centered = calculateCenteredCoordinates({ width, height }, workArea);

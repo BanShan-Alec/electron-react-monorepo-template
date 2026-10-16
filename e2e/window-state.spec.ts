@@ -6,9 +6,16 @@ test.describe('主窗口初始几何尺寸与工作区视觉居中 E2E 验证', 
     await expect(page.locator('body')).toHaveClass(/app-startup-ready/, { timeout: 5000 });
 
     const metrics = await electronApp.evaluate(({ BrowserWindow, screen }) => {
+      // 必须精确匹配 Home 主窗口，防止并发或前序测试残留的 Updater 窗口 (480x460) 造成干扰
       const homeWindow =
-        BrowserWindow.getAllWindows().find((w) => !w.isDestroyed() && w.isVisible()) ??
+        BrowserWindow.getAllWindows().find(
+          (w) => !w.isDestroyed() && w.isVisible() && !w.webContents.getURL().includes('updater'),
+        ) ??
+        BrowserWindow.getAllWindows().find(
+          (w) => !w.isDestroyed() && !w.webContents.getURL().includes('updater'),
+        ) ??
         BrowserWindow.getAllWindows()[0];
+
       const primaryDisplay = screen.getPrimaryDisplay();
       return {
         bounds: homeWindow.getBounds(),
@@ -23,14 +30,12 @@ test.describe('主窗口初始几何尺寸与工作区视觉居中 E2E 验证', 
     expect(bounds.width).toBeLessThanOrEqual(workArea.width);
     expect(bounds.height).toBeLessThanOrEqual(workArea.height);
 
-    // 2. 高度不超过 85% 工作区上限（或默认 700px）
-    const maxAllowedHeight = Math.min(700, Math.floor(workArea.height * 0.85));
-    // 即使在超大屏上也不超过 700px；在小屏幕上不超过 85%
-    if (workArea.height * 0.85 < 700) {
-      expect(bounds.height).toBeLessThanOrEqual(maxAllowedHeight + 2);
-    } else {
-      expect(bounds.height).toBe(700);
-    }
+    // 2. 宽高精确符合自适应算法：小屏受限时收缩，大屏满足标准 1024x700
+    const expectedWidth = Math.max(720, Math.min(1024, Math.floor(workArea.width * 0.95)));
+    const expectedHeight = Math.max(480, Math.min(700, Math.floor(workArea.height * 0.85)));
+
+    expect(Math.abs(bounds.width - expectedWidth)).toBeLessThanOrEqual(2);
+    expect(Math.abs(bounds.height - expectedHeight)).toBeLessThanOrEqual(2);
 
     // 3. 垂直视觉居中：上下留白基本绝对对称（容差 <= 3px）
     const topMargin = bounds.y - workArea.y;

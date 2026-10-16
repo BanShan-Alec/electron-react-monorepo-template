@@ -147,7 +147,7 @@ export class WindowStateKeeper {
 
   public track(browserWindow: BrowserWindow): void {
     const updateBounds = () => {
-      if (browserWindow.isDestroyed()) return;
+      if (browserWindow.isDestroyed() || browserWindow.isMinimized()) return;
       // 关键隔离：最大化窗口的当前 bounds 等于显示器工作区，
       // 始终读取 normal bounds，防止最大化尺寸污染常规窗口大小
       const bounds = browserWindow.getNormalBounds();
