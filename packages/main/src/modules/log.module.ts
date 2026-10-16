@@ -6,6 +6,7 @@ import { shell } from 'electron';
 import type { LogMessage } from 'electron-log';
 import log from 'electron-log/main';
 import type { AppModule } from '../AppModule';
+import { isDev } from '../env';
 import type { ModuleContext } from '../ModuleContext';
 import { getTracer } from '../telemetry/tracer';
 import { cleanArchivedLogs, createCustomArchiveLogFn } from './log-archiver';
@@ -154,8 +155,11 @@ export class LogManager implements AppModule {
         this.mainLogger.warn(`${prefix} ${message}`, ...args),
       error: (message: string, ...args: unknown[]) =>
         this.mainLogger.error(`${prefix} ${message}`, ...args),
-      debug: (message: string, ...args: unknown[]) =>
-        this.mainLogger.debug(`${prefix} ${message}`, ...args),
+      debug: (message: string, ...args: unknown[]) => {
+        // debug 仅开发构建生效：生产排障靠 info/warn/error，高频细节不进文件
+        if (!isDev) return;
+        this.mainLogger.debug(`${prefix} ${message}`, ...args);
+      },
     };
   }
 

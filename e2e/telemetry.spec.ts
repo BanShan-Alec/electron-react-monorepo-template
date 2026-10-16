@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import type { ConsoleMessage } from '@playwright/test';
 import { expect, test } from './helpers/fixture';
 
 test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => {
@@ -10,6 +11,11 @@ test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => 
   }) => {
     // 1. 等待主窗口就绪
     await expect(page.locator('body')).toHaveClass(/app-startup-ready/, { timeout: 3000 });
+
+    // 回显采集：logger 调用同时进 DevTools（page console）；用例内摘除，避免跨 spec 泄漏
+    const consoleTexts: string[] = [];
+    const onConsole = (msg: ConsoleMessage) => consoleTexts.push(msg.text());
+    page.on('console', onConsole);
 
     // 2. 模拟渲染进程发起带追踪的 IPC 请求（包含计数器、计算器和全局 logger 业务日志）
     const res = await page.evaluate(async () => {
@@ -36,6 +42,12 @@ test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => 
 
     // 3. 稍作等待确保 electron-log 写入文件刷盘
     await page.waitForTimeout(500);
+
+    // 回显断言：logger.info 的内容出现在 DevTools console 中（双写的第一 sink）
+    expect(
+      consoleTexts.some((text) => text.includes('Business action executed in traced context')),
+    ).toBe(true);
+    page.off('console', onConsole);
 
     const logsDir = path.join(tempUserDataDir, 'logs');
     expect(fs.existsSync(logsDir)).toBe(true);

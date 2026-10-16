@@ -20,7 +20,9 @@ const IPC_LOG_PREFIX = '[ipc]';
 
 // 可抽离的逻辑处理函数/组件
 /**
- * 日志纪律：只记录 channel / 结果 / 耗时；dev 附错误对象，生产仅一行 console。
+ * 日志纪律：只记录 channel / 结果 / 耗时。
+ * 成功行仅 dev 走 console（DevTools 观察，不落盘避免每次交互都产生文件行）；
+ * 失败行走 logger——dev 附原始错误对象回显 + 落盘，生产仅一行，磁盘可查哪个 IPC 失败过。
  * 严禁打印入参 body——config 含本地路径、dialog 含 URL。
  */
 function logIpc(channel: string, ok: boolean, durationMs: number, error?: unknown) {
@@ -34,10 +36,10 @@ function logIpc(channel: string, ok: boolean, durationMs: number, error?: unknow
   }
   const line = `${IPC_LOG_PREFIX} ${channel} failed ${cost}`;
   if (isDev) {
-    console.warn(line, error);
+    logger.warn(line, error);
     return;
   }
-  console.warn(line);
+  logger.warn(line);
 }
 
 type IpcService<TData, TParams extends unknown[]> = (...args: TParams) => Promise<Result<TData>>;

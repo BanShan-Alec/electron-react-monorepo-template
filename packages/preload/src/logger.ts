@@ -1,9 +1,19 @@
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import type { LogInput } from '@app/shared/schemas/diagnostics';
 import type { LoggerApi } from '@app/shared/types/logger';
+import { resolveIsDev } from './env';
 import { invokeTraced } from './telemetry/ipc-tracer';
 
 const MAX_ARG_DEPTH = 5;
+const isDev = resolveIsDev();
+
+/** 原生 console 引用：回显必须走未包装的原生方法，杜绝与未来任何 console 改动相互递归 */
+const nativeConsole = {
+  info: console.info.bind(console),
+  warn: console.warn.bind(console),
+  error: console.error.bind(console),
+  debug: console.debug.bind(console),
+} as const;
 
 /**
  * 把任意调用参数转成 structured clone 安全值：
@@ -62,6 +72,12 @@ function toCloneSafeArgs(args: unknown[]): unknown[] | undefined {
 const emit =
   (level: LogInput['level']) =>
   (message: string, ...args: unknown[]): void => {
+    // debug 仅开发构建生效：生产排障靠 info/warn/error，高频细节不进文件也不回显
+    if (level === 'debug' && !isDev) return;
+    // 第一份：原生 console 回显 + 原始 args——DevTools 里对象可交互展开，与手写 console 体验一致。
+    // 主进程侧节流只作用于落盘，不回显：被丢弃的日志在 DevTools 仍可见
+    nativeConsole[level](message, ...args);
+    // 第二份：clone 安全预处理后经 diagnostics:log 落盘
     const payload: LogInput = { level, message, args: toCloneSafeArgs(args) };
     void invokeTraced(IPC_CHANNELS.DIAGNOSTICS_LOG, payload).catch(() => {
       // fire-and-forget：日志管道自身的故障不向业务调用方传播
@@ -70,6 +86,7 @@ const emit =
 
 /**
  * 平行于 window.api 的日志桥：方法名即级别、变参、同步 void，调用形态与 console 一致。
+ * 每次调用双写——DevTools 回显（原生 console）+ renderer-<window>.log 落盘。
  */
 export const loggerBridge: LoggerApi = {
   info: emit('info'),
