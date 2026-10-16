@@ -11,26 +11,24 @@ test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => 
     // 1. 等待主窗口就绪
     await expect(page.locator('body')).toHaveClass(/app-startup-ready/, { timeout: 3000 });
 
-    // 2. 模拟渲染进程发起带追踪的 IPC 请求（包含计数器、计算器和业务日志诊断调用）
+    // 2. 模拟渲染进程发起带追踪的 IPC 请求（包含计数器、计算器和全局 logger 业务日志）
     const res = await page.evaluate(async () => {
-      const api = (
-        window as unknown as {
-          api: {
-            counter: { increment: (args: unknown) => Promise<unknown> };
-            calculator: {
-              calculate: (args: unknown) => Promise<{ success: boolean; data: { result: number } }>;
-            };
-            diagnostics: { log: (args: unknown) => Promise<unknown> };
+      const { api, logger } = window as unknown as {
+        api: {
+          counter: { increment: (args: unknown) => Promise<unknown> };
+          calculator: {
+            calculate: (args: unknown) => Promise<{ success: boolean; data: { result: number } }>;
           };
-        }
-      ).api;
+        };
+        logger: { info: (message: string, ...args: unknown[]) => void };
+      };
       const counterRes = await api.counter.increment({ step: 1 });
       const calcRes = await api.calculator.calculate({ a: 15, b: 27, op: 'add' });
-      const diagRes = await api.diagnostics.log({
-        level: 'info',
-        message: 'Business action executed in traced context',
-      });
-      return { counterRes, calcRes, diagRes };
+      // 经全局 logger 桥打业务日志（底层仍走 diagnostics:log 通道，span 断言不变）
+      logger.info('Business action executed in traced context');
+      // D2：超长渲染行经主进程静默截断（>2000 字符）
+      logger.info(`Truncation probe ${'x'.repeat(3000)}`);
+      return { counterRes, calcRes };
     });
 
     expect(res.calcRes.success).toBe(true);
@@ -81,9 +79,15 @@ test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => 
     // 校验 main.log 中成功注入了 trace_id 与 span_id
     expect(mainLogContent).toMatch(/\[trace_id:[0-9a-f]{32}\s+span_id:[0-9a-f]{16}\]/);
 
-    // 校验 renderer.log 中同样注入了 trace 上下文与窗口 attribution
+    // 校验 renderer-home.log 中同样注入了 trace 上下文与窗口 attribution
     expect(rendererLogContent).toMatch(/\[trace_id:[0-9a-f]{32}\s+span_id:[0-9a-f]{16}\]/);
     expect(rendererLogContent).toContain('[Renderer] [home]');
+
+    // D7 替代方案：启动分隔行标记本轮运行边界（main.log 独有）
+    expect(mainLogContent).toContain('===== App started');
+
+    // D2：超长渲染行被静默截断并追加标记
+    expect(rendererLogContent).toMatch(/ \[truncated \d+ chars\]$/m);
 
     // 验证每条 SpanRecord 的基础结构
     for (const record of records) {
