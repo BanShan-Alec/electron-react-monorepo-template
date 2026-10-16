@@ -1,6 +1,7 @@
 {
   "name": "electron-react-monorepo-template",
   "productName": "Electron React Template",
+  "appId": "com.template.electron-react-monorepo",
   "description": "Type-safe Electron monorepo template powered by Vite, React and ContextBridge IPC",
   "version": "1.5.0",
   "author": {
@@ -12,6 +13,7 @@
     "url": "https://github.com/BanShan-Alec/electron-react-monorepo-template.git"
   },
   "private": true,
+  "license": "Unlicense",
   "packageManager": "pnpm@10.34.5",
   "main": "node_modules/@app/main/dist/index.cjs",
   "engines": {

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { ErrorCode } from '@app/shared/constants/error-codes';
 import type { OpenDirectoryInput, OpenFileInput, SaveFileInput } from '@app/shared/schemas/dialog';
 import type { FileDialogResult, SaveFileDialogResult } from '@app/shared/types/dialog';
-import { BrowserWindow, dialog, shell } from 'electron';
+import { app, BrowserWindow, dialog, shell } from 'electron';
 import { AppError } from '../errors/AppError';
 
 export class DialogService {
@@ -47,7 +47,7 @@ export class DialogService {
     });
 
     if (!result.canceled && result.filePath) {
-      const content = input?.content ?? 'Hello from Electron React Template!\n';
+      const content = input?.content ?? `Hello from ${app.getName()}!\n`;
       await fs.promises.writeFile(result.filePath, content, 'utf-8');
     }
 
