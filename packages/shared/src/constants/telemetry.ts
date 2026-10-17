@@ -40,15 +40,34 @@ export const SENTRY_TAGS = {
 
 export type SentryTagKey = (typeof SENTRY_TAGS)[keyof typeof SENTRY_TAGS];
 
+export type ExtraSentryTagValue = string | number | boolean | undefined | null;
+
+export type ExtraSentryTags = {
+  [K in SentryTagKey]?: ExtraSentryTagValue;
+} & {
+  [key: string]: ExtraSentryTagValue;
+};
+
 /**
  * 构建符合统一规范的 Sentry Tags 对象
  *
  * @param feature 业务领域标识（如 APP_FEATURES.OTA）
- * @param extraTags 业务特异性 Tag 键值对（如 { [SENTRY_TAGS.LOGGER]: this.constructor.name, ... }），undefined/null 将被自动过滤
+ * @param extraTags 业务特异性 Tag 键值对。
+ *                  在同一个 feature（如 APP_FEATURES.OTA 或 APP_FEATURES.WINDOW）被多个模块共享的场景下，
+ *                  必填提供 `[SENTRY_TAGS.LOGGER]: this.constructor.name`，以确保 Sentry 看板能准确区分不同模块来源。
+ *                  键类型支持 SentryTagKey 提示或自定义字符串，undefined/null 将被自动过滤，非空值自动转为字符串。
+ *
+ * @example
+ * ```ts
+ * buildSentryTags(APP_FEATURES.OTA, {
+ *   [SENTRY_TAGS.LOGGER]: this.constructor.name,
+ *   [SENTRY_TAGS.STAGE]: 'downloading',
+ * });
+ * ```
  */
 export function buildSentryTags(
-  feature: string,
-  extraTags?: Record<string, string | number | boolean | undefined | null>,
+  feature: AppFeature,
+  extraTags?: ExtraSentryTags,
 ): Record<string, string> {
   const tags: Record<string, string> = {
     [SENTRY_TAGS.FEATURE]: feature,

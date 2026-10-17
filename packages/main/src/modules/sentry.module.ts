@@ -8,7 +8,8 @@ import { appLifecycle } from '../lifecycle';
 import type { ModuleContext } from '../ModuleContext';
 import { getLogManager } from './log.module';
 
-const logger = getLogManager().scoped('SentryModule');
+const SENTRY_LOGGER_SCOPE = 'SentryModule';
+const logger = getLogManager().scoped(SENTRY_LOGGER_SCOPE);
 
 /**
  * 获取用于 Sentry 初始化的 DSN
@@ -105,7 +106,7 @@ export class SentryModule implements AppModule {
         {
           level: 'fatal',
           tags: buildSentryTags(APP_FEATURES.WINDOW, {
-            [SENTRY_TAGS.LOGGER]: 'SentryModule',
+            [SENTRY_TAGS.LOGGER]: SENTRY_LOGGER_SCOPE,
             [SENTRY_TAGS.PROCESS]: 'renderer',
             [SENTRY_TAGS.CRASH_REASON]: details.reason,
             [SENTRY_TAGS.EXIT_CODE]: details.exitCode,
@@ -132,7 +133,7 @@ export class SentryModule implements AppModule {
         Sentry.captureMessage(`[Window Unresponsive] Window (id=${window.id}) is unresponsive`, {
           level: 'error',
           tags: buildSentryTags(APP_FEATURES.WINDOW, {
-            [SENTRY_TAGS.LOGGER]: 'SentryModule',
+            [SENTRY_TAGS.LOGGER]: SENTRY_LOGGER_SCOPE,
             [SENTRY_TAGS.PROCESS]: 'window',
             [SENTRY_TAGS.WINDOW_ID]: window.id,
           }),
