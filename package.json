@@ -32,6 +32,7 @@
     "pr-review": "pnpm --filter @app/pr-review run cli",
     "i18n:extract": "pnpm --filter @app/renderer exec lingui extract --clean",
     "test": "vitest run -c .config/vitest.config.ts",
+    "test:pr-review": "pnpm --filter @app/pr-review run test",
     "test:watch": "vitest -c .config/vitest.config.ts",
     "test:bench": "cross-env BENCHMARK=true vitest run -c .config/vitest.config.ts",
     "test:e2e": "playwright test -c .config/playwright.config.ts",

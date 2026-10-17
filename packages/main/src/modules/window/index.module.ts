@@ -79,7 +79,7 @@ export class WindowManager implements AppModule {
 
     const savedState = resolveWindowBounds(rawState, targetDisplay);
 
-    const logger = getLogManager().scoped('WindowManager');
+    const logger = getLogManager().scoped(this);
 
     logger.info('Creating browser window with state:', savedState);
 

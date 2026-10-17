@@ -4,7 +4,67 @@ import path from 'node:path';
 import type { OcrResult, RunInfo } from '../types.ts';
 import { fail, probe, safeParseJson } from '../utils/process.ts';
 
-export function getLatestRunInfo(branch: string, prNumber: number | null): RunInfo {
+export function getLatestRunInfo(
+  branch: string,
+  prNumber: number | null,
+  ownerRepo?: string,
+): RunInfo {
+  // 1. 如果有 prNumber 且有 ownerRepo，优先从 GitHub API 查询属于该 PR 的所有 review runs
+  if (prNumber && ownerRepo) {
+    try {
+      const artifactsJson = probe('gh', [
+        'api',
+        `repos/${ownerRepo}/actions/artifacts`,
+        '--jq',
+        `[.artifacts[] | select(.name | startswith("ocr-review-result-${prNumber}-")) | .workflow_run.id] | unique`,
+      ]);
+      const prRunIds = safeParseJson<number[]>(artifactsJson);
+      if (prRunIds && prRunIds.length > 0) {
+        // prRunIds 升序排列，数组长度即为总运行轮次
+        const sortedIds = [...prRunIds].sort((a, b) => a - b).map(String);
+        let targetId = sortedIds[sortedIds.length - 1];
+
+        // 优先从 PR sticky 评论中的 checkpoint 确认最新 run ID
+        const commentsJson = probe('gh', ['pr', 'view', String(prNumber), '--json', 'comments']);
+        const prCommentsData = safeParseJson<{ comments: { body: string }[] }>(commentsJson);
+        if (prCommentsData?.comments) {
+          const summaryComment = prCommentsData.comments.find(
+            (c) =>
+              c.body.includes('<!-- ocr-checkpoint:') || c.body.includes('<!-- ocr-review-run:'),
+          );
+          if (summaryComment) {
+            const match = summaryComment.body.match(
+              /<!-- ocr-checkpoint:[^\s]+ ([A-Za-z0-9+/=]+) -->/,
+            );
+            if (match) {
+              try {
+                const decoded = JSON.parse(Buffer.from(match[1], 'base64').toString('utf-8'));
+                if (decoded.run && sortedIds.includes(String(decoded.run))) {
+                  targetId = String(decoded.run);
+                }
+              } catch {
+                // fallback
+              }
+            }
+          }
+        }
+
+        const roundIndex = sortedIds.indexOf(targetId);
+        const round = roundIndex !== -1 ? roundIndex + 1 : sortedIds.length;
+
+        return {
+          id: targetId,
+          round,
+          totalRuns: sortedIds.length,
+          status: 'success',
+          allPrRunIds: sortedIds,
+        };
+      }
+    } catch {
+      // 容错降级回原逻辑
+    }
+  }
+
   const runsJson = probe('gh', [
     'run',
     'list',
@@ -34,6 +94,10 @@ export function getLatestRunInfo(branch: string, prNumber: number | null): RunIn
     const commentsJson = probe('gh', ['pr', 'view', String(prNumber), '--json', 'comments']);
     const prCommentsData = safeParseJson<{ comments: { body: string }[] }>(commentsJson);
     if (prCommentsData?.comments) {
+      // 触发复查的次数 = 1 (首次开启) + 评论区 /review 次数
+      const reviewTriggerCount =
+        1 + prCommentsData.comments.filter((c) => c.body.trim().startsWith('/review')).length;
+
       const summaryComment = prCommentsData.comments.find(
         (c) => c.body.includes('<!-- ocr-checkpoint:') || c.body.includes('<!-- ocr-review-run:'),
       );
@@ -43,11 +107,10 @@ export function getLatestRunInfo(branch: string, prNumber: number | null): RunIn
           try {
             const decoded = JSON.parse(Buffer.from(match[1], 'base64').toString('utf-8'));
             if (decoded.run) {
-              const calculatedRound = Math.max(completedRuns.length, 1);
               return {
                 id: String(decoded.run),
-                round: calculatedRound,
-                totalRuns: Math.max(branchRuns.length, calculatedRound),
+                round: reviewTriggerCount,
+                totalRuns: reviewTriggerCount,
                 status: 'success',
               };
             }
@@ -73,12 +136,13 @@ export function getLatestRunInfo(branch: string, prNumber: number | null): RunIn
 }
 
 export function fetchOcrResult(runId: string, cacheDir: string): OcrResult {
-  if (!fs.existsSync(cacheDir)) {
-    fs.mkdirSync(cacheDir, { recursive: true });
+  const runCacheDir = path.join(cacheDir, String(runId));
+  if (!fs.existsSync(runCacheDir)) {
+    fs.mkdirSync(runCacheDir, { recursive: true });
   }
 
   console.log(`→ 正在从 GitHub Actions 下载 Review 产物 (Run ID: ${runId})...`);
-  const downloadResult = spawnSync('gh', ['run', 'download', runId, '-D', cacheDir], {
+  const downloadResult = spawnSync('gh', ['run', 'download', runId, '-D', runCacheDir], {
     encoding: 'utf-8',
   });
 
@@ -100,7 +164,7 @@ export function fetchOcrResult(runId: string, cacheDir: string): OcrResult {
     return null;
   };
 
-  const jsonPath = findResultFile(cacheDir);
+  const jsonPath = findResultFile(runCacheDir);
   if (!jsonPath || !fs.existsSync(jsonPath)) {
     fail('产物中未找到 ocr-result.json 文件，请确认 CI 是否执行完成');
   }

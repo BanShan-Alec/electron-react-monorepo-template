@@ -172,6 +172,26 @@ function analyzeAsarSize(asarPath: string): void {
 }
 
 /**
+ * 校验 dist 目录下所有的安装包、压缩包、Blockmap 与 YML 文件，严禁包含空格以避免 OTA 404
+ */
+function verifyArtifactFileNames(distDir: string): void {
+  if (!fs.existsSync(distDir)) return;
+  const targetExtensions = ['.exe', '.dmg', '.deb', '.zip', '.blockmap', '.yml', '.AppImage'];
+  const files = fs.readdirSync(distDir);
+  const invalidFiles = files.filter((file) => {
+    const hasTargetExt = targetExtensions.some((ext) => file.endsWith(ext));
+    return hasTargetExt && file.includes(' ');
+  });
+
+  if (invalidFiles.length > 0) {
+    throw new Error(
+      `❌ [verify-dist] 发现打包产物文件名含有空格字符，严禁发布以防 OTA 404：\n${invalidFiles.join('\n')}`,
+    );
+  }
+  console.log('✅ [verify-dist] 所有打包产物文件名均符合零空格规范。');
+}
+
+/**
  * 校验已打包产物完整性与可用性
  */
 async function verifyDist(options: DistVerificationOptions = {}): Promise<void> {
@@ -179,6 +199,8 @@ async function verifyDist(options: DistVerificationOptions = {}): Promise<void> 
   const maxAsarSizeMb = options.maxAsarSizeMb ?? Number(process.env.MAX_ASAR_SIZE_MB || 10);
 
   console.log('\n🔍 [verify-dist] 开始打包产物 Smoke 自动化验证...');
+
+  verifyArtifactFileNames(distDir);
 
   const artifact = detectUnpackedArtifact(distDir);
   if (!artifact) {
