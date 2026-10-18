@@ -11,16 +11,19 @@ describe('truncateRenderedLine', () => {
     expect(truncateRenderedLine(line)).toBe(line);
   });
 
-  it('should truncate over-long lines and append a marker', () => {
+  it('should truncate over-long lines and keep the total length within max', () => {
     const line = 'x'.repeat(2500);
     const result = truncateRenderedLine(line);
+    const suffix = ' [truncated 500 chars]';
 
     expect(result).toContain(`[truncated ${500} chars]`);
-    expect(result.length).toBe(RENDERER_LINE_MAX_LENGTH + ' [truncated 500 chars]'.length);
-    expect(result.startsWith('x'.repeat(RENDERER_LINE_MAX_LENGTH))).toBe(true);
+    expect(result.length).toBe(RENDERER_LINE_MAX_LENGTH);
+    expect(result.endsWith(suffix)).toBe(true);
+    expect(result.startsWith('x'.repeat(RENDERER_LINE_MAX_LENGTH - suffix.length))).toBe(true);
   });
 
-  it('should respect a custom max length', () => {
-    expect(truncateRenderedLine('abcdef', 3)).toBe('abc [truncated 3 chars]');
+  it('should bound the result even when the marker exceeds the custom max', () => {
+    const result = truncateRenderedLine('abcdef', 3);
+    expect(result.length).toBe(3);
   });
 });

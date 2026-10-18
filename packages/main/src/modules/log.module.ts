@@ -18,7 +18,11 @@ export const RENDERER_LINE_MAX_LENGTH = 2000;
 
 export function truncateRenderedLine(line: string, max = RENDERER_LINE_MAX_LENGTH): string {
   if (line.length <= max) return line;
-  return `${line.slice(0, max)} [truncated ${line.length - max} chars]`;
+  // 标记本身占长度，需从上限里预留，保证截断后总长仍不超过 max
+  const suffix = ` [truncated ${line.length - max} chars]`;
+  const available = max - suffix.length;
+  if (available <= 0) return suffix.slice(0, max);
+  return `${line.slice(0, available)}${suffix}`;
 }
 
 export interface IScopedLogger {
