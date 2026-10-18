@@ -241,6 +241,63 @@ describe('getLatestRunInfo', () => {
     expect(runInfo.totalRuns).toBe(3);
   });
 
+  it('safely handles missing or empty comments object without throwing TypeError', () => {
+    const prNumber = 38;
+    const branch = 'feat/unified-telemetry';
+
+    mockedProbe.mockImplementation((cmd, args) => {
+      if (cmd === 'gh' && args[0] === 'api') return null;
+      if (cmd === 'gh' && args[0] === 'pr') {
+        return JSON.stringify({});
+      }
+      if (cmd === 'gh' && args[0] === 'run') {
+        return JSON.stringify([
+          { databaseId: 111, headBranch: branch, status: 'completed', conclusion: 'success' },
+        ]);
+      }
+      return null;
+    });
+
+    const runInfo = getLatestRunInfo(branch, prNumber);
+    expect(runInfo.id).toBe('111');
+    expect(runInfo.round).toBe(1);
+    expect(runInfo.totalRuns).toBe(1);
+  });
+
+  it('guarantees round <= totalRuns in fallback branch even when completedRuns length is smaller than reviewTriggerCount', () => {
+    const prNumber = 38;
+    const branch = 'feat/unified-telemetry';
+
+    mockedProbe.mockImplementation((cmd, args) => {
+      if (cmd === 'gh' && args[0] === 'api') return null;
+      if (cmd === 'gh' && args[0] === 'pr') {
+        const checkpoint = Buffer.from(JSON.stringify({ run: '99999', pr: prNumber })).toString(
+          'base64',
+        );
+        return JSON.stringify({
+          comments: [
+            { body: `<!-- ocr-checkpoint:v1 ${checkpoint} -->` },
+            { body: '/review' },
+            { body: '/review' },
+            { body: '/review' },
+          ],
+        });
+      }
+      if (cmd === 'gh' && args[0] === 'run') {
+        return JSON.stringify([
+          { databaseId: 101, headBranch: branch, status: 'completed', conclusion: 'success' },
+        ]);
+      }
+      return null;
+    });
+
+    const runInfo = getLatestRunInfo(branch, prNumber);
+    expect(runInfo.id).toBe('99999');
+    expect(runInfo.round).toBe(4);
+    expect(runInfo.totalRuns).toBe(4);
+    expect(runInfo.round).toBeLessThanOrEqual(runInfo.totalRuns);
+  });
+
   it('handles branch-only mode when prNumber is null, filtering by status === completed', () => {
     const branch = 'feat/standalone-branch';
 

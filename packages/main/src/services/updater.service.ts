@@ -109,36 +109,32 @@ export class UpdaterService {
 
   private reportSentryOtaError(err: unknown, stage: OtaStage): void {
     if (!isOtaSentryEnabled()) return;
-    try {
-      const errorObj = err instanceof Error ? err : new Error(String(err));
-      const errorKey = `${stage}:${errorObj.message}:${errorObj.stack?.slice(0, 100) || ''}`;
-      const now = Date.now();
-      if (
-        now - this.lastReportedErrorTime < OTA_ERROR_DEBOUNCE_MS &&
-        this.lastReportedErrorKey === errorKey
-      ) {
-        return;
-      }
-      this.lastReportedErrorTime = now;
-      this.lastReportedErrorKey = errorKey;
-
-      void this.withSentry((Sentry) => {
-        Sentry.captureException(errorObj, {
-          tags: buildSentryTags(APP_FEATURES.OTA, {
-            [SENTRY_TAGS.LOGGER]: this.constructor.name,
-            [SENTRY_TAGS.STAGE]: stage,
-            [SENTRY_TAGS.TARGET_VERSION]: this.snapshot.version || 'unknown',
-            [SENTRY_TAGS.CURRENT_VERSION]: app.getVersion(),
-          }),
-          extra: {
-            rawMessage: errorObj.message,
-            snapshotState: this.snapshot.state,
-          },
-        });
-      });
-    } catch (sentryErr) {
-      this.logger.warn('Failed to report OTA error to Sentry:', sentryErr);
+    const errorObj = err instanceof Error ? err : new Error(String(err));
+    const errorKey = `${stage}:${errorObj.message}:${errorObj.stack?.slice(0, 100) || ''}`;
+    const now = Date.now();
+    if (
+      now - this.lastReportedErrorTime < OTA_ERROR_DEBOUNCE_MS &&
+      this.lastReportedErrorKey === errorKey
+    ) {
+      return;
     }
+    this.lastReportedErrorTime = now;
+    this.lastReportedErrorKey = errorKey;
+
+    void this.withSentry((Sentry) => {
+      Sentry.captureException(errorObj, {
+        tags: buildSentryTags(APP_FEATURES.OTA, {
+          [SENTRY_TAGS.LOGGER]: this.constructor.name,
+          [SENTRY_TAGS.STAGE]: stage,
+          [SENTRY_TAGS.TARGET_VERSION]: this.snapshot.version || 'unknown',
+          [SENTRY_TAGS.CURRENT_VERSION]: app.getVersion(),
+        }),
+        extra: {
+          rawMessage: errorObj.message,
+          snapshotState: this.snapshot.state,
+        },
+      });
+    });
   }
 
   private reportSentryOtaEvent(message: string, stage: OtaStage, targetVersion?: string): void {
@@ -295,9 +291,13 @@ export class UpdaterService {
             }
           };
 
-          void this.withSentry((Sentry) => Sentry.flush(SENTRY_FLUSH_TIMEOUT_MS)).finally(
-            executeInstall,
-          );
+          if (isOtaSentryEnabled()) {
+            void this.withSentry((Sentry) => Sentry.flush(SENTRY_FLUSH_TIMEOUT_MS)).finally(
+              executeInstall,
+            );
+          } else {
+            executeInstall();
+          }
         } else if (this.userDismissedWindow) {
           this.logger.info(
             'User dismissed window previously, sending system notification instead of popup',
@@ -337,9 +337,13 @@ export class UpdaterService {
         if (this.isOrphan) {
           this.stopOrphanWatchdog();
           this.logger.error('Orphan download failed with error, quitting app');
-          void this.withSentry((Sentry) => Sentry.flush(SENTRY_FLUSH_TIMEOUT_MS)).finally(() => {
+          if (isOtaSentryEnabled()) {
+            void this.withSentry((Sentry) => Sentry.flush(SENTRY_FLUSH_TIMEOUT_MS)).finally(() => {
+              app.quit();
+            });
+          } else {
             app.quit();
-          });
+          }
         }
       });
     } catch (err) {

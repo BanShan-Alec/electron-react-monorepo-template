@@ -27,10 +27,10 @@ export function getLatestRunInfo(
         // 优先从 PR sticky 评论中的 checkpoint 确认最新 run ID
         const commentsJson = probe('gh', ['pr', 'view', String(prNumber), '--json', 'comments']);
         const prCommentsData = safeParseJson<{ comments: { body: string }[] }>(commentsJson);
-        const reviewTriggerCount =
-          1 +
-          (prCommentsData?.comments?.filter((c) => c.body.trim().startsWith('/review')).length ||
-            0);
+        const reviewComments = prCommentsData?.comments?.filter((c) =>
+          c.body.trim().startsWith('/review'),
+        );
+        const reviewTriggerCount = 1 + (reviewComments?.length ?? 0);
 
         if (prCommentsData?.comments) {
           const summaryComment = prCommentsData.comments.find(
@@ -39,7 +39,7 @@ export function getLatestRunInfo(
           );
           if (summaryComment) {
             const match = summaryComment.body.match(
-              /<!-- ocr-checkpoint:[^\s]+\s+([A-Za-z0-9+/=]+)\s*-->/,
+              /<!-- ocr-checkpoint:(?:v[0-9]+|[a-zA-Z0-9._-]+)\s+([A-Za-z0-9+/=]+)\s*-->/,
             );
             if (match) {
               try {
@@ -102,18 +102,19 @@ export function getLatestRunInfo(
   if (prNumber) {
     const commentsJson = probe('gh', ['pr', 'view', String(prNumber), '--json', 'comments']);
     const prCommentsData = safeParseJson<{ comments: { body: string }[] }>(commentsJson);
-    if (prCommentsData?.comments) {
-      // 触发复查的次数 = 1 (首次开启) + 评论区 /review 次数
-      const reviewTriggerCount =
-        1 + prCommentsData.comments.filter((c) => c.body.trim().startsWith('/review')).length;
+    const reviewComments = prCommentsData?.comments?.filter((c) =>
+      c.body.trim().startsWith('/review'),
+    );
+    const reviewTriggerCount = 1 + (reviewComments?.length ?? 0);
 
+    if (prCommentsData?.comments) {
       const summaryComment = prCommentsData.comments.find(
         (c) => c.body.includes('<!-- ocr-checkpoint:') || c.body.includes('<!-- ocr-review-run:'),
       );
       let targetId: string | undefined;
       if (summaryComment) {
         const match = summaryComment.body.match(
-          /<!-- ocr-checkpoint:[^\s]+\s+([A-Za-z0-9+/=]+)\s*-->/,
+          /<!-- ocr-checkpoint:(?:v[0-9]+|[a-zA-Z0-9._-]+)\s+([A-Za-z0-9+/=]+)\s*-->/,
         );
         if (match) {
           try {
@@ -129,20 +130,22 @@ export function getLatestRunInfo(
       }
 
       if (targetId) {
+        const fallbackTotalRuns = Math.max(reviewTriggerCount, completedRuns.length);
         const matched = completedRuns.find((r) => String(r.databaseId) === targetId);
         if (matched) {
-          const round = completedRuns.length - completedRuns.indexOf(matched);
+          const matchedIndex = completedRuns.indexOf(matched);
+          const round = fallbackTotalRuns - matchedIndex;
           return {
             id: targetId,
             round,
-            totalRuns: completedRuns.length,
+            totalRuns: fallbackTotalRuns,
             status: matched.conclusion,
           };
         }
         return {
           id: targetId,
           round: reviewTriggerCount,
-          totalRuns: reviewTriggerCount,
+          totalRuns: fallbackTotalRuns,
           status: 'success',
         };
       }
