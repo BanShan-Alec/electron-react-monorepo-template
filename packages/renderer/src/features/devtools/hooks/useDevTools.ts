@@ -29,6 +29,12 @@ export function useDevTools() {
         window.api.diagnostics.performAction,
         [input],
       );
+      // 用户动作只记结果：成功行在此补（失败已被 logIpc 中心化记录，不重复记）
+      if (action.kind === 'toggleDevTools') {
+        logger.info('DevTools toggled');
+      } else {
+        logger.info('External URL opened');
+      }
       if (data.message === 'DevTools opened') {
         return t`已开启 DevTools`;
       }

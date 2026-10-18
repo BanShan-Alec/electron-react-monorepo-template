@@ -8,7 +8,7 @@
 
 ## 1. 核心应用元数据（根目录 `package.json`）
 
-在根目录 [`package.json`](file:///h:/electron-app-temp5/package.json) 中更新以下关键字段：
+在根目录 [`package.json`](../package.json) 中更新以下关键字段：
 
 | 字段 | 说明与影响范围 | 示例值 |
 | :--- | :--- | :--- |
@@ -26,7 +26,7 @@
 
 ## 2. 环境变量与发布配置（`.env`）
 
-从 [`.env.example`](file:///h:/electron-app-temp5/.env.example) 复制生成本地 `.env` 文件，按需微调：
+从 [`.env.example`](../.env.example) 复制生成本地 `.env` 文件，按需微调：
 
 | 环境变量 | 作用与默认行为 | 示例 |
 | :--- | :--- | :--- |
@@ -43,12 +43,12 @@
 
 请替换以下资源文件为你自己的品牌视觉设计：
 
-### 桌面客户端原生图标 ([`build/resources/`](file:///h:/electron-app-temp5/build/resources))
+### 桌面客户端原生图标 ([`build/resources/`](../build/resources))
 - **`icon.ico`** (Windows)：包含 16×16、32×32、48×48、256×256 多分辨率图层的 ICO 图标。
 - **`icon.icns`** (macOS)：包含 16×16 至 1024×1024 尺寸的 Apple ICNS 图标。
 - **`icon.png`** (Linux & 基础图标源)：建议 512×512 或 1024×1024 的透明背景 PNG 图标。
 
-### 渲染进程界面资源 ([`packages/renderer/`](file:///h:/electron-app-temp5/packages/renderer))
+### 渲染进程界面资源 ([`packages/renderer/`](../packages/renderer))
 - **`public/favicon.svg`**：前端标签页图标，同时作为**首屏渐进式加载壳 Logo**（构建期自动内联注入，实现秒级渐进启动动画）。
 
 ---
@@ -65,6 +65,6 @@
    git commit -m "feat: 项目初次从模板脚手架初始化"
    ```
 2. **重置变更日志**：
-   - 清空或重置 [`CHANGELOG.md`](file:///h:/electron-app-temp5/CHANGELOG.md) 为全新的起点。
+   - 清空或重置 [`CHANGELOG.md`](../CHANGELOG.md) 为全新的起点。
 3. **更新项目主介绍**：
-   - 更新根目录 [`README.md`](file:///h:/electron-app-temp5/README.md) 的产品介绍与技术描述。
+   - 更新根目录 [`README.md`](../README.md) 的产品介绍与技术描述。

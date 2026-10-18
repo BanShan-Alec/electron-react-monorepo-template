@@ -87,7 +87,12 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
       },
     });
 
-    // 2. 执行外部业务传入的 onError 回调
+    // 2. 落盘：Sentry 未激活（dev/无 DSN）时这是渲染崩溃的唯一磁盘痕迹
+    logger.error('React component crashed:', error, {
+      componentStack: errorInfo.componentStack,
+    });
+
+    // 3. 执行外部业务传入的 onError 回调
     this.props.onError?.(error, errorInfo);
   }
 

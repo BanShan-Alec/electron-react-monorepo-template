@@ -2,7 +2,7 @@
 
 Status: accepted（2026-10-01）
 
-首屏加载方案（[spec](../../specs/first-screen-loading.md)）的蓝图逆向自 ZCode 上游，原期望 Win11 亚克力透明材质；但核实开源源码（v3.14.3）后发现：上游是对 win32 **无条件**应用 `backgroundMaterial: 'acrylic'` 并**自绘**窗口控制按钮，而 Electron 官方文档明确 `backgroundMaterial` 仅支持 Windows 11 22H2（Build ≥ 22621），且 WCO（`titleBarOverlay`）不支持透明 overlay 色（[electron#48193](https://github.com/electron/electron/issues/48193)、[#39959](https://github.com/electron/electron/issues/39959)）。本仓的标题栏体系（`titlebar-overlay.ts` 单一事实源 + `env(titlebar-area-*)` 避让 + 既有 e2e）完全建立在 WCO 之上，改走上游自绘等于整体废弃并引入窗口控制 IPC、最大化状态同步等大范围改造。据此裁决：**首屏窗口保持不透明，`backgroundColor` 复用主题色（`#141414`/`#ffffff`，与 overlay 同源），启动壳浮于实体底色之上；不引入 `backgroundMaterial`/`transparent`/`vibrancy`。**
+首屏加载方案的蓝图逆向自 ZCode 上游，原期望 Win11 亚克力透明材质；但核实开源源码（v3.14.3）后发现：上游是对 win32 **无条件**应用 `backgroundMaterial: 'acrylic'` 并**自绘**窗口控制按钮，而 Electron 官方文档明确 `backgroundMaterial` 仅支持 Windows 11 22H2（Build ≥ 22621），且 WCO（`titleBarOverlay`）不支持透明 overlay 色（[electron#48193](https://github.com/electron/electron/issues/48193)、[#39959](https://github.com/electron/electron/issues/39959)）。本仓的标题栏体系（`titlebar-overlay.ts` 单一事实源 + `env(titlebar-area-*)` 避让 + 既有 e2e）完全建立在 WCO 之上，改走上游自绘等于整体废弃并引入窗口控制 IPC、最大化状态同步等大范围改造。据此裁决：**首屏窗口保持不透明，`backgroundColor` 复用主题色（`#141414`/`#ffffff`，与 overlay 同源），启动壳浮于实体底色之上；不引入 `backgroundMaterial`/`transparent`/`vibrancy`。**
 
 ## Considered Options
 

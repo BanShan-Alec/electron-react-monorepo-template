@@ -8,7 +8,7 @@ Status: accepted（2026-10-05）
 
 **二、§6.3"禁壳期 IPC"修订为"壳期 IPC 边界"**：禁止的是**壳显形依赖主进程往返应答**的同步耦合；允许**引导期一次性快照拉取**（`startup:get-snapshot`）与**单向订阅推送**（`startup:event:main-ready`），事件源必须闩锁（先到信号经拉取补发）。就绪判定仍以渲染端闭环为骨架（事件 + 兜底超时），主进程信号迟到/缺席时壳永不被卡死（主门禁兜底 5000ms）。
 
-主进程信号必然早于窗口创建（链位在 WindowManager 之前），因此"纯事件推送"存在先于监听器注册的丢信号窗口。落地形态：preload 求值时（早于页面一切脚本）`invoke` 一次快照 + 订阅增量；壳协调器注册门禁时先 `getSnapshot()` 拉取（常态直接命中闩锁）、再听跨世界 DOM 事件、最后 5s 兜底。contextIsolation 下 preload 直接写 `window.xxx` 对主世界不可见，故快照载体为 contextBridge API，跨世界只派发无 payload 纯 `Event`（payload 经回调携带）——详见 [spec §10.7](../../specs/first-screen-loading.md)。
+主进程信号必然早于窗口创建（链位在 WindowManager 之前），因此"纯事件推送"存在先于监听器注册的丢信号窗口。落地形态：preload 求值时（早于页面一切脚本）`invoke` 一次快照 + 订阅增量；壳协调器注册门禁时先 `getSnapshot()` 拉取（常态直接命中闩锁）、再听跨世界 DOM 事件、最后 5s 兜底。contextIsolation 下 preload 直接写 `window.xxx` 对主世界不可见，故快照载体为 contextBridge API，跨世界只派发无 payload 纯 `Event`（payload 经回调携带）——详见首屏加载规范 §10.7。
 
 ## Considered Options
 

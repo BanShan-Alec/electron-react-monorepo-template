@@ -37,6 +37,7 @@ async function runDialogAction(
         const data = await callIpc('dialog.openFile', window.api.dialog.openFile, [
           { title: t`选择测试文件` },
         ]);
+        logger.info('File dialog completed', { action });
         if (!data.canceled && data.filePaths.length > 0) {
           const path = data.filePaths[0];
           return { statusMessage: t`已选择文件: ${path}`, path };
@@ -47,6 +48,7 @@ async function runDialogAction(
         const data = await callIpc('dialog.openDirectory', window.api.dialog.openDirectory, [
           { title: t`选择测试文件夹` },
         ]);
+        logger.info('File dialog completed', { action });
         if (!data.canceled && data.filePaths.length > 0) {
           const path = data.filePaths[0];
           return { statusMessage: t`已选择文件夹: ${path}`, path };
@@ -61,6 +63,7 @@ async function runDialogAction(
             content: `Hello from ${window.__APP_ENV__?.appName || 'Electron React Template'}!\n`,
           },
         ]);
+        logger.info('File dialog completed', { action });
         if (!data.canceled && data.filePath) {
           const filePath = data.filePath;
           return { statusMessage: t`保存路径已选定: ${filePath}`, path: filePath };
@@ -71,6 +74,7 @@ async function runDialogAction(
         await callIpc('shell.showItemInFolder', window.api.shell.showItemInFolder, [
           { path: selectedPath },
         ]);
+        logger.info('File dialog completed', { action });
         return {
           statusMessage: t`已在资源管理器中定位: ${selectedPath}`,
           path: selectedPath,

@@ -1,15 +1,29 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import util from 'node:util';
 import type { SpanRecord } from '@app/shared/types/telemetry';
 import { shell } from 'electron';
 import type { LogMessage } from 'electron-log';
 import log from 'electron-log/main';
 import type { AppModule } from '../AppModule';
+import { isDev } from '../env';
 import type { ModuleContext } from '../ModuleContext';
 import { getTracer } from '../telemetry/tracer';
 import { cleanArchivedLogs, createCustomArchiveLogFn } from './log-archiver';
 
 export type LogLevel = 'info' | 'warn' | 'error' | 'debug';
+
+/** D2：渲染行格式化后的长度硬上限，超限静默截断（schema 不拒绝，调用方无感知） */
+export const RENDERER_LINE_MAX_LENGTH = 2000;
+
+export function truncateRenderedLine(line: string, max = RENDERER_LINE_MAX_LENGTH): string {
+  if (line.length <= max) return line;
+  // 标记本身占长度，需从上限里预留，保证截断后总长仍不超过 max
+  const suffix = ` [truncated ${line.length - max} chars]`;
+  const available = max - suffix.length;
+  if (available <= 0) return suffix.slice(0, max);
+  return `${line.slice(0, available)}${suffix}`;
+}
 
 export interface IScopedLogger {
   info: (message: string, ...args: unknown[]) => void;
@@ -116,6 +130,8 @@ export class LogManager implements AppModule {
   public enable({ app }: ModuleContext): void {
     app.whenReady().then(() => {
       this.cleanOldLogs();
+      // D7 替代方案：固定标记的启动分隔行，标记一轮运行的边界（main.log 独有）
+      this.mainLogger.info(`[App Lifecycle] ===== App started (v${app.getVersion()}) =====`);
       this.mainLogger.info('[App Lifecycle] Application ready, logging system initialized');
     });
   }
@@ -143,8 +159,11 @@ export class LogManager implements AppModule {
         this.mainLogger.warn(`${prefix} ${message}`, ...args),
       error: (message: string, ...args: unknown[]) =>
         this.mainLogger.error(`${prefix} ${message}`, ...args),
-      debug: (message: string, ...args: unknown[]) =>
-        this.mainLogger.debug(`${prefix} ${message}`, ...args),
+      debug: (message: string, ...args: unknown[]) => {
+        // debug 仅开发构建生效：生产排障靠 info/warn/error，高频细节不进文件
+        if (!isDev) return;
+        this.mainLogger.debug(`${prefix} ${message}`, ...args);
+      },
     };
   }
 
@@ -164,17 +183,22 @@ export class LogManager implements AppModule {
   public logRendererMessage(
     level: LogLevel,
     message: string,
-    meta?: unknown,
+    args?: unknown[],
     windowName?: string,
   ): void {
     const targetName = windowName || 'home';
     const targetLogger = this.getWindowLogger(targetName);
     const fn = targetLogger[level] || targetLogger.info;
-    if (meta !== undefined) {
-      fn(`[Renderer] [${targetName}] ${message}`, meta);
-    } else {
-      fn(`[Renderer] [${targetName}] ${message}`);
-    }
+    // 与 console 变参语义对齐：util.format 统一渲染（%s 模板、对象 inspect、循环安全），
+    // 预处理已在 preload 完成，此处参数均为 clone 安全值
+    const line = truncateRenderedLine(
+      util.formatWithOptions(
+        { depth: 5 },
+        `[Renderer] [${targetName}] ${message}`,
+        ...(args ?? []),
+      ),
+    );
+    fn(line);
   }
 }
 

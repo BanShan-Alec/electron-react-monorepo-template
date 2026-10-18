@@ -50,7 +50,7 @@ const _LoggingCard = (props: ILoggingCardProps) => {
         <CardTitle
           icon={<FileTextOutlined />}
           title={t`生产分级日志 (LogManager)`}
-          subtitle={t`进程隔离落盘 (main.log / renderer.log) 与 5MB 自动轮转`}
+          subtitle={t`进程隔离落盘 (main.log / renderer-home.log) 与 5MB 自动轮转`}
         />
       }
       extra={

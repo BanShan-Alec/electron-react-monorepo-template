@@ -28,6 +28,10 @@ export function useCalculator() {
     onError: (err) => {
       message.error(t`计算失败: ${err.message}`);
     },
+    onSuccess: () => {
+      // 用户动作只记结果：操作数与结果不入日志（payload 纪律）
+      logger.info('Calculation completed');
+    },
   });
 
   // 逻辑处理函数
