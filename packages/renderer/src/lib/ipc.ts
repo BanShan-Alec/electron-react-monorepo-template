@@ -22,7 +22,8 @@ const IPC_LOG_PREFIX = '[ipc]';
 /**
  * 日志纪律：只记录 channel / 结果 / 耗时。
  * 成功行仅 dev 走 console（DevTools 观察，不落盘避免每次交互都产生文件行）；
- * 失败行走 logger——dev 附原始错误对象回显 + 落盘，生产仅一行，磁盘可查哪个 IPC 失败过。
+ * 失败行走 logger——dev 附原始错误对象回显 + 落盘，生产一行带错误文案（code 不落盘），
+ * 磁盘可查哪个 IPC 为什么失败过。
  * 严禁打印入参 body——config 含本地路径、dialog 含 URL。
  */
 function logIpc(channel: string, ok: boolean, durationMs: number, error?: unknown) {
@@ -39,7 +40,8 @@ function logIpc(channel: string, ok: boolean, durationMs: number, error?: unknow
     logger.warn(line, error);
     return;
   }
-  logger.warn(line);
+  const reason = error instanceof Error ? error.message : String(error);
+  logger.warn(`${line}: ${reason}`);
 }
 
 type IpcService<TData, TParams extends unknown[]> = (...args: TParams) => Promise<Result<TData>>;
