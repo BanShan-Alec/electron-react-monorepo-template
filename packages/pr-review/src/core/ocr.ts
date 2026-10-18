@@ -27,6 +27,11 @@ export function getLatestRunInfo(
         // 优先从 PR sticky 评论中的 checkpoint 确认最新 run ID
         const commentsJson = probe('gh', ['pr', 'view', String(prNumber), '--json', 'comments']);
         const prCommentsData = safeParseJson<{ comments: { body: string }[] }>(commentsJson);
+        const reviewTriggerCount =
+          1 +
+          (prCommentsData?.comments?.filter((c) => c.body.trim().startsWith('/review')).length ||
+            0);
+
         if (prCommentsData?.comments) {
           const summaryComment = prCommentsData.comments.find(
             (c) =>
@@ -51,13 +56,15 @@ export function getLatestRunInfo(
           }
         }
 
+        const totalRuns = Math.max(reviewTriggerCount, sortedIds.length);
         const roundIndex = sortedIds.indexOf(targetId);
-        const round = roundIndex !== -1 ? roundIndex + 1 : sortedIds.length;
+        const round =
+          roundIndex !== -1 ? totalRuns - (sortedIds.length - 1 - roundIndex) : totalRuns;
 
         return {
           id: targetId,
           round,
-          totalRuns: sortedIds.length,
+          totalRuns,
           status: 'success',
           allPrRunIds: sortedIds,
         };

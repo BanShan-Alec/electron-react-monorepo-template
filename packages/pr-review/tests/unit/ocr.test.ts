@@ -210,6 +210,37 @@ describe('getLatestRunInfo', () => {
     expect(runInfo.id).toBe('999');
   });
 
+  it('correctly calculates round when historical artifacts expired but PR has /review comments', () => {
+    const prNumber = 38;
+    const ownerRepo = 'owner/repo';
+    const branch = 'feat/unified-telemetry';
+
+    mockedProbe.mockImplementation((cmd, args) => {
+      if (cmd === 'gh' && args[0] === 'api' && args[1] === `repos/${ownerRepo}/actions/artifacts`) {
+        // 早期产物已过期，API 仅返回最新第 3 轮产物
+        return JSON.stringify([39048472157]);
+      }
+      if (cmd === 'gh' && args[0] === 'pr' && args[1] === 'view' && args[2] === String(prNumber)) {
+        const checkpoint = Buffer.from(
+          JSON.stringify({ run: '39048472157', pr: prNumber }),
+        ).toString('base64');
+        return JSON.stringify({
+          comments: [
+            { body: `<!-- ocr-checkpoint:v1 ${checkpoint} -->` },
+            { body: '/review' },
+            { body: '/review' },
+          ],
+        });
+      }
+      return null;
+    });
+
+    const runInfo = getLatestRunInfo(branch, prNumber, ownerRepo);
+    expect(runInfo.id).toBe('39048472157');
+    expect(runInfo.round).toBe(3);
+    expect(runInfo.totalRuns).toBe(3);
+  });
+
   it('handles branch-only mode when prNumber is null, filtering by status === completed', () => {
     const branch = 'feat/standalone-branch';
 
