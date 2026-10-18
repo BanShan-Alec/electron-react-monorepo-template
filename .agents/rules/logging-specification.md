@@ -37,3 +37,11 @@ logger.info('Sentry initialized successfully');
 logger.warn(`Failed to get URL for unresponsive window (id=${window.id}):`, err);
 logger.error(`Renderer process gone unexpectedly: reason=${details.reason}`);
 ```
+
+## 5. 渲染进程叙事纪律（全局 logger）
+
+- **生命周期事件记 info**：入口启动（`App started`，两个 entry 各一行）、路由切换（`Route changed`，每次路径变化一行）、ErrorBoundary 崩溃（error 级，带 `componentStack`）。
+- **用户动作只记操作结果**：成功/失败各一行，不记意图与参数；本地路径、URL、业务数据一律不入日志。
+- **走 IPC 的动作只补成功行**：失败已被 `lib/ipc.ts` 的 `logIpc` 中心化记录（channel + 耗时 + 错误文案），feature 层再记即双写。
+- **主进程 service 层已叙事的事件不重复记**：config 变更、更新检查/可用/下载等主进程已有 info 日志，渲染层不碰。
+- **debug 级仅开发构建生效**：渲染 `logger.debug` 与主进程 `scoped().debug` 在生产构建均 no-op。
