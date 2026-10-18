@@ -25,6 +25,8 @@
 | **⚙️ CI/CD 与工作流** | [`.github/`](.github) | **自动化研发管线**：PR 门禁（typecheck / lint / test / e2e）、OpenCodeReview AI 审查、CodeQL 安全扫描、tag 驱动的三平台自动发版与 `pnpm pr` 工作流命令 | [CI/CD 流程指南](.github/CICD.md) |
 | **🎨 模板定制速查** | [`docs/template-customization-guide.md`](docs/template-customization-guide.md) | **新项目品牌重塑指南**：从模板派生新应用时，关于应用标识、包名、多端原生图标及环境变量替换的轻量级速查清单 | [定制与替换速查表](docs/template-customization-guide.md) |
 
+> 🤖 **AI 协作者入口**：[AGENTS.md](AGENTS.md)（全局红线 + 各包规则索引 + 任务路由）。
+
 ---
 
 ## 🔄 跨端 IPC 通信拓扑模型

@@ -2,6 +2,8 @@
 
 本项目采用严格的现代工程规范，通过自动化工具链保障代码质量、提交历史一致性与版本发布的规范性。
 
+> 🤖 **AI 协作者入口**：先读 [AGENTS.md](AGENTS.md)（全局红线 + 包规则索引 + 任务路由），再按需查阅本文件对应章节。本文件是人类向全局规范；包级规则的唯一真源在各包 `AGENTS.md`。
+
 ---
 
 ## 一、代码风格与静态检查规范 (Biome)
@@ -35,12 +37,10 @@ npm run format
 
 确需引入桶文件的唯一合法流程：评审 + 单条 override 豁免 + 显式命名导出 + 台账登记。
 
+> 包内落地形态与例外（组件 `Xxx/index.tsx`、shared 子路径直出）见各包 AGENTS.md，如 [packages/renderer/AGENTS.md](packages/renderer/AGENTS.md)；全局红线见 [AGENTS.md](AGENTS.md)。
+
 ### 4. 请求 Hook 约束（manual-only）
-渲染层异步数据请求一律使用 [`packages/renderer/src/hooks/useManualRequest.ts`](packages/renderer/src/hooks/useManualRequest.ts)（ahooks `useRequest` 的 manual-only 封装）：`manual` 已写死 `true`，请求发起只能是显式的 `run()/runAsync()`。
-
-**一切自动触发能力一律禁止**：挂载自动触发、`refreshDeps` 依赖变化触发、`pollingInterval` 轮询、`refreshOnWindowFocus` 聚焦刷新、`ready` 门控、防抖/节流自动触发。触发点必须写在明处——事件处理器，或显式 `useEffect(() => run(...), [deps])`；挂载即拉取的语义保留。防抖用 `useDebounceFn`、轮询用 `useInterval`、聚焦刷新用 `useEventListener` 等 ahooks/React 组合实现。
-
-三层强制：类型层（封装 `Omit` 掉全部自动触发键，传了即编译错误）、Lint 层（`noRestrictedImports` 禁止直连 `ahooks` `useRequest`，仅豁免封装文件）、评审层。
+渲染层异步数据请求一律使用 `useManualRequest`（ahooks `useRequest` 的 manual-only 封装），**一切自动触发能力一律禁止**。完整规则（manual-only 铁律、三层强制、触发点写法）已下沉至 [packages/renderer/AGENTS.md](packages/renderer/AGENTS.md)「请求层」，以该文件为唯一真源。
 
 ### 5. 构建工具链时代规则（Vite 8 / Rolldown / Oxc）
 
