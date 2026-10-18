@@ -149,4 +149,21 @@ describe('findLatestReviewFile', () => {
     const latest = findLatestReviewFile(tempDir, null, 'feat/my-feature');
     expect(latest).toBe(path.join(tempDir, 'branch-feat_my-feature-round-3.md'));
   });
+
+  it('excludes excludeFilePath to locate the second-latest review file when current round file already exists', () => {
+    fs.writeFileSync(path.join(tempDir, 'pr-38-round-1.md'), '');
+    fs.writeFileSync(path.join(tempDir, 'pr-38-round-2.md'), '');
+    fs.writeFileSync(path.join(tempDir, 'pr-38-round-3.md'), '');
+
+    const currentOutputFile = path.join(tempDir, 'pr-38-round-3.md');
+    const previous = findLatestReviewFile(tempDir, 38, 'feat/foo', currentOutputFile);
+    expect(previous).toBe(path.join(tempDir, 'pr-38-round-2.md'));
+  });
+
+  it('returns null if the only matching file is the excluded file', () => {
+    fs.writeFileSync(path.join(tempDir, 'pr-38-round-1.md'), '');
+    const currentOutputFile = path.join(tempDir, 'pr-38-round-1.md');
+    const previous = findLatestReviewFile(tempDir, 38, 'feat/foo', currentOutputFile);
+    expect(previous).toBeNull();
+  });
 });

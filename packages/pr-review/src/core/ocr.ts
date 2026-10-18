@@ -16,7 +16,7 @@ export function getLatestRunInfo(
         'api',
         `repos/${ownerRepo}/actions/artifacts`,
         '--jq',
-        `[.artifacts[] | select(.name | startswith("ocr-review-result-${prNumber}-")) | .workflow_run.id] | unique`,
+        `[.artifacts[] | select((.name != null) and (.name | startswith("ocr-review-result-${prNumber}-")) and .workflow_run != null and (.workflow_run.conclusion == null or .workflow_run.conclusion == "success")) | .workflow_run.id] | map(select(. != null)) | unique`,
       ]);
       const prRunIds = safeParseJson<number[]>(artifactsJson);
       if (prRunIds && prRunIds.length > 0) {
@@ -34,13 +34,15 @@ export function getLatestRunInfo(
           );
           if (summaryComment) {
             const match = summaryComment.body.match(
-              /<!-- ocr-checkpoint:[^\s]+ ([A-Za-z0-9+/=]+) -->/,
+              /<!-- ocr-checkpoint:[^\s]+\s+([A-Za-z0-9+/=]+)\s*-->/,
             );
             if (match) {
               try {
                 const decoded = JSON.parse(Buffer.from(match[1], 'base64').toString('utf-8'));
-                if (decoded.run && sortedIds.includes(String(decoded.run))) {
-                  targetId = String(decoded.run);
+                const decodedRun =
+                  typeof decoded.run === 'number' ? String(decoded.run) : decoded.run;
+                if (typeof decodedRun === 'string' && sortedIds.includes(decodedRun)) {
+                  targetId = decodedRun;
                 }
               } catch {
                 // fallback
@@ -101,23 +103,41 @@ export function getLatestRunInfo(
       const summaryComment = prCommentsData.comments.find(
         (c) => c.body.includes('<!-- ocr-checkpoint:') || c.body.includes('<!-- ocr-review-run:'),
       );
+      let targetId: string | undefined;
       if (summaryComment) {
-        const match = summaryComment.body.match(/<!-- ocr-checkpoint:[^\s]+ ([A-Za-z0-9+/=]+) -->/);
+        const match = summaryComment.body.match(
+          /<!-- ocr-checkpoint:[^\s]+\s+([A-Za-z0-9+/=]+)\s*-->/,
+        );
         if (match) {
           try {
             const decoded = JSON.parse(Buffer.from(match[1], 'base64').toString('utf-8'));
-            if (decoded.run) {
-              return {
-                id: String(decoded.run),
-                round: reviewTriggerCount,
-                totalRuns: reviewTriggerCount,
-                status: 'success',
-              };
+            const decodedRun = typeof decoded.run === 'number' ? String(decoded.run) : decoded.run;
+            if (typeof decodedRun === 'string') {
+              targetId = decodedRun;
             }
           } catch {
             // fallback
           }
         }
+      }
+
+      if (targetId) {
+        const matched = completedRuns.find((r) => String(r.databaseId) === targetId);
+        if (matched) {
+          const round = completedRuns.length - completedRuns.indexOf(matched);
+          return {
+            id: targetId,
+            round,
+            totalRuns: completedRuns.length,
+            status: matched.conclusion,
+          };
+        }
+        return {
+          id: targetId,
+          round: reviewTriggerCount,
+          totalRuns: reviewTriggerCount,
+          status: 'success',
+        };
       }
     }
   }

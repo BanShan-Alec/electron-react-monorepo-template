@@ -118,6 +118,98 @@ describe('getLatestRunInfo', () => {
     expect(runInfo.round).toBe(2);
   });
 
+  it('handles checkpoint with multiline whitespace and numeric run ID correctly', () => {
+    const prNumber = 38;
+    const ownerRepo = 'owner/repo';
+    const branch = 'feat/unified-telemetry';
+
+    mockedProbe.mockImplementation((cmd, args) => {
+      if (cmd === 'gh' && args[0] === 'api' && args[1] === `repos/${ownerRepo}/actions/artifacts`) {
+        return JSON.stringify([101, 102]);
+      }
+      if (cmd === 'gh' && args[0] === 'pr' && args[1] === 'view' && args[2] === String(prNumber)) {
+        const checkpoint = Buffer.from(JSON.stringify({ run: 102, pr: prNumber })).toString(
+          'base64',
+        );
+        return JSON.stringify({
+          comments: [
+            {
+              body: `<!-- ocr-summary -->\n<!-- ocr-checkpoint:v1   \t\n  ${checkpoint}   \n-->`,
+            },
+          ],
+        });
+      }
+      return null;
+    });
+
+    const runInfo = getLatestRunInfo(branch, prNumber, ownerRepo);
+    expect(runInfo.id).toBe('102');
+    expect(runInfo.round).toBe(2);
+  });
+
+  it('aligns fallback round with completedRuns when checkpoint targetId matches completedRuns', () => {
+    const prNumber = 38;
+    const branch = 'feat/unified-telemetry';
+
+    mockedProbe.mockImplementation((cmd, args) => {
+      if (cmd === 'gh' && args[0] === 'api') {
+        return null;
+      }
+      if (cmd === 'gh' && args[0] === 'pr') {
+        const checkpoint = Buffer.from(JSON.stringify({ run: '202', pr: prNumber })).toString(
+          'base64',
+        );
+        return JSON.stringify({
+          comments: [
+            {
+              body: `<!-- ocr-checkpoint:v1 ${checkpoint} -->`,
+            },
+            {
+              body: '/review',
+            },
+            {
+              body: '/review',
+            },
+          ],
+        });
+      }
+      if (cmd === 'gh' && args[0] === 'run') {
+        return JSON.stringify([
+          { databaseId: 203, headBranch: branch, status: 'completed', conclusion: 'success' },
+          { databaseId: 202, headBranch: branch, status: 'completed', conclusion: 'success' },
+          { databaseId: 201, headBranch: branch, status: 'completed', conclusion: 'success' },
+        ]);
+      }
+      return null;
+    });
+
+    const runInfo = getLatestRunInfo(branch, prNumber);
+    // completedRuns 有 3 个: 203 (index 0, round 3), 202 (index 1, round 2), 201 (index 2, round 1)
+    expect(runInfo.id).toBe('202');
+    expect(runInfo.round).toBe(2);
+    expect(runInfo.totalRuns).toBe(3);
+  });
+
+  it('requests artifacts with correct jq filter ensuring non-null workflow_run', () => {
+    const prNumber = 38;
+    const ownerRepo = 'owner/repo';
+    const branch = 'feat/unified-telemetry';
+
+    mockedProbe.mockImplementation((cmd, args) => {
+      if (cmd === 'gh' && args[0] === 'api') {
+        const jqArg = args[args.indexOf('--jq') + 1];
+        expect(jqArg).toContain('ocr-review-result-38-');
+        expect(jqArg).toContain('.workflow_run != null');
+        expect(jqArg).toContain('map(select(. != null))');
+        return JSON.stringify([999]);
+      }
+      return null;
+    });
+
+    const runInfo = getLatestRunInfo(branch, prNumber, ownerRepo);
+    expect(runInfo.id).toBe('999');
+  });
+
   it('handles branch-only mode when prNumber is null, filtering by status === completed', () => {
     const branch = 'feat/standalone-branch';
 

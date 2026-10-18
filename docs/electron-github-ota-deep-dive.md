@@ -325,36 +325,12 @@ asarUnpack: [
 
 ## 附录：生产级 electron-builder.ts 配置参考
 
-以下配置模板整合了前文提到的各项避坑要求。配置基于 TypeScript 编写，包含完整的类型约束、环境动态解析以及核心配置项注释：
+以下配置模板整合了前文提到的各项避坑要求，直接展示核心配置对象与关键注释：
 
 ```ts
-import fs from 'node:fs';
-import { join } from 'node:path';
-import type { Configuration } from 'electron-builder';
-
-// 1. 读取根目录 package.json 作为基础元数据事实源
-const rootPkgPath = join(process.cwd(), 'package.json');
-const rootPkg = fs.existsSync(rootPkgPath) ? JSON.parse(fs.readFileSync(rootPkgPath, 'utf8')) : {};
-
-// 2. 解析 GitHub 仓库信息（支持环境变量覆盖，保障 CI/CD 与本地开发弹性）
-function parseGitHubRepo(repoUrl?: string): { owner?: string; repo?: string } {
-  if (!repoUrl) return {};
-  const match = repoUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)(?:\.git)?/);
-  return match ? { owner: match[1], repo: match[2] } : {};
-}
-
-const parsedRepo = parseGitHubRepo(
-  typeof rootPkg.repository === 'string' ? rootPkg.repository : rootPkg.repository?.url,
-);
-
-const owner = process.env.GITHUB_OWNER || parsedRepo.owner || 'your-github-org';
-const repo = process.env.GITHUB_REPO || parsedRepo.repo || 'your-app-repo';
-const appId = process.env.APP_ID || rootPkg.appId || `com.example.${rootPkg.name || 'desktop-app'}`;
-const productName = process.env.APP_NAME || rootPkg.productName || 'Desktop Application';
-
 const config: Configuration = {
-  appId,
-  productName, // 面向系统 UI 和快捷方式显示，允许空格与展示字符
+  appId: 'com.example.app',
+  productName: 'Super Desktop Client', // 面向系统 UI 和快捷方式显示，允许空格与展示字符
 
   directories: {
     output: 'dist',
@@ -367,8 +343,8 @@ const config: Configuration = {
   // GitHub Releases OTA 发布提供方配置
   publish: {
     provider: 'github',
-    owner,
-    repo,
+    owner: 'your-github-org',
+    repo: 'your-app-repo',
     releaseType: 'release',
   },
 
@@ -396,7 +372,7 @@ const config: Configuration = {
     allowToChangeInstallationDirectory: true,
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
-    shortcutName: productName,
+    shortcutName: 'Super Desktop Client',
     deleteAppDataOnUninstall: false,
   },
 

@@ -96,7 +96,7 @@ export function runPull(): void {
               histData,
               commentMap,
               new Map(),
-              ciChecks,
+              [], // 历史轮次 CI 状态不与当前最新 checks 混淆
             );
             fs.writeFileSync(histOutputFile, histMarkdown, 'utf-8');
           } catch (histErr) {
@@ -114,10 +114,8 @@ export function runPull(): void {
       : `branch-${safeBranch}-round-${runInfo.round}.md`;
     const outputFile = path.join(REVIEWS_DIR, fileName);
 
-    // 查找上一轮最近生成的看板（用于继承历史批注与已解决对比）
-    const previousFile = findLatestReviewFile(REVIEWS_DIR, prNumber, branch);
-    const previousFilePath =
-      previousFile && path.resolve(previousFile) !== path.resolve(outputFile) ? previousFile : null;
+    // 查找上一轮最近生成的看板（排除当前待生成的 outputFile，确保即使重复 pull 也能准确定位次新的上一轮次）
+    const previousFilePath = findLatestReviewFile(REVIEWS_DIR, prNumber, branch, outputFile);
     const historicalMap = previousFilePath ? parseExistingDashboard(previousFilePath) : new Map();
 
     const markdown = formatDashboard(

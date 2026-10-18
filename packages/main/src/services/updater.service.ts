@@ -36,13 +36,15 @@ const SENTRY_FLUSH_TIMEOUT_MS = 2000;
 /**
  * OTA 流程各阶段标识，统一用于 Sentry 标签与事件追踪
  */
-const OTA_STAGES = {
+export const OTA_STAGES = {
   ELECTRON_UPDATER: 'electron-updater',
   CHECKING: 'checking',
   DOWNLOADING: 'downloading',
   INSTALLING: 'installing',
   DOWNLOADED: 'downloaded',
 } as const;
+
+export type OtaStage = (typeof OTA_STAGES)[keyof typeof OTA_STAGES];
 
 function stripHtml(input: string): string {
   return input.replace(/<[^>]*>?/gm, '');
@@ -82,7 +84,7 @@ export class UpdaterService {
   private isOrphan = false;
   private lastProgressEmitTime = 0;
   private lastReportedErrorTime = 0;
-  private lastReportedErrorMessage = '';
+  private lastReportedErrorKey = '';
 
   private snapshot: UpdaterSnapshot = {
     state: 'idle',
@@ -93,64 +95,65 @@ export class UpdaterService {
   private windowDelegate: { show: () => Promise<unknown>; close?: () => void } | null = null;
   private userDismissedWindow = false;
 
-  private reportSentryOtaError(err: unknown, stage: string): void {
+  private async withSentry(
+    action: (sentry: typeof import('@sentry/electron/main')) => Promise<unknown> | unknown,
+  ): Promise<void> {
+    if (!isOtaSentryEnabled()) return;
+    try {
+      const Sentry = await import('@sentry/electron/main');
+      await action(Sentry);
+    } catch (sentryErr) {
+      this.logger.warn('Failed to execute Sentry operation:', sentryErr);
+    }
+  }
+
+  private reportSentryOtaError(err: unknown, stage: OtaStage): void {
     if (!isOtaSentryEnabled()) return;
     try {
       const errorObj = err instanceof Error ? err : new Error(String(err));
+      const errorKey = `${stage}:${errorObj.message}:${errorObj.stack?.slice(0, 100) || ''}`;
       const now = Date.now();
       if (
         now - this.lastReportedErrorTime < OTA_ERROR_DEBOUNCE_MS &&
-        this.lastReportedErrorMessage === errorObj.message
+        this.lastReportedErrorKey === errorKey
       ) {
         return;
       }
       this.lastReportedErrorTime = now;
-      this.lastReportedErrorMessage = errorObj.message;
+      this.lastReportedErrorKey = errorKey;
 
-      import('@sentry/electron/main')
-        .then((Sentry) => {
-          Sentry.captureException(errorObj, {
-            tags: buildSentryTags(APP_FEATURES.OTA, {
-              [SENTRY_TAGS.LOGGER]: this.constructor.name,
-              [SENTRY_TAGS.STAGE]: stage,
-              [SENTRY_TAGS.TARGET_VERSION]: this.snapshot.version || 'unknown',
-              [SENTRY_TAGS.CURRENT_VERSION]: app.getVersion(),
-            }),
-            extra: {
-              rawMessage: errorObj.message,
-              snapshotState: this.snapshot.state,
-            },
-          });
-        })
-        .catch((sentryErr) => {
-          this.logger.warn('Failed to report OTA error to Sentry:', sentryErr);
+      void this.withSentry((Sentry) => {
+        Sentry.captureException(errorObj, {
+          tags: buildSentryTags(APP_FEATURES.OTA, {
+            [SENTRY_TAGS.LOGGER]: this.constructor.name,
+            [SENTRY_TAGS.STAGE]: stage,
+            [SENTRY_TAGS.TARGET_VERSION]: this.snapshot.version || 'unknown',
+            [SENTRY_TAGS.CURRENT_VERSION]: app.getVersion(),
+          }),
+          extra: {
+            rawMessage: errorObj.message,
+            snapshotState: this.snapshot.state,
+          },
         });
+      });
     } catch (sentryErr) {
       this.logger.warn('Failed to report OTA error to Sentry:', sentryErr);
     }
   }
 
-  private reportSentryOtaEvent(message: string, stage: string, targetVersion?: string): void {
+  private reportSentryOtaEvent(message: string, stage: OtaStage, targetVersion?: string): void {
     if (!isOtaSentryEnabled()) return;
-    try {
-      import('@sentry/electron/main')
-        .then((Sentry) => {
-          Sentry.captureMessage(message, {
-            level: 'info',
-            tags: buildSentryTags(APP_FEATURES.OTA, {
-              [SENTRY_TAGS.LOGGER]: this.constructor.name,
-              [SENTRY_TAGS.STAGE]: stage,
-              [SENTRY_TAGS.TARGET_VERSION]: targetVersion || 'unknown',
-              [SENTRY_TAGS.CURRENT_VERSION]: app.getVersion(),
-            }),
-          });
-        })
-        .catch((sentryErr) => {
-          this.logger.warn('Failed to report OTA event to Sentry:', sentryErr);
-        });
-    } catch (sentryErr) {
-      this.logger.warn('Failed to report OTA event to Sentry:', sentryErr);
-    }
+    void this.withSentry((Sentry) => {
+      Sentry.captureMessage(message, {
+        level: 'info',
+        tags: buildSentryTags(APP_FEATURES.OTA, {
+          [SENTRY_TAGS.LOGGER]: this.constructor.name,
+          [SENTRY_TAGS.STAGE]: stage,
+          [SENTRY_TAGS.TARGET_VERSION]: targetVersion || 'unknown',
+          [SENTRY_TAGS.CURRENT_VERSION]: app.getVersion(),
+        }),
+      });
+    });
   }
 
   private clearDevSimulationTimer(): void {
@@ -283,12 +286,18 @@ export class UpdaterService {
           this.logger.info(
             'App closing orphan mode: Executing Strategy A: quitAndInstall(true, false)',
           );
-          try {
-            updater.quitAndInstall(true, false);
-          } catch (err) {
-            this.logger.error('Failed to quitAndInstall in orphan mode:', err);
-            app.quit();
-          }
+          const executeInstall = () => {
+            try {
+              updater.quitAndInstall(true, false);
+            } catch (err) {
+              this.logger.error('Failed to quitAndInstall in orphan mode:', err);
+              app.quit();
+            }
+          };
+
+          void this.withSentry((Sentry) => Sentry.flush(SENTRY_FLUSH_TIMEOUT_MS)).finally(
+            executeInstall,
+          );
         } else if (this.userDismissedWindow) {
           this.logger.info(
             'User dismissed window previously, sending system notification instead of popup',
@@ -328,13 +337,9 @@ export class UpdaterService {
         if (this.isOrphan) {
           this.stopOrphanWatchdog();
           this.logger.error('Orphan download failed with error, quitting app');
-          if (isOtaSentryEnabled()) {
-            import('@sentry/electron/main')
-              .then((Sentry) => Sentry.flush(SENTRY_FLUSH_TIMEOUT_MS).finally(() => app.quit()))
-              .catch(() => app.quit());
-          } else {
+          void this.withSentry((Sentry) => Sentry.flush(SENTRY_FLUSH_TIMEOUT_MS)).finally(() => {
             app.quit();
-          }
+          });
         }
       });
     } catch (err) {
