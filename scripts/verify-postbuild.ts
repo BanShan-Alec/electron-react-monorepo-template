@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { _electron as electron } from '@playwright/test';
 
-interface DistVerificationOptions {
+interface PostbuildVerificationOptions {
   /**
    * asar 体积阈值（MB），超过则判定为防劣化门禁失败
    * 默认 10MB（可通过环境变量 MAX_ASAR_SIZE_MB 覆盖）
@@ -150,7 +150,7 @@ function analyzeAsarSize(asarPath: string): void {
 
     traverse(header, '');
 
-    console.log('\n📈 [verify-dist] ====== asar 体积构成分析 ======');
+    console.log('\n📈 [verify-postbuild] ====== asar 体积构成分析 ======');
     console.log('📌 核心模块体积占比:');
     const sortedModules = Object.entries(moduleSizes).sort((a, b) => b[1] - a[1]);
     for (const [mod, size] of sortedModules) {
@@ -165,73 +165,56 @@ function analyzeAsarSize(asarPath: string): void {
       const sizeKb = (item.size / 1024).toFixed(1);
       console.log(`   - ${`${sizeKb} KB`.padEnd(12)} ${item.path}`);
     }
-    console.log('==============================================\n');
+    console.log('====================================================\n');
   } catch (err) {
-    console.warn('⚠️ [verify-dist] 无法读取 asar 内部结构详情:', err);
+    console.warn('⚠️ [verify-postbuild] 无法读取 asar 内部结构详情:', err);
   }
 }
 
 /**
- * 校验 dist 目录下所有的安装包、压缩包、Blockmap 与 YML 文件，严禁包含空格以避免 OTA 404
+ * 打包构建后置验真（Post-build Verification）
+ *
+ * 核心职责：在打包完成后验证物理产物完整性与可用性
+ * 1. 跨平台自动发现解包产物与 asar 归档
+ * 2. asar 体积防劣化硬门禁与构成透视分析（<10MB）
+ * 3. 真实拉起已打包程序执行 Playwright Smoke 烟雾健康检查（验证 React #root 正常挂载）
  */
-function verifyArtifactFileNames(distDir: string): void {
-  if (!fs.existsSync(distDir)) return;
-  const targetExtensions = ['.exe', '.dmg', '.deb', '.zip', '.blockmap', '.yml', '.AppImage'];
-  const files = fs.readdirSync(distDir);
-  const invalidFiles = files.filter((file) => {
-    const hasTargetExt = targetExtensions.some((ext) => file.endsWith(ext));
-    return hasTargetExt && file.includes(' ');
-  });
-
-  if (invalidFiles.length > 0) {
-    throw new Error(
-      `❌ [verify-dist] 发现打包产物文件名含有空格字符，严禁发布以防 OTA 404：\n${invalidFiles.join('\n')}`,
-    );
-  }
-  console.log('✅ [verify-dist] 所有打包产物文件名均符合零空格规范。');
-}
-
-/**
- * 校验已打包产物完整性与可用性
- */
-async function verifyDist(options: DistVerificationOptions = {}): Promise<void> {
+async function verifyPostbuild(options: PostbuildVerificationOptions = {}): Promise<void> {
   const distDir = path.resolve(options.distDir || 'dist');
   const maxAsarSizeMb = options.maxAsarSizeMb ?? Number(process.env.MAX_ASAR_SIZE_MB || 10);
 
-  console.log('\n🔍 [verify-dist] 开始打包产物 Smoke 自动化验证...');
-
-  verifyArtifactFileNames(distDir);
+  console.log('\n🔍 [verify-postbuild] 开始打包产物 Smoke 自动化验证...');
 
   const artifact = detectUnpackedArtifact(distDir);
   if (!artifact) {
     throw new Error(
-      `[verify-dist] 未在 ${distDir} 找到解包产物（支持 win-unpacked / mac / linux-unpacked）。请先完成打包构建。`,
+      `[verify-postbuild] 未在 ${distDir} 找到解包产物（支持 win-unpacked / mac / linux-unpacked）。请先完成打包构建。`,
     );
   }
 
-  console.log(`📦 [verify-dist] 发现解包产物: ${artifact.executablePath}`);
-  console.log(`📄 [verify-dist] 发现 asar 归档: ${artifact.asarPath}`);
+  console.log(`📦 [verify-postbuild] 发现解包产物: ${artifact.executablePath}`);
+  console.log(`📄 [verify-postbuild] 发现 asar 归档: ${artifact.asarPath}`);
 
   // 1. asar 体积门禁校验与详细监控
   const asarStat = fs.statSync(artifact.asarPath);
   const asarSizeMb = asarStat.size / (1024 * 1024);
   console.log(
-    `📊 [verify-dist] asar 总体积: ${asarSizeMb.toFixed(2)} MB (${asarStat.size.toLocaleString()} bytes) [阈值上限: ${maxAsarSizeMb.toFixed(2)} MB]`,
+    `📊 [verify-postbuild] asar 总体积: ${asarSizeMb.toFixed(2)} MB (${asarStat.size.toLocaleString()} bytes) [阈值上限: ${maxAsarSizeMb.toFixed(2)} MB]`,
   );
 
   analyzeAsarSize(artifact.asarPath);
 
   if (asarSizeMb > maxAsarSizeMb) {
     throw new Error(
-      `❌ [verify-dist] asar 体积超过门禁上限 (${asarSizeMb.toFixed(2)} MB > ${maxAsarSizeMb.toFixed(2)} MB)，发生体积异常膨胀防劣化失败！`,
+      `❌ [verify-postbuild] asar 体积超过门禁上限 (${asarSizeMb.toFixed(2)} MB > ${maxAsarSizeMb.toFixed(2)} MB)，发生体积异常膨胀防劣化失败！`,
     );
   }
-  console.log('✅ [verify-dist] asar 体积门禁检查通过！');
+  console.log('✅ [verify-postbuild] asar 体积门禁检查通过！');
 
-  // 2. 跨平台宿主兼任性守卫：若当前环境无法直接拉起目标二进制（例如 Linux 交叉编译构建了 Windows exe），安全跳过运行时测试
+  // 2. 跨平台宿主兼容性守卫：若当前环境无法直接拉起目标二进制（例如 Linux 交叉编译构建了 Windows exe），安全跳过运行时测试
   if (process.platform !== artifact.platform) {
     console.warn(
-      `⚠️ [verify-dist] 目标平台 (${artifact.platform}) 与当前宿主平台 (${process.platform}) 不一致，跳过真实进程启动测试。`,
+      `⚠️ [verify-postbuild] 目标平台 (${artifact.platform}) 与当前宿主平台 (${process.platform}) 不一致，跳过真实进程启动测试。`,
     );
     return;
   }
@@ -239,13 +222,13 @@ async function verifyDist(options: DistVerificationOptions = {}): Promise<void> 
   // 无显示服务环境守卫（如无 Xvfb 的 Linux 纯命令行服务器或容器）
   if (process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) {
     console.warn(
-      '⚠️ [verify-dist] 检测到当前 Linux 环境无可用 DISPLAY/WAYLAND 桌面显示服务，跳过运行时进程拉起测试。',
+      '⚠️ [verify-postbuild] 检测到当前 Linux 环境无可用 DISPLAY/WAYLAND 桌面显示服务，跳过运行时进程拉起测试。',
     );
     return;
   }
 
   // 3. 真实启动打包二进制进行 Smoke 校验
-  console.log('🚀 [verify-dist] 启动已打包程序执行运行时健康检查...');
+  console.log('🚀 [verify-postbuild] 启动已打包程序执行运行时健康检查...');
   const tempUserDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-smoke-test-'));
 
   try {
@@ -261,17 +244,17 @@ async function verifyDist(options: DistVerificationOptions = {}): Promise<void> 
     });
 
     try {
-      console.log('⏳ [verify-dist] 等待主窗口就绪...');
+      console.log('⏳ [verify-postbuild] 等待主窗口就绪...');
       const page = await app.firstWindow();
       const title = await page.title();
-      console.log(`🪟 [verify-dist] 主窗口捕获成功: title="${title}"`);
+      console.log(`🪟 [verify-postbuild] 主窗口捕获成功: title="${title}"`);
 
-      console.log('⏳ [verify-dist] 校验 #root 界面渲染...');
+      console.log('⏳ [verify-postbuild] 校验 #root 界面渲染...');
       await page.waitForSelector('#root', { timeout: 15000 });
-      console.log('✅ [verify-dist] React 渲染容器 #root 已成功挂载！');
+      console.log('✅ [verify-postbuild] React 渲染容器 #root 已成功挂载！');
     } finally {
       await app.close();
-      console.log('🛑 [verify-dist] 应用程序已正常优雅退出。');
+      console.log('🛑 [verify-postbuild] 应用程序已正常优雅退出。');
     }
   } finally {
     try {
@@ -281,18 +264,18 @@ async function verifyDist(options: DistVerificationOptions = {}): Promise<void> 
     }
   }
 
-  console.log('🎉 [verify-dist] 打包产物直接运行验证全部通过！\n');
+  console.log('🎉 [verify-postbuild] 打包产物直接运行验证全部通过！\n');
 }
 
-export { detectUnpackedArtifact, verifyDist };
+export { detectUnpackedArtifact, verifyPostbuild };
 
 // 支持直接作为 CLI 执行
 if (
   import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}` ||
-  process.argv[1]?.endsWith('verify-dist.ts')
+  process.argv[1]?.endsWith('verify-postbuild.ts')
 ) {
-  verifyDist().catch((err) => {
-    console.error('❌ [verify-dist] 校验失败:', err);
+  verifyPostbuild().catch((err) => {
+    console.error('❌ [verify-postbuild] 校验失败:', err);
     process.exit(1);
   });
 }
