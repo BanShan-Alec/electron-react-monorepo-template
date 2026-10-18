@@ -30,6 +30,7 @@ export function useLogging() {
         window.api.diagnostics.openLogFolder,
         [],
       );
+      logger.info('Log folder opened');
       return t`📂 已打开日志目录: ${data.path}`;
     },
     {
