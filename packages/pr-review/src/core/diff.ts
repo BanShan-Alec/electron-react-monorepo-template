@@ -78,20 +78,25 @@ export function parseExistingDashboard(filePath: string): Map<string, Historical
 
 /**
  * 查找上一轮最近生成的 review 看板文件（用于继承历史批注与 diff）
+ * @param excludeFilePath 可选。若传入，则在搜索结果中排除该路径（通常用于排除当前待生成的文件本身，以便准确定位上一轮次）
  */
 export function findLatestReviewFile(
   reviewDir: string,
   prNumber: number | null,
   branch: string,
+  excludeFilePath?: string,
 ): string | null {
   if (!fs.existsSync(reviewDir)) return null;
 
   const prefix = prNumber
     ? `pr-${prNumber}-round-`
     : `branch-${branch.replace(/[^a-zA-Z0-9_-]/g, '_')}-round-`;
-  const files = fs
-    .readdirSync(reviewDir)
-    .filter((name) => name.startsWith(prefix) && name.endsWith('.md'));
+  const resolvedExclude = excludeFilePath ? path.resolve(excludeFilePath) : null;
+  const files = fs.readdirSync(reviewDir).filter((name) => {
+    if (!name.startsWith(prefix) || !name.endsWith('.md')) return false;
+    if (resolvedExclude && path.resolve(reviewDir, name) === resolvedExclude) return false;
+    return true;
+  });
 
   if (files.length === 0) return null;
 

@@ -24,6 +24,7 @@ export interface RunInfo {
   round: number;
   totalRuns: number;
   status: string;
+  allPrRunIds?: string[];
 }
 
 export interface GhReviewComment {

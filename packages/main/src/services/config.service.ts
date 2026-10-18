@@ -5,7 +5,7 @@ import { applyNativeThemeSource } from '../modules/native-theme.module';
 import { getTrayManager } from '../modules/tray.module';
 
 export class ConfigService {
-  private readonly logger = getLogManager().scoped('Config');
+  private readonly logger = getLogManager().scoped(this);
 
   getConfig(): AppConfig {
     return getAppConfigStore().getAll();

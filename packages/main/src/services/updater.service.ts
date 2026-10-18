@@ -1,5 +1,6 @@
 import { ErrorCode } from '@app/shared/constants/error-codes';
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
+import { APP_FEATURES, buildSentryTags, SENTRY_TAGS } from '@app/shared/constants/telemetry';
 import { WINDOW_IDS } from '@app/shared/constants/windows';
 import type {
   UpdaterMockAction,
@@ -14,6 +15,36 @@ import { AppError } from '../errors/AppError';
 import { getAppConfigStore } from '../modules/config.module';
 import { getLogManager } from '../modules/log.module';
 import { getWindow, sendToWindow } from '../modules/window/window-registry';
+
+function isOtaSentryEnabled(): boolean {
+  if (isTest || !isPackaged) return false;
+  const dsn =
+    typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__ ? __SENTRY_DSN__ : getEnv('SENTRY_DSN');
+  return Boolean(dsn);
+}
+
+/**
+ * OTA 错误上报时间去重窗口（毫秒）
+ */
+const OTA_ERROR_DEBOUNCE_MS = 1000;
+
+/**
+ * 孤儿下载退出前等待 Sentry 事件 flush 的超时时间（毫秒）
+ */
+const SENTRY_FLUSH_TIMEOUT_MS = 2000;
+
+/**
+ * OTA 流程各阶段标识，统一用于 Sentry 标签与事件追踪
+ */
+export const OTA_STAGES = {
+  ELECTRON_UPDATER: 'electron-updater',
+  CHECKING: 'checking',
+  DOWNLOADING: 'downloading',
+  INSTALLING: 'installing',
+  DOWNLOADED: 'downloaded',
+} as const;
+
+export type OtaStage = (typeof OTA_STAGES)[keyof typeof OTA_STAGES];
 
 function stripHtml(input: string): string {
   return input.replace(/<[^>]*>?/gm, '');
@@ -46,12 +77,14 @@ function normalizeReleaseNotes(raw: unknown): string[] {
 }
 
 export class UpdaterService {
-  private readonly logger = getLogManager().scoped('UpdaterService');
+  private readonly logger = getLogManager().scoped(this);
   private cancellationToken: CancellationToken | null = null;
   private orphanWatchdogTimer: NodeJS.Timeout | null = null;
   private devSimulationTimer: NodeJS.Timeout | null = null;
   private isOrphan = false;
   private lastProgressEmitTime = 0;
+  private lastReportedErrorTime = 0;
+  private lastReportedErrorKey = '';
 
   private snapshot: UpdaterSnapshot = {
     state: 'idle',
@@ -61,6 +94,63 @@ export class UpdaterService {
 
   private windowDelegate: { show: () => Promise<unknown>; close?: () => void } | null = null;
   private userDismissedWindow = false;
+
+  private async withSentry(
+    action: (sentry: typeof import('@sentry/electron/main')) => Promise<unknown> | unknown,
+  ): Promise<void> {
+    if (!isOtaSentryEnabled()) return;
+    try {
+      const Sentry = await import('@sentry/electron/main');
+      await action(Sentry);
+    } catch (sentryErr) {
+      this.logger.warn('Failed to execute Sentry operation:', sentryErr);
+    }
+  }
+
+  private reportSentryOtaError(err: unknown, stage: OtaStage): void {
+    if (!isOtaSentryEnabled()) return;
+    const errorObj = err instanceof Error ? err : new Error(String(err));
+    const errorKey = `${stage}:${errorObj.message}:${errorObj.stack?.slice(0, 100) || ''}`;
+    const now = Date.now();
+    if (
+      now - this.lastReportedErrorTime < OTA_ERROR_DEBOUNCE_MS &&
+      this.lastReportedErrorKey === errorKey
+    ) {
+      return;
+    }
+    this.lastReportedErrorTime = now;
+    this.lastReportedErrorKey = errorKey;
+
+    void this.withSentry((Sentry) => {
+      Sentry.captureException(errorObj, {
+        tags: buildSentryTags(APP_FEATURES.OTA, {
+          [SENTRY_TAGS.LOGGER]: this.constructor.name,
+          [SENTRY_TAGS.STAGE]: stage,
+          [SENTRY_TAGS.TARGET_VERSION]: this.snapshot.version || 'unknown',
+          [SENTRY_TAGS.CURRENT_VERSION]: app.getVersion(),
+        }),
+        extra: {
+          rawMessage: errorObj.message,
+          snapshotState: this.snapshot.state,
+        },
+      });
+    });
+  }
+
+  private reportSentryOtaEvent(message: string, stage: OtaStage, targetVersion?: string): void {
+    if (!isOtaSentryEnabled()) return;
+    void this.withSentry((Sentry) => {
+      Sentry.captureMessage(message, {
+        level: 'info',
+        tags: buildSentryTags(APP_FEATURES.OTA, {
+          [SENTRY_TAGS.LOGGER]: this.constructor.name,
+          [SENTRY_TAGS.STAGE]: stage,
+          [SENTRY_TAGS.TARGET_VERSION]: targetVersion || 'unknown',
+          [SENTRY_TAGS.CURRENT_VERSION]: app.getVersion(),
+        }),
+      });
+    });
+  }
 
   private clearDevSimulationTimer(): void {
     if (this.devSimulationTimer) {
@@ -173,12 +263,18 @@ export class UpdaterService {
       });
 
       updater.on('update-downloaded', (info) => {
-        this.logger.info('Update downloaded:', info?.version);
+        const downloadedVersion = info?.version || 'unknown';
+        this.logger.info('Update downloaded:', downloadedVersion);
         this.snapshot.state = 'downloaded';
         this.snapshot.progress = null;
         this.snapshot.error = null;
         this.cancellationToken = null;
         this.emitState();
+        this.reportSentryOtaEvent(
+          `OTA Downloaded: ${downloadedVersion}`,
+          OTA_STAGES.DOWNLOADED,
+          info?.version,
+        );
 
         // 判定孤儿态（在退出流程中后台下载完成）
         if (this.isOrphan) {
@@ -186,11 +282,21 @@ export class UpdaterService {
           this.logger.info(
             'App closing orphan mode: Executing Strategy A: quitAndInstall(true, false)',
           );
-          try {
-            updater.quitAndInstall(true, false);
-          } catch (err) {
-            this.logger.error('Failed to quitAndInstall in orphan mode:', err);
-            app.quit();
+          const executeInstall = () => {
+            try {
+              updater.quitAndInstall(true, false);
+            } catch (err) {
+              this.logger.error('Failed to quitAndInstall in orphan mode:', err);
+              app.quit();
+            }
+          };
+
+          if (isOtaSentryEnabled()) {
+            void this.withSentry((Sentry) => Sentry.flush(SENTRY_FLUSH_TIMEOUT_MS)).finally(
+              executeInstall,
+            );
+          } else {
+            executeInstall();
           }
         } else if (this.userDismissedWindow) {
           this.logger.info(
@@ -226,11 +332,18 @@ export class UpdaterService {
         this.snapshot.progress = null;
         this.cancellationToken = null;
         this.emitState();
+        this.reportSentryOtaError(err, OTA_STAGES.ELECTRON_UPDATER);
 
         if (this.isOrphan) {
           this.stopOrphanWatchdog();
           this.logger.error('Orphan download failed with error, quitting app');
-          app.quit();
+          if (isOtaSentryEnabled()) {
+            void this.withSentry((Sentry) => Sentry.flush(SENTRY_FLUSH_TIMEOUT_MS)).finally(() => {
+              app.quit();
+            });
+          } else {
+            app.quit();
+          }
         }
       });
     } catch (err) {
@@ -320,6 +433,7 @@ export class UpdaterService {
       this.snapshot.state = 'error';
       this.snapshot.error = err instanceof Error ? err.message : String(err);
       this.emitState();
+      this.reportSentryOtaError(err, OTA_STAGES.CHECKING);
       throw new AppError(this.snapshot.error, ErrorCode.UPDATER_CHECK_FAILED);
     }
   }
@@ -430,6 +544,7 @@ export class UpdaterService {
       this.snapshot.error = err instanceof Error ? err.message : String(err);
       this.cancellationToken = null;
       this.emitState();
+      this.reportSentryOtaError(err, OTA_STAGES.DOWNLOADING);
       throw new AppError(this.snapshot.error, ErrorCode.UPDATER_DOWNLOAD_FAILED);
     }
   }
@@ -483,6 +598,7 @@ export class UpdaterService {
       return { success: true };
     } catch (err) {
       this.logger.error('Failed to quit and install:', err);
+      this.reportSentryOtaError(err, OTA_STAGES.INSTALLING);
       throw new AppError(
         err instanceof Error ? err.message : String(err),
         ErrorCode.UPDATER_INSTALL_FAILED,

@@ -7,8 +7,8 @@ const buildMode = process.env.MODE || 'production';
 Object.assign(process.env, loadEnv(buildMode, process.cwd(), ''));
 
 import { build, type CliOptions } from 'electron-builder';
-import { verifyDependencies } from './verify-deps.ts';
-import { verifyDist } from './verify-dist.ts';
+import { verifyPostbuild } from './verify-postbuild.ts';
+import { verifyPrebuild } from './verify-prebuild.ts';
 
 /**
  * CLI Argument Parsing
@@ -51,7 +51,7 @@ async function runBuild() {
   if (values.arm64) buildOptions.arm64 = true;
 
   // 3. Trigger packaging
-  const { valid } = await verifyDependencies();
+  const { valid } = await verifyPrebuild();
   if (!valid) {
     process.exit(1);
   }
@@ -68,7 +68,7 @@ async function runBuild() {
   // 4. Verify packaged artifact integrity & run smoke check unless --skip-verify is specified
   if (!values['skip-verify']) {
     try {
-      await verifyDist();
+      await verifyPostbuild();
     } catch (verifyError) {
       console.error('❌ Post-packaging verification failed:', verifyError);
       process.exit(1);

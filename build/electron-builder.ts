@@ -95,11 +95,11 @@ const config: Configuration = {
     },
   ],
   /**
-   * It is recommended to avoid using non-standard characters such as spaces in artifact names,
-   * as they can unpredictably change during deployment, making them impossible to locate and download for update.
+   * 采用 package.json 的 name (electron-react-monorepo-template)，零空格小写规范
+   * 杜绝 GitHub Releases 上传时被自动转换为点号 (.) 导致 latest.yml 校验与下载 404
    */
   // biome-ignore lint/suspicious/noTemplateCurlyInString: electron-builder placeholder template
-  artifactName: '${productName}-${version}-${os}-${arch}.${ext}',
+  artifactName: '${name}-${version}-${os}-${arch}.${ext}',
   files: [
     'LICENSE*',
     '!node_modules/@app/**',
