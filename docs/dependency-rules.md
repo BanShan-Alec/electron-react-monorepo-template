@@ -94,7 +94,7 @@ Preload 脚本由 Vite 经 `ssr: { noExternal: true }` 构建为单文件 `dist/
 2. **同步修改配置**：打开 `packages/main/vite.config.ts`，将 `<pkg-name>` 添加到 `rolldownOptions.external` 数组中。
 3. 运行校验：
    ```bash
-   pnpm run verify:deps
+   pnpm run verify:prebuild
    ```
    若未配置 `external`，CI 与本地构建均会报错拦截。
 
@@ -124,6 +124,6 @@ pnpm --filter @app/renderer add -D vite-plugin-xxx @types/xxx
 
 | 校验门禁 | 触发时机 | 校验命令 | 核心检测内容 |
 | :--- | :--- | :--- | :--- |
-| **依赖拓扑检查** | PR 提交 / 本地打包前 | `pnpm run verify:deps` | 1. 根目录 `dependencies` 严格等于 `['@app/main']`<br>2. 主进程 `dependencies` 与 Vite `external` 100% 双向对齐 |
+| **依赖拓扑检查** | PR 提交 / 本地打包前 | `pnpm run verify:prebuild` | 1. 根目录 `dependencies` 严格等于 `['@app/main']`<br>2. 主进程 `dependencies` 与 Vite `external` 100% 双向对齐 |
 | **asar 体积门禁** | 发版构建 / 打包测试 | `pnpm run test:dist` | 校验打包出的 `app.asar` 体积不得超过 10.00 MB（防范任何意外依赖泄露） |
 | **运行时 Smoke 检查** | 发版构建 / 打包测试 | `pnpm run test:dist` | 真实启动解包二进制程序，验证窗口创建、React `#root` 挂载及无报错退出 |

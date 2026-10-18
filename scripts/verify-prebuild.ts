@@ -7,19 +7,39 @@ interface VerificationResult {
   errors: string[];
 }
 
-export async function verifyDependencies(): Promise<VerificationResult> {
+/**
+ * 打包构建前置门禁（Pre-build Verification）
+ *
+ * 核心职责：在打包开始前（0 毫秒）执行静态拦截，防止配置违规导致的构建失败、体积膨胀或生产崩溃。
+ * 1. 根目录 package.json name 规范校验（全小写无空格，杜绝 OTA 404 隐患）
+ * 2. 根目录 package.json dependencies 边界校验（仅限 @app/main，防止 node_modules 卷入 asar 体积膨胀）
+ * 3. 主进程 dependencies 与 packages/main/vite.config.ts external 双向对齐校验（防止 MODULE_NOT_FOUND 生产白屏）
+ */
+export async function verifyPrebuild(): Promise<VerificationResult> {
   const rootDir = process.cwd();
   const errors: string[] = [];
 
-  console.log('🔍 [verify-deps] 开始校验 Monorepo 依赖拓扑与主进程 external 对应关系...');
+  console.log('🔍 [verify-prebuild] 开始执行打包前置静态门禁校验...');
 
-  // 1. 根目录 package.json dependencies 边界校验（防退化门禁）
   const rootPkgPath = join(rootDir, 'package.json');
   if (!fs.existsSync(rootPkgPath)) {
     throw new Error(`找不到根目录 package.json: ${rootPkgPath}`);
   }
 
   const rootPkg = JSON.parse(fs.readFileSync(rootPkgPath, 'utf8'));
+
+  // 1. 根目录 package.json name 命名规范校验（彻底杜绝 OTA 404 与非法文件名）
+  if (typeof rootPkg.name !== 'string' || !/^[a-z0-9-_]+$/.test(rootPkg.name)) {
+    errors.push(
+      `[根目录 name 违规] 根 package.json 的 "name" 字段 ("${rootPkg.name}") 不符合规范。\n` +
+        `  -> 规范要求: 必须为纯小写字母、数字、中划线或下划线组合 (/^[a-z0-9-_]+$/)，绝对禁止空格、大写字母与特殊字符（如 @ 或 /），` +
+        `以确保 electron-builder 生成的产物文件名与 latest.yml 索引在网络发布与 OTA 自动更新时 100% 寻址成功。`,
+    );
+  } else {
+    console.log(`  ✅ 根目录 package.json name 规范校验通过: "${rootPkg.name}"`);
+  }
+
+  // 2. 根目录 package.json dependencies 边界校验（防退化门禁）
   const rootDeps = Object.keys(rootPkg.dependencies || {});
   const allowedRootDeps = ['@app/main'];
 
@@ -32,10 +52,10 @@ export async function verifyDependencies(): Promise<VerificationResult> {
         `以防止 electron-builder 扫描依赖树时将非主进程模块卷入 app.asar 导致体积膨胀。`,
     );
   } else {
-    console.log('  ✅ 根目录 dependencies 校验通过 (严格仅限 @app/main)');
+    console.log('  ✅ 根目录 dependencies 边界校验通过 (严格仅限 @app/main)');
   }
 
-  // 2. 主进程 dependencies 与 packages/main/vite.config.ts external 双向对齐校验
+  // 3. 主进程 dependencies 与 packages/main/vite.config.ts external 双向对齐校验
   const mainPkgPath = join(rootDir, 'packages', 'main', 'package.json');
   if (!fs.existsSync(mainPkgPath)) {
     throw new Error(`找不到主进程 package.json: ${mainPkgPath}`);
@@ -100,12 +120,12 @@ export async function verifyDependencies(): Promise<VerificationResult> {
 
   const valid = errors.length === 0;
   if (!valid) {
-    console.error('\n❌ [verify-deps] 依赖拓扑规范校验失败:');
+    console.error('\n❌ [verify-prebuild] 前置规范校验失败:');
     for (const error of errors) {
       console.error(`\n• ${error}`);
     }
   } else {
-    console.log('🎉 [verify-deps] 依赖规范与打包配置一致性校验全部通过！\n');
+    console.log('🎉 [verify-prebuild] 打包前置门禁检查全部通过！准备进入打包阶段...\n');
   }
 
   return { valid, errors };
@@ -114,16 +134,16 @@ export async function verifyDependencies(): Promise<VerificationResult> {
 // CLI 直启入口
 if (
   import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}` ||
-  process.argv[1]?.endsWith('verify-deps.ts')
+  process.argv[1]?.endsWith('verify-prebuild.ts')
 ) {
-  verifyDependencies()
+  verifyPrebuild()
     .then(({ valid }) => {
       if (!valid) {
         process.exit(1);
       }
     })
     .catch((err) => {
-      console.error('❌ [verify-deps] 执行异常:', err);
+      console.error('❌ [verify-prebuild] 执行异常:', err);
       process.exit(1);
     });
 }

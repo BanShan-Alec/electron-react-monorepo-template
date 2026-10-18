@@ -16,7 +16,7 @@
    - `packages/main`、`packages/preload` 与 `scripts/` 的模块解析基于 TypeScript 现代 **`moduleResolution: "Bundler"`** 与 Node 全局类型；
    - 允许直接消费 Node 原生全局符号（如 `__dirname`、`__filename`、`process`），无需多余垫片包装。
 4. **统一脚本执行引擎（`tsx` 驱动）**：
-   - 所有工程维护、验证、构建脚本统一由 **`tsx`** 驱动执行（如 `tsx scripts/dev.ts`、`tsx scripts/build.ts`、`tsx scripts/verify-deps.ts`），严禁使用散装原生 node 解释执行 TS 源码。
+   - 所有工程维护、验证、构建脚本统一由 **`tsx`** 驱动执行（如 `tsx scripts/dev.ts`、`tsx scripts/build.ts`、`tsx scripts/verify-prebuild.ts`），严禁使用散装原生 node 解释执行 TS 源码。
 
 ---
 

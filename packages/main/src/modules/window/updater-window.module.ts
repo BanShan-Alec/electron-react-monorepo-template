@@ -14,7 +14,7 @@ import { forgetWindow, getWindow, registerWindow, sendToWindow } from './window-
 export class UpdaterWindowModule implements AppModule {
   private readonly preload: { path: string };
   private readonly renderer: { path: string } | URL;
-  private readonly logger = getLogManager().scoped('UpdaterWindowModule');
+  private readonly logger = getLogManager().scoped(this);
 
   constructor({ initConfig }: { initConfig: AppInitConfig }) {
     this.preload = initConfig.preload;
