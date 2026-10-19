@@ -227,14 +227,6 @@ async function verifyPostbuild(options: PostbuildVerificationOptions = {}): Prom
     return;
   }
 
-  // 无显示服务环境守卫（如无 Xvfb 的 Linux 纯命令行服务器或容器）
-  if (process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) {
-    console.warn(
-      '⚠️ [verify-dist] 检测到当前 Linux 环境无可用 DISPLAY/WAYLAND 桌面显示服务，跳过运行时进程拉起测试。',
-    );
-    return;
-  }
-
   // 3. 真实启动打包二进制进行 Smoke 校验
   console.log('🚀 [verify-postbuild] 启动已打包程序执行运行时健康检查...');
   const tempUserDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-smoke-test-'));

@@ -154,8 +154,6 @@ export class TrayManager implements AppModule {
     if (app) {
       baseDirs.push(path.join(app.getAppPath(), 'build', 'resources'));
     }
-    // __dirname 相对寻址：开发态与打包态均相对于当前模块目录向上找到项目 resources
-    baseDirs.push(path.resolve(__dirname, '../../../../build/resources'));
 
     for (const dir of baseDirs) {
       for (const name of iconNames) {

@@ -2,7 +2,7 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Card, Tag } from 'antd';
 import type React from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 interface ChangelogCardProps {
   version?: string;
@@ -71,6 +71,13 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
   const hasNotes = Boolean(releaseNotes && releaseNotes.length > 0);
   const isLongNotes = Boolean(releaseNotes && releaseNotes.length > 4);
 
+  const normalizedNotes = useMemo(() => {
+    return (releaseNotes ?? []).map((note, index) => ({
+      id: `${index}-${note}`,
+      text: note,
+    }));
+  }, [releaseNotes]);
+
   return (
     <Card
       size="small"
@@ -101,9 +108,9 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
         >
           {hasNotes ? (
             <ul className="list-disc pl-4 space-y-1">
-              {releaseNotes?.map((note) => (
-                <li key={note} className="leading-relaxed">
-                  {formatInlineMarkdown(note)}
+              {normalizedNotes.map((item) => (
+                <li key={item.id} className="leading-relaxed">
+                  {formatInlineMarkdown(item.text)}
                 </li>
               ))}
             </ul>

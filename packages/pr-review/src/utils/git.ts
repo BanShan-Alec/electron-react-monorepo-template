@@ -1,8 +1,11 @@
-import path from 'node:path';
 import { fail, probe } from './process.ts';
 
 export function getRepoRoot(): string {
-  return path.resolve(__dirname, '../../../..');
+  const root = probe('git', ['rev-parse', '--show-toplevel']);
+  if (!root) {
+    fail('无法获取 Git 仓库根目录，请确认当前目录位于 git 仓库中');
+  }
+  return root;
 }
 
 export function ensureGh(): void {
