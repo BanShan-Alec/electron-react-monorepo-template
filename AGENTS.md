@@ -38,6 +38,7 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 10 monorepo · Node >= 24
 | 模块装配 / 启动流程 / 运行时 | main/AGENTS.md | docs/module-and-runtime-specification.md |
 | 运行环境 / MODE / env 门面 | shared/AGENTS.md | docs/environment-specification.md |
 | 依赖拓扑 / 打包隔离 / external | main/AGENTS.md | docs/dependency-rules.md |
+| 路径管理 / 跨平台资源 / ASAR 避坑 | main/AGENTS.md | docs/electron-path-resolution-deep-dive.md |
 | 打包产物 / 安装包 / OTA 升级 | main/AGENTS.md | docs/packaging-and-dependency-management.md · docs/electron-github-ota-deep-dive.md |
 | renderer 页面 / 卡片 / 请求层 | renderer/AGENTS.md | — |
 | 视觉 / token / 品牌定制 | renderer/docs/DESIGN.md | docs/template-customization-guide.md |

@@ -104,6 +104,8 @@ electron-react-monorepo-template/
 ├── docs/                     # 架构深度原理与开发指南
 │   ├── adr/                  # [架构决策] ADR-0001 首屏窗口保持不透明与 WCO 材质裁决
 │   ├── i18n/                 # [多语言] 架构设计 (architecture.md) 与实操 SOP (guide.md)
+│   ├── electron-path-resolution-deep-dive.md # 跨平台路径管理底层原理与避坑深度实践
+│   ├── electron-github-ota-deep-dive.md      # 跨平台打包与 GitHub OTA 自动更新深度指南
 │   ├── logging-and-exception-audit.md # 日志轮转与跨进程异常分级防护指南
 │   └── wco-native-titlebar-integration.md # WCO 原生标题栏跨项目接入指南
 ├── e2e/                      # Playwright E2E 自动化测试套件（真实 Electron 运行态驱动）
