@@ -2,6 +2,8 @@
 
 本项目采用严格的现代工程规范，通过自动化工具链保障代码质量、提交历史一致性与版本发布的规范性。
 
+> 🤖 **AI 协作者入口**：先读 [AGENTS.md](AGENTS.md)（全局红线 + 包规则索引 + 任务路由），再按需查阅本文件对应章节。本文件是人类向全局规范；包级规则的唯一真源在各包 `AGENTS.md`。
+
 ---
 
 ## 一、代码风格与静态检查规范 (Biome)
@@ -35,16 +37,14 @@ npm run format
 
 确需引入桶文件的唯一合法流程：评审 + 单条 override 豁免 + 显式命名导出 + 台账登记。
 
+> 包内落地形态与例外（组件 `Xxx/index.tsx`、shared 子路径直出）见各包 AGENTS.md，如 [packages/renderer/AGENTS.md](packages/renderer/AGENTS.md)；全局红线见 [AGENTS.md](AGENTS.md)。
+
 ### 4. 请求 Hook 约束（manual-only）
-渲染层异步数据请求一律使用 [`packages/renderer/src/hooks/useManualRequest.ts`](packages/renderer/src/hooks/useManualRequest.ts)（ahooks `useRequest` 的 manual-only 封装）：`manual` 已写死 `true`，请求发起只能是显式的 `run()/runAsync()`。
-
-**一切自动触发能力一律禁止**：挂载自动触发、`refreshDeps` 依赖变化触发、`pollingInterval` 轮询、`refreshOnWindowFocus` 聚焦刷新、`ready` 门控、防抖/节流自动触发。触发点必须写在明处——事件处理器，或显式 `useEffect(() => run(...), [deps])`；挂载即拉取的语义保留。防抖用 `useDebounceFn`、轮询用 `useInterval`、聚焦刷新用 `useEventListener` 等 ahooks/React 组合实现。
-
-三层强制：类型层（封装 `Omit` 掉全部自动触发键，传了即编译错误）、Lint 层（`noRestrictedImports` 禁止直连 `ahooks` `useRequest`，仅豁免封装文件）、评审层。
+渲染层异步数据请求一律使用 `useManualRequest`（ahooks `useRequest` 的 manual-only 封装），**一切自动触发能力一律禁止**。完整规则（manual-only 铁律、三层强制、触发点写法）已下沉至 [packages/renderer/AGENTS.md](packages/renderer/AGENTS.md)「请求层」，以该文件为唯一真源。
 
 ### 5. 构建工具链时代规则（Vite 8 / Rolldown / Oxc）
 
-本仓已进入 Vite 8（rolldown 内核）时代：**新增构建期转换、插件与编译能力一律使用 Vite 8 / Rolldown / Oxc 原生 API**，禁止引入 esbuild、babel 等旧工具链依赖。存量 `@rolldown/plugin-babel` 仅限 lingui 既有用途，不扩用。选型参照 [ADR-0002](docs/adr/0002-startup-shell-build-time-inline.md)：单文件转译用 `transformWithOxc`（注意不打包 import），需打包时用程序化 `build()`（`configFile:false` + `write:false`）内存产出。
+本仓已进入 Vite 8（rolldown 内核）时代：**新增构建期转换、插件与编译能力一律使用 Vite 8 / Rolldown / Oxc 原生 API**，禁止引入 esbuild、babel 等旧工具链依赖。存量 `@rolldown/plugin-babel` 仅限 lingui 既有用途，不扩用。选型参照 ADR-0002（启动壳构建期内联决策）：单文件转译用 `transformWithOxc`（注意不打包 import），需打包时用程序化 `build()`（`configFile:false` + `write:false`）内存产出。
 
 ---
 
@@ -82,15 +82,15 @@ npm run format
 - 冒号 `:` 后面必须有一个英文空格；
 - 示例：`feat: 增加文件选择原生对话框` 或 `fix(ipc): 修复外部链接协议未校验的安全隐患`。
 
-### 4. PR 工作流（`pnpm pr`）
+### 4. PR 工作流（`pnpm pr-review`）
 
-feature 分支一律经 PR 合入 `main`：分支保护锁死 required checks（typecheck / lint / test / e2e）与 squash-only、拒绝直推，决策背景见 [ADR-0004](docs/adr/0004-pr-only-squash-workflow.md)，完整流程见 [.github/CICD.md](.github/CICD.md) 与 [docs/code-review.md](docs/code-review.md)。
+feature 分支一律经 PR 合入 `main`：分支保护锁死 required checks（typecheck / lint / e2e）与 squash-only、拒绝直推，决策背景见 ADR-0004（PR-only + squash 工作流决策），完整流程见 [.github/CICD.md](.github/CICD.md) 与 [packages/pr-review/README.md](packages/pr-review/README.md)。
 
 | 命令 | 用途 |
 | :--- | :--- |
-| `pnpm pr` | 前置检查 → push → 开 PR（标题取分支首个提交，正文读模板） |
-| `pnpm pr:merge` | 等门禁全绿 → squash 合并 → 删远端分支 |
-| `pnpm pr:status` | 当前仓库 PR 与 checks 概览 |
+| `pnpm pr-review create` | 前置检查 → push → 开 PR（标题取分支首个提交，正文读模板） |
+| `pnpm pr-review merge` | 等门禁全绿 → squash 合并 → 删远端分支 |
+| `pnpm pr-review status` | 当前仓库 PR 与 checks 概览 |
 
 PR 标题沿用本节 Conventional Commits 格式（squash 后即 main 提交信息、进 changelog），分支首个提交的 subject 请按此措辞。
 
@@ -115,24 +115,24 @@ PR 标题沿用本节 Conventional Commits 格式（squash 后即 main 提交信
 ### 1. 常用版本管理指令
 ```bash
 # 1. 预览即将生成的 CHANGELOG（不修改任何文件）
-npm run changelog
+pnpm changelog
 
 # 2. 自动根据 Commit 历史推导语义化版本（feat 触发 minor，fix 触发 patch），
 #    并自动更新 package.json、生成 CHANGELOG.md、执行 git commit 以及创建 git tag
-npm run release
+pnpm release
 
 # 3. 显式指定版本步长进行 Release：
-npm run release:patch   # 补丁升级（如 3.1.0 -> 3.1.1）
-npm run release:minor   # 次版本升级（如 3.1.0 -> 3.2.0）
-npm run release:major   # 主版本升级（如 3.1.0 -> 4.0.0）
+pnpm release:patch   # 补丁升级（如 3.1.0 -> 3.1.1）
+pnpm release:minor   # 次版本升级（如 3.1.0 -> 3.2.0）
+pnpm release:major   # 主版本升级（如 3.1.0 -> 4.0.0）
 ```
 
 ### 2. 发布流程规范（PR 化）
 
 main 受分支保护禁直推，发版走 PR 形态：
 
-1. 从 main 切 `chore/release-vX.Y.Z` 分支；确认 lint / typecheck 为 0 错误后运行 Release 命令（如 `npm run release:minor`，生成版本号与 CHANGELOG 提交）；
-2. `pnpm pr` 开发版 PR；**删除分支上的本地 tag**（`git tag -d vX.Y.Z`，squash 合并会改变提交 SHA，旧 tag 作废）；
+1. 从 main 切 `chore/release-vX.Y.Z` 分支；确认 lint / typecheck 为 0 错误后运行 Release 命令（如 `pnpm release:minor`，生成版本号与 CHANGELOG 提交）；
+2. `pnpm pr-review create` 开发版 PR；**删除分支上的本地 tag**（`git tag -d vX.Y.Z`，squash 合并会改变提交 SHA，旧 tag 作废）；
 3. PR 合并后在 main 上重新打 tag 并推送：
    ```bash
    git pull && git tag vX.Y.Z && git push origin vX.Y.Z
@@ -199,7 +199,7 @@ pnpm -F @app/renderer remove <包名>
 
 ## 七、Node 脚本与构建配置规范 (纯 CommonJS 模式)
 
-为彻底杜绝 Node 22+ 原生执行 TypeScript 时的 `[MODULE_TYPELESS_PACKAGE_JSON]` 重新解析警告，并消除 `import.meta.url`、`fileURLToPath`、`__dirname` 兼容垫片与动态导入陷阱，本项目制定以下规范：
+为彻底杜绝 Node 24+ 原生执行 TypeScript 时的 `[MODULE_TYPELESS_PACKAGE_JSON]` 重新解析警告，并消除 `import.meta.url`、`fileURLToPath`、`__dirname` 兼容垫片与动态导入陷阱，本项目制定以下规范：
 
 ### 1. 运行环境与模块标准划分
 
@@ -210,4 +210,15 @@ pnpm -F @app/renderer remove <包名>
 
 ### 2. TypeScript 隔离配置
 `scripts/tsconfig.json` 配置了 `"moduleDetection": "force"`，确保即使未显式声明顶层 `export` 的纯 CJS 脚本也能在 TypeScript 中保持独立的模块作用域，杜绝跨文件全局变量污染（如全局 `const fs` 冲突）。
+
+---
+
+## 八、文档同步纪律（README 与代码同源）
+
+包级 README 是该包的架构契约文档，与代码同源维护，不允许长期处于“写着 A、做着 B”的状态：
+
+- 新增 / 删除目录、模块、导出、脚本或依赖时，必须在同一 PR 内同步更新对应包的 `README.md`（目录树、exports 片段、命令表、铁律表述）；
+- 新增跨端能力（新 IPC 域、新契约类型）时，同步 `packages/shared/README.md` 的契约速览与 `packages/main/README.md` 的 SOP 模板；
+- 规范类表述（铁律 / 禁令）与代码现实冲突时，先改文档使其可执行，再评估是否值得改代码；
+- 根 `README.md` 特性区的每条论断以源码为准，行为变更后同步核对。
 

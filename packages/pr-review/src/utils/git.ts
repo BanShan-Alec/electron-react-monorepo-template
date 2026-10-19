@@ -1,5 +1,13 @@
 import { fail, probe } from './process.ts';
 
+export function getRepoRoot(): string {
+  const root = probe('git', ['rev-parse', '--show-toplevel']);
+  if (!root) {
+    fail('无法获取 Git 仓库根目录，请确认当前目录位于 git 仓库中');
+  }
+  return root;
+}
+
 export function ensureGh(): void {
   if (probe('gh', ['--version']) === null) {
     fail('gh cli 不可用: 请先安装 GitHub CLI 并完成登录');

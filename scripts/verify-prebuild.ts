@@ -16,7 +16,7 @@ interface VerificationResult {
  * 3. 主进程 dependencies 与 packages/main/vite.config.ts external 双向对齐校验（防止 MODULE_NOT_FOUND 生产白屏）
  */
 export async function verifyPrebuild(): Promise<VerificationResult> {
-  const rootDir = process.cwd();
+  const rootDir = join(__dirname, '..');
   const errors: string[] = [];
 
   console.log('🔍 [verify-prebuild] 开始执行打包前置静态门禁校验...');

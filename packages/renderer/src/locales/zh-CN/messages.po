@@ -89,6 +89,10 @@ msgstr "Preload 精准白名单桥接"
 msgid "Renderer 进程纯净消费"
 msgstr "Renderer 进程纯净消费"
 
+#: src/features/usb/components/UsbCard/index.tsx
+msgid "USB 硬件设备监控"
+msgstr "USB 硬件设备监控"
+
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "V8 引擎版本"
 msgstr "V8 引擎版本"
@@ -162,6 +166,7 @@ msgid "关闭"
 msgstr "关闭"
 
 #: src/features/system-info/components/SystemInfoCard/index.tsx
+#: src/features/usb/components/UsbCard/index.tsx
 msgid "刷新"
 msgstr "刷新"
 
@@ -212,6 +217,10 @@ msgstr "可用内存 / 总内存"
 #: src/features/native-dialogs/components/DialogCard/index.tsx
 msgid "在资源管理器中定位"
 msgstr "在资源管理器中定位"
+
+#: src/features/usb/components/UsbCard/index.tsx
+msgid "基于 C++ 原生库 node-usb 探针"
+msgstr "基于 C++ 原生库 node-usb 探针"
 
 #: src/features/counter/components/CounterCard/index.tsx
 msgid "基于主进程状态原子操作与响应式更新"
@@ -386,6 +395,14 @@ msgstr "更新已准备就绪"
 msgid "更新日志"
 msgstr "更新日志"
 
+#: src/features/usb/components/UsbCard/index.tsx
+msgid "未检测到连接的 USB 设备"
+msgstr "未检测到连接的 USB 设备"
+
+#: src/features/usb/components/UsbCard/index.tsx
+msgid "未知 USB 设备"
+msgstr "未知 USB 设备"
+
 #: src/features/ping/components/PingCard/index.tsx
 msgid "极速"
 msgstr "极速"
@@ -505,6 +522,11 @@ msgstr "经由安全 Controller & Preload 调起系统文件管理器与访达"
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "统一通过 window.api 消费 Result 契约，享受完备 IDE 智能提示，与主进程实现 100% 物理代码隔离。"
 msgstr "统一通过 window.api 消费 Result 契约，享受完备 IDE 智能提示，与主进程实现 100% 物理代码隔离。"
+
+#. placeholder {0}: err.message
+#: src/features/usb/hooks/useUsbDevices.ts
+msgid "获取 USB 设备列表失败: {0}"
+msgstr "获取 USB 设备列表失败: {0}"
 
 #. placeholder {0}: err.message
 #: src/features/system-info/hooks/useSystemInfo.ts

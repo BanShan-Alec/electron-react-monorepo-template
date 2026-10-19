@@ -89,6 +89,10 @@ msgstr "Preload: Precise Whitelist Bridging"
 msgid "Renderer 进程纯净消费"
 msgstr "Renderer Process: Clean Consumption"
 
+#: src/features/usb/components/UsbCard/index.tsx
+msgid "USB 硬件设备监控"
+msgstr "USB Hardware Monitor"
+
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "V8 引擎版本"
 msgstr "V8 Engine Version"
@@ -162,6 +166,7 @@ msgid "关闭"
 msgstr "Close"
 
 #: src/features/system-info/components/SystemInfoCard/index.tsx
+#: src/features/usb/components/UsbCard/index.tsx
 msgid "刷新"
 msgstr "Refresh"
 
@@ -212,6 +217,10 @@ msgstr "Available / Total Memory"
 #: src/features/native-dialogs/components/DialogCard/index.tsx
 msgid "在资源管理器中定位"
 msgstr "Reveal in Explorer"
+
+#: src/features/usb/components/UsbCard/index.tsx
+msgid "基于 C++ 原生库 node-usb 探针"
+msgstr "Hardware Probes via Native C++ node-usb Addon"
 
 #: src/features/counter/components/CounterCard/index.tsx
 msgid "基于主进程状态原子操作与响应式更新"
@@ -386,6 +395,14 @@ msgstr "Update Ready"
 msgid "更新日志"
 msgstr "Changelog"
 
+#: src/features/usb/components/UsbCard/index.tsx
+msgid "未检测到连接的 USB 设备"
+msgstr "No connected USB devices detected"
+
+#: src/features/usb/components/UsbCard/index.tsx
+msgid "未知 USB 设备"
+msgstr "Unknown USB Device"
+
 #: src/features/ping/components/PingCard/index.tsx
 msgid "极速"
 msgstr "Fast"
@@ -505,6 +522,11 @@ msgstr "Invoke file manager & Finder via secure Controller & Preload"
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "统一通过 window.api 消费 Result 契约，享受完备 IDE 智能提示，与主进程实现 100% 物理代码隔离。"
 msgstr "Uniformly consume Result contracts via window.api with rich IDE autocompletion, maintaining 100% physical code isolation from the main process."
+
+#. placeholder {0}: err.message
+#: src/features/usb/hooks/useUsbDevices.ts
+msgid "获取 USB 设备列表失败: {0}"
+msgstr "Failed to get USB device list: {0}"
 
 #. placeholder {0}: err.message
 #: src/features/system-info/hooks/useSystemInfo.ts

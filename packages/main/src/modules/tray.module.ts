@@ -154,7 +154,6 @@ export class TrayManager implements AppModule {
     if (app) {
       baseDirs.push(path.join(app.getAppPath(), 'build', 'resources'));
     }
-    baseDirs.push(path.join(process.cwd(), 'build', 'resources'));
 
     for (const dir of baseDirs) {
       for (const name of iconNames) {

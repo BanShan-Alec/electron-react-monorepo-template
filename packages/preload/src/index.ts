@@ -44,6 +44,9 @@ ipcRenderer.on(
 );
 
 export const apiBridge: ElectronApi = {
+  usb: {
+    getDeviceList: () => invokeTraced(IPC_CHANNELS.USB_GET_DEVICE_LIST),
+  },
   system: {
     ping: () => invokeTraced(IPC_CHANNELS.SYSTEM_PING),
     getSystemInfo: () => invokeTraced(IPC_CHANNELS.SYSTEM_GET_INFO),

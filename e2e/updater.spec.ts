@@ -41,13 +41,19 @@ test.describe
       // 2. 断言其 URL 包含 updater
       expect(updaterPage.url()).toContain('updater');
 
-      // 3. 断言窗口在 Electron 主进程中可见
-      const isVisibleInMain = await electronApp.evaluate(({ BrowserWindow }) => {
-        const wins = BrowserWindow.getAllWindows();
-        const updaterWin = wins.find((w) => w.webContents.getURL().includes('updater'));
-        return updaterWin ? updaterWin.isVisible() : false;
-      });
-      expect(isVisibleInMain).toBe(true);
+      // 3. 断言窗口在 Electron 主进程中可见（轮询等待 ready-to-show 触发 show()）
+      await expect
+        .poll(
+          async () => {
+            return electronApp.evaluate(({ BrowserWindow }) => {
+              const wins = BrowserWindow.getAllWindows();
+              const updaterWin = wins.find((w) => w.webContents.getURL().includes('updater'));
+              return updaterWin ? updaterWin.isVisible() : false;
+            });
+          },
+          { timeout: 5000 },
+        )
+        .toBe(true);
 
       // 4. 断言具备 checking 初始态文案
       await expect(updaterPage.getByText('检查更新中')).toBeVisible();

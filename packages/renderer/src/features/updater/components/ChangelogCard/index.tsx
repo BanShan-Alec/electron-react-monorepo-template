@@ -2,7 +2,7 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Card, Tag } from 'antd';
 import type React from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 interface ChangelogCardProps {
   version?: string;
@@ -12,13 +12,15 @@ interface ChangelogCardProps {
 
 function formatInlineMarkdown(text: string): React.ReactNode[] {
   const tokens = text.split(/(\[[^\]]+\]\(https?:\/\/[^\s)]+\)|\*\*[^*]+\*\*|https?:\/\/[^\s]+)/g);
-  return tokens.map((token, i) => {
+  let counter = 0;
+  return tokens.map((token) => {
+    const key = `token-${counter++}`;
     const mdLinkMatch = token.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);
     if (mdLinkMatch) {
       const [, label, url] = mdLinkMatch;
       return (
         <a
-          key={i}
+          key={key}
           href={url}
           onClick={(e) => {
             e.preventDefault();
@@ -33,7 +35,7 @@ function formatInlineMarkdown(text: string): React.ReactNode[] {
     const boldMatch = token.match(/^\*\*([^*]+)\*\*$/);
     if (boldMatch) {
       return (
-        <strong key={i} className="font-semibold text-foreground">
+        <strong key={key} className="font-semibold text-foreground">
           {boldMatch[1]}
         </strong>
       );
@@ -41,7 +43,7 @@ function formatInlineMarkdown(text: string): React.ReactNode[] {
     if (/^https?:\/\/[^\s]+$/.test(token)) {
       return (
         <a
-          key={i}
+          key={key}
           href={token}
           onClick={(e) => {
             e.preventDefault();
@@ -68,6 +70,13 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
   const formattedDate = releaseDate ? new Date(releaseDate).toLocaleDateString() : undefined;
   const hasNotes = Boolean(releaseNotes && releaseNotes.length > 0);
   const isLongNotes = Boolean(releaseNotes && releaseNotes.length > 4);
+
+  const normalizedNotes = useMemo(() => {
+    return (releaseNotes ?? []).map((note, index) => ({
+      id: `${index}-${note}`,
+      text: note,
+    }));
+  }, [releaseNotes]);
 
   return (
     <Card
@@ -99,9 +108,9 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
         >
           {hasNotes ? (
             <ul className="list-disc pl-4 space-y-1">
-              {releaseNotes?.map((note, index) => (
-                <li key={index} className="leading-relaxed">
-                  {formatInlineMarkdown(note)}
+              {normalizedNotes.map((item) => (
+                <li key={item.id} className="leading-relaxed">
+                  {formatInlineMarkdown(item.text)}
                 </li>
               ))}
             </ul>

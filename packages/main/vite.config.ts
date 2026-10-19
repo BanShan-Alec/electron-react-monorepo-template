@@ -55,13 +55,13 @@ export default defineConfig({
     minify: process.env.MODE === 'development' ? false : 'oxc',
     outDir: 'dist',
     assetsDir: '.',
-    target: 'node22',
+    target: 'node24',
     lib: {
       entry: 'src/index.ts',
       formats: ['cjs'],
     },
     rolldownOptions: {
-      external: ['electron', 'electron-updater', 'electron-log'],
+      external: ['electron', 'electron-updater', 'electron-log', 'usb'],
       output: {
         entryFileNames: '[name].cjs',
         format: 'cjs',
