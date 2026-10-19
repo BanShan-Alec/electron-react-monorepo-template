@@ -15,6 +15,7 @@ import type { StartupGateSnapshot, StartupMainReadyPayload } from '@app/shared/t
 import type { UpdaterProgress, UpdaterSnapshot } from '@app/shared/types/updater';
 import { APP_ENV_ARG_PREFIX, unpackRuntimeEnv } from '@app/shared/utils/env-packer';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
+import { loggerBridge } from './logger';
 import { invokeTraced } from './telemetry/ipc-tracer';
 
 // 运行时环境基座同步挂载：在页面执行任何脚本前从 argv 快速解包并深度冻结暴露
@@ -128,3 +129,4 @@ export const apiBridge: ElectronApi = {
 };
 
 contextBridge.exposeInMainWorld('api', apiBridge);
+contextBridge.exposeInMainWorld('logger', loggerBridge);

@@ -45,7 +45,7 @@ export function useUpdater() {
         setSnapshot(res.data);
       }
     } catch (err) {
-      console.error('Failed to trigger update check:', err);
+      logger.error('Failed to trigger update check:', err);
     }
   }, []);
 
@@ -56,7 +56,7 @@ export function useUpdater() {
         setSnapshot(res.data);
       }
     } catch (err) {
-      console.error('Failed to start download:', err);
+      logger.error('Failed to start download:', err);
     }
   }, []);
 
@@ -67,7 +67,7 @@ export function useUpdater() {
         setSnapshot(res.data);
       }
     } catch (err) {
-      console.error('Failed to cancel download:', err);
+      logger.error('Failed to cancel download:', err);
     }
   }, []);
 
@@ -75,7 +75,7 @@ export function useUpdater() {
     try {
       await window.api.updater.install();
     } catch (err) {
-      console.error('Failed to install update:', err);
+      logger.error('Failed to install update:', err);
     }
   }, []);
 
@@ -83,7 +83,7 @@ export function useUpdater() {
     try {
       await window.api.updater.closeWindow();
     } catch (err) {
-      console.error('Failed to close updater window:', err);
+      logger.error('Failed to close updater window:', err);
     }
   }, []);
 

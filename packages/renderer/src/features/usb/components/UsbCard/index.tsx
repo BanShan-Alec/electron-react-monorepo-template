@@ -49,14 +49,17 @@ const _UsbCard = (props: IUsbCardProps) => {
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t`未检测到连接的 USB 设备`} />
       ) : (
         <div className="flex flex-col gap-2.5 max-h-[320px] overflow-y-auto pr-1">
-          {devices.map((device, idx) => {
+          {devices.map((device) => {
             const displayName =
               device.productName ||
               (device.manufacturerName ? `${device.manufacturerName} Device` : t`未知 USB 设备`);
+            const deviceKey =
+              device.serialNumber ||
+              `${device.vendorIdHex}-${device.productIdHex}-${device.deviceClass}-${device.deviceSubClass ?? 0}-${device.deviceProtocol ?? 0}`;
 
             return (
               <div
-                key={`${device.vendorIdHex}-${device.productIdHex}-${idx}`}
+                key={deviceKey}
                 className="bg-background-secondary p-2.5 rounded-lg border border-border/60 flex items-center justify-between gap-3 text-xs"
               >
                 <div className="flex items-center gap-2.5 min-w-0">

@@ -6,9 +6,63 @@ import { AppError } from '../errors/AppError';
 import { getLogManager } from '../modules/log.module';
 import { isAllowedExternalUrl } from '../modules/security/external-urls';
 
+/** D3：每调用方每秒渲染日志准入上限（滑动窗口），超限静默丢弃并延迟汇总一条告警 */
+const THROTTLE_LIMIT = 50;
+const THROTTLE_WINDOW_MS = 1000;
+
+/**
+ * 渲染日志滑窗节流器：窗口内前 limit 条准入，后续丢弃；
+ * 丢弃计数经 windowMs 后由 onAggregate 汇总回调一次（窗口滑过自动恢复，无需重置）。
+ */
+export function createRenderLogThrottle(
+  onAggregate: (key: string, dropped: number) => void,
+  { limit = THROTTLE_LIMIT, windowMs = THROTTLE_WINDOW_MS } = {},
+): (key: string) => boolean {
+  const hits = new Map<string, number[]>();
+  const droppedCounts = new Map<string, number>();
+  const flushTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+  const flush = (key: string): void => {
+    clearTimeout(flushTimers.get(key));
+    flushTimers.delete(key);
+    const dropped = droppedCounts.get(key) ?? 0;
+    droppedCounts.delete(key);
+    if (dropped > 0) {
+      onAggregate(key, dropped);
+    }
+  };
+
+  return (key: string): boolean => {
+    const now = Date.now();
+    const recent = (hits.get(key) ?? []).filter((at) => now - at < windowMs);
+    if (recent.length >= limit) {
+      hits.set(key, recent);
+      droppedCounts.set(key, (droppedCounts.get(key) ?? 0) + 1);
+      if (!flushTimers.has(key)) {
+        flushTimers.set(
+          key,
+          setTimeout(() => flush(key), windowMs),
+        );
+      }
+      return false;
+    }
+    recent.push(now);
+    hits.set(key, recent);
+    return true;
+  };
+}
+
 export class DiagnosticsService {
-  logMessage(input: LogInput, windowName?: string): void {
-    getLogManager().logRendererMessage(input.level, input.message, input.meta, windowName);
+  private readonly allowRenderLog = createRenderLogThrottle((key, dropped) => {
+    getLogManager()
+      .scoped('DiagnosticsService')
+      .warn(`Dropped ${dropped} renderer log line(s) in 1s window (${key})`);
+  });
+
+  logMessage(input: LogInput, windowName?: string, webContentsId?: number): void {
+    const key = webContentsId === undefined ? `win:${windowName || 'home'}` : `wc#${webContentsId}`;
+    if (!this.allowRenderLog(key)) return;
+    getLogManager().logRendererMessage(input.level, input.message, input.args, windowName);
   }
 
   async openLogFolder(): Promise<{ success: boolean; path: string }> {

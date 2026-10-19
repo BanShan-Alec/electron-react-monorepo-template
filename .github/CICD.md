@@ -89,4 +89,4 @@ GitHub Actions 流水线（`.github/workflows/ci.yml`）：
 - **`lint`**（**Required**）：Biome 格式与规则扫描。
 - **`test`**（**Required**）：Vitest 快速单元测试。
 - **`e2e`**（**Required**）：Playwright + Electron 完整回归测试。
-- *CodeQL* 与 *OpenCodeReview*（信息性）：安全漏洞与 AI 增量代码审查（详见 [AI 代码审查套件指南](../packages/pr-review/README.md)）。新开 PR 自动审查；后续提交可在 PR 评论回复 `/review` 手动触发增量复查，不阻塞合入。
+- *CodeQL* 与 *OpenCodeReview*（信息性）：安全漏洞与 AI 增量代码审查（详见 [AI 代码审查指南](../docs/code-review.md)）。新开 PR 自动审查；后续提交可在 PR 评论回复 `/review` 手动触发增量复查，不阻塞合入。

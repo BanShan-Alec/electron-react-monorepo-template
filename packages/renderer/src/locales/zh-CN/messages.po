@@ -16,12 +16,12 @@ msgid "@app/shared 共享契约单一事实源"
 msgstr "@app/shared 共享契约单一事实源"
 
 #: src/features/logging/hooks/useLogging.ts
-msgid "✅ 已发送 {levelUpper} 日志到 renderer.log"
-msgstr "✅ 已发送 {levelUpper} 日志到 renderer.log"
+msgid "✅ 已发送 {levelUpper} 日志到 renderer-home.log"
+msgstr "✅ 已发送 {levelUpper} 日志到 renderer-home.log"
 
 #: src/features/logging/hooks/useLogging.ts
-msgid "❌ 已触发测试异常并写入 renderer.log (生产打包模式下将由全局监听器自动上报 Sentry)"
-msgstr "❌ 已触发测试异常并写入 renderer.log (生产打包模式下将由全局监听器自动上报 Sentry)"
+msgid "❌ 已触发测试异常并写入 renderer-home.log (生产打包模式下将由全局监听器自动上报 Sentry)"
+msgstr "❌ 已触发测试异常并写入 renderer-home.log (生产打包模式下将由全局监听器自动上报 Sentry)"
 
 #. placeholder {0}: data.path
 #: src/features/logging/hooks/useLogging.ts
@@ -272,8 +272,8 @@ msgid "已是最新版本"
 msgstr "已是最新版本"
 
 #: src/features/logging/hooks/useLogging.ts
-msgid "已触发测试异常，已写入 renderer.log"
-msgstr "已触发测试异常，已写入 renderer.log"
+msgid "已触发测试异常，已写入 renderer-home.log"
+msgstr "已触发测试异常，已写入 renderer-home.log"
 
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "已选择文件: {path}"
@@ -586,8 +586,8 @@ msgid "进程间通信 (IPC Ping)"
 msgstr "进程间通信 (IPC Ping)"
 
 #: src/features/logging/components/LoggingCard/index.tsx
-msgid "进程隔离落盘 (main.log / renderer.log) 与 5MB 自动轮转"
-msgstr "进程隔离落盘 (main.log / renderer.log) 与 5MB 自动轮转"
+msgid "进程隔离落盘 (main.log / renderer-home.log) 与 5MB 自动轮转"
+msgstr "进程隔离落盘 (main.log / renderer-home.log) 与 5MB 自动轮转"
 
 #: src/features/native-dialogs/components/DialogCard/index.tsx
 msgid "选择文件"

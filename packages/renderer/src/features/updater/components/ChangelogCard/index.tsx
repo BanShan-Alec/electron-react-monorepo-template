@@ -12,13 +12,15 @@ interface ChangelogCardProps {
 
 function formatInlineMarkdown(text: string): React.ReactNode[] {
   const tokens = text.split(/(\[[^\]]+\]\(https?:\/\/[^\s)]+\)|\*\*[^*]+\*\*|https?:\/\/[^\s]+)/g);
-  return tokens.map((token, i) => {
+  let counter = 0;
+  return tokens.map((token) => {
+    const key = `token-${counter++}`;
     const mdLinkMatch = token.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);
     if (mdLinkMatch) {
       const [, label, url] = mdLinkMatch;
       return (
         <a
-          key={i}
+          key={key}
           href={url}
           onClick={(e) => {
             e.preventDefault();
@@ -33,7 +35,7 @@ function formatInlineMarkdown(text: string): React.ReactNode[] {
     const boldMatch = token.match(/^\*\*([^*]+)\*\*$/);
     if (boldMatch) {
       return (
-        <strong key={i} className="font-semibold text-foreground">
+        <strong key={key} className="font-semibold text-foreground">
           {boldMatch[1]}
         </strong>
       );
@@ -41,7 +43,7 @@ function formatInlineMarkdown(text: string): React.ReactNode[] {
     if (/^https?:\/\/[^\s]+$/.test(token)) {
       return (
         <a
-          key={i}
+          key={key}
           href={token}
           onClick={(e) => {
             e.preventDefault();
@@ -99,8 +101,8 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
         >
           {hasNotes ? (
             <ul className="list-disc pl-4 space-y-1">
-              {releaseNotes?.map((note, index) => (
-                <li key={index} className="leading-relaxed">
+              {releaseNotes?.map((note) => (
+                <li key={note} className="leading-relaxed">
                   {formatInlineMarkdown(note)}
                 </li>
               ))}

@@ -142,6 +142,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@24.19.2)(vite@8.3.0(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.0))
 
   packages/preload:
     devDependencies:
@@ -5260,7 +5263,7 @@ snapshots:
     dependencies:
       '@types/http-cache-semantics': 4.2.0
       '@types/keyv': 3.1.4
-      '@types/node': 24.19.2
+      '@types/node': 25.9.6
       '@types/responselike': 1.0.3
 
   '@types/chai@5.2.3':
@@ -5278,7 +5281,7 @@ snapshots:
 
   '@types/fs-extra@9.0.13':
     dependencies:
-      '@types/node': 24.19.2
+      '@types/node': 25.9.6
 
   '@types/http-cache-semantics@4.2.0': {}
 
@@ -5294,7 +5297,7 @@ snapshots:
 
   '@types/keyv@3.1.4':
     dependencies:
-      '@types/node': 24.19.2
+      '@types/node': 25.9.6
 
   '@types/ms@2.1.0': {}
 
@@ -5308,7 +5311,7 @@ snapshots:
 
   '@types/plist@3.0.5':
     dependencies:
-      '@types/node': 24.19.2
+      '@types/node': 25.9.6
       xmlbuilder: 15.1.1
     optional: true
 
@@ -5322,7 +5325,7 @@ snapshots:
 
   '@types/responselike@1.0.3':
     dependencies:
-      '@types/node': 24.19.2
+      '@types/node': 25.9.6
 
   '@types/verror@1.10.11':
     optional: true
@@ -5337,7 +5340,7 @@ snapshots:
 
   '@types/yauzl@2.10.3':
     dependencies:
-      '@types/node': 24.19.2
+      '@types/node': 25.9.6
     optional: true
 
   '@vitejs/plugin-react@6.1.1(@rolldown/plugin-babel@0.2.4(@babel/core@7.29.7)(@babel/runtime@8.0.5)(rolldown@1.2.8)(vite@8.3.0(@types/node@25.9.6)(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.15)(yaml@2.9.0)))(vite@8.3.0(@types/node@25.9.6)(esbuild@0.28.2)(jiti@1.21.7)(tsx@4.23.15)(yaml@2.9.0))':

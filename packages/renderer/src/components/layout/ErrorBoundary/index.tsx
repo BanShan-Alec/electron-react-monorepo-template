@@ -1,4 +1,5 @@
 import { APP_ENV } from '@app/shared/constants/env';
+import { APP_FEATURES, buildSentryTags, SENTRY_TAGS } from '@app/shared/constants/telemetry';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import * as Sentry from '@sentry/electron/renderer';
@@ -77,12 +78,21 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // 1. 渲染进程崩溃捕获并上报至 Sentry
     Sentry.captureException(error, {
+      tags: buildSentryTags(APP_FEATURES.RENDERER_HOME, {
+        [SENTRY_TAGS.LOGGER]: this.constructor.name,
+        [SENTRY_TAGS.PROCESS]: 'renderer',
+      }),
       extra: {
         componentStack: errorInfo.componentStack,
       },
     });
 
-    // 2. 执行外部业务传入的 onError 回调
+    // 2. 落盘：Sentry 未激活（dev/无 DSN）时这是渲染崩溃的唯一磁盘痕迹
+    logger.error('React component crashed:', error, {
+      componentStack: errorInfo.componentStack,
+    });
+
+    // 3. 执行外部业务传入的 onError 回调
     this.props.onError?.(error, errorInfo);
   }
 
