@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v1.9.0
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.8.0...v1.9.0)
+
+### 🚀 新增特性 (Features)
+
+- **renderer:** Tailwind 升级至 v4 并接入官方 Vite 插件 ([#43](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/43))
+
+### ❤️ Contributors
+
+- 半山Alec ([@BanShan-Alec](https://github.com/BanShan-Alec))
+
 ## v1.8.0
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.7.0...v1.8.0)
