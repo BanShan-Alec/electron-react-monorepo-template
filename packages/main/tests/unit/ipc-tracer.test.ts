@@ -63,4 +63,23 @@ describe('IPC Tracer Contract', () => {
     expect(capturedTraceId).toMatch(/^[0-9a-f]{32}$/);
     expect(capturedParentId).toBeUndefined();
   });
+
+  it('marks span as ERROR when setStatus("ERROR") is called', async () => {
+    const tracer = getTracer();
+    let capturedRecord: unknown;
+    const unsub = tracer.onSpanEnd((record) => {
+      if (record.name === 'test.error.span') {
+        capturedRecord = record;
+      }
+    });
+
+    await tracer.startActiveSpan('test.error.span', undefined, async (span) => {
+      span.setStatus('ERROR');
+      return { success: false };
+    });
+
+    unsub();
+    expect(capturedRecord).toBeDefined();
+    expect((capturedRecord as { status: string }).status).toBe('ERROR');
+  });
 });

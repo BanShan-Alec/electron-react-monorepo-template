@@ -186,19 +186,24 @@ export class LogManager implements AppModule {
     message: string,
     args?: unknown[],
     windowName?: string,
+    traceId?: string,
+    spanId?: string,
   ): void {
     const targetName = windowName || 'home';
     const targetLogger = this.getWindowLogger(targetName);
     const fn = targetLogger[level] || targetLogger.info;
     // 与 console 变参语义对齐：util.format 统一渲染（%s 模板、对象 inspect、循环安全），
     // 预处理已在 preload 完成，此处参数均为 clone 安全值
-    const line = truncateRenderedLine(
+    const formatted = truncateRenderedLine(
       util.formatWithOptions(
         { depth: 5 },
         `[Renderer] [${targetName}] ${message}`,
         ...(args ?? []),
       ),
     );
+    const line = traceId
+      ? `[trace_id:${traceId}${spanId ? ` span_id:${spanId}` : ''}] ${formatted}`
+      : formatted;
     fn(line);
   }
 

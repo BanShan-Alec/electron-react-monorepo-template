@@ -1,3 +1,4 @@
+import { ErrorCode } from '@app/shared/constants/error-codes';
 import type { SpanContext, TracedIpcPayload } from '@app/shared/types/telemetry';
 import type { IpcMainInvokeEvent } from 'electron';
 import { BrowserWindow, ipcMain } from 'electron';
@@ -63,27 +64,59 @@ export function handleTraced<T = unknown, R = unknown>(
         const winTag = windowName ? `[${windowName}] ` : windowId ? `[win#${windowId}] ` : '';
         // 生产调用记录由 traces.ndjson 的 span 承担；此处只保留开发终端可见的在飞标记
         getLogManager().scoped('IPC').debug(`${winTag}Handling ${channel}`);
-        const result = await handler(event, data, windowName);
-        // 若业务返回了 Result 结构体，可辅助记录业务结果状态
-        if (
-          result &&
-          typeof result === 'object' &&
-          'success' in result &&
-          typeof (result as { success: unknown }).success === 'boolean'
-        ) {
-          const res = result as { success: boolean; error?: string; code?: string };
-          span.setAttributes({
-            'app.result_success': res.success,
-            ...(res.code ? { 'app.result_code': res.code } : {}),
-          });
-          if (!res.success && res.error) {
-            span.addEvent('business_error', {
-              'error.message': res.error,
-              ...(res.code ? { 'error.code': res.code } : {}),
+        const startedAt = performance.now();
+        try {
+          const result = await handler(event, data, windowName);
+          const durationMs = performance.now() - startedAt;
+          const cost = `${durationMs.toFixed(1)}ms`;
+
+          // 若业务返回了 Result 结构体，可辅助记录业务结果状态并注入 traceId
+          if (
+            result &&
+            typeof result === 'object' &&
+            'success' in result &&
+            typeof (result as { success: unknown }).success === 'boolean'
+          ) {
+            const res = result as {
+              success: boolean;
+              error?: string;
+              code?: string;
+              traceId?: string;
+            };
+            res.traceId = span.context.traceId;
+
+            span.setAttributes({
+              'app.result_success': res.success,
+              ...(res.code ? { 'app.result_code': res.code } : {}),
             });
+
+            if (!res.success) {
+              if (res.error) {
+                span.addEvent('business_error', {
+                  'error.message': res.error,
+                  ...(res.code ? { 'error.code': res.code } : {}),
+                });
+              }
+              const isValidation = res.code === ErrorCode.VALIDATION_ERROR;
+              const logMsg = `${winTag}${channel} failed (${cost}): ${res.error ?? 'Unknown error'}${res.code ? ` [code: ${res.code}]` : ''}`;
+              if (isValidation) {
+                getLogManager().scoped('IPC').warn(logMsg);
+              } else {
+                span.setStatus('ERROR');
+                getLogManager().scoped('IPC').error(logMsg);
+              }
+            }
           }
+          return result;
+        } catch (err) {
+          const durationMs = performance.now() - startedAt;
+          const cost = `${durationMs.toFixed(1)}ms`;
+          span.setStatus('ERROR');
+          getLogManager()
+            .scoped('IPC')
+            .error(`${winTag}${channel} threw uncaught error (${cost}):`, err);
+          throw err;
         }
-        return result;
       },
     );
   });

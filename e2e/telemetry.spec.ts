@@ -23,19 +23,29 @@ test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => 
         api: {
           counter: { increment: (args: unknown) => Promise<unknown> };
           calculator: {
-            calculate: (args: unknown) => Promise<{ success: boolean; data: { result: number } }>;
+            calculate: (
+              args: unknown,
+            ) => Promise<{ success: boolean; data: { result: number }; traceId?: string }>;
           };
           config: { update: (input: unknown) => Promise<unknown> };
         };
-        logger: { info: (message: string, ...args: unknown[]) => void };
+        logger: {
+          info: (message: string, ...args: unknown[]) => void;
+          withTrace: (
+            traceId: string,
+            spanId?: string,
+          ) => { info: (message: string, ...args: unknown[]) => void };
+        };
       };
       const counterRes = await api.counter.increment({ step: 1 });
       const calcRes = await api.calculator.calculate({ a: 15, b: 27, op: 'add' });
       // Handling 入口标记已降为 debug（test/生产不落盘）；用 config.update 内部的主进程
       // info 日志继续校验 main.log 的跨进程 trace 注入
       await api.config.update({ serverCounter: 1 });
-      // 经全局 logger 桥打业务日志（底层仍走 diagnostics:log 通道，span 断言不变）
-      logger.info('Business action executed in traced context');
+      // 经 withTrace 显式绑定业务 Trace 打业务日志（端到端贯通验证）
+      logger
+        .withTrace('4bf92f3577b34da6a3ce929d0e0e4736', '00f067aa0ba902b7')
+        .info('Business action executed in traced context');
       // D2：超长渲染行经主进程静默截断（>2000 字符）
       logger.info(`Truncation probe ${'x'.repeat(3000)}`);
       return { counterRes, calcRes };
@@ -43,6 +53,8 @@ test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => 
 
     expect(res.calcRes.success).toBe(true);
     expect(res.calcRes.data.result).toBe(42);
+    expect(res.calcRes.traceId).toBeDefined();
+    expect(res.calcRes.traceId).toMatch(/^[0-9a-f]{32}$/);
 
     // 3. 稍作等待确保 electron-log 写入文件刷盘
     await page.waitForTimeout(500);
@@ -90,7 +102,8 @@ test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => 
     expect(spanNames).toContain('window.initialization');
     expect(spanNames).toContain('ipc.receive:counter:increment');
     expect(spanNames).toContain('ipc.receive:calculator:calculate');
-    expect(spanNames).toContain('ipc.receive:diagnostics:log');
+    // diagnostics:log 仅作为静默传输管道，不生成无意义伪 Span 污染拓扑
+    expect(spanNames).not.toContain('ipc.receive:diagnostics:log');
 
     // 校验 main.log 中成功注入了 trace_id 与 span_id（config.update handler 内的 info 日志）
     expect(mainLogContent).toMatch(/\[trace_id:[0-9a-f]{32}\s+span_id:[0-9a-f]{16}\]/);
@@ -98,8 +111,10 @@ test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => 
     // Handling 入口标记已降为 debug：test/生产模式的 main.log 不应再出现
     expect(mainLogContent).not.toContain('Handling ');
 
-    // 校验 renderer-home.log 中同样注入了 trace 上下文与窗口 attribution
-    expect(rendererLogContent).toMatch(/\[trace_id:[0-9a-f]{32}\s+span_id:[0-9a-f]{16}\]/);
+    // 校验 renderer-home.log 中由 withTrace 显式绑定的业务 trace 上下文与窗口 attribution
+    expect(rendererLogContent).toMatch(
+      /\[trace_id:4bf92f3577b34da6a3ce929d0e0e4736\s+span_id:00f067aa0ba902b7\]/,
+    );
     expect(rendererLogContent).toContain('[Renderer] [home]');
 
     // D7 替代方案：窗口创建分隔行标记渲染窗口边界（reload 不重复写）

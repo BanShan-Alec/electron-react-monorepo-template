@@ -7,11 +7,13 @@ import type { Result } from '@shared/types/result';
  */
 export class IpcError extends Error {
   readonly code?: string;
+  readonly traceId?: string;
 
-  constructor(message: string, code?: string) {
+  constructor(message: string, code?: string, traceId?: string) {
     super(message);
     this.name = 'IpcError';
     this.code = code;
+    this.traceId = traceId;
   }
 }
 
@@ -26,7 +28,13 @@ const IPC_LOG_PREFIX = '[ipc]';
  * 磁盘可查哪个 IPC 为什么失败过。
  * 严禁打印入参 body——config 含本地路径、dialog 含 URL。
  */
-function logIpc(channel: string, ok: boolean, durationMs: number, error?: unknown) {
+function logIpc(
+  channel: string,
+  ok: boolean,
+  durationMs: number,
+  error?: unknown,
+  traceId?: string,
+) {
   const isDev = window.__APP_ENV__?.mode === APP_ENV.DEVELOPMENT;
   const cost = `${durationMs.toFixed(1)}ms`;
   if (ok) {
@@ -36,19 +44,31 @@ function logIpc(channel: string, ok: boolean, durationMs: number, error?: unknow
     return;
   }
   const line = `${IPC_LOG_PREFIX} ${channel} failed ${cost}`;
+  const targetLogger =
+    traceId && typeof logger.withTrace === 'function' ? logger.withTrace(traceId) : logger;
+  const traceMarker = traceId ? { __trace_id: traceId } : undefined;
+
   if (isDev) {
-    logger.warn(line, error);
+    if (traceMarker) {
+      targetLogger.error(line, error, traceMarker);
+    } else {
+      targetLogger.error(line, error);
+    }
     return;
   }
   const reason = error instanceof Error ? error.message : String(error);
-  logger.warn(`${line}: ${reason}`);
+  if (traceMarker) {
+    targetLogger.error(`${line}: ${reason}`, traceMarker);
+  } else {
+    targetLogger.error(`${line}: ${reason}`);
+  }
 }
 
 type IpcService<TData, TParams extends unknown[]> = (...args: TParams) => Promise<Result<TData>>;
 
 /**
  * 统一的 IPC 调用原语：Result 解构 + 计时 + 日志。
- * 成功返回解构后的 data，失败抛 IpcError（保留 code）。
+ * 成功返回解构后的 data，失败抛 IpcError（保留 code 与 traceId）。
  * feature 内禁止手写 window.api.* + if (!res.success)，一律经由本函数或 hooks/useIpc.ts。
  */
 export async function callIpc<TData, TParams extends unknown[]>(
@@ -57,15 +77,18 @@ export async function callIpc<TData, TParams extends unknown[]>(
   args: TParams,
 ): Promise<TData> {
   const startedAt = performance.now();
+  let traceId: string | undefined;
   try {
     const res = await service(...args);
+    traceId = res.traceId;
     if (!res.success) {
-      throw new IpcError(res.error, res.code);
+      throw new IpcError(res.error, res.code, res.traceId);
     }
-    logIpc(channel, true, performance.now() - startedAt);
+    logIpc(channel, true, performance.now() - startedAt, undefined, traceId);
     return res.data;
   } catch (error) {
-    logIpc(channel, false, performance.now() - startedAt, error);
+    const effectiveTraceId = error instanceof IpcError ? (error.traceId ?? traceId) : traceId;
+    logIpc(channel, false, performance.now() - startedAt, error, effectiveTraceId);
     throw error;
   }
 }

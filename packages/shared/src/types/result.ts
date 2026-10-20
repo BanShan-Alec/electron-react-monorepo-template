@@ -3,5 +3,5 @@
  * 对齐 specs-electron-fullstack / core/error-codes.md
  */
 export type Result<T> =
-  | { success: true; data: T }
-  | { success: false; error: string; code?: string };
+  | { success: true; data: T; traceId?: string }
+  | { success: false; error: string; code?: string; traceId?: string };

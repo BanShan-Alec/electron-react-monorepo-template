@@ -5,9 +5,19 @@
  * 每次调用双写：DevTools 回显（原生 console）+ diagnostics:log 通道落盘，fire-and-forget，
  * 调用方不感知 IPC 成败；debug 级仅开发构建生效。
  */
+export type ILogMethod = (message: string, ...args: unknown[]) => void;
+
+export interface IScopedTraceLogger {
+  info: ILogMethod;
+  warn: ILogMethod;
+  error: ILogMethod;
+  debug: ILogMethod;
+}
+
 export interface LoggerApi {
-  info: (message: string, ...args: unknown[]) => void;
-  warn: (message: string, ...args: unknown[]) => void;
-  error: (message: string, ...args: unknown[]) => void;
-  debug: (message: string, ...args: unknown[]) => void;
+  info: ILogMethod;
+  warn: ILogMethod;
+  error: ILogMethod;
+  debug: ILogMethod;
+  withTrace: (traceId: string, spanId?: string) => IScopedTraceLogger;
 }
