@@ -1,6 +1,23 @@
 # Changelog
 
 
+## v1.7.0
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.6.0...v1.7.0)
+
+### 🚀 新增特性 (Features)
+
+- **logging:** 渲染进程新增全局 logger API 并加固落盘管道 ([#37](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/37))
+- **template:** 支持零配置打包、动态应用标识、补充 License 与定制指南 ([#34](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/34))
+
+### 🩹 缺陷修复 (Bug Fixes)
+
+- **ota:** 规整打包产物命名规范并打通主进程 OTA 异常 Sentry 监控 ([#38](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/38))
+
+### ❤️ Contributors
+
+- 半山Alec ([@BanShan-Alec](https://github.com/BanShan-Alec))
+
 ## v1.6.0
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.5.0...v1.6.0)
