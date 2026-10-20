@@ -38,7 +38,7 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
 
     // 1. 初始状态断言（简体中文）
     await expect(html).toHaveAttribute('lang', 'zh-CN');
-    await expect(page.locator('.ant-segmented-item', { hasText: '总览看板' })).toBeVisible();
+    await expect(page.locator('.ant-tabs-tab', { hasText: '总览看板' })).toBeVisible();
     await expect(page.getByText('应用偏好设置 (ConfigStore)')).toBeVisible();
     await expect(page.getByText('IPC 计数器 (Counter)')).toBeVisible();
 
@@ -64,7 +64,7 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     await expect(html).toHaveAttribute('lang', 'en-US');
 
     // 断言 Header 导航标签变为英文
-    await expect(page.locator('.ant-segmented-item', { hasText: 'Dashboard' })).toBeVisible();
+    await expect(page.locator('.ant-tabs-tab', { hasText: 'Dashboard' })).toBeVisible();
 
     // 断言 Settings 卡片标题与设置项标签变为英文
     await expect(page.getByText('Preferences (ConfigStore)')).toBeVisible();
@@ -92,7 +92,7 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     await zhOption.click();
 
     await expect(html).toHaveAttribute('lang', 'zh-CN');
-    await expect(page.locator('.ant-segmented-item', { hasText: '总览看板' })).toBeVisible();
+    await expect(page.locator('.ant-tabs-tab', { hasText: '总览看板' })).toBeVisible();
     await expect(page.getByText('应用偏好设置 (ConfigStore)')).toBeVisible();
     await expect(page.getByText('IPC 计数器 (Counter)')).toBeVisible();
   });
