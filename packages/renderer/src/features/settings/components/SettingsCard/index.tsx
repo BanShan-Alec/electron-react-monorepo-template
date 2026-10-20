@@ -2,7 +2,7 @@ import { SettingOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import type { AppConfig } from '@shared/schemas/config';
-import { Button, Card, Checkbox, Select, Skeleton, Switch } from 'antd';
+import { Button, Card, Select, Skeleton, Switch } from 'antd';
 import { memo } from 'react';
 import { CardTitle } from '@/components/ui/CardTitle';
 
@@ -119,10 +119,10 @@ const _SettingsCard = (props: ISettingsCardProps) => {
               >
                 {t`检查更新`}
               </Button>
-              <Checkbox
+              {/* <Checkbox
                 checked={appConfig.autoCheckUpdate}
                 onChange={(e) => onUpdate({ autoCheckUpdate: e.target.checked })}
-              />
+              /> */}
             </div>
           </div>
         </div>
