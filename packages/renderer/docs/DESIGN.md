@@ -5,7 +5,7 @@ AI 在 renderer 写样式时唯一需要遵守的视觉纪律；品牌定制入�
 ## 纪律
 
 1. **禁硬编码颜色 / 间距 / 字体值**：一律使用 `var(--color-*)` CSS 变量或 Tailwind 主题类（`bg-primary`、`text-foreground` 等）。
-2. **层级秩序**（antd v6 + Tailwind v4 官方配比）：`index.css` 首行声明 `@layer theme, base, antd, components, utilities`，`AppProviders` 用 `<StyleProvider layer>` 把 antd 样式收进 `@layer antd`。覆盖关系只看层：Tailwind utilities 可直接覆盖 antd 组件（写 `className` 即可，无需 `!important`）；自己的组件类进 `components` 层；**不要在层外写裸样式**（无层级样式会压过一切）。
+2. **层级秩序**（antd v6 + Tailwind v4 官方配比）：`index.css` 首行声明 `@layer theme, base, antd, components, utilities`，`AppProviders` 用 `<StyleProvider layer>` 把 antd 样式收进 `@layer antd`。覆盖关系只看层：Tailwind utilities 可直接覆盖 antd 组件（写 `className` 即可，无需 `!important`）；自己的组件类进 `components` 层；**不要在层外写裸样式**（无层级样式会压过一切）。唯一豁免：`tokens.css` 的 `:root` 设计令牌定义保持未分层（utilities 不会声明 `--color-*` 变量，无竞争面；未分层反而保证令牌不被 theme 层的回退值覆盖）。
 3. **改品牌 = 改 token，不改组件**。三个文件各司其职：
    - `src/styles/tokens.css` —— CSS 变量唯一定义（改这里）
    - `src/styles/index.css` —— `@theme inline` 把 token 映射为 Tailwind 主题类
