@@ -10,6 +10,8 @@ import { handleTraced } from '../telemetry/ipc-tracer';
 import { catchToResult, failResult, successResult } from './utils';
 
 export function registerDiagnosticsControllers(): void {
+  // 架构豁免：DIAGNOSTICS_LOG 属于日志落盘传输管道本体，禁止走 handleTraced 追踪，
+  // 避免每行日志落盘产生 span 与 trace 跟踪日志导致严重递归自噪。
   ipcMain.handle(
     IPC_CHANNELS.DIAGNOSTICS_LOG,
     async (event, rawInput: unknown): Promise<Result<{ success: boolean }>> => {
@@ -20,7 +22,11 @@ export function registerDiagnosticsControllers(): void {
       try {
         const senderWin = event.sender ? BrowserWindow.fromWebContents(event.sender) : null;
         const windowName = senderWin ? getWindowName(senderWin) : undefined;
-        diagnosticsService.logMessage(parseResult.data, windowName, event.sender.id);
+        diagnosticsService.logMessage(
+          parseResult.data,
+          windowName,
+          senderWin?.id ?? event.sender?.id,
+        );
         return successResult({ success: true });
       } catch (err) {
         return catchToResult(err);

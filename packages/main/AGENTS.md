@@ -114,7 +114,7 @@ export function registerNotesControllers(): void {
 }
 ```
 
-> **必须走 `handleTraced`，严禁裸写 `ipcMain.handle`**（2026-10-18 立）：`handleTraced` 负责解包 preload 传入的 `__trace_carrier`、创建 `ipc.receive:<channel>` span，并把返回的 `Result` 成败记录为 span 属性。裸写会静默丢失全链路追踪。handler 第二形参是解包后的数据（故示例用 `rawInput` 直接校验）。
+> **必须走 `handleTraced`，严禁裸写 `ipcMain.handle`**（2026-10-18 立；唯一架构豁免：`IPC_CHANNELS.DIAGNOSTICS_LOG` 作为日志落盘底层管道，禁止包裹 `handleTraced`，避免日志双写引发 span 与 trace 循环自噪）：`handleTraced` 负责解包 preload 传入的 `__trace_carrier`、创建 `ipc.receive:<channel>` span，并把返回的 `Result` 成败记录为 span 属性。裸写会静默丢失全链路追踪。handler 第二形参是解包后的数据（故示例用 `rawInput` 直接校验）。
 
 ### Step 3: 在 `controllers/index.ts` 登记挂载
 

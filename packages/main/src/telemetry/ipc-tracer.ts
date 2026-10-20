@@ -22,7 +22,9 @@ export function isTracedIpcPayload<T = unknown>(value: unknown): value is Traced
 }
 
 /**
- * 包装 ipcMain.handle，实现请求链路追踪与上下文自动透传
+ * 包装 ipcMain.handle，实现请求链路追踪与上下文自动透传。
+ * 规范：所有业务 IPC 通道必须经由本函数注册；
+ * 架构豁免：DIAGNOSTICS_LOG（日志落盘底层管道）除外，避免每行日志落盘产生 span 导致遥测递归自噪。
  */
 export function handleTraced<T = unknown, R = unknown>(
   channel: string,
@@ -83,29 +85,36 @@ export function handleTraced<T = unknown, R = unknown>(
               code?: string;
               traceId?: string;
             };
-            res.traceId = span.context.traceId;
+            // 采用浅克隆注入 traceId，避免直接修改业务返回对象造成潜在副作用
+            const enrichedResult = {
+              ...res,
+              traceId: span.context.traceId,
+            };
 
             span.setAttributes({
-              'app.result_success': res.success,
-              ...(res.code ? { 'app.result_code': res.code } : {}),
+              'app.result_success': enrichedResult.success,
+              ...(enrichedResult.code ? { 'app.result_code': enrichedResult.code } : {}),
             });
 
-            if (!res.success) {
-              if (res.error) {
+            if (!enrichedResult.success) {
+              if (enrichedResult.error) {
                 span.addEvent('business_error', {
-                  'error.message': res.error,
-                  ...(res.code ? { 'error.code': res.code } : {}),
+                  'error.message': enrichedResult.error,
+                  ...(enrichedResult.code ? { 'error.code': enrichedResult.code } : {}),
                 });
               }
-              const isInternalError = !res.code || res.code === ErrorCode.INTERNAL_ERROR;
-              const logMsg = `${winTag}${channel} failed (${cost}): ${res.error ?? 'Unknown error'}${res.code ? ` [code: ${res.code}]` : ''}`;
+              const isInternalError =
+                !enrichedResult.code || enrichedResult.code === ErrorCode.INTERNAL_ERROR;
+              const logMsg = `${winTag}${channel} failed (${cost}): ${enrichedResult.error ?? 'Unknown error'}${enrichedResult.code ? ` [code: ${enrichedResult.code}]` : ''}`;
+              // 业务失败统一设置 span 状态为 ERROR，以便监控看板如实体现
+              span.setStatus('ERROR');
               if (isInternalError) {
-                span.setStatus('ERROR');
                 getLogManager().scoped('IPC').error(logMsg);
               } else {
                 getLogManager().scoped('IPC').warn(logMsg);
               }
             }
+            return enrichedResult as unknown as R;
           }
           return result;
         } catch (err) {
