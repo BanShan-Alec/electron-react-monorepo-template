@@ -61,7 +61,8 @@ export function handleTraced<T = unknown, R = unknown>(
       },
       async (span) => {
         const winTag = windowName ? `[${windowName}] ` : windowId ? `[win#${windowId}] ` : '';
-        getLogManager().scoped('IPC').info(`${winTag}Handling ${channel}`);
+        // 生产调用记录由 traces.ndjson 的 span 承担；此处只保留开发终端可见的在飞标记
+        getLogManager().scoped('IPC').debug(`${winTag}Handling ${channel}`);
         const result = await handler(event, data, windowName);
         // 若业务返回了 Result 结构体，可辅助记录业务结果状态
         if (

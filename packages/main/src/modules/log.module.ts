@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import util from 'node:util';
 import type { SpanRecord } from '@app/shared/types/telemetry';
-import { shell } from 'electron';
+import { app, shell } from 'electron';
 import type { LogMessage } from 'electron-log';
 import log from 'electron-log/main';
 import type { AppModule } from '../AppModule';
@@ -130,7 +130,8 @@ export class LogManager implements AppModule {
   public enable({ app }: ModuleContext): void {
     app.whenReady().then(() => {
       this.cleanOldLogs();
-      // D7 替代方案：固定标记的启动分隔行，标记一轮运行的边界（main.log 独有）
+      // D7 替代方案：固定标记的启动分隔行，标记一轮 App 运行的边界（main.log 独有；
+      // 渲染窗口的创建边界另由 logWindowStarted 写入 renderer-<window>.log）
       this.mainLogger.info(`[App Lifecycle] ===== App started (v${app.getVersion()}) =====`);
       this.mainLogger.info('[App Lifecycle] Application ready, logging system initialized');
     });
@@ -199,6 +200,19 @@ export class LogManager implements AppModule {
       ),
     );
     fn(line);
+  }
+
+  /**
+   * 写入渲染窗口的启动分隔行：标记该窗口本轮创建。
+   * reload 不重建窗口，因此不会重复写；updater 窗口重新创建时会产生新的一行。
+   */
+  public logWindowStarted(windowName: string): void {
+    this.logRendererMessage(
+      'info',
+      `[Window Lifecycle] ===== Window started (v${app.getVersion()}) =====`,
+      undefined,
+      windowName,
+    );
   }
 }
 

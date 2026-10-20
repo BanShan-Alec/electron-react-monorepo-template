@@ -9,8 +9,8 @@ import { initSentry } from '@/lib/sentry';
 import App from './App.tsx';
 
 initSentry();
-// 生命周期叙事：入口启动即落盘（preload 先于页面脚本执行，logger 全局已就绪）
-logger.info('App started', { entry: 'home' });
+// 生命周期叙事：每次文档加载即落盘（preload 先于页面脚本执行，logger 全局已就绪）
+logger.info('Document started', { entry: 'home' });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
