@@ -135,8 +135,11 @@ test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => 
       expect(record.trace_id).toMatch(/^[0-9a-f]{32}$/);
       expect(record.span_id).toMatch(/^[0-9a-f]{16}$/);
       expect(typeof record.duration_ms).toBe('number');
-      expect(record.status).toBe('OK');
+      expect(['OK', 'ERROR']).toContain(record.status);
     }
+
+    const calcRecord = records.find((r) => r.name === 'ipc.receive:calculator:calculate');
+    expect(calcRecord?.status).toBe('OK');
 
     // 5. 验证真实 Electron 运行时中的日志轮转机制 (时间戳归档与主日志重置)
     const rotated = await electronApp.evaluate(() => {

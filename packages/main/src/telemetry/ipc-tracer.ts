@@ -97,13 +97,13 @@ export function handleTraced<T = unknown, R = unknown>(
                   ...(res.code ? { 'error.code': res.code } : {}),
                 });
               }
-              const isValidation = res.code === ErrorCode.VALIDATION_ERROR;
+              const isInternalError = !res.code || res.code === ErrorCode.INTERNAL_ERROR;
               const logMsg = `${winTag}${channel} failed (${cost}): ${res.error ?? 'Unknown error'}${res.code ? ` [code: ${res.code}]` : ''}`;
-              if (isValidation) {
-                getLogManager().scoped('IPC').warn(logMsg);
-              } else {
+              if (isInternalError) {
                 span.setStatus('ERROR');
                 getLogManager().scoped('IPC').error(logMsg);
+              } else {
+                getLogManager().scoped('IPC').warn(logMsg);
               }
             }
           }
