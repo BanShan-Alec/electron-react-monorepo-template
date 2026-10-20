@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v1.8.0
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.7.0...v1.8.0)
+
+### 🚀 新增特性 (Features)
+
+- **lifecycle:** 补充渲染窗口启动生命周期日志并消除更新窗口白屏闪烁 ([#41](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/41))
+
+### ❤️ Contributors
+
+- 半山Alec <627649674@qq.com>
+
 ## v1.7.0
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.6.0...v1.7.0)
