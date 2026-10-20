@@ -44,7 +44,7 @@
 - **`dependencies`**：**代码会流向客户端浏览器 bundle 的业务运行时库**。
   - 例如：`react`, `react-dom`, `antd`, `@ant-design/icons`, `zustand`, `ahooks`, `@sentry/electron`, `clsx`, `@lingui/react` 等。
 - **`devDependencies`**：**纯构建工具、编译插件与代码规范库**。
-  - 例如：`vite`, `@vitejs/plugin-react`, `tailwindcss`, `postcss`, `autoprefixer`, `typescript`, `@types/*`, `@lingui/cli` 等。
+  - 例如：`vite`, `@vitejs/plugin-react`, `tailwindcss`, `@tailwindcss/vite`, `typescript`, `@types/*`, `@lingui/cli` 等。
 
 > 💡 **原理说明**：由于根目录与主进程已切断了对 `@app/renderer` 的运行时依赖拓扑，`electron-builder` 在构建时完全不会扫描 Renderer 的 `dependencies`。Renderer 的产物通过 `build/electron-builder.ts` 中的 `FileSet` 映射规则只将 Vite 编译后的 `dist` 单向挂载至 `app.asar` 的 `node_modules/@app/renderer` 下，零依赖泄露。
 

@@ -64,7 +64,7 @@ function StepItem({
 }) {
   return (
     <div className={STEP_CARD_CLASS}>
-      <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
+      <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs shrink-0">
         {step}
       </div>
       <div>

@@ -39,7 +39,7 @@ const _Header = (props: IHeaderProps) => {
   return (
     <header className="drag-region bg-background-container border-b border-border px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 sticky top-0 z-30 select-none">
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center text-lg flex-shrink-0">
+        <div className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center text-lg shrink-0">
           <ThunderboltFilled />
         </div>
         <div>
