@@ -1,3 +1,4 @@
+import { StyleProvider } from '@ant-design/cssinjs';
 import { I18nProvider } from '@lingui/react';
 import { App as AntdApp, ConfigProvider } from 'antd';
 import type React from 'react';
@@ -47,15 +48,21 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <I18nProvider i18n={i18n}>
-      <ConfigProvider
-        button={{ autoInsertSpace: false }}
-        theme={getAntdThemeConfig(resolvedTheme)}
-        locale={getAntdLocale(language)}
-      >
-        <AntdApp>
-          <ErrorBoundary>{children}</ErrorBoundary>
-        </AntdApp>
-      </ConfigProvider>
+      {/*
+        layer：把 cssinjs 注入的 antd 样式收进 @layer antd（层名由 cssinjs 默认提供），
+        配合 index.css 首行的层序声明，使 Tailwind utilities 可直接覆盖 antd 组件样式。
+      */}
+      <StyleProvider layer>
+        <ConfigProvider
+          button={{ autoInsertSpace: false }}
+          theme={getAntdThemeConfig(resolvedTheme)}
+          locale={getAntdLocale(language)}
+        >
+          <AntdApp>
+            <ErrorBoundary>{children}</ErrorBoundary>
+          </AntdApp>
+        </ConfigProvider>
+      </StyleProvider>
     </I18nProvider>
   );
 };

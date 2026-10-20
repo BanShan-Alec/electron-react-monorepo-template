@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ant-design/cssinjs": "^2.1.2",
     "@ant-design/icons": "^6.3.4",
     "@app/shared": "workspace:*",
     "@lingui/core": "^6.9.0",

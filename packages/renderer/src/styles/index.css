@@ -1,9 +1,12 @@
 /*
  * 样式入口（home / updater 双入口共用）。
- * Tailwind v4：由官方 Vite 插件（@tailwindcss/vite）驱动，@import "tailwindcss" 必须居首——
- * 其 Preflight 与下方 base.css 同属 @layer base，源码顺序靠后者胜出，
- * 保证 html/body 的字体、背景以我们自己的声明为准。
+ * 首行层序声明是 antd v6 + Tailwind v4 组合的秩序基石（antd 官方 compatible-style 配比）：
+ * theme < base < antd < components < utilities，此后覆盖关系只看层、不看特异性与注入顺序。
+ * 配套：AppProviders 的 <StyleProvider layer> 把 cssinjs 注入的 antd 样式收进 @layer antd。
  */
+@layer theme, base, antd, components, utilities;
+
+/* Tailwind v4：官方 Vite 插件驱动；source(none)+@source "../" 把扫描精确圈定为 src/ */
 @import "tailwindcss" source(none);
 @import "./tokens.css";
 @import "./base.css";
