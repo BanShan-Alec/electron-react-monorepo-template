@@ -1,7 +1,7 @@
 import { ThunderboltFilled } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Badge, Segmented } from 'antd';
+import { Badge, Tabs } from 'antd';
 import { memo } from 'react';
 import { useLocation } from 'wouter';
 
@@ -21,14 +21,14 @@ const _Header = (props: IHeaderProps) => {
   // 网络IO
 
   // 数据转换
-  const tabOptions = [
-    { label: t`总览看板`, value: '/dashboard' },
-    { label: t`架构全貌`, value: '/architecture' },
+  const tabItems = [
+    { key: '/dashboard', label: t`总览看板` },
+    { key: '/architecture', label: t`架构全貌` },
   ];
 
   // 逻辑处理函数
-  const handleTabChange = (value: string | number) => {
-    const nextTab = value as HeaderTab;
+  const handleTabChange = (key: string) => {
+    const nextTab = key as HeaderTab;
     navigate(nextTab);
     props.onTabChange?.(nextTab);
   };
@@ -37,34 +37,42 @@ const _Header = (props: IHeaderProps) => {
 
   // 组件渲染
   return (
-    <header className="drag-region bg-background-container border-b border-border px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 sticky top-0 z-30 select-none">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center text-lg shrink-0">
-          <ThunderboltFilled />
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold text-foreground tracking-tight">
-              {window.__APP_ENV__?.appName || 'Electron App'}
-            </h1>
-            <Badge
-              count={window.__APP_ENV__?.appVersion || 'v0.0.0'}
-              color="var(--color-primary)"
-            />
+    <header className="bg-background-container border-b border-border sticky top-0 z-30 select-none">
+      {/* Layer 1: 系统标题栏（高度 32px，与原生 WCO 按钮/红绿灯同轴避让并独占窗口拖拽） */}
+      <div className="drag-region h-8 px-4 flex items-center justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-4 h-4 rounded bg-primary text-white flex items-center justify-center text-[10px] shrink-0">
+            <ThunderboltFilled />
           </div>
-          <p className="text-xs text-foreground-secondary mt-0.5">
-            {t`企业级端到端类型安全桌面客户端脚手架`}
-          </p>
+          <span className="text-xs font-semibold text-foreground tracking-tight truncate">
+            {window.__APP_ENV__?.appName || 'Electron App'}
+          </span>
+          <Badge
+            count={window.__APP_ENV__?.appVersion || 'v0.0.0'}
+            color="var(--color-primary)"
+            className="shrink-0 scale-90 origin-left"
+          />
         </div>
       </div>
 
-      {/* Tabs */}
-      <Segmented
-        className="no-drag"
-        value={activeTab}
-        options={tabOptions}
-        onChange={handleTabChange}
-      />
+      {/* Layer 2: 业务导航栏（非拖拽区，左侧 Tabs 标签页，右侧副标题描述） */}
+      <div className="px-6 flex items-center justify-between gap-4 -mb-[1px]">
+        {/* 左侧：Tabs 页面切换 */}
+        <div className="flex items-center min-w-0">
+          <Tabs
+            activeKey={activeTab}
+            items={tabItems}
+            onChange={handleTabChange}
+            tabBarStyle={{ marginBottom: 0 }}
+            className="[&_.ant-tabs-nav]:mb-0 [&_.ant-tabs-nav::before]:border-b-0"
+          />
+        </div>
+
+        {/* 右侧：副标题描述 */}
+        <p className="text-xs text-foreground-secondary leading-snug line-clamp-2 text-right">
+          {t`企业级端到端类型安全桌面客户端脚手架`}
+        </p>
+      </div>
     </header>
   );
 };

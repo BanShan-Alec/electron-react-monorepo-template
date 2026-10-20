@@ -37,12 +37,12 @@
 
 /*
  * 平台标题栏避让（env() 由 titleBarOverlay 提供）：
- * - darwin: 红绿灯在左上角，env(titlebar-area-x) 为其实际宽度，回退 80px
+ * - darwin: 红绿灯在左上角，env(titlebar-area-x) 为其实际宽度，回退 80px（全屏时 env 为 0，保底 1rem 避让边距）
  * - win32: 原生窗口控制按钮覆盖右上角，右侧按 env(titlebar-area-width) 预留
- * 不强制高度：头部高度由内容决定，overlay 高度走系统默认。
+ * 双层分治结构：仅首层系统标题栏（.drag-region）挂钩避让，第二层业务栏恢复全宽布局。
  */
 .platform-darwin .drag-region:not(.no-wco) {
-  padding-left: env(titlebar-area-x, 80px);
+  padding-left: max(1rem, env(titlebar-area-x, 80px));
 }
 
 .platform-win32 .drag-region:not(.no-wco) {
