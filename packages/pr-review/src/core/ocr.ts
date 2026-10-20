@@ -21,7 +21,29 @@ export function getLatestRunInfo(
       const prRunIds = safeParseJson<number[]>(artifactsJson);
       if (prRunIds && prRunIds.length > 0) {
         // prRunIds 升序排列，数组长度即为总运行轮次
-        const sortedIds = [...prRunIds].sort((a, b) => a - b).map(String);
+        const rawSortedIds = [...prRunIds].sort((a, b) => a - b).map(String);
+        // 过滤掉被取消或失败的 runs（GitHub artifacts API 的 workflow_run 中不含 conclusion）
+        const runsStatusJson = probe('gh', [
+          'run',
+          'list',
+          '--workflow=open-code-review.yml',
+          '--limit',
+          '50',
+          '--json',
+          'databaseId,conclusion',
+        ]);
+        const successfulRunIds = new Set(
+          safeParseJson<{ databaseId: number; conclusion: string }[]>(runsStatusJson)
+            ?.filter((r) => r.conclusion === 'success')
+            .map((r) => String(r.databaseId)) ?? [],
+        );
+        const sortedIds =
+          successfulRunIds.size > 0
+            ? rawSortedIds.filter((id) => successfulRunIds.has(id))
+            : rawSortedIds;
+        if (sortedIds.length === 0) {
+          throw new Error('未找到执行成功的 Review 任务产物');
+        }
         let targetId = sortedIds[sortedIds.length - 1];
 
         // 优先从 PR sticky 评论中的 checkpoint 确认最新 run ID
@@ -177,7 +199,7 @@ export function fetchOcrResult(runId: string, cacheDir: string): OcrResult {
   });
 
   if (downloadResult.status !== 0) {
-    fail(`下载 Review 产物失败: ${downloadResult.stderr || downloadResult.stdout}`);
+    throw new Error(`下载 Review 产物失败: ${downloadResult.stderr || downloadResult.stdout}`);
   }
 
   const findResultFile = (dir: string): string | null => {
@@ -196,14 +218,17 @@ export function fetchOcrResult(runId: string, cacheDir: string): OcrResult {
 
   const jsonPath = findResultFile(runCacheDir);
   if (!jsonPath || !fs.existsSync(jsonPath)) {
-    fail('产物中未找到 ocr-result.json 文件，请确认 CI 是否执行完成');
+    throw new Error('产物中未找到 ocr-result.json 文件，请确认 CI 是否执行完成');
   }
 
   try {
     const raw = fs.readFileSync(jsonPath, 'utf-8');
+    if (!raw.trim()) {
+      throw new Error('ocr-result.json 内容为空');
+    }
     return JSON.parse(raw) as OcrResult;
   } catch (e: unknown) {
-    fail(`解析 ocr-result.json 失败: ${(e as Error).message}`);
+    throw new Error(`解析 ocr-result.json 失败: ${(e as Error).message}`);
   }
 }
 

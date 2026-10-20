@@ -9,6 +9,7 @@ import {
 
 export interface ISpanScope {
   readonly context: SpanContext;
+  setStatus(status: 'OK' | 'ERROR'): void;
   setAttributes(attrs: Record<string, string | number | boolean>): void;
   addEvent(name: string, attrs?: Record<string, string | number | boolean>): void;
   recordException(err: unknown): void;
@@ -113,6 +114,9 @@ export class Tracer implements ITracer {
 
     const spanScope: IManualSpan = {
       context,
+      setStatus(newStatus) {
+        status = newStatus;
+      },
       setAttributes(attrs) {
         Object.assign(attributes, attrs);
       },
@@ -156,7 +160,7 @@ export class Tracer implements ITracer {
           throw new Error(`Span "${name}" has already ended.`);
         }
         ended = true;
-        if (finalStatus) {
+        if (finalStatus && (finalStatus === 'ERROR' || status !== 'ERROR')) {
           status = finalStatus;
         }
 

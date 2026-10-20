@@ -16,7 +16,7 @@
 | **`@app/renderer`** | [`packages/renderer/`](packages/renderer) | **现代前端界面**：React 19 + TailwindCSS + antd + LinguiJS，采用自包含 Feature 驱动架构，统一通过 `useIpc` 消费数据 | [Renderer 架构指南](packages/renderer/README.md) |
 | **🌐 多语言架构** | [`docs/i18n/`](docs/i18n) | **中文优先现代国际化**：LinguiJS 6、Source-as-Key 理念、Vite 8 AST 宏优化、按需独立 Chunk 拆分与跨进程原生托盘联动 | [i18n 架构指南](docs/i18n/architecture.md) · [实操 SOP](docs/i18n/guide.md) |
 | **🧪 E2E 自动化测试** | [`e2e/`](e2e) | **端到端质量防护**：基于 Playwright 驱动真实打包/运行态 Electron 进程，常态化保障主题、多语言、托盘及防冲刷逻辑 | [测试用例集](e2e/settings.spec.ts) |
-| **📜 日志与防护** | [`docs/logging-and-exception-audit.md`](docs/logging-and-exception-audit.md) | **系统容灾与调试**：进程隔离落盘、5MB 自动轮转、大 Payload 截断保护与未捕获异常分级处置指南 | [日志系统指南](docs/logging-and-exception-audit.md) |
+| **📜 日志、Trace 与异常** | [`docs/logging-tracing-and-error-handling-guide.md`](docs/logging-tracing-and-error-handling-guide.md) | **可观测性与异常上报**：主/渲染进程 ScopedLogger 实战规范、Mini-OTel W3C 跨进程 Trace 贯通与 Sentry 分级闭环上报指南 | [实战开发速查](docs/logging-tracing-and-error-handling-guide.md) · [系统审查指南](docs/logging-and-exception-audit.md) |
 | **🚀 首屏渐进式加载** | [`docs/adr/`](docs/adr) | **启动体验设计定稿**：窗口即时呈现（废除 ready-to-show 门禁）、内联启动壳与双门禁就绪协调、win32 无边框重绘守护与主题底色同源 | [ADR-0001 窗口材质裁决](docs/adr/0001-first-screen-keeps-opaque-wco-window.md) · [ADR-0003 门禁注册表](docs/adr/0003-startup-gate-registry.md) |
 | **🪟 WCO 标题栏接入** | [`docs/wco-native-titlebar-integration.md`](docs/wco-native-titlebar-integration.md) | **跨项目一体化标题栏指南**：平台契约矩阵（darwin/win32/linux）、三条铁律与运行时更新约束，参照本仓 `titlebar-overlay.ts` 落地 | [WCO 接入指南](docs/wco-native-titlebar-integration.md) |
 | **📦 依赖拓扑与打包隔离** | [`docs/dependency-rules.md`](docs/dependency-rules.md) | **Monorepo 依赖分层与防膨胀门禁**：根目录仅允许 `@app/main`，主进程 dependencies 与 Vite external 100% 对齐，Renderer 遵循通用 Web 规范，配合 CI 自动化门禁保障 | [依赖与打包隔离规范](docs/dependency-rules.md) |
@@ -104,6 +104,9 @@ electron-react-monorepo-template/
 ├── docs/                     # 架构深度原理与开发指南
 │   ├── adr/                  # [架构决策] ADR-0001 首屏窗口保持不透明与 WCO 材质裁决
 │   ├── i18n/                 # [多语言] 架构设计 (architecture.md) 与实操 SOP (guide.md)
+│   ├── electron-path-resolution-deep-dive.md # 跨平台路径管理底层原理与避坑深度实践
+│   ├── electron-github-ota-deep-dive.md      # 跨平台打包与 GitHub OTA 自动更新深度指南
+│   ├── logging-tracing-and-error-handling-guide.md # 日志打法、Mini-OTel 链路追踪与 Sentry 闭环速查指南
 │   ├── logging-and-exception-audit.md # 日志轮转与跨进程异常分级防护指南
 │   └── wco-native-titlebar-integration.md # WCO 原生标题栏跨项目接入指南
 ├── e2e/                      # Playwright E2E 自动化测试套件（真实 Electron 运行态驱动）

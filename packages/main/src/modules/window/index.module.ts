@@ -122,6 +122,9 @@ export class WindowManager implements AppModule {
       },
     });
 
+    // 窗口创建即写入 renderer-home.log 的生命周期分隔行；reload 不重建窗口，不会重复写
+    getLogManager().logWindowStarted(WINDOW_IDS.HOME);
+
     // 注册到 window-registry 唯一事实源
     registerWindow(WINDOW_IDS.HOME, browserWindow);
     browserWindow.on('closed', () => {

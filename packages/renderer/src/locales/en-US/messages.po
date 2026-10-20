@@ -365,6 +365,10 @@ msgstr "New version downloaded. Restart the application to install."
 msgid "新版本已经准备就绪，包含最新的功能与改进。"
 msgstr "A new version is ready with latest features and improvements."
 
+#: src/features/usb/hooks/useUsbDevices.ts
+msgid "无法读取部分 USB 设备描述符，请检查设备连接或系统权限"
+msgstr "Failed to read USB device descriptors. Please check device connection or permissions."
+
 #. placeholder {0}: err.message
 #: src/features/logging/hooks/useLogging.ts
 msgid "日志操作失败: {0}"

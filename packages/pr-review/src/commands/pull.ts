@@ -5,7 +5,7 @@ import { cleanOldReviewFiles } from '../core/cleaner.ts';
 import { formatDashboard } from '../core/dashboard.ts';
 import { findLatestReviewFile, parseExistingDashboard } from '../core/diff.ts';
 import { fetchOcrResult, fetchPrComments, getLatestRunInfo } from '../core/ocr.ts';
-import type { CiCheckItem, RunInfo } from '../types.ts';
+import type { CiCheckItem, OcrResult, RunInfo } from '../types.ts';
 import {
   ensureGh,
   getCurrentBranch,
@@ -112,7 +112,12 @@ export function runPull(): void {
       }
     }
 
-    const data = fetchOcrResult(runInfo.id, ARTIFACT_CACHE_DIR);
+    let data: OcrResult;
+    try {
+      data = fetchOcrResult(runInfo.id, ARTIFACT_CACHE_DIR);
+    } catch (err) {
+      fail((err as Error).message);
+    }
 
     // 目标文件名：按真实轮次保存 pr-<PR>-round-<N>.md
     const fileName = prNumber

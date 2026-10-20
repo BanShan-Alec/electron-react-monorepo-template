@@ -9,6 +9,7 @@ import type { ModuleContext } from '../../ModuleContext';
 import { updaterService } from '../../services/updater.service';
 import { getAppConfigStore } from '../config.module';
 import { getLogManager } from '../log.module';
+import { getWindowBackgroundColor } from './titlebar-overlay';
 import { forgetWindow, getWindow, registerWindow, sendToWindow } from './window-registry';
 
 export class UpdaterWindowModule implements AppModule {
@@ -50,6 +51,7 @@ export class UpdaterWindowModule implements AppModule {
       frame: false,
       transparent: false,
       hasShadow: true,
+      backgroundColor: getWindowBackgroundColor(),
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
@@ -60,10 +62,16 @@ export class UpdaterWindowModule implements AppModule {
       },
     });
 
+    // 窗口创建即写入 renderer-updater.log 的生命周期分隔行；reload 不重建窗口，不会重复写
+    getLogManager().logWindowStarted(WINDOW_IDS.UPDATER);
+
     registerWindow(WINDOW_IDS.UPDATER, browserWindow);
 
-    browserWindow.once('ready-to-show', () => {
-      this.logger.info('Updater window ready to show');
+    const readyToShowPromise = new Promise<void>((resolve) => {
+      browserWindow.once('ready-to-show', () => {
+        this.logger.info('Updater window ready to show');
+        resolve();
+      });
     });
 
     browserWindow.webContents.on(
@@ -113,6 +121,8 @@ export class UpdaterWindowModule implements AppModule {
     } else {
       await browserWindow.loadFile(this.renderer.path);
     }
+
+    await readyToShowPromise;
 
     return browserWindow;
   }
