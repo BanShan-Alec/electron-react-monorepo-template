@@ -43,7 +43,7 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 10 monorepo · Node >= 24
 | renderer 页面 / 卡片 / 请求层 | renderer/AGENTS.md | — |
 | 视觉 / token / 品牌定制 | renderer/docs/DESIGN.md | docs/template-customization-guide.md |
 | 多语言词条与架构 | renderer/AGENTS.md | docs/i18n/guide.md · docs/i18n/architecture.md |
-| 日志 / 异常 / 落盘文案 | .agents/rules/logging-specification.md | docs/logging-and-exception-audit.md |
+| 日志 / 异常 / 链路追踪 | .agents/rules/logging-specification.md | docs/logging-tracing-and-error-handling-guide.md · docs/logging-and-exception-audit.md |
 | 首屏 / 启动壳 / WCO 标题栏 | main/AGENTS.md | docs/adr/0001-0003 · docs/wco-native-titlebar-integration.md |
 | 测试 / 排错 / 提 PR / 触发 review | 全局红线 | docs/code-review.md · CONTRIBUTING §二 |
 | 发版流程 / tag / changelogen | 全局红线 | .github/CICD.md · docs/adr/0004 |
