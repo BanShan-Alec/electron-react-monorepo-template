@@ -11,7 +11,7 @@
    - 一律使用标准的 ES 模块语法：`import ... from '...'`、`export ...`、`export default ...` 以及按需动态导入 `await import(...)`。
 2. **`renderer` 纯净 Web 模式（100% 浏览器隔离）**：
    - 渲染进程面向现代浏览器环境运行，`packages/renderer/tsconfig.json` 中**禁止引入 `@types/node`**（`types: ["vite/client"]`）；
-   - 构建配置（`vite.config.ts`、`tailwind.config.ts`）统一采用 Node 22+ 原生标准 **`import.meta.dirname`**，杜绝任何历史垫片（如 `createRequire` 或 `fileURLToPath`）。
+   - 构建配置（`vite.config.ts`）统一采用 Node 22+ 原生标准 **`import.meta.dirname`**，杜绝任何历史垫片（如 `createRequire` 或 `fileURLToPath`）。
 3. **Node 端包保留 Node 全局符号**：
    - `packages/main`、`packages/preload` 与 `scripts/` 的模块解析基于 TypeScript 现代 **`moduleResolution: "Bundler"`** 与 Node 全局类型；
    - 允许直接消费 Node 原生全局符号（如 `__dirname`、`__filename`、`process`），无需多余垫片包装。
@@ -72,7 +72,7 @@ tsx scripts/build.ts
 ## 💡 4. 常见场景实施指引
 
 ### Q1：在 Vite 配置文件中需要定位当前目录时应该怎么写？
-- 如果在 **`packages/renderer/vite.config.ts`** 或 **`packages/renderer/tailwind.config.ts`**：  
+- 如果在 **`packages/renderer/vite.config.ts`**：  
   直接使用 Node 22 原生的标准属性：`import.meta.dirname`。
 - 如果在 **`packages/main/vite.config.ts`** 或 **`scripts/`**：  
   直接使用原生的 `__dirname`。

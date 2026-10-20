@@ -1,7 +1,7 @@
 /*
  * Ant Design v6 默认设计令牌镜像（Single Source: antd theme.getDesignToken()）
  * 浅色为 antd 默认算法输出；暗色为 antd 官方暗色算法输出。
- * Tailwind 语义类（bg-background / text-foreground / bg-primary ...）经 tailwind.config.ts 映射到这些变量，
+ * Tailwind 语义类（bg-background / text-foreground / bg-primary ...）经 index.css 的 @theme inline 映射到这些变量，
  * 保证布局壳层与 antd 组件视觉完全同源，不再使用自研配色。
  */
 :root {

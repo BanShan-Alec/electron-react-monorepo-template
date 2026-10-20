@@ -1,13 +1,11 @@
 import path from 'node:path';
 import { lingui } from '@lingui/vite-plugin';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import autoprefixer from 'autoprefixer';
-import tailwindcss from 'tailwindcss';
 import { defineConfig } from 'vite';
 import { getSentryBuildConfig } from '../../build/sentry-config.ts';
 import { startupShellInlinePlugin } from './plugins/startup-shell.ts';
-import tailwindConfig from './tailwind.config.ts';
 
 const currentDir = import.meta.dirname;
 const sentryConfig = getSentryBuildConfig(currentDir);
@@ -19,6 +17,7 @@ export default defineConfig({
   base: './',
   // 运行时环境单一事实源：由 Preload 通过 additionalArguments 注入至 window.__APP_ENV__，前端不走编译期 define
   plugins: [
+    tailwindcss(),
     react(),
     lingui({
       configPath: path.resolve(currentDir, 'lingui.config.ts'),
@@ -90,11 +89,6 @@ export default defineConfig({
           }
         },
       },
-    },
-  },
-  css: {
-    postcss: {
-      plugins: [tailwindcss(tailwindConfig), autoprefixer()],
     },
   },
 });

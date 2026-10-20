@@ -130,28 +130,25 @@ export function usePlatform() {
 
 ```css
 /*
- * 原则：左右避让交给 env()，头部高度交给内容。
- * 不要写 height: env(titlebar-area-height, 35px) —— overlay 条高只是
- * 原生控件那一小条的高度，强制套在整个 header 上会压扁多行内容。
+ * 平台标题栏避让（env() 由 titleBarOverlay 提供）：
+ * - darwin: 红绿灯在左上角，env(titlebar-area-x) 为其实际宽度，回退 80px（全屏时 env 为 0，保底 1rem 避让边距）
+ * - win32: 原生窗口控制按钮覆盖右上角，右侧按 env(titlebar-area-width) 预留
+ * 双层分治结构：仅首层系统标题栏（.drag-region）挂钩避让，第二层业务栏恢复全宽布局。
  */
-.platform-darwin .app-header {
-  /* env 由 titleBarOverlay: true 提供；回退值按红绿灯实际宽度给（约 70~80px），
-     写 12px 的小回退会在 env 不可用时让内容穿到红绿灯底下 */
-  padding-left: env(titlebar-area-x, 80px);
+.platform-darwin .drag-region:not(.no-wco) {
+  padding-left: max(1rem, env(titlebar-area-x, 80px));
 }
 
-.platform-win32 .app-header {
-  /* 扣除右上角原生控制按钮宽度 */
+.platform-win32 .drag-region:not(.no-wco) {
   padding-right: calc(100vw - env(titlebar-area-width, 100vw));
 }
 
 /* 标题栏区域可拖拽，内部交互元素必须豁免 */
-.app-header { -webkit-app-region: drag; }
-.app-header input,
-.app-header button { -webkit-app-region: no-drag; }
+.drag-region { -webkit-app-region: drag; }
+.no-drag { -webkit-app-region: no-drag; }
 ```
 
-免费福利：macOS 进全屏时系统自动把红绿灯移走，`env(titlebar-area-x)` 自动归零，无需任何 JS 监听。
+免费福利：macOS 进全屏时系统自动把红绿灯移走，`env(titlebar-area-x)` 自动归零（通过 `max(1rem, ...)` 维持基础边距），无需任何 JS 监听。
 
 ### Step 5：e2e 验证
 

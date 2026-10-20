@@ -16,12 +16,13 @@ test.describe('TitleBarOverlay (WCO) E2E 验证', () => {
     const state = await page.evaluate(() => {
       const wco = (navigator as Navigator & { windowControlsOverlay?: WindowControlsOverlayLike })
         .windowControlsOverlay;
-      const header = document.querySelector<HTMLElement>('.drag-region');
+      const dragRegion = document.querySelector<HTMLElement>('.drag-region');
+      const header = document.querySelector<HTMLElement>('header');
       return {
         wcoVisible: wco?.visible ?? null,
         area: wco?.getTitlebarAreaRect?.() ?? null,
-        paddingLeft: header ? parseFloat(getComputedStyle(header).paddingLeft) : null,
-        paddingRight: header ? parseFloat(getComputedStyle(header).paddingRight) : null,
+        paddingLeft: dragRegion ? parseFloat(getComputedStyle(dragRegion).paddingLeft) : null,
+        paddingRight: dragRegion ? parseFloat(getComputedStyle(dragRegion).paddingRight) : null,
         headerHeight: header ? parseFloat(getComputedStyle(header).height) : null,
       };
     });

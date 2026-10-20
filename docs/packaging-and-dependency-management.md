@@ -32,7 +32,7 @@
 | **根目录 `/`** | Monorepo 编排与统一分发入口 | **严格仅限 `['@app/main']`** | 全局构建工具（`vite`、`typescript`、`electron-builder`、`tsx` 等）及各子包引用 |
 | **`packages/main`** | Electron 主进程核心业务与生命周期 | 生产环境 Node.js 运行时依赖（如 `electron-updater`、`electron-log`） | 仅构建期类型声明与编译插件 |
 | **`packages/preload`** | 上下文隔离（ContextBridge）安全安全通道 | **严格保持为空 `{}`** | Electron 类型定义 |
-| **`packages/renderer`** | React 纯前端界面（Web 技术栈） | 前端运行时组件（`react`、`react-dom`、`lucide-react`、`clsx` 等） | 前端构建工具（Tailwind、PostCSS 等） |
+| **`packages/renderer`** | React 纯前端界面（Web 技术栈） | 前端运行时组件（`react`、`react-dom`、`lucide-react`、`clsx` 等） | 前端构建工具（Tailwind v4 等） |
 | **`packages/shared`** | 跨端契约、类型定义与业务常量 | **严格保持为空 `{}`** | TypeScript 基础工具 |
 
 ---

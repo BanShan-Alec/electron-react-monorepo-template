@@ -1,9 +1,50 @@
+/*
+ * 样式入口（home / updater 双入口共用）。
+ * 首行层序声明是 antd v6 + Tailwind v4 组合的秩序基石（antd 官方 compatible-style 配比）：
+ * theme < base < antd < components < utilities，此后覆盖关系只看层、不看特异性与注入顺序。
+ * 配套：AppProviders 的 <StyleProvider layer> 把 cssinjs 注入的 antd 样式收进 @layer antd。
+ */
+@layer theme, base, antd, components, utilities;
+
+/* Tailwind v4：官方 Vite 插件驱动；source(none)+@source "../" 把扫描精确圈定为 src/ */
+@import "tailwindcss" source(none);
 @import "./tokens.css";
 @import "./base.css";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@source "../";
+
+/*
+ * 暗色变体保持 v3 darkMode: 'class' 的 class 机制：useTheme 在 documentElement 上
+ * 同步 .dark 与 data-theme，e2e settings.spec 直接断言该 class 存在。
+ * 现网暂无 dark: 前缀类，此行维持机制契约。
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * 语义色 → antd 设计令牌映射（v3 时代在 tailwind.config.ts，v4 迁入 CSS）。
+ * inline 必须带：映射值是 var() 引用，工具类需内联引用本体而非再包一层主题变量，
+ * 否则会在 :root 产生 var 自引用（官方文档明示的坑）。
+ * 与 tokens.css 同名的变量（--color-border / --color-primary 等）以未分层的
+ * tokens.css 声明为准（未分层恒胜 @layer theme），@theme 内的回退值仅作兜底。
+ */
+@theme inline {
+  --color-background: var(--color-bg-primary, #0f172a);
+  --color-background-secondary: var(--color-bg-secondary, #1e293b);
+  --color-background-card: var(--color-bg-card, rgba(30, 41, 59, 0.7));
+  --color-background-container: var(--color-bg-container, #1e293b);
+  --color-foreground: var(--color-text-primary, #f8fafc);
+  --color-foreground-secondary: var(--color-text-secondary, #94a3b8);
+  --color-foreground-muted: var(--color-text-muted, #64748b);
+  --color-primary: var(--color-primary, #6366f1);
+  --color-primary-hover: var(--color-primary-hover, #4f46e5);
+  --color-primary-light: var(--color-primary-light, rgba(99, 102, 241, 0.15));
+  --color-border: var(--color-border, rgba(255, 255, 255, 0.1));
+  --color-success: var(--color-success, #10b981);
+  --color-warning: var(--color-warning, #f59e0b);
+  --color-danger: var(--color-danger, #ef4444);
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "Fira Code", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+}
 
 @layer components {
   /* Antd 风格容器卡片：实心背景 + 官方描边与投影，对齐 antd Card 默认视觉 */
