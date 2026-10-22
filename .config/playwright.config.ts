@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { defineConfig } from '@playwright/test';
 import { findRepoRoot } from '../build/repo-paths.ts';
 
@@ -9,7 +10,7 @@ const ROOT_DIR = findRepoRoot(__dirname);
  * Placed in .config/ for clean repository root structure.
  */
 export default defineConfig({
-  testDir: `${ROOT_DIR}/e2e`,
+  testDir: path.join(ROOT_DIR, 'e2e'),
   timeout: 45000,
   expect: {
     timeout: 10000,
@@ -18,9 +19,9 @@ export default defineConfig({
   workers: 1, // Electron E2E must run sequentially to avoid display/process lock conflicts
   reporter: [
     ['list'],
-    ['html', { outputFolder: `${ROOT_DIR}/playwright-report`, open: 'never' }],
+    ['html', { outputFolder: path.join(ROOT_DIR, 'playwright-report'), open: 'never' }],
   ],
-  outputDir: `${ROOT_DIR}/test-results`,
+  outputDir: path.join(ROOT_DIR, 'test-results'),
   use: {
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

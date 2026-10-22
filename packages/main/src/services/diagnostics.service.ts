@@ -7,11 +7,10 @@ import { AppError } from '../errors/AppError';
 import { getLogManager } from '../modules/log.module';
 import { isAllowedExternalUrl } from '../modules/security/external-urls';
 
-/** D3：每调用方每秒渲染日志准入上限（滑动窗口），超限静默丢弃并延迟汇总一条告警 */
-
 /**
- * 渲染日志滑窗节流器：窗口内前 limit 条准入，后续丢弃；
- * 丢弃计数经 windowMs 后由 onAggregate 汇总回调一次（窗口滑过自动恢复，无需重置）。
+ * 渲染日志滑窗节流器（D3）：每调用方每秒准入上限，超限静默丢弃并延迟汇总一条告警。
+ * 窗口内前 limit 条准入，后续丢弃；丢弃计数经 windowMs 后由 onAggregate 汇总回调一次
+ * （窗口滑过自动恢复，无需重置）。
  */
 export function createRenderLogThrottle(
   onAggregate: (key: string, dropped: number) => void,
