@@ -40,6 +40,18 @@ export function getCurrentBranch(): string {
   return probe('git', ['rev-parse', '--abbrev-ref', 'HEAD']) || '';
 }
 
+/**
+ * 默认主干分支：优先仓库自身的 origin/HEAD，其次回退 main。
+ * 不再依赖 .env 的 DEFAULT_BRANCH（CLI 不加载 .env，该值此前实际不生效）。
+ */
+export function getDefaultBranch(): string {
+  const remoteHead = probe('git', ['symbolic-ref', '--short', 'refs/remotes/origin/HEAD']);
+  if (remoteHead) {
+    return remoteHead.replace(/^origin\//, '');
+  }
+  return 'main';
+}
+
 export function getHeadSha(): string {
   return probe('git', ['rev-parse', 'HEAD']) || 'HEAD';
 }

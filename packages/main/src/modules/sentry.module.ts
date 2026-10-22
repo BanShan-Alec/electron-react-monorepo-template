@@ -4,6 +4,7 @@ import { APP_FEATURES, buildSentryTags, SENTRY_TAGS } from '@app/shared/constant
 import * as Sentry from '@sentry/electron/main';
 import { app, type BrowserWindow } from 'electron';
 import type { AppModule } from '../AppModule';
+import { getEnv } from '../env';
 import { appLifecycle } from '../lifecycle';
 import type { ModuleContext } from '../ModuleContext';
 import { getLogManager } from './log.module';
@@ -13,13 +14,13 @@ const logger = getLogManager().scoped(SENTRY_LOGGER_SCOPE);
 
 /**
  * 获取用于 Sentry 初始化的 DSN
- * 优先取构建期 define 注入的常量，其次取运行时环境变量
+ * 优先取构建期 define 注入的常量，其次走统一环境门面（APP_SENTRY_DSN > .env 默认值）
  */
 export function getSentryDsn(): string {
   if (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__) {
     return __SENTRY_DSN__;
   }
-  return process.env.SENTRY_DSN || '';
+  return getEnv('SENTRY_DSN');
 }
 
 /**

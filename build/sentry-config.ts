@@ -1,6 +1,5 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { loadEnv } from 'vite';
+import { readAppIdentity } from './app-identity';
+import { getRepoEnvValue, loadRepoEnv } from './env';
 
 export interface SentryBuildConfig {
   rootDir: string;
@@ -14,32 +13,23 @@ export interface SentryBuildConfig {
 }
 
 /**
- * 统一解析根目录 package.json 与 .env 中的 Sentry 构建期配置
- * 构建期基础设施模块，服务于各进程打包编译
+ * 统一解析根目录 package.json 身份与 .env 中的 Sentry 构建期配置
+ *
+ * 构建期基础设施模块：环境由 build/env.ts 单点加载，身份由 build/app-identity.ts 单点解析。
  */
-export function getSentryBuildConfig(fromDir?: string): SentryBuildConfig {
-  const rootDir = fromDir ? path.resolve(fromDir, '../../') : path.resolve(__dirname, '..');
-  const rootPkg = JSON.parse(readFileSync(path.join(rootDir, 'package.json'), 'utf-8'));
-  const appName: string = rootPkg.name || 'electron-app';
-  const appVersion: string = rootPkg.version || '1.0.0';
-  const releaseName = `${appName}@${appVersion}`;
-
-  // 优先从环境变量读取；若环境变量未注入，则由 Vite loadEnv 从根目录 .env 文件加载解析
-  const envFileConfig = loadEnv(process.env.MODE || 'production', rootDir, '');
-
-  const sentryDsn = process.env.SENTRY_DSN || envFileConfig.SENTRY_DSN || '';
-  const sentryOrg = process.env.SENTRY_ORG || envFileConfig.SENTRY_ORG || '';
-  const sentryProject = process.env.SENTRY_PROJECT || envFileConfig.SENTRY_PROJECT || '';
-  const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN || envFileConfig.SENTRY_AUTH_TOKEN || '';
+export function getSentryBuildConfig(fromDir: string): SentryBuildConfig {
+  const env = loadRepoEnv(fromDir, 'production');
+  const identity = readAppIdentity(env.rootDir);
+  const value = (key: string): string => getRepoEnvValue(env, key);
 
   return {
-    rootDir,
-    appName,
-    appVersion,
-    releaseName,
-    sentryDsn,
-    sentryOrg,
-    sentryProject,
-    sentryAuthToken,
+    rootDir: env.rootDir,
+    appName: identity.name,
+    appVersion: identity.version,
+    releaseName: `${identity.name}@${identity.version}`,
+    sentryDsn: value('SENTRY_DSN'),
+    sentryOrg: value('SENTRY_ORG'),
+    sentryProject: value('SENTRY_PROJECT'),
+    sentryAuthToken: value('SENTRY_AUTH_TOKEN'),
   };
 }

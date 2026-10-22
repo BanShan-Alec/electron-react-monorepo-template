@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { _electron as electron } from '@playwright/test';
+import { getRepoEnvValue, loadRepoEnv } from '../build/env.ts';
+import { getDistDir } from '../build/repo-paths.ts';
 
 interface PostbuildVerificationOptions {
   /**
@@ -180,8 +182,12 @@ function analyzeAsarSize(asarPath: string): void {
  * 3. 真实拉起已打包程序执行 Playwright Smoke 烟雾健康检查（验证 React #root 正常挂载）
  */
 async function verifyPostbuild(options: PostbuildVerificationOptions = {}): Promise<void> {
-  const distDir = path.resolve(options.distDir || 'dist');
-  const maxAsarSizeMb = options.maxAsarSizeMb ?? Number(process.env.MAX_ASAR_SIZE_MB || 10);
+  const repoEnv = loadRepoEnv(__dirname, 'production');
+  const distDir = options.distDir
+    ? path.resolve(repoEnv.rootDir, options.distDir)
+    : getDistDir(repoEnv.rootDir);
+  const maxAsarSizeMb =
+    options.maxAsarSizeMb ?? Number(getRepoEnvValue(repoEnv, 'MAX_ASAR_SIZE_MB') || 10);
 
   console.log('\n🔍 [verify-postbuild] 开始打包产物 Smoke 自动化验证...');
 

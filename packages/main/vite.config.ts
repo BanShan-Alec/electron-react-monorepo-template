@@ -1,12 +1,16 @@
 import { sentryVitePlugin } from '@sentry/vite-plugin';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
+import { readAppIdentity } from '../../build/app-identity.ts';
+import { getRepoEnvValue, loadRepoEnv } from '../../build/env.ts';
+import { getMainExternalModules } from '../../build/main-externals.ts';
 import { getSentryBuildConfig } from '../../build/sentry-config.ts';
+import { createNodeLibBuildOptions } from '../../build/vite-lib.ts';
 
+const repoEnv = loadRepoEnv(__dirname, 'production');
+const rootDir = repoEnv.rootDir;
 const sentryConfig = getSentryBuildConfig(__dirname);
-const rootDir = sentryConfig.rootDir;
-const mode = process.env.MODE || 'production';
-const envConfig = loadEnv(mode, rootDir, '');
-const prefix = envConfig.ENV_PREFIX || 'APP_';
+const appIdentity = readAppIdentity(rootDir);
+const prefix = getRepoEnvValue(repoEnv, 'ENV_PREFIX') || 'APP_';
 
 // 严格白名单过滤：仅暴露业务需要的默认配置，杜绝全量泄露风险
 const ALLOWED_ENV_KEYS = [
@@ -14,13 +18,11 @@ const ALLOWED_ENV_KEYS = [
   'SYSTEM_CODE',
   'DISTRIBUTION_CHANNEL',
   'SENTRY_DSN',
-  'GITHUB_OWNER',
-  'GITHUB_REPO',
 ] as const;
 
 const envDefaults = ALLOWED_ENV_KEYS.reduce(
   (acc, key) => {
-    acc[key] = envConfig[key] || '';
+    acc[key] = getRepoEnvValue(repoEnv, key);
     return acc;
   },
   {} as Record<string, string>,
@@ -32,6 +34,8 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(sentryConfig.appVersion),
     __SENTRY_DSN__: JSON.stringify(sentryConfig.sentryDsn),
     __RELEASE_NAME__: JSON.stringify(sentryConfig.releaseName),
+    __GITHUB_OWNER__: JSON.stringify(appIdentity.repositoryOwner),
+    __GITHUB_REPO__: JSON.stringify(appIdentity.repositoryName),
     __ENV_DEFAULTS__: JSON.stringify(envDefaults),
   },
   plugins: [
@@ -49,27 +53,11 @@ export default defineConfig({
       },
     }),
   ],
-  build: {
-    ssr: true,
-    sourcemap: process.env.MODE === 'development' ? 'inline' : 'hidden',
-    minify: process.env.MODE === 'development' ? false : 'oxc',
-    outDir: 'dist',
-    assetsDir: '.',
+  build: createNodeLibBuildOptions({
     target: 'node24',
-    lib: {
-      entry: 'src/index.ts',
-      formats: ['cjs'],
-    },
-    rolldownOptions: {
-      external: ['electron', 'electron-updater', 'electron-log', 'usb'],
-      output: {
-        entryFileNames: '[name].cjs',
-        format: 'cjs',
-      },
-    },
-    emptyOutDir: true,
-    reportCompressedSize: false,
-  },
+    external: getMainExternalModules(rootDir),
+    entryFileNames: '[name].cjs',
+  }),
   ssr: {
     noExternal: ['zod', /^@sentry\/.*/],
   },

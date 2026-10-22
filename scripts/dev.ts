@@ -1,15 +1,14 @@
 import { type ChildProcess, execSync, spawn } from 'node:child_process';
 import path from 'node:path';
 import electronPath from 'electron';
-import { build, createServer, loadEnv, type Plugin, type ViteDevServer } from 'vite';
+import { build, createServer, type Plugin, type ViteDevServer } from 'vite';
+import { applyRepoEnv, loadRepoEnv } from '../build/env.ts';
 import { ensurePortsAvailable, killProcessTree } from './port-guard.ts';
 
-// 统一基于 __dirname 向上锁定仓库物理根目录，摆脱对执行终端工作目录 (process.cwd()) 的脆弱依赖
-const ROOT_DIR = path.join(__dirname, '..');
-
-// 统一由 Vite loadEnv 加载项目多模式环境变量至 process.env
-const devMode = process.env.MODE || 'development';
-Object.assign(process.env, loadEnv(devMode, ROOT_DIR, ''));
+// 统一从 build/env.ts 加载根 .env（外部注入优先），并向上锁定仓库根
+const repoEnv = loadRepoEnv(__dirname, 'development');
+applyRepoEnv(repoEnv);
+const ROOT_DIR = repoEnv.rootDir;
 
 // Windows 平台下将控制台代码页切换为 UTF-8 (65001)，解决 Git Bash 等终端日志中文乱码问题
 if (process.platform === 'win32') {
@@ -31,7 +30,7 @@ const config: {
   mainInspectPort?: number;
   rendererCdpPort?: number;
 } = {
-  mode: 'development',
+  mode: repoEnv.mode,
   rendererPort: 5173,
 
   // 按需注释:注释掉即关闭对应能力
@@ -124,7 +123,7 @@ async function startRendererDevServer(): Promise<ViteDevServer> {
     server: {
       port: config.rendererPort,
     },
-    root: path.resolve('packages/renderer'),
+    root: path.join(ROOT_DIR, 'packages', 'renderer'),
     configLoader: 'bundle',
   });
 
@@ -157,7 +156,7 @@ async function startDevServer(): Promise<void> {
   // 3. Watch and build packages with their respective plugins
   await build({
     mode: config.mode,
-    root: path.resolve('packages/preload'),
+    root: path.join(ROOT_DIR, 'packages', 'preload'),
     plugins: [preloadReloaderPlugin],
     build: {
       watch: {},
@@ -165,7 +164,7 @@ async function startDevServer(): Promise<void> {
   });
   await build({
     mode: config.mode,
-    root: path.resolve('packages/main'),
+    root: path.join(ROOT_DIR, 'packages', 'main'),
     plugins: [electronLauncherPlugin],
     build: {
       watch: {},

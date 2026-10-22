@@ -1,5 +1,7 @@
+import { ALLOWED_EXTERNAL_URLS } from '@app/shared/constants/security';
 import log from 'electron-log/main';
 import type { AppInitConfig } from './AppInitConfig';
+import { SILENT_CHECK_DELAY_MS } from './constants/updater';
 import { devServerUrl } from './env';
 import { createModuleRunner } from './ModuleRunner';
 import { terminateAppOnLastWindowClose } from './modules/auto-terminate.module';
@@ -50,14 +52,11 @@ export async function initApp(initConfig: AppInitConfig) {
         ),
       ),
     )
-    .init(
-      allowExternalUrls(new Set(['https://github.com', 'https://vite.dev', 'https://react.dev'])),
-    );
+    .init(allowExternalUrls(new Set(ALLOWED_EXTERNAL_URLS)));
 
   await moduleRunner;
 
   // 应用就绪后若开启自动更新则延迟执行后台静默检查
-  const SILENT_CHECK_DELAY_MS = 3000;
   try {
     const configStore = getAppConfigStore();
     if (configStore.get('autoCheckUpdate')) {

@@ -6,15 +6,19 @@ import { app, shell } from 'electron';
 import type { LogMessage } from 'electron-log';
 import log from 'electron-log/main';
 import type { AppModule } from '../AppModule';
+import {
+  LOG_ARCHIVE_MAX_DAYS,
+  LOG_ARCHIVE_MAX_FILES,
+  LOG_FILE_MAX_SIZE_BYTES,
+  RENDERER_LINE_MAX_LENGTH,
+  TRACE_FILE_MAX_SIZE_BYTES,
+} from '../constants/logging';
 import { isDev } from '../env';
 import type { ModuleContext } from '../ModuleContext';
 import { getTracer } from '../telemetry/tracer';
 import { cleanArchivedLogs, createCustomArchiveLogFn } from './log-archiver';
 
 export type LogLevel = 'info' | 'warn' | 'error' | 'debug';
-
-/** D2：渲染行格式化后的长度硬上限，超限静默截断（schema 不拒绝，调用方无感知） */
-export const RENDERER_LINE_MAX_LENGTH = 2000;
 
 export function truncateRenderedLine(line: string, max = RENDERER_LINE_MAX_LENGTH): string {
   if (line.length <= max) return line;
@@ -64,7 +68,7 @@ export class LogManager implements AppModule {
     if (!winLogger) {
       winLogger = log.create({ logId: `renderer-${windowName}` });
       winLogger.transports.file.fileName = `renderer-${windowName}.log`;
-      winLogger.transports.file.maxSize = 5 * 1024 * 1024;
+      winLogger.transports.file.maxSize = LOG_FILE_MAX_SIZE_BYTES;
       winLogger.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
       winLogger.transports.file.archiveLogFn = createCustomArchiveLogFn();
       winLogger.hooks.push(this.injectTraceHook);
@@ -83,9 +87,9 @@ export class LogManager implements AppModule {
   }
 
   private setupLoggers(): void {
-    // 5MB 轮转上限
-    const MAX_SIZE = 5 * 1024 * 1024;
-    const TRACE_MAX_SIZE = 10 * 1024 * 1024;
+    // 主日志 5MB / 遥测日志 10MB 轮转上限
+    const MAX_SIZE = LOG_FILE_MAX_SIZE_BYTES;
+    const TRACE_MAX_SIZE = TRACE_FILE_MAX_SIZE_BYTES;
 
     // 主进程日志配置
     this.mainLogger.transports.file.fileName = 'main.log';
@@ -140,7 +144,7 @@ export class LogManager implements AppModule {
   /**
    * 清理过期（> 7天）或超额（> 5个）的历史归档日志
    */
-  public cleanOldLogs(maxDays = 7, maxFiles = 5): void {
+  public cleanOldLogs(maxDays = LOG_ARCHIVE_MAX_DAYS, maxFiles = LOG_ARCHIVE_MAX_FILES): void {
     const logsDir = this.getLogDirectory();
     cleanArchivedLogs(logsDir, { maxDays, maxFilesPerCategory: maxFiles });
   }

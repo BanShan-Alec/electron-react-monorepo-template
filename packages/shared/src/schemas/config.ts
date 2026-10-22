@@ -1,17 +1,23 @@
 import { z } from 'zod';
+import {
+  DEFAULT_LOCALE,
+  DEFAULT_THEME_MODE,
+  SUPPORTED_LOCALES,
+  THEME_MODES,
+} from '../constants/preferences';
 
 export const configBaseSchema = z.object({
-  theme: z.enum(['system', 'light', 'dark']),
+  theme: z.enum(THEME_MODES),
   minimizeToTray: z.boolean(),
-  language: z.enum(['zh-CN', 'en-US']),
+  language: z.enum(SUPPORTED_LOCALES),
   autoCheckUpdate: z.boolean(),
   serverCounter: z.number().int(),
 });
 
 export const configSchema = z.object({
-  theme: z.enum(['system', 'light', 'dark']).default('system'),
+  theme: z.enum(THEME_MODES).default(DEFAULT_THEME_MODE),
   minimizeToTray: z.boolean().default(true),
-  language: z.enum(['zh-CN', 'en-US']).default('zh-CN'),
+  language: z.enum(SUPPORTED_LOCALES).default(DEFAULT_LOCALE),
   autoCheckUpdate: z.boolean().default(true),
   serverCounter: z.number().int().default(0),
 });
@@ -22,9 +28,9 @@ export const updateConfigInputSchema = configBaseSchema.partial();
 export type UpdateConfigInput = z.infer<typeof updateConfigInputSchema>;
 
 export const DEFAULT_CONFIG: AppConfig = {
-  theme: 'system',
+  theme: DEFAULT_THEME_MODE,
   minimizeToTray: true,
-  language: 'zh-CN',
+  language: DEFAULT_LOCALE,
   autoCheckUpdate: true,
   serverCounter: 0,
 };

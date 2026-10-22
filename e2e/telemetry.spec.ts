@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { ConsoleMessage } from '@playwright/test';
+import { RENDERER_LINE_MAX_LENGTH } from '../packages/main/src/constants/logging';
 import { expect, test } from './helpers/fixture';
 
 test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => {
@@ -18,7 +19,8 @@ test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => 
     page.on('console', onConsole);
 
     // 2. 模拟渲染进程发起带追踪的 IPC 请求（包含计数器、计算器和全局 logger 业务日志）
-    const res = await page.evaluate(async () => {
+    const truncationProbeLength = RENDERER_LINE_MAX_LENGTH + 1000;
+    const res = await page.evaluate(async (repeatCount) => {
       const { api, logger } = window as unknown as {
         api: {
           counter: { increment: (args: unknown) => Promise<unknown> };
@@ -46,10 +48,10 @@ test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => 
       logger
         .withTrace('4bf92f3577b34da6a3ce929d0e0e4736', '00f067aa0ba902b7')
         .info('Business action executed in traced context');
-      // D2：超长渲染行经主进程静默截断（>2000 字符）
-      logger.info(`Truncation probe ${'x'.repeat(3000)}`);
+      // D2：超长渲染行经主进程静默截断（超过 RENDERER_LINE_MAX_LENGTH）
+      logger.info(`Truncation probe ${'x'.repeat(repeatCount)}`);
       return { counterRes, calcRes };
-    });
+    }, truncationProbeLength);
 
     expect(res.calcRes.success).toBe(true);
     expect(res.calcRes.data.result).toBe(42);

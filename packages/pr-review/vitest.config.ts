@@ -2,7 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
-const packageDir = path.resolve(fileURLToPath(import.meta.url), '..');
+const packageDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   test: {
