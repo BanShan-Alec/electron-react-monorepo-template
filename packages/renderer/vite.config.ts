@@ -4,7 +4,7 @@ import { sentryVitePlugin } from '@sentry/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import { readAppIdentity } from '../../build/app-identity.ts';
+import { APP_IDENTITY } from '../../build/app-identity.ts';
 import { findRepoRoot } from '../../build/repo-paths.ts';
 import { getSentryBuildConfig } from '../../build/sentry-config.ts';
 import { appTitlePlugin } from './plugins/app-title.ts';
@@ -13,9 +13,6 @@ import { startupShellInlinePlugin } from './plugins/startup-shell.ts';
 const currentDir = import.meta.dirname;
 const rootDir = findRepoRoot(currentDir);
 const sentryConfig = getSentryBuildConfig(currentDir);
-
-// 窗口标题单一事实源：根 package.json 的 productName（与打包命名、托盘、Header 同源）
-const appIdentity = readAppIdentity(rootDir);
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -57,7 +54,7 @@ export default defineConfig({
       },
     },
     // 窗口标题占位符注入（dev/build 同一形态）：两入口 <title> 统一取根 productName
-    appTitlePlugin({ root: currentDir, appName: appIdentity.productName }),
+    appTitlePlugin({ root: currentDir, appName: APP_IDENTITY.productName }),
     // 启动壳占位符内联（dev/build 同一形态），契约见 specs/first-screen-loading.md §4.7
     startupShellInlinePlugin({ root: currentDir }),
   ],

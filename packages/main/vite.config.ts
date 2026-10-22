@@ -1,15 +1,13 @@
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { defineConfig } from 'vite';
-import { readAppIdentity } from '../../build/app-identity.ts';
+import { APP_IDENTITY } from '../../build/app-identity.ts';
 import { getRepoEnvValue, loadRepoEnv } from '../../build/env.ts';
-import { getMainExternalModules } from '../../build/main-externals.ts';
+import { MAIN_EXTERNAL_MODULES } from '../../build/main-externals.ts';
 import { getSentryBuildConfig } from '../../build/sentry-config.ts';
 import { createNodeLibBuildOptions } from '../../build/vite-lib.ts';
 
 const repoEnv = loadRepoEnv(__dirname, 'production');
-const rootDir = repoEnv.rootDir;
 const sentryConfig = getSentryBuildConfig(__dirname);
-const appIdentity = readAppIdentity(rootDir);
 const prefix = getRepoEnvValue(repoEnv, 'ENV_PREFIX') || 'APP_';
 
 // 严格白名单过滤：仅暴露业务需要的默认配置，杜绝全量泄露风险
@@ -34,8 +32,8 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(sentryConfig.appVersion),
     __SENTRY_DSN__: JSON.stringify(sentryConfig.sentryDsn),
     __RELEASE_NAME__: JSON.stringify(sentryConfig.releaseName),
-    __GITHUB_OWNER__: JSON.stringify(appIdentity.repositoryOwner),
-    __GITHUB_REPO__: JSON.stringify(appIdentity.repositoryName),
+    __GITHUB_OWNER__: JSON.stringify(APP_IDENTITY.repositoryOwner),
+    __GITHUB_REPO__: JSON.stringify(APP_IDENTITY.repositoryName),
     __ENV_DEFAULTS__: JSON.stringify(envDefaults),
   },
   plugins: [
@@ -55,7 +53,7 @@ export default defineConfig({
   ],
   build: createNodeLibBuildOptions({
     target: 'node24',
-    external: getMainExternalModules(rootDir),
+    external: MAIN_EXTERNAL_MODULES,
     entryFileNames: '[name].cjs',
   }),
   ssr: {

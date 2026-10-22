@@ -2,7 +2,7 @@ import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import { join } from 'node:path';
 import type { Configuration } from 'electron-builder';
-import { readAppIdentity } from './app-identity';
+import { APP_IDENTITY } from './app-identity';
 
 // 基于当前构建脚本目录确定全局确定的根目录
 const ROOT_DIR = join(__dirname, '..');
@@ -15,15 +15,13 @@ if (!fs.existsSync(mainDistPath)) {
 }
 
 // 应用身份与 OTA 仓库坐标唯一事实源：根目录 package.json（不接受 .env 覆盖）
-const identity = readAppIdentity(ROOT_DIR);
-
 // repository.url 缺失时使用 'local' / 'app' 占位，保证更新元数据生成且绝不阻断打包
-const resolvedOwner = identity.repositoryOwner || 'local';
-const resolvedRepo = identity.repositoryName || 'app';
+const resolvedOwner = APP_IDENTITY.repositoryOwner || 'local';
+const resolvedRepo = APP_IDENTITY.repositoryName || 'app';
 
 const config: Configuration = {
-  appId: identity.appId,
-  productName: identity.productName,
+  appId: APP_IDENTITY.appId,
+  productName: APP_IDENTITY.productName,
   directories: {
     output: 'dist',
     buildResources: 'build/resources',
@@ -51,7 +49,7 @@ const config: Configuration = {
     allowElevation: true,
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
-    shortcutName: identity.productName,
+    shortcutName: APP_IDENTITY.productName,
     installerIcon: 'build/resources/icon.ico',
     uninstallerIcon: 'build/resources/icon.ico',
     installerHeaderIcon: 'build/resources/icon.ico',

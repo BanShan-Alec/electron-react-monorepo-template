@@ -1,4 +1,4 @@
-import { readAppIdentity } from './app-identity';
+import { APP_IDENTITY } from './app-identity';
 import { getRepoEnvValue, loadRepoEnv } from './env';
 
 export interface SentryBuildConfig {
@@ -19,14 +19,13 @@ export interface SentryBuildConfig {
  */
 export function getSentryBuildConfig(fromDir: string): SentryBuildConfig {
   const env = loadRepoEnv(fromDir, 'production');
-  const identity = readAppIdentity(env.rootDir);
   const value = (key: string): string => getRepoEnvValue(env, key);
 
   return {
     rootDir: env.rootDir,
-    appName: identity.name,
-    appVersion: identity.version,
-    releaseName: `${identity.name}@${identity.version}`,
+    appName: APP_IDENTITY.name,
+    appVersion: APP_IDENTITY.version,
+    releaseName: `${APP_IDENTITY.name}@${APP_IDENTITY.version}`,
     sentryDsn: value('SENTRY_DSN'),
     sentryOrg: value('SENTRY_ORG'),
     sentryProject: value('SENTRY_PROJECT'),

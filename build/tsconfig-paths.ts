@@ -1,16 +1,21 @@
-import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import baseConfigJson from '../packages/tsconfig/base.json';
 
 /**
  * TypeScript 路径别名单一事实源
  *
  * 真源是 packages/tsconfig/base.json 的 compilerOptions.paths；
  * Vitest 等需要显式 alias 的工具从这里派生，禁止再手写一份 @app/* 列表。
+ * JSON 静态导入，Vite / tsx 在加载期解析，缺失即构建失败。
  */
 export interface ViteAlias {
   find: string | RegExp;
   replacement: string;
 }
+
+const baseConfig = baseConfigJson as {
+  compilerOptions?: { paths?: Record<string, string[]> };
+};
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -18,9 +23,6 @@ function escapeRegExp(value: string): string {
 
 export function readTsconfigAliases(rootDir: string): ViteAlias[] {
   const tsconfigDir = path.join(rootDir, 'packages', 'tsconfig');
-  const baseConfig = JSON.parse(readFileSync(path.join(tsconfigDir, 'base.json'), 'utf-8')) as {
-    compilerOptions?: { paths?: Record<string, string[]> };
-  };
   const paths = baseConfig.compilerOptions?.paths ?? {};
 
   const wildcardAliases: ViteAlias[] = [];
