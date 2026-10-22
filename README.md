@@ -19,7 +19,7 @@
 | **📜 日志、Trace 与异常** | [`docs/logging-tracing-and-error-handling-guide.md`](docs/logging-tracing-and-error-handling-guide.md) | **可观测性与异常上报**：主/渲染进程 ScopedLogger 实战规范、Mini-OTel W3C 跨进程 Trace 贯通与 Sentry 分级闭环上报指南 | [实战开发速查](docs/logging-tracing-and-error-handling-guide.md) · [系统审查指南](docs/logging-and-exception-audit.md) |
 | **🚀 首屏渐进式加载** | [`docs/adr/`](docs/adr) | **启动体验设计定稿**：窗口即时呈现（废除 ready-to-show 门禁）、内联启动壳与双门禁就绪协调、win32 无边框重绘守护与主题底色同源 | [ADR-0001 窗口材质裁决](docs/adr/0001-first-screen-keeps-opaque-wco-window.md) · [ADR-0003 门禁注册表](docs/adr/0003-startup-gate-registry.md) |
 | **🪟 WCO 标题栏接入** | [`docs/wco-native-titlebar-integration.md`](docs/wco-native-titlebar-integration.md) | **跨项目一体化标题栏指南**：平台契约矩阵（darwin/win32/linux）、三条铁律与运行时更新约束，参照本仓 `titlebar-overlay.ts` 落地 | [WCO 接入指南](docs/wco-native-titlebar-integration.md) |
-| **📦 依赖拓扑与打包隔离** | [`docs/dependency-rules.md`](docs/dependency-rules.md) | **Monorepo 依赖分层与防膨胀门禁**：根目录仅允许 `@app/main`，主进程 dependencies 与 Vite external 100% 对齐，Renderer 遵循通用 Web 规范，配合 CI 自动化门禁保障 | [依赖与打包隔离规范](docs/dependency-rules.md) |
+| **📦 依赖拓扑与打包隔离** | [`docs/dependency-rules.md`](docs/dependency-rules.md) | **Monorepo 依赖分层与防膨胀门禁**：根目录仅允许 `@app/main`，主进程 external 由 dependencies 自动派生，Renderer 遵循通用 Web 规范，配合 CI 自动化门禁保障 | [依赖与打包隔离规范](docs/dependency-rules.md) |
 | **🌐 运行环境与模式规范** | [`docs/environment-specification.md`](docs/environment-specification.md) | **全栈运行环境与模式控制**：彻底统一基于 `MODE`（dev/prod/test），解耦物理打包态 `app.isPackaged`，建立 `@app/shared`、Main、Renderer 三级门面与测试隔离防护 | [环境控制规范](docs/environment-specification.md) |
 | **工程质量规范** | [`CONTRIBUTING.md`](CONTRIBUTING.md) | **研发与提交守则**：全库 Biome 静态检查与格式化、桶文件禁令（noBarrelFile）、Conventional Commits 提交校验及 changelogen 自动化发布 | [团队工程规范](CONTRIBUTING.md) |
 | **⚙️ CI/CD 与工作流** | [`.github/`](.github) | **自动化研发管线**：PR 门禁（typecheck / lint / test / e2e）、OpenCodeReview AI 审查、CodeQL 安全扫描、tag 驱动的三平台自动发版与 `pnpm pr` 工作流命令 | [CI/CD 流程指南](.github/CICD.md) |
@@ -99,7 +99,7 @@ flowchart LR
 
 ```text
 electron-react-monorepo-template/
-├── .config/                  # 工程工具链配置（Biome、Commitlint、changelogen、Playwright）
+├── .config/                  # 工程工具链配置（Biome、Commitlint、changelogen、Vitest、Playwright）
 ├── build/                    # 打包配置与原生静态资源（图标、entitlements 等）
 ├── docs/                     # 架构深度原理与开发指南
 │   ├── adr/                  # [架构决策] ADR-0001 首屏窗口保持不透明与 WCO 材质裁决
@@ -153,7 +153,7 @@ pnpm start
 执行后将自动启动 Vite Dev Server 并唤起 Electron 窗口。主进程代码改动将自动增量编译并重启应用；前端页面改动享受即时 HMR。
 
 > [!NOTE]
-> dev server 固定端口 `5173`（strictPort）：重复执行 `pnpm start` 会检测到端口已占用并直接复用运行中的实例。开放 renderer CDP 端点 `9222`（主进程 inspect 为 `9229`）。
+> dev server 固定端口 `5173`（strictPort）：重复执行 `pnpm start` 会检测端口占用并提示结束占用的进程，不会静默复用旧实例。开放 renderer CDP 端点 `9222`（主进程 inspect 为 `9229`）。
 
 ---
 

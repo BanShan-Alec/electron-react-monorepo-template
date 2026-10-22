@@ -11,7 +11,7 @@
    - 一律使用标准的 ES 模块语法：`import ... from '...'`、`export ...`、`export default ...` 以及按需动态导入 `await import(...)`。
 2. **`renderer` 纯净 Web 模式（100% 浏览器隔离）**：
    - 渲染进程面向现代浏览器环境运行，`packages/renderer/tsconfig.json` 中**禁止引入 `@types/node`**（`types: ["vite/client"]`）；
-   - 构建配置（`vite.config.ts`）统一采用 Node 22+ 原生标准 **`import.meta.dirname`**，杜绝任何历史垫片（如 `createRequire` 或 `fileURLToPath`）。
+   - 构建配置（`vite.config.ts`）统一采用 Node 24+ 原生标准 **`import.meta.dirname`**，杜绝任何历史垫片（如 `createRequire` 或 `fileURLToPath`）。
 3. **Node 端包保留 Node 全局符号**：
    - `packages/main`、`packages/preload` 与 `scripts/` 的模块解析基于 TypeScript 现代 **`moduleResolution: "Bundler"`** 与 Node 全局类型；
    - 允许直接消费 Node 原生全局符号（如 `__dirname`、`__filename`、`process`），无需多余垫片包装。
@@ -25,7 +25,7 @@
 | 子包 / 目录 | 语法规范 | 路径解析标准 | 模块解析 (TS) | 运行时目标 |
 | :--- | :--- | :--- | :--- | :--- |
 | **`packages/renderer`** | **纯正 ESM** (`import`/`export`) | **`import.meta.dirname`** | `Bundler` (零 Node 全局符号) | Chromium 浏览器沙箱 |
-| **`packages/main`** | **现代 ESM** (`import`/`export`) | **`__dirname`** (Node 全局符号) | `Bundler` + `types: ["node"]` | Node 22 (构建打包为 index.cjs) |
+| **`packages/main`** | **现代 ESM** (`import`/`export`) | **`__dirname`** (Node 全局符号) | `Bundler` + `types: ["node"]` | Node 24 (构建打包为 index.cjs) |
 | **`packages/preload`** | **现代 ESM** (`import`/`export`) | **`__dirname`** (Node 全局符号) | `Bundler` + `types: ["node"]` | Electron contextBridge (打包为 index.cjs) |
 | **`packages/shared`** | **纯净 ESM** (`import`/`export`) | 纯数据/无路径依赖 | `Bundler` (零 Node 依赖) | 跨进程纯契约 (Schema & Types) |
 | **`packages/pr-review`**| **现代 ESM** (`import`/`export`) | **`__dirname`** (Node 全局符号) | `Bundler` + `types: ["node"]` | `tsx` 驱动的 CLI 工具套件 |
@@ -73,7 +73,7 @@ tsx scripts/build.ts
 
 ### Q1：在 Vite 配置文件中需要定位当前目录时应该怎么写？
 - 如果在 **`packages/renderer/vite.config.ts`**：  
-  直接使用 Node 22 原生的标准属性：`import.meta.dirname`。
+  直接使用 Node 24 原生的标准属性：`import.meta.dirname`。
 - 如果在 **`packages/main/vite.config.ts`** 或 **`scripts/`**：  
   直接使用原生的 `__dirname`。
 

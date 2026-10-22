@@ -30,14 +30,8 @@
 主进程是整个 Electron 应用在 Node.js 环境下的运行宿主。
 - **`dependencies` 准入标准**：
   **仅限生产环境需要通过 Node.js 原生 `require()` / `import` 动态加载的第三方库**（如 `electron-log`, `electron-updater` 或含 C++ 原生 Addon 的模块）。
-- **双向对齐铁律（CI 强校验）**：
-  主进程声明的每一个生产依赖，**必须**在 `packages/main/vite.config.ts` 的 `rolldownOptions.external` 列表中显式配置排除；反之，在 `external` 中排除的非 Node 内置模块，**必须**在此处的 `dependencies` 中声明。
-  ```ts
-  // packages/main/vite.config.ts
-  rolldownOptions: {
-    external: ['electron', 'electron-updater', 'electron-log'],
-  }
-  ```
+- **external 自动派生（构建期单一事实源）**：
+  `packages/main/vite.config.ts` 的 `rolldownOptions.external` 由 [`build/main-externals.ts`](../build/main-externals.ts) 从本文件 `dependencies` 自动派生（`electron` + 全部生产依赖），两侧不再手写两份清单，也不会漂移。新增运行时依赖只需执行 `pnpm --filter @app/main add <pkg-name>`，external 自动跟随。
 
 ### 3. 渲染进程（`packages/renderer/package.json`）
 遵循标准 Web 前端工程通用分类习惯，开发者无需受 Electron 内部打包机制干扰：
@@ -91,12 +85,12 @@ Preload 脚本由 Vite 经 `ssr: { noExternal: true }` 构建为单文件 `dist/
    ```bash
    pnpm --filter @app/main add <pkg-name>
    ```
-2. **同步修改配置**：打开 `packages/main/vite.config.ts`，将 `<pkg-name>` 添加到 `rolldownOptions.external` 数组中。
+2. **无需手改 external**：`build/main-externals.ts` 会自动把新依赖加入 `rolldownOptions.external`。
 3. 运行校验：
    ```bash
    pnpm run verify:prebuild
    ```
-   若未配置 `external`，CI 与本地构建均会报错拦截。
+   门禁仍会校验根目录 `name` 规范与根 `dependencies` 边界。
 
 ### Q2：如何为主进程新增工具类库（希望直接打包进 index.cjs）？
 若引入的是轻量纯 JS 工具库（如 `zod`, `semver` 等），希望其被 Vite 编译内联以减少运行时查找：
@@ -124,6 +118,6 @@ pnpm --filter @app/renderer add -D vite-plugin-xxx @types/xxx
 
 | 校验门禁 | 触发时机 | 校验命令 | 核心检测内容 |
 | :--- | :--- | :--- | :--- |
-| **依赖拓扑检查** | PR 提交 / 本地打包前 | `pnpm run verify:prebuild` | 1. 根目录 `dependencies` 严格等于 `['@app/main']`<br>2. 主进程 `dependencies` 与 Vite `external` 100% 双向对齐 |
-| **asar 体积门禁** | 发版构建 / 打包测试 | `pnpm run test:dist` | 校验打包出的 `app.asar` 体积不得超过 10.00 MB（防范任何意外依赖泄露） |
-| **运行时 Smoke 检查** | 发版构建 / 打包测试 | `pnpm run test:dist` | 真实启动解包二进制程序，验证窗口创建、React `#root` 挂载及无报错退出 |
+| **依赖拓扑检查** | PR 提交 / 本地打包前 | `pnpm run verify:prebuild` | 1. 根目录 `dependencies` 严格等于 `['@app/main']`<br>2. 根目录 `name` 符合 OTA 文件名规范（主进程 external 已由 `dependencies` 自动派生，无需对齐检查） |
+| **asar 体积门禁** | 发版构建 / 打包测试 | `pnpm build:dir` | 校验打包出的 `app.asar` 体积不得超过 10.00 MB（防范任何意外依赖泄露） |
+| **运行时 Smoke 检查** | 发版构建 / 打包测试 | `pnpm build:dir` | 真实启动解包二进制程序，验证窗口创建、React `#root` 挂载及无报错退出 |

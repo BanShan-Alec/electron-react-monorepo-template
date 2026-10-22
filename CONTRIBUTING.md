@@ -84,7 +84,7 @@ npm run format
 
 ### 4. PR 工作流（`pnpm pr-review`）
 
-feature 分支一律经 PR 合入 `main`：分支保护锁死 required checks（typecheck / lint / e2e）与 squash-only、拒绝直推，决策背景见 ADR-0004（PR-only + squash 工作流决策），完整流程见 [.github/CICD.md](.github/CICD.md) 与 [packages/pr-review/README.md](packages/pr-review/README.md)。
+feature 分支一律经 PR 合入 `main`：分支保护锁死 required checks（typecheck / lint / test / e2e）与 squash-only、拒绝直推，决策背景见 ADR-0004（PR-only + squash 工作流决策），完整流程见 [.github/CICD.md](.github/CICD.md) 与 [packages/pr-review/README.md](packages/pr-review/README.md)。
 
 | 命令 | 用途 |
 | :--- | :--- |
@@ -145,14 +145,19 @@ main 受分支保护禁直推，发版走 PR 形态：
 
 为保持项目根目录极致清爽，工具链配置与构建资产按职责收拢存放。
 
-`.config/` —— Lint 与版本发布工具链配置：
+`.config/` —— Lint、测试与版本发布工具链配置：
 - [`.config/biome.json`](.config/biome.json)：Biome 代码格式化与 Lint 校验规则
 - [`.config/commitlint.config.ts`](.config/commitlint.config.ts)：Conventional Commits 校验与简体中文要求插件
 - [`.config/changelog.config.ts`](.config/changelog.config.ts)：changelogen 变更日志分类映射与版本推导配置
+- [`.config/vitest.config.ts`](.config/vitest.config.ts)：单元测试与基准测试配置（别名从 `packages/tsconfig/base.json` 派生）
+- [`.config/playwright.config.ts`](.config/playwright.config.ts)：Electron E2E 配置
 
 `build/` —— 生产构建与打包域：
 - [`build/electron-builder.ts`](build/electron-builder.ts)：Electron 生产环境打包配置与过滤规则
-- [`build/sentry-config.ts`](build/sentry-config.ts)：Sentry 构建期公共配置、版本号提取与 DSN 注入器
+- [`build/app-identity.ts`](build/app-identity.ts)：应用身份与 OTA 仓库坐标唯一解析器（根 `package.json`）
+- [`build/env.ts`](build/env.ts)：构建期环境变量统一加载器（外部注入优先于 `.env`）
+- [`build/repo-paths.ts`](build/repo-paths.ts)：仓库根目录与产物目录解析（禁止 `process.cwd()`）
+- [`build/sentry-config.ts`](build/sentry-config.ts)：Sentry 构建期公共配置与 DSN 注入器
 - [`build/resources/`](build/resources)：打包资源（应用图标、签名 entitlements 等），经 `extraResources` 复制进安装包
 
 ---
@@ -197,19 +202,19 @@ pnpm -F @app/renderer remove <包名>
 
 ---
 
-## 七、Node 脚本与构建配置规范 (纯 CommonJS 模式)
+## 七、Node 脚本与构建配置规范 (ESM + 仓库根路径唯一入口)
 
-为彻底杜绝 Node 24+ 原生执行 TypeScript 时的 `[MODULE_TYPELESS_PACKAGE_JSON]` 重新解析警告，并消除 `import.meta.url`、`fileURLToPath`、`__dirname` 兼容垫片与动态导入陷阱，本项目制定以下规范：
+全仓脚本与构建配置统一使用 ESM（`import` / `export`），不再维护 CommonJS 写法：
 
 ### 1. 运行环境与模块标准划分
 
-| 目录与文件 | 模块系统 | 规范要求与说明 |
+| 目录与文件 | 模块标准 | 规范要求与说明 |
 | :--- | :--- | :--- |
-| **Node 脚本与构建配置**<br>`scripts/*.ts`<br>`build/*.ts`<br>`packages/{main,preload}/vite.config.ts` | **纯 CommonJS** (`require` / `module.exports`) | • 统一使用 `require('node:xxx')` 引入依赖，禁止混入 ESM `import`。<br>• 统一使用原生标准 `__dirname`，严禁编写 `typeof __dirname !== 'undefined'` 等兼容垫片。<br>• 直接使用 `module.exports = { ... }` 导出。<br>• CLI 直接执行入口使用 `if (require.main === module)` 判断。<br>• TypeScript 类型引入使用零运行时的 `import type { ... } from '...'`。 |
-| **纯前端渲染进程**<br>`packages/renderer/`（含 `vite.config.ts`） | **原生 ESM** (`import` / `export`) | • `packages/renderer/package.json` 显式声明 `"type": "module"`，完整支持 Vite 与 React 前端生态。<br>• 若需在渲染端配置中引入 `build/` 下的 CommonJS 模块，通过 `createRequire(import.meta.url)` 桥接载入。 |
+| **Node 脚本与构建配置**<br>`scripts/*.ts`<br>`build/*.ts`<br>`packages/{main,preload,renderer}/vite.config.ts` | **原生 ESM** (`import` / `export`) | • 统一使用 `import` 引入依赖，禁止 `require` / `module.exports`。<br>• 仓库根目录一律经 `build/repo-paths.ts` 的 `findRepoRoot()` 解析，严禁 `process.cwd()` 推导相对路径。<br>• 环境变量统一经 `build/env.ts` 的 `loadRepoEnv()` 加载，不得各自调用 `loadEnv`。<br>• `__dirname` / `import.meta.dirname` 由配置加载器（Vite / electron-builder / tsx）提供，就地使用，不写兼容垫片。<br>• TypeScript 类型引入使用零运行时的 `import type { ... } from '...'`。 |
+| **纯前端渲染进程**<br>`packages/renderer/`（含 `vite.config.ts`） | **原生 ESM** (`import` / `export`) | • `packages/renderer/package.json` 显式声明 `"type": "module"`，完整支持 Vite 与 React 前端生态。<br>• 可直接 `import` `build/` 下的构建期模块（均为 ESM）。 |
 
 ### 2. TypeScript 隔离配置
-`scripts/tsconfig.json` 配置了 `"moduleDetection": "force"`，确保即使未显式声明顶层 `export` 的纯 CJS 脚本也能在 TypeScript 中保持独立的模块作用域，杜绝跨文件全局变量污染（如全局 `const fs` 冲突）。
+`scripts/tsconfig.json` 配置了 `"moduleDetection": "force"`，确保即使未显式声明顶层 `export` 的脚本也能在 TypeScript 中保持独立的模块作用域，杜绝跨文件全局变量污染（如全局 `const fs` 冲突）。
 
 ---
 
