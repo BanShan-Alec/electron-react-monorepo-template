@@ -1,4 +1,5 @@
-import { RENDERER_LINE_MAX_LENGTH, truncateRenderedLine } from '@app/main/modules/log.module';
+import { RENDERER_LINE_MAX_LENGTH } from '@app/main/constants/logging';
+import { truncateRenderedLine } from '@app/main/modules/log.module';
 import { describe, expect, it } from 'vitest';
 
 describe('truncateRenderedLine', () => {
