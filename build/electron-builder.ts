@@ -25,7 +25,7 @@ const config: Configuration = {
   appId: identity.appId,
   productName: identity.productName,
   directories: {
-    output: process.env.DIST_DIR || 'dist',
+    output: 'dist',
     buildResources: 'build/resources',
   },
   generateUpdatesFilesForAllChannels: true,

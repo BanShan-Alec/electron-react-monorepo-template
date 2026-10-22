@@ -93,7 +93,7 @@
 | `MAX_ASAR_SIZE_MB` | 打包后 asar 体积门禁，默认 10 | 当前产物约 2.91 MB |
 | `VITE_CONFIG_NATIVE_IGNORE_WARNING` | 关掉 Vite config loader 警告 | 由 Vite 自己读取，不是死键 |
 
-**只在 shell / CI 用的键**（不要写进 `.env`）：`MODE`、`DIST_DIR`、`BENCHMARK`、`DEMO_MODE`、`DEFAULT_BRANCH`、`DISPLAY`。
+**只在 shell / CI 用的键**（不要写进 `.env`）：`MODE`、`BENCHMARK`、`DEMO_MODE`、`DEFAULT_BRANCH`、`DISPLAY`。
 
 **CI Secrets**（GitHub 仓库设置里配）：`SENTRY_AUTH_TOKEN`、`OCR_LLM_*`、`GH_TOKEN/GITHUB_TOKEN`、macOS/Windows 签名变量。注意 `.env` 目前是**故意入库**的（你的决定），所以不要往里面加新 secret。
 
@@ -113,14 +113,14 @@
 | :--- | :--- | :--- |
 | [app-identity.ts](../build/app-identity.ts) | 身份/版本/repo 解析 | 一般不用动，改根 `package.json` |
 | [env.ts](../build/env.ts) | 唯一 env 加载器 | 无需逐文件改 |
-| [repo-paths.ts](../build/repo-paths.ts) | 仓库根、dist 目录 | `DIST_DIR` 可覆盖 dist |
+| [repo-paths.ts](../build/repo-paths.ts) | 仓库根与固定产物目录 `<repo>/dist` | 产物目录不可配置 |
 | [main-externals.ts](../build/main-externals.ts) | 主进程 external | **不用手改**：`pnpm --filter @app/main add` 后自动外置；装成 `-D` 则自动内联 |
 | [sentry-config.ts](../build/sentry-config.ts) | release 名 `${name}@${version}`、DSN | 改命名模板在这里 |
 | [vite-lib.ts](../build/vite-lib.ts) | main/preload 公共构建默认值 | sourcemap/minify/outDir 在这里 |
 | [tsconfig-paths.ts](../build/tsconfig-paths.ts) | Vitest alias | 真源是 `packages/tsconfig/base.json` |
 | [electron-builder.ts](../build/electron-builder.ts) | 安装包目标、图标、artifactName、NSIS | 平台/产物策略在这里 |
 
-当前打包目标：Windows `nsis x64`、macOS `dmg + zip`、Linux `deb`；图标在 `build/resources/`；产物命名 `${name}-${version}-${os}-${arch}.${ext}`。
+当前打包目标：Windows `nsis x64`、macOS `dmg + zip`、Linux `deb`；图标在 `build/resources/`；产物命名 `${name}-${version}-${os}-${arch}.${ext}`。产物目录固定为 `<repo>/dist`，不可通过环境变量修改；自定义 electron-builder 配置也必须保持 `directories.output: 'dist'`，否则 postbuild 校验找不到产物。
 
 ---
 

@@ -29,8 +29,7 @@ export function findRepoRoot(fromDir: string): string {
   }
 }
 
-/** 打包产物目录：允许 DIST_DIR 覆盖，默认 <root>/dist */
+/** 打包产物目录：固定 <root>/dist（不支持环境变量覆盖） */
 export function getDistDir(rootDir: string): string {
-  if (!process.env.DIST_DIR) return path.join(rootDir, 'dist');
-  return path.resolve(rootDir, process.env.DIST_DIR);
+  return path.join(rootDir, 'dist');
 }
