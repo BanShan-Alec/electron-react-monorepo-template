@@ -1,6 +1,20 @@
 # Changelog
 
 
+## v1.9.1
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.9.0...v1.9.1)
+
+### 💅 代码重构 (Refactoring)
+
+- **config:** 统一应用身份、构建期与运行时常量来源 ([#45](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/45))
+- **config:** 精简构建辅助模块并调整主进程外置策略 ([#46](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/46))
+- **build:** 拆分 build/lib 并移除配置副作用 ([#47](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/47))
+
+### ❤️ Contributors
+
+- 半山Alec ([@BanShan-Alec](https://github.com/BanShan-Alec))
+
 ## v1.9.0
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.8.0...v1.9.0)
