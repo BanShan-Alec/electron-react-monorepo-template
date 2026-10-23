@@ -63,7 +63,6 @@ jobs:
             dist/*.dmg
             dist/*.deb
             dist/*.zip
-            dist/*.AppImage
             dist/*.yml
             dist/*.blockmap
           if-no-files-found: error

@@ -75,6 +75,17 @@ export function getEnv(key: EnvKey, fallback?: string): string {
 }
 
 /**
+ * 编译期从根 package.json 的 repository.url 解析出的 GitHub 发布源坐标
+ *
+ * 未打包形态（start:dist）下 electron-updater 需要显式 setFeedURL；
+ * 该坐标属于仓库身份，随代码走，不再支持 .env 覆盖。
+ */
+export const bundledRepository = {
+  owner: typeof __GITHUB_OWNER__ !== 'undefined' ? __GITHUB_OWNER__ : '',
+  repo: typeof __GITHUB_REPO__ !== 'undefined' ? __GITHUB_REPO__ : '',
+} as const;
+
+/**
  * 获取注入给渲染进程的全局只读运行时环境基座快照
  */
 export function getRuntimeEnvSnapshot(): AppRuntimeEnv {

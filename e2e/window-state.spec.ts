@@ -1,3 +1,11 @@
+import {
+  DEFAULT_WINDOW_HEIGHT,
+  DEFAULT_WINDOW_WIDTH,
+  MAX_WORK_AREA_RATIO,
+  MAX_WORK_AREA_WIDTH_RATIO,
+  MIN_WINDOW_HEIGHT,
+  MIN_WINDOW_WIDTH,
+} from '../packages/shared/src/constants/window-geometry';
 import { expect, test } from './helpers/fixture';
 
 test.describe('主窗口初始几何尺寸与工作区视觉居中 E2E 验证', () => {
@@ -30,9 +38,15 @@ test.describe('主窗口初始几何尺寸与工作区视觉居中 E2E 验证', 
     expect(bounds.width).toBeLessThanOrEqual(workArea.width);
     expect(bounds.height).toBeLessThanOrEqual(workArea.height);
 
-    // 2. 宽高精确符合自适应算法：小屏受限时收缩，大屏满足标准 1024x700
-    const expectedWidth = Math.max(720, Math.min(1024, Math.floor(workArea.width * 0.95)));
-    const expectedHeight = Math.max(480, Math.min(700, Math.floor(workArea.height * 0.85)));
+    // 2. 宽高精确符合自适应算法：小屏受限时收缩，大屏满足标准尺寸
+    const expectedWidth = Math.max(
+      MIN_WINDOW_WIDTH,
+      Math.min(DEFAULT_WINDOW_WIDTH, Math.floor(workArea.width * MAX_WORK_AREA_WIDTH_RATIO)),
+    );
+    const expectedHeight = Math.max(
+      MIN_WINDOW_HEIGHT,
+      Math.min(DEFAULT_WINDOW_HEIGHT, Math.floor(workArea.height * MAX_WORK_AREA_RATIO)),
+    );
 
     expect(Math.abs(bounds.width - expectedWidth)).toBeLessThanOrEqual(2);
     expect(Math.abs(bounds.height - expectedHeight)).toBeLessThanOrEqual(2);

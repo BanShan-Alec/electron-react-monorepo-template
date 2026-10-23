@@ -2,6 +2,10 @@ import {
   APP_REACT_STARTUP_READY_EVENT,
   APP_STARTUP_MAIN_READY_EVENT,
   APP_STARTUP_READY_CLASS,
+  STARTUP_ANIMATION_FALLBACK_MS,
+  STARTUP_MAIN_FALLBACK_MS,
+  STARTUP_REACT_FALLBACK_MS,
+  STARTUP_UNMOUNT_DELAY_MS,
 } from '@app/shared/constants/startup';
 
 /**
@@ -16,10 +20,6 @@ import {
  */
 
 // 私有常量
-const ANIMATION_FALLBACK_MS = 1000;
-const REACT_FALLBACK_MS = 3000;
-const MAIN_FALLBACK_MS = 5000;
-const UNMOUNT_DELAY_MS = 500;
 const LOGO_SHELL_SELECTOR = '.startup-logo-shell';
 const LOADING_ELEMENT_ID = 'loading';
 
@@ -38,7 +38,10 @@ const tryFinishStartup = () => {
   if (finished || pendingGates.size > 0) return;
   finished = true;
   document.body.classList.add(APP_STARTUP_READY_CLASS);
-  window.setTimeout(() => document.getElementById(LOADING_ELEMENT_ID)?.remove(), UNMOUNT_DELAY_MS);
+  window.setTimeout(
+    () => document.getElementById(LOADING_ELEMENT_ID)?.remove(),
+    STARTUP_UNMOUNT_DELAY_MS,
+  );
 };
 
 const settleGate = (id: GateId) => {
@@ -60,12 +63,12 @@ if (
   settleGate('animation');
 } else {
   startupLogoShell.addEventListener('animationend', () => settleGate('animation'), { once: true });
-  window.setTimeout(() => settleGate('animation'), ANIMATION_FALLBACK_MS);
+  window.setTimeout(() => settleGate('animation'), STARTUP_ANIMATION_FALLBACK_MS);
 }
 
 // 门禁二：React 首帧 commit（含兜底，React 侧派发见 StartupReadyNotifier）
 window.addEventListener(APP_REACT_STARTUP_READY_EVENT, () => settleGate('react'), { once: true });
-window.setTimeout(() => settleGate('react'), REACT_FALLBACK_MS);
+window.setTimeout(() => settleGate('react'), STARTUP_REACT_FALLBACK_MS);
 
 // 门禁三：主进程就绪（先拉后推，先到信号经快照补发不丢；就绪源见 startup-readiness.module）
 const bridge = (window as { api?: { startup?: StartupBridgeLike } }).api?.startup;
@@ -79,5 +82,5 @@ if (!bridge) {
     })
     .catch(() => {}); // 拉取失败交给事件与兜底路径
   window.addEventListener(APP_STARTUP_MAIN_READY_EVENT, () => settleGate('main'), { once: true });
-  window.setTimeout(() => settleGate('main'), MAIN_FALLBACK_MS);
+  window.setTimeout(() => settleGate('main'), STARTUP_MAIN_FALLBACK_MS);
 }

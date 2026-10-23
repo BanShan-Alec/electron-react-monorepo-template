@@ -1,10 +1,10 @@
+import { SUPPORTED_LOCALES, type SupportedLocale } from '@app/shared/constants/preferences';
 import { i18n } from '@lingui/core';
 import type { Locale as AntdLocale } from 'antd/es/locale';
 import enUS from 'antd/locale/en_US';
 import zhCN from 'antd/locale/zh_CN';
 
-export const SUPPORTED_LOCALES = ['zh-CN', 'en-US'] as const;
-export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
+export { SUPPORTED_LOCALES, type SupportedLocale };
 
 const ANTD_LOCALES: Record<SupportedLocale, AntdLocale> = {
   'zh-CN': zhCN,

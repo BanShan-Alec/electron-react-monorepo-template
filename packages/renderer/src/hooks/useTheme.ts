@@ -1,3 +1,4 @@
+import { LIGHT_COLOR_SCHEME_QUERY } from '@app/shared/constants/preferences';
 import { useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 
@@ -6,9 +7,6 @@ import { useAppStore } from '@/stores/useAppStore';
  * 1. resolvedTheme 写入 documentElement.dataset.theme，激活 tokens.css 变量并切换 antd 算法；
  * 2. themeMode 为 'system' 时跟随 OS 偏好变化（监听必须配套清理，防止泄漏与重复触发）。
  */
-
-// 私有常量
-const LIGHT_QUERY = '(prefers-color-scheme: light)';
 
 // 可抽离的逻辑处理函数/组件
 export function useTheme() {
@@ -26,7 +24,7 @@ export function useTheme() {
     if (themeMode !== 'system') {
       return;
     }
-    const mediaQuery = window.matchMedia(LIGHT_QUERY);
+    const mediaQuery = window.matchMedia(LIGHT_COLOR_SCHEME_QUERY);
     const handleChange = () => {
       setThemeMode('system');
     };

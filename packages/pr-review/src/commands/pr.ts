@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { ensureGhAuth, getCurrentBranch, getRepoRoot } from '../utils/git.ts';
+import { ensureGhAuth, getCurrentBranch, getDefaultBranch, getRepoRoot } from '../utils/git.ts';
 import { fail, probe, run, sleepSync } from '../utils/process.ts';
 
-const MAIN_BRANCH = process.env.DEFAULT_BRANCH || 'main';
+const MAIN_BRANCH = process.env.DEFAULT_BRANCH || getDefaultBranch();
 const CHECKS_POLL_INTERVAL_MS = 15_000;
 const CHECKS_MAX_POLLS = 40;
 

@@ -1,5 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {
+  LOG_ARCHIVE_CROP_BYTES,
+  LOG_ARCHIVE_MAX_ATTEMPTS,
+  LOG_ARCHIVE_MAX_DAYS,
+  LOG_ARCHIVE_MAX_FILES,
+} from '../constants/logging';
 
 export interface CleanArchivedLogsOptions {
   /** 保留最大天数，默认 7 天 */
@@ -36,7 +42,7 @@ export function getAvailableArchivePath(
   const ts = formatArchiveTimestamp(date);
   let targetPath = path.join(dir, `${base}-${ts}${ext}`);
   let counter = 1;
-  const maxAttempts = 100;
+  const maxAttempts = LOG_ARCHIVE_MAX_ATTEMPTS;
 
   while (fs.existsSync(targetPath) && counter <= maxAttempts) {
     targetPath = path.join(dir, `${base}-${ts}_${counter}${ext}`);
@@ -59,8 +65,8 @@ export function cleanArchivedLogs(logsDir: string, options: CleanArchivedLogsOpt
   try {
     if (!fs.existsSync(logsDir)) return;
 
-    const maxDays = options.maxDays ?? 7;
-    const maxFiles = options.maxFilesPerCategory ?? 5;
+    const maxDays = options.maxDays ?? LOG_ARCHIVE_MAX_DAYS;
+    const maxFiles = options.maxFilesPerCategory ?? LOG_ARCHIVE_MAX_FILES;
     const maxAgeMs = maxDays * 24 * 60 * 60 * 1000;
     const now = Date.now();
 
@@ -157,8 +163,8 @@ export interface CustomArchiveLogOptions {
 export function createCustomArchiveLogFn(
   options?: CustomArchiveLogOptions,
 ): (file: { toString: () => string; crop?: (bytes: number) => void }) => void {
-  const maxDays = options?.maxDays ?? 7;
-  const maxFiles = options?.maxFilesPerCategory ?? 5;
+  const maxDays = options?.maxDays ?? LOG_ARCHIVE_MAX_DAYS;
+  const maxFiles = options?.maxFilesPerCategory ?? LOG_ARCHIVE_MAX_FILES;
   const asyncCleanup = options?.asyncCleanup ?? true;
 
   return (file) => {
@@ -179,7 +185,7 @@ export function createCustomArchiveLogFn(
       } catch (fallbackErr) {
         console.error('[LogArchiver] Failed to rotate log file:', renameErr, fallbackErr);
         if (typeof file.crop === 'function') {
-          file.crop(256 * 1024);
+          file.crop(LOG_ARCHIVE_CROP_BYTES);
         }
       }
     }

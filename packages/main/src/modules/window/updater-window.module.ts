@@ -1,4 +1,5 @@
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
+import { UPDATER_WINDOW_HEIGHT, UPDATER_WINDOW_WIDTH } from '@app/shared/constants/window-geometry';
 import { WINDOW_IDS } from '@app/shared/constants/windows';
 import { app, BrowserWindow } from 'electron';
 import type { AppInitConfig } from '../../AppInitConfig';
@@ -42,8 +43,8 @@ export class UpdaterWindowModule implements AppModule {
 
     const browserWindow = new BrowserWindow({
       show: false,
-      width: 480,
-      height: 460,
+      width: UPDATER_WINDOW_WIDTH,
+      height: UPDATER_WINDOW_HEIGHT,
       resizable: false,
       maximizable: false,
       minimizable: false,

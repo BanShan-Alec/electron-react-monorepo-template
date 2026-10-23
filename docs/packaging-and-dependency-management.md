@@ -9,7 +9,7 @@
 - [一、 Monorepo 依赖拓扑设计与防劣化原则](#一-monorepo-依赖拓扑设计与防劣化原则)
   - [1. 依赖分层总览表](#1-依赖分层总览表)
   - [2. 根目录的“极简依赖红线”](#2-根目录的极简依赖红线)
-  - [3. 主进程依赖与 Vite External 的“双向对齐”机制](#3-主进程依赖与-vite-external-的双向对齐机制)
+  - [3. 主进程依赖与 Vite External 的自动派生机制](#3-主进程依赖与-vite-external-的自动派生机制)
 - [二、 4 阶段全生命周期打包流水线](#二-4-阶段全生命周期打包流水线)
   - [1. 打包流水线架构图](#1-打包流水线架构图)
   - [2. 阶段详解与防护措施](#2-阶段详解与防护措施)
@@ -47,30 +47,27 @@
 
 ---
 
-### 3. 主进程依赖与 Vite External 的“双向对齐”机制
+### 3. 主进程依赖与 Vite External 的自动派生机制
 
 主进程由 Vite / Rolldown 负责编译打包，此时存在一个核心平衡：**哪些库该内联（Bundle）进代码？哪些库该外置（External）在运行时通过 Node 加载？**
 
-本项目通过以下两道铁律保证双向对齐：
+本项目以 `packages/main/package.json` 的 `dependencies` 为唯一声明处，external 由其自动派生：
 
 ```mermaid
 graph LR
     subgraph A [packages/main/package.json]
-        Dep["dependencies: [electron-updater, electron-log]"]
-    end
-    
-    subgraph B [packages/main/vite.config.ts]
-        Ext["external: [electron, electron-updater, electron-log]"]
+        Dep["dependencies: [electron-updater, electron-log, usb]"]
     end
 
-    Dep -->|校验规则 1: 必须外置| Ext
-    Ext -->|校验规则 2: 必须在 dependencies 声明| Dep
+    subgraph B [build/main-externals.ts]
+        Ext["external = ['electron', ...dependencies]"]
+    end
+
+    Dep -->|自动派生| Ext
 ```
 
-- **规则 1：打包外置（防代码重复与体积膨胀）**：
-  凡是声明在 `packages/main` 的 `dependencies` 中的第三方模块，必须配置在 `vite.config.ts` 的 `external` 列表中，防止被 Vite 重复打包进单文件 bundle。
-- **规则 2：生产依赖声明（防 MODULE_NOT_FOUND 白屏闪退）**：
-  凡是在 Vite 中被 `external` 排除的第三方库，必须在 `packages/main` 的 `dependencies` 显式声明。否则代码被打包后，运行期执行 `require('xxx')` 时因物理目录缺失该模块，直接抛出 `MODULE_NOT_FOUND`，应用启动即崩溃白屏！
+- **规则：external 从 dependencies 单向派生**：
+  `packages/main/vite.config.ts` 不再手写 external 清单，而是调用 `build/main-externals.ts` 的 `getMainExternalModules()`。声明在 `dependencies` 的模块自动外置（防止被 Vite 重复打包），`devDependencies`（如 `zod`）自动内联。两份清单不可能再漂移，因此前置门禁不再需要「双向对齐」检查。
 
 ---
 
@@ -87,8 +84,7 @@ flowchart TD
     subgraph Phase1 ["阶段 1: Pre-build 静态合规门禁 (scripts/verify-prebuild.ts)"]
         P1["1. 根目录 package.json name 规范校验 (无空格/小写/无@/)"]
         P2["2. 根目录 dependencies 边界校验 (仅限 @app/main)"]
-        P3["3. 主进程 dependencies 与 Vite external 双向对齐检查"]
-        P1 --> P2 --> P3
+        P1 --> P2
     end
     
     Phase1 -->|校验失败 (耗时 10ms)| Abort1["❌ 0 毫秒拦截退出，不浪费 CPU 编译"]
@@ -138,8 +134,7 @@ flowchart TD
 - **执行时机**：打包第 1 毫秒，零 IO 损耗。
 - **校验内容**：
   1. **应用名称规范**：断言根目录 `package.json` 的 `name` 严格匹配 `^[a-z0-9-_]+$`，杜绝空格、大写字母与 `@/`，从源头消灭 OTA 发布 404 隐患；
-  2. **根依赖隔离**：断言根目录 `dependencies` 严格仅有 `['@app/main']`；
-  3. **外置一致性**：双向断言 `packages/main/package.json` 的 `dependencies` 与 `packages/main/vite.config.ts` 的 `external` 列表。
+  2. **根依赖隔离**：断言根目录 `dependencies` 严格仅有 `['@app/main']`。
 
 ### 2. Post-build 后置物理验真 (`scripts/verify-postbuild.ts`)
 - **执行命令**：`pnpm run verify:postbuild`（在打包生成后自动触发）。
@@ -149,7 +144,7 @@ flowchart TD
   2. **asar 深度透视与体积硬门禁**：读取并解码 `resources/app.asar` 二进制头部，计算各顶层模块体积分布，打印 TOP 5 最大产物，并强制断言总体积必须小于预设阈值（默认 10MB，超标直接阻断）；
   3. **Playwright 真实拉起 Smoke 烟雾测试**：
      - 在完全沙箱环境中以原生子进程启动已打包的真实二进制；
-     - 等待主窗口建立并验证窗口标题；
+     - 等待主窗口建立并打印窗口标题（仅日志记录，不做断言）；
      - 等待前端 React 容器 `#root` 成功挂载，证实界面渲染无运行时脚本报错；
      - 测试完成后优雅退出并自动销毁临时用户数据目录。
 
@@ -210,9 +205,9 @@ pnpm run verify:postbuild
 - **原因**：误将某个第三方库安装到了根目录的 `dependencies` 中。
 - **解法**：如果是构建工具或全局工具，移至根目录的 `devDependencies`；如果是运行时库，安装至对应的子包目录中（如 `pnpm --filter @app/main add xxx`）。
 
-#### Q3: 报错 `[运行时依赖缺失] 模块在 external 中被排除，但未在 dependencies 中声明`
-- **原因**：主进程的 `packages/main/vite.config.ts` 的 `external` 列表排除了某个库，但忘记在 `packages/main/package.json` 的 `dependencies` 显式声明该库。
-- **解法**：执行 `pnpm --filter @app/main add <库名>` 将其补齐在生产依赖中，防止打包后报 `MODULE_NOT_FOUND`。
+#### Q3: 主进程新增依赖后为什么不需要改 `external`？
+- **原因**：`packages/main/vite.config.ts` 的 external 由 `build/main-externals.ts` 从 `packages/main/package.json` 的 `dependencies` 自动派生。
+- **做法**：直接 `pnpm --filter @app/main add <库名>` 安装为生产依赖即可；若希望内联进 bundle（如纯 JS 工具库），安装为 `devDependencies`。
 
 #### Q4: 报错 `[verify-postbuild] asar 体积超过门禁上限 (XX MB > 10.00 MB)`
 - **原因**：打包产物异常膨胀，通常是因为打包时误包含了 `.map` 源码映射文件、或者将非必要的大体积静态资源/依赖打进了 asar。

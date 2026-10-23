@@ -1,5 +1,11 @@
+import {
+  DEFAULT_LOCALE,
+  DEFAULT_THEME_MODE,
+  LIGHT_COLOR_SCHEME_QUERY,
+  type SupportedLocale,
+  type ThemeMode,
+} from '@app/shared/constants/preferences';
 import { create } from 'zustand';
-import type { SupportedLocale } from '@/locales/i18n';
 
 /**
  * 全局轻量应用状态（对齐 renderer/hooks-and-state.md 第 2 章）。
@@ -7,10 +13,8 @@ import type { SupportedLocale } from '@/locales/i18n';
  */
 
 // 私有常量
-export type ThemeMode = 'system' | 'light' | 'dark';
+export type { ThemeMode };
 export type ResolvedTheme = 'light' | 'dark';
-
-const LIGHT_QUERY = '(prefers-color-scheme: light)';
 
 // 可抽离的逻辑处理函数/组件
 function resolveTheme(mode: ThemeMode): ResolvedTheme {
@@ -18,7 +22,7 @@ function resolveTheme(mode: ThemeMode): ResolvedTheme {
     return mode;
   }
   if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-    return window.matchMedia(LIGHT_QUERY).matches ? 'light' : 'dark';
+    return window.matchMedia(LIGHT_COLOR_SCHEME_QUERY).matches ? 'light' : 'dark';
   }
   return 'dark';
 }
@@ -32,9 +36,9 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  themeMode: 'system',
-  resolvedTheme: resolveTheme('system'),
+  themeMode: DEFAULT_THEME_MODE,
+  resolvedTheme: resolveTheme(DEFAULT_THEME_MODE),
   setThemeMode: (themeMode) => set({ themeMode, resolvedTheme: resolveTheme(themeMode) }),
-  language: 'zh-CN',
+  language: DEFAULT_LOCALE,
   setLanguage: (language) => set({ language }),
 }));

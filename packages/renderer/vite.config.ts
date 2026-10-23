@@ -4,16 +4,20 @@ import { sentryVitePlugin } from '@sentry/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import { APP_IDENTITY } from '../../build/app-identity.ts';
+import { findRepoRoot } from '../../build/repo-paths.ts';
 import { getSentryBuildConfig } from '../../build/sentry-config.ts';
+import { appTitlePlugin } from './plugins/app-title.ts';
 import { startupShellInlinePlugin } from './plugins/startup-shell.ts';
 
 const currentDir = import.meta.dirname;
+const rootDir = findRepoRoot(currentDir);
 const sentryConfig = getSentryBuildConfig(currentDir);
 
 // https://vite.dev/config/
 export default defineConfig({
   // 环境变量单一事实源：Monorepo 全局统一定义在根目录 .env，子包不设独立 .env
-  envDir: sentryConfig.rootDir,
+  envDir: rootDir,
   base: './',
   // 运行时环境单一事实源：由 Preload 通过 additionalArguments 注入至 window.__APP_ENV__，前端不走编译期 define
   plugins: [
@@ -49,6 +53,8 @@ export default defineConfig({
         });
       },
     },
+    // 窗口标题占位符注入（dev/build 同一形态）：两入口 <title> 统一取根 productName
+    appTitlePlugin({ root: currentDir, appName: APP_IDENTITY.productName }),
     // 启动壳占位符内联（dev/build 同一形态），契约见 specs/first-screen-loading.md §4.7
     startupShellInlinePlugin({ root: currentDir }),
   ],
@@ -58,7 +64,7 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   server: {
-    // port 从 scripts/dev.ts 的 RENDERER_PORT 常量注入
+    // port 从 scripts/dev.ts 的 config.rendererPort 注入
     strictPort: true,
     host: true,
     hmr: {

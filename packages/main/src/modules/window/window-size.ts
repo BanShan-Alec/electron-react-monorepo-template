@@ -1,15 +1,29 @@
+import {
+  DEFAULT_WINDOW_HEIGHT,
+  DEFAULT_WINDOW_WIDTH,
+  MAX_WORK_AREA_RATIO,
+  MAX_WORK_AREA_WIDTH_RATIO,
+  MIN_WINDOW_HEIGHT,
+  MIN_WINDOW_WIDTH,
+  POSITION_TOLERANCE_X,
+  POSITION_TOLERANCE_Y_BOTTOM,
+  POSITION_TOLERANCE_Y_TOP,
+} from '@app/shared/constants/window-geometry';
 import type { Display, Rectangle } from 'electron';
 import type { WindowState } from './window-state-keeper';
 
-export const DEFAULT_WINDOW_WIDTH = 1024;
-export const DEFAULT_WINDOW_HEIGHT = 700;
-export const MIN_WINDOW_WIDTH = 720;
-export const MIN_WINDOW_HEIGHT = 480;
-
-/**
- * 小屏幕安全呼吸比（保留至少 15% 的工作区边距，防止上下顶死任务栏）
- */
-export const MAX_WORK_AREA_RATIO = 0.85;
+/** 常量定义在 @app/shared/constants/window-geometry，此处仅为既有导入路径保留转发 */
+export {
+  DEFAULT_WINDOW_HEIGHT,
+  DEFAULT_WINDOW_WIDTH,
+  MAX_WORK_AREA_RATIO,
+  MAX_WORK_AREA_WIDTH_RATIO,
+  MIN_WINDOW_HEIGHT,
+  MIN_WINDOW_WIDTH,
+  POSITION_TOLERANCE_X,
+  POSITION_TOLERANCE_Y_BOTTOM,
+  POSITION_TOLERANCE_Y_TOP,
+};
 
 /**
  * 边界截断函数，确保尺寸处于 [minimum, available] 区间内
@@ -18,14 +32,6 @@ export function clampDimension(value: number, minimum: number, available: number
   const maximum = Math.max(minimum, Math.floor(available));
   return Math.min(Math.max(Math.floor(value), minimum), maximum);
 }
-
-/**
- * 窗口处于屏幕可视边缘内的容差常量（逻辑像素 DIPs）
- * 确保至少有 50px 标题栏宽度和 10px 顶部抓取区处于屏幕内
- */
-export const POSITION_TOLERANCE_X = 50;
-export const POSITION_TOLERANCE_Y_TOP = 10;
-export const POSITION_TOLERANCE_Y_BOTTOM = 50;
 
 /**
  * 宽度优先自适应尺寸计算（用于冷启动无历史状态或历史尺寸超屏重置）
@@ -37,7 +43,7 @@ export function calculateAdaptiveInitialSize(workAreaSize: Pick<Rectangle, 'widt
   width: number;
   height: number;
 } {
-  const maxAllowedWidth = Math.floor(workAreaSize.width * 0.95);
+  const maxAllowedWidth = Math.floor(workAreaSize.width * MAX_WORK_AREA_WIDTH_RATIO);
   const maxAllowedHeight = Math.floor(workAreaSize.height * MAX_WORK_AREA_RATIO);
 
   const targetWidth = Math.max(MIN_WINDOW_WIDTH, Math.min(DEFAULT_WINDOW_WIDTH, maxAllowedWidth));

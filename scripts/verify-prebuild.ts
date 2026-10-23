@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import { isBuiltin } from 'node:module';
 import { join } from 'node:path';
+import { findRepoRoot } from '../build/repo-paths.ts';
 
 interface VerificationResult {
   valid: boolean;
@@ -13,10 +13,12 @@ interface VerificationResult {
  * 核心职责：在打包开始前（0 毫秒）执行静态拦截，防止配置违规导致的构建失败、体积膨胀或生产崩溃。
  * 1. 根目录 package.json name 规范校验（全小写无空格，杜绝 OTA 404 隐患）
  * 2. 根目录 package.json dependencies 边界校验（仅限 @app/main，防止 node_modules 卷入 asar 体积膨胀）
- * 3. 主进程 dependencies 与 packages/main/vite.config.ts external 双向对齐校验（防止 MODULE_NOT_FOUND 生产白屏）
+ *
+ * 主进程 external 已由 build/main-externals.ts 从 dependencies 派生，两者不可能再漂移，
+ * 原「双向对齐」门禁随之删除。
  */
 export async function verifyPrebuild(): Promise<VerificationResult> {
-  const rootDir = join(__dirname, '..');
+  const rootDir = findRepoRoot(__dirname);
   const errors: string[] = [];
 
   console.log('🔍 [verify-prebuild] 开始执行打包前置静态门禁校验...');
@@ -53,69 +55,6 @@ export async function verifyPrebuild(): Promise<VerificationResult> {
     );
   } else {
     console.log('  ✅ 根目录 dependencies 边界校验通过 (严格仅限 @app/main)');
-  }
-
-  // 3. 主进程 dependencies 与 packages/main/vite.config.ts external 双向对齐校验
-  const mainPkgPath = join(rootDir, 'packages', 'main', 'package.json');
-  if (!fs.existsSync(mainPkgPath)) {
-    throw new Error(`找不到主进程 package.json: ${mainPkgPath}`);
-  }
-
-  const mainPkg = JSON.parse(fs.readFileSync(mainPkgPath, 'utf8'));
-  // 过滤掉以 @app/ 开头的 workspace 子包
-  const mainRuntimeDeps = Object.keys(mainPkg.dependencies || {}).filter(
-    (dep) => !dep.startsWith('@app/'),
-  );
-
-  // 解析 packages/main/vite.config.ts 中的 external
-  let externalList: string[] = [];
-  try {
-    const viteConfigMod = await import('../packages/main/vite.config.ts');
-    const viteConfig = viteConfigMod.default || viteConfigMod;
-    const rolldownExternal = viteConfig?.build?.rolldownOptions?.external || [];
-
-    const rawExternal = Array.isArray(rolldownExternal) ? rolldownExternal : [rolldownExternal];
-    externalList = rawExternal.filter((item): item is string => typeof item === 'string');
-  } catch (err) {
-    console.warn('  ⚠️ 动态加载 packages/main/vite.config.ts 失败，降级为静态正则解析', err);
-    const viteConfigText = fs.readFileSync(join(rootDir, 'packages/main/vite.config.ts'), 'utf8');
-    const match = viteConfigText.match(/external:\s*\[([\s\S]*?)\]/);
-    if (match) {
-      externalList = match[1]
-        .split(',')
-        .map((s: string) => s.trim().replace(/['"]/g, ''))
-        .filter(Boolean);
-    }
-  }
-
-  // 过滤掉 electron 与 Node.js 内置模块
-  const mainExternalDeps = externalList.filter(
-    (dep) =>
-      dep !== 'electron' && !isBuiltin(dep) && !dep.startsWith('node:') && !dep.startsWith('/'),
-  );
-
-  // 校验 A: 声明在 main dependencies 中的库必须在 external 中
-  const missingInExternal = mainRuntimeDeps.filter((dep) => !mainExternalDeps.includes(dep));
-  if (missingInExternal.length > 0) {
-    errors.push(
-      `[打包外置遗漏] 以下主进程生产依赖未在 packages/main/vite.config.ts 的 external 中配置: ${JSON.stringify(missingInExternal)}。\n` +
-        `  -> 影响: 运行时库未被外置，可能会被 Vite 重复内联打包导致产物膨胀或不可预期行为。`,
-    );
-  }
-
-  // 校验 B: 在 external 中排除的第三方库必须在 main dependencies 中声明
-  const missingInDependencies = mainExternalDeps.filter((dep) => !mainRuntimeDeps.includes(dep));
-  if (missingInDependencies.length > 0) {
-    errors.push(
-      `[运行时依赖缺失] 以下模块在 packages/main/vite.config.ts 的 external 中被排除，但未在 packages/main/package.json 的 dependencies 中声明: ${JSON.stringify(missingInDependencies)}。\n` +
-        `  -> 致命风险: 打包后主进程在生产运行时执行 require('${missingInDependencies[0]}') 将抛出 MODULE_NOT_FOUND 导致程序直接白屏崩溃！`,
-    );
-  }
-
-  if (missingInExternal.length === 0 && missingInDependencies.length === 0) {
-    console.log(
-      `  ✅ 主进程 dependencies 与 Vite external 双向完全对齐: [${mainRuntimeDeps.join(', ')}]`,
-    );
   }
 
   const valid = errors.length === 0;

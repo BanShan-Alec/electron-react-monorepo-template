@@ -1,6 +1,6 @@
 # 模板新项目定制速查清单 (Rebranding Checklist)
 
-本模板已实现全链路应用标识的**双轨动态继承**（以根目录 `package.json` 为默认事实源，支持 `.env` 环境变量优先覆盖，本地构建自动安全兜底）。
+本模板的应用身份与 OTA 发布源**全部以根目录 `package.json` 为唯一事实源**；`.env` 只承载部署差异配置（业务网关、Sentry、发布通道等），不参与应用命名、App ID 与仓库坐标。
 
 当使用本模板创建新项目时，只需遵照以下轻量速查清单，替换对应配置与资源文件即可完成品牌重塑（Rebranding）：
 
@@ -30,12 +30,12 @@
 
 | 环境变量 | 作用与默认行为 | 示例 |
 | :--- | :--- | :--- |
-| `APP_NAME` | *(选填)* 动态覆盖应用显示名称（未填时继承 `package.json` 的 `productName`） | `My Awesome App` |
-| `APP_ID` | *(选填)* 动态覆盖 App ID（未填时继承 `package.json` 的 `appId`） | `com.mycompany.awesomeapp` |
-| `GITHUB_OWNER` | *(选填)* GitHub Release 发布组织/用户名（未填时自动从 `repository.url` 解析） | `my-org` |
-| `GITHUB_REPO` | *(选填)* GitHub Release 发布仓库名（未填时自动从 `repository.url` 解析） | `my-app` |
 | `API_BASE_URL` | 后端业务网关基准地址 | `https://api.mycompany.com` |
 | `SENTRY_DSN` | *(选填)* 生产环境崩溃日志监控上报 DSN | `https://xxx@sentry.io/123` |
+| `DISTRIBUTION_CHANNEL` | *(选填)* OTA 发布通道 | `latest` |
+
+> [!NOTE]
+> 应用显示名、App ID 与 GitHub 发布源（owner/repo）不支持通过 `.env` 覆盖：它们分别由根目录 `package.json` 的 `productName`、`appId`、`repository.url` 决定。
 
 ---
 

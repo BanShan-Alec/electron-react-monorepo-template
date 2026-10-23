@@ -10,7 +10,14 @@ import type {
 } from '@app/shared/types/updater';
 import { app, Notification } from 'electron';
 import electronUpdater, { type AppUpdater, CancellationToken } from 'electron-updater';
-import { getEnv, isDev, isPackaged, isTest } from '../env';
+import {
+  ORPHAN_WATCHDOG_TIMEOUT_MS,
+  OTA_ERROR_DEBOUNCE_MS,
+  PROGRESS_EMIT_THROTTLE_MS,
+  SENTRY_FLUSH_TIMEOUT_MS,
+  UPDATE_CHECK_TIMEOUT_MS,
+} from '../constants/updater';
+import { bundledRepository, getEnv, isDev, isPackaged, isTest } from '../env';
 import { AppError } from '../errors/AppError';
 import { getAppConfigStore } from '../modules/config.module';
 import { getLogManager } from '../modules/log.module';
@@ -22,16 +29,6 @@ function isOtaSentryEnabled(): boolean {
     typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__ ? __SENTRY_DSN__ : getEnv('SENTRY_DSN');
   return Boolean(dsn);
 }
-
-/**
- * OTA 错误上报时间去重窗口（毫秒）
- */
-const OTA_ERROR_DEBOUNCE_MS = 1000;
-
-/**
- * 孤儿下载退出前等待 Sentry 事件 flush 的超时时间（毫秒）
- */
-const SENTRY_FLUSH_TIMEOUT_MS = 2000;
 
 /**
  * OTA 流程各阶段标识，统一用于 Sentry 标签与事件追踪
@@ -199,10 +196,9 @@ export class UpdaterService {
       }
 
       // 已打包生产态 (app.isPackaged) 下由 electron-updater 自动读取 resources/app-update.yml；
-      // 仅在未打包形态（源码运行）时若配置了 GITHUB_OWNER/REPO 才手动 setFeedURL
+      // 未打包形态（源码运行）用编译期注入的 package.json repository.url 坐标手动 setFeedURL
       if (!isPackaged) {
-        const owner = getEnv('GITHUB_OWNER');
-        const repo = getEnv('GITHUB_REPO');
+        const { owner, repo } = bundledRepository;
 
         if (owner && repo) {
           updater.setFeedURL({
@@ -212,7 +208,7 @@ export class UpdaterService {
           });
         } else {
           this.logger.warn(
-            'Auto-updater skipped setFeedURL: GITHUB_OWNER or GITHUB_REPO not configured in unpackaged mode.',
+            'Auto-updater skipped setFeedURL: repository.url missing in package.json (unpackaged mode).',
           );
         }
       }
@@ -302,21 +298,7 @@ export class UpdaterService {
           this.logger.info(
             'User dismissed window previously, sending system notification instead of popup',
           );
-          if (Notification.isSupported()) {
-            const isZh = getAppConfigStore().get('language') === 'zh-CN';
-            const notif = new Notification({
-              title: app.getName(),
-              body: isZh
-                ? '新版本已下载完毕，点击立即安装。'
-                : 'New version downloaded. Click to install.',
-            });
-            notif.on('click', () => {
-              this.windowDelegate?.show().catch((err) => {
-                this.logger.error('Failed to show updater window from notification click:', err);
-              });
-            });
-            notif.show();
-          }
+          this.showDownloadedNotification();
         } else {
           // 主窗口正常存活且未被主动关闭时，拉起更新窗口提醒用户立即重启安装
           this.windowDelegate?.show().catch((err) => {
@@ -401,14 +383,13 @@ export class UpdaterService {
 
     // 仅在未打包形态下检查仓库配置（已打包状态直接由 electron-updater 读取 resources/app-update.yml）
     if (!isPackaged) {
-      const owner = getEnv('GITHUB_OWNER');
-      const repo = getEnv('GITHUB_REPO');
+      const { owner, repo } = bundledRepository;
       if (!owner || !repo) {
         this.logger.warn(
-          'Auto-updater check aborted: GITHUB_OWNER or GITHUB_REPO not configured in unpackaged mode.',
+          'Auto-updater check aborted: repository.url missing in package.json (unpackaged mode).',
         );
         this.snapshot.state = 'error';
-        this.snapshot.error = '自动更新未配置仓库信息 (缺少 GITHUB_OWNER 或 GITHUB_REPO)';
+        this.snapshot.error = '自动更新未配置仓库信息 (package.json 缺少 repository.url)';
         this.emitState();
         throw new AppError(this.snapshot.error, ErrorCode.UPDATER_NOT_CONFIGURED);
       }
@@ -419,8 +400,13 @@ export class UpdaterService {
       let timer: NodeJS.Timeout | undefined;
       const timeoutPromise = new Promise((_, reject) => {
         timer = setTimeout(
-          () => reject(new Error('检查更新请求超时（15 秒），请检查网络连接后重试')),
-          15000,
+          () =>
+            reject(
+              new Error(
+                `检查更新请求超时（${UPDATE_CHECK_TIMEOUT_MS / 1000} 秒），请检查网络连接后重试`,
+              ),
+            ),
+          UPDATE_CHECK_TIMEOUT_MS,
         );
       });
       try {
@@ -457,11 +443,10 @@ export class UpdaterService {
     }
 
     if (!isPackaged) {
-      const owner = getEnv('GITHUB_OWNER');
-      const repo = getEnv('GITHUB_REPO');
+      const { owner, repo } = bundledRepository;
       if (!owner || !repo) {
         this.logger.info(
-          'Silent update check skipped: GITHUB_OWNER or GITHUB_REPO not configured in unpackaged mode.',
+          'Silent update check skipped: repository.url missing in package.json (unpackaged mode).',
         );
         return;
       }
@@ -472,7 +457,10 @@ export class UpdaterService {
       const updater = this.getAutoUpdater();
       let timer: NodeJS.Timeout | undefined;
       const timeoutPromise = new Promise((_, reject) => {
-        timer = setTimeout(() => reject(new Error('静默检查更新超时（15 秒）')), 15000);
+        timer = setTimeout(
+          () => reject(new Error(`静默检查更新超时（${UPDATE_CHECK_TIMEOUT_MS / 1000} 秒）`)),
+          UPDATE_CHECK_TIMEOUT_MS,
+        );
       });
       try {
         await Promise.race([updater.checkForUpdates(), timeoutPromise]);
@@ -606,7 +594,7 @@ export class UpdaterService {
     }
   }
 
-  public startOrphanWatchdog(timeoutMs = 15 * 60 * 1000): void {
+  public startOrphanWatchdog(timeoutMs = ORPHAN_WATCHDOG_TIMEOUT_MS): void {
     this.isOrphan = true;
     if (this.orphanWatchdogTimer) {
       clearTimeout(this.orphanWatchdogTimer);
@@ -645,10 +633,30 @@ export class UpdaterService {
     sendToWindow(WINDOW_IDS.UPDATER, IPC_CHANNELS.UPDATER_EVENT_STATE, this.getSnapshot());
   }
 
+  /**
+   * 下载完成且用户此前关闭过更新窗口时，用系统通知承接点击安装入口。
+   * real / mock（dev 模拟）两条下载路径共用同一文案与点击行为。
+   */
+  private showDownloadedNotification(): void {
+    if (!Notification.isSupported()) return;
+
+    const isZh = getAppConfigStore().get('language') === 'zh-CN';
+    const notif = new Notification({
+      title: app.getName(),
+      body: isZh ? '新版本已下载完毕，点击立即安装。' : 'New version downloaded. Click to install.',
+    });
+    notif.on('click', () => {
+      this.windowDelegate?.show().catch((err) => {
+        this.logger.error('Failed to show updater window from notification click:', err);
+      });
+    });
+    notif.show();
+  }
+
   private emitProgress(progress: UpdaterProgress): void {
     this.snapshot.progress = progress;
     const now = Date.now();
-    if (now - this.lastProgressEmitTime >= 250 || progress.percent >= 100) {
+    if (now - this.lastProgressEmitTime >= PROGRESS_EMIT_THROTTLE_MS || progress.percent >= 100) {
       this.lastProgressEmitTime = now;
       sendToWindow(WINDOW_IDS.UPDATER, IPC_CHANNELS.UPDATER_EVENT_PROGRESS, progress);
     }
@@ -713,19 +721,7 @@ export class UpdaterService {
             }
           }
         } else if (this.userDismissedWindow) {
-          if (Notification.isSupported()) {
-            const isZh = getAppConfigStore().get('language') === 'zh-CN';
-            const notif = new Notification({
-              title: app.getName(),
-              body: isZh
-                ? '新版本已下载完毕，点击立即安装。'
-                : 'New version downloaded. Click to install.',
-            });
-            notif.on('click', () => {
-              this.windowDelegate?.show().catch(() => {});
-            });
-            notif.show();
-          }
+          this.showDownloadedNotification();
         } else {
           this.windowDelegate?.show().catch(() => {});
         }

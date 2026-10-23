@@ -1,46 +1,17 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
+import { findRepoRoot } from '../build/repo-paths.ts';
+import { readTsconfigAliases } from '../build/tsconfig-paths.ts';
 
-const rootDir = path.resolve(fileURLToPath(import.meta.url), '../..');
+const configDir = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = findRepoRoot(configDir);
 const isBenchmark = process.env.BENCHMARK === 'true';
 
 export default defineConfig({
+  // 别名真源：packages/tsconfig/base.json（不再手写 @app/* 列表）
   resolve: {
-    alias: [
-      {
-        find: /^@app\/shared\/(.*)/,
-        replacement: path.resolve(rootDir, 'packages/shared/src/$1'),
-      },
-      {
-        find: '@app/shared',
-        replacement: path.resolve(rootDir, 'packages/shared/src'),
-      },
-      {
-        find: /^@app\/main\/(.*)/,
-        replacement: path.resolve(rootDir, 'packages/main/src/$1'),
-      },
-      {
-        find: '@app/main',
-        replacement: path.resolve(rootDir, 'packages/main/src'),
-      },
-      {
-        find: /^@app\/preload\/(.*)/,
-        replacement: path.resolve(rootDir, 'packages/preload/src/$1'),
-      },
-      {
-        find: '@app/preload',
-        replacement: path.resolve(rootDir, 'packages/preload/src'),
-      },
-      {
-        find: /^@app\/renderer\/(.*)/,
-        replacement: path.resolve(rootDir, 'packages/renderer/src/$1'),
-      },
-      {
-        find: '@app/renderer',
-        replacement: path.resolve(rootDir, 'packages/renderer/src'),
-      },
-    ],
+    alias: readTsconfigAliases(rootDir),
   },
   test: {
     environment: 'node',

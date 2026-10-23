@@ -2,7 +2,7 @@
 
 Status: accepted（2026-10-07）
 
-仓库早有成文政策「只允许 squash merge」（CICD.md「合并」），但分支保护从未配置，GitHub 三个合并按钮全部可用——PR #11 实际以 merge commit 落入 `main`，政策与事实分叉。本裁决：**feature 分支一律经 PR 合入 `main`，分支保护锁死两件事（三个 required check 全绿 + 仅允许 squash merge、拒绝直接 push），并把流程封装为 `pnpm pr / pr:merge / pr:status` 三个 gh cli 命令**。约束的持久性靠「走 PR 比绕过它更省事」保证，不靠记忆和自觉。
+仓库早有成文政策「只允许 squash merge」（CICD.md「合并」），但分支保护从未配置，GitHub 三个合并按钮全部可用——PR #11 实际以 merge commit 落入 `main`，政策与事实分叉。本裁决：**feature 分支一律经 PR 合入 `main`，分支保护锁死两件事（四个 required check 全绿 + 仅允许 squash merge、拒绝直接 push），并把流程封装为 `pnpm pr-review create / merge / status` 三个 gh cli 命令**。约束的持久性靠「走 PR 比绕过它更省事」保证，不靠记忆和自觉。
 
 选 squash 的锚点是回滚与发版：
 
@@ -22,6 +22,6 @@ Status: accepted（2026-10-07）
 ## Consequences
 
 - `@app/pr-review`（`pnpm pr-review create / merge / status / trigger / pull`）成为开 PR 与 Review 闭环的标准入口；PR 标题自动取分支首个提交 subject——**分支首个提交的措辞升级为「PR 标题」语义**，需维持 conventional 格式（无机器校验，靠自觉）；
-- 分支保护以 `gh api` 一次性配置：required status checks（typecheck / lint / e2e）、仅允许 squash、require PR（0 评审即可合并）、`enforce_admins` 使 owner 同样受约束——直推 main 从「习惯」变为「被拒」；
+- 分支保护以 `gh api` 一次性配置：required status checks（typecheck / lint / test / e2e）、仅允许 squash、require PR（0 评审即可合并）、`enforce_admins` 使 owner 同样受约束——直推 main 从「习惯」变为「被拒」；
 - 本政策的例外仅一处：PR 工作流工具自身（本 ADR 与 `@app/pr-review`）以 chore PR 形式完成首次合入，此后一切改动回归 PR；
 - 合并后的分支清理由 `pnpm pr-review merge`（自动带 `--delete-branch` 删远端）与 CICD.md「合并」的收尾命令（本地/worktree）承接，避免 #11 式远端残留。

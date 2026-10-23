@@ -1,14 +1,15 @@
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { loadEnv } from 'vite';
+import { applyRepoEnv, loadRepoEnv } from '../build/env.ts';
+import { getDistDir } from '../build/repo-paths.ts';
 
-// 统一基于 __dirname 向上锁定仓库物理根目录，摆脱对执行终端工作目录 (process.cwd()) 的脆弱依赖
-const ROOT_DIR = join(__dirname, '..');
+// 统一从 build/env.ts 加载根 .env（外部注入优先），并向上锁定仓库根
+const repoEnv = loadRepoEnv(__dirname, 'production');
+applyRepoEnv(repoEnv);
+const ROOT_DIR = repoEnv.rootDir;
 
-// 统一由 Vite loadEnv 加载项目多模式环境变量至 process.env
-const buildMode = process.env.MODE || 'production';
-Object.assign(process.env, loadEnv(buildMode, ROOT_DIR, ''));
+const DEFAULT_ELECTRON_BUILDER_CONFIG = join(ROOT_DIR, 'build', 'electron-builder.ts');
 
 import { build, type CliOptions } from 'electron-builder';
 import { verifyPostbuild } from './verify-postbuild.ts';
@@ -26,7 +27,7 @@ const { values } = parseArgs({
     x64: { type: 'boolean' },
     arm64: { type: 'boolean' },
     publish: { type: 'string', short: 'p', default: 'never' },
-    config: { type: 'string', short: 'c', default: 'build/electron-builder.ts' },
+    config: { type: 'string', short: 'c', default: DEFAULT_ELECTRON_BUILDER_CONFIG },
     'skip-build': { type: 'boolean', default: false },
     'skip-verify': { type: 'boolean', default: false },
   },
@@ -43,7 +44,7 @@ async function runBuild() {
 
   // 2. Assemble electron-builder packaging options
   const buildOptions: CliOptions = {
-    config: typeof values.config === 'string' ? values.config : 'build/electron-builder.ts',
+    config: typeof values.config === 'string' ? values.config : DEFAULT_ELECTRON_BUILDER_CONFIG,
     dir: Boolean(values.dir),
     publish: (values.publish as CliOptions['publish']) || 'never',
   };
@@ -72,7 +73,7 @@ async function runBuild() {
   // 4. Verify packaged artifact integrity & run smoke check unless --skip-verify is specified
   if (!values['skip-verify']) {
     try {
-      await verifyPostbuild({ distDir: process.env.DIST_DIR || 'dist' });
+      await verifyPostbuild({ distDir: getDistDir(ROOT_DIR) });
     } catch (verifyError) {
       console.error('❌ Post-packaging verification failed:', verifyError);
       process.exit(1);
