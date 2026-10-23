@@ -44,14 +44,23 @@ export class ConfigStore implements AppModule {
 
   private quarantineCorruptFile(customDir?: string): void {
     try {
+      // store 尚未建成（构造期失败）时按同样规则推算路径
       const dir = customDir ?? (app ? app.getPath('userData') : undefined);
-      if (!dir) return;
-      const file = path.join(dir, 'config.json');
+      if (dir) {
+        this.quarantineFile(path.join(dir, 'config.json'));
+      }
+    } catch {
+      // 隔离失败由随后的重试结果兜底
+    }
+  }
+
+  private quarantineFile(file: string): void {
+    try {
       if (fs.existsSync(file)) {
         fs.renameSync(file, `${file}.corrupt`);
       }
     } catch {
-      // 隔离失败由随后的重试结果兜底
+      // 隔离失败由随后的重试/写回兜底
     }
   }
 
@@ -65,6 +74,8 @@ export class ConfigStore implements AppModule {
         return parsed.data;
       }
       this.logWarn('Invalid config on disk, falling back to defaults:', parsed.error.issues);
+      // 隔离后由下次写盘重建，避免每次启动都带着无效数据回退默认值
+      this.quarantineFile(this.store.path);
     } catch (error) {
       this.logWarn('Config file unreadable, falling back to defaults:', error);
     }
@@ -98,8 +109,14 @@ export class ConfigStore implements AppModule {
   }
 
   public set(partial: Partial<AppConfig>): AppConfig {
-    // IPC 入口已校验，此处兜住非 IPC 直连调用方（如 counter.service）
-    this.config = configSchema.parse({ ...this.config, ...partial });
+    // IPC 入口已校验，此处兜住非 IPC 直连调用方（如 counter.service）：
+    // 非法输入拒绝并留痕，不抛错不断链路
+    const parsed = configSchema.safeParse({ ...this.config, ...partial });
+    if (!parsed.success) {
+      this.logWarn('Invalid config update rejected:', parsed.error.issues);
+      return { ...this.config };
+    }
+    this.config = parsed.data;
     this.persist();
     return { ...this.config };
   }

@@ -53,6 +53,19 @@ describe('ConfigStore', () => {
     const store = new ConfigStore(dataDir);
     expect(store.getAll()).toEqual(DEFAULT_CONFIG);
     expect(scopedWarn).toHaveBeenCalled();
+    // 非法文件同样被隔离，避免每次启动都带着无效数据回退默认值
+    expect(fs.existsSync(path.join(dataDir, 'config.json.corrupt'))).toBe(true);
+    expect(fs.existsSync(path.join(dataDir, 'config.json'))).toBe(false);
+  });
+
+  it('rejects invalid set() input without mutating state or disk', () => {
+    const store = new ConfigStore(dataDir);
+    store.set({ theme: 'dark' });
+    const rejected = store.set({ serverCounter: 1.5 });
+    expect(rejected).toEqual({ ...DEFAULT_CONFIG, theme: 'dark' });
+    expect(store.get('theme')).toBe('dark');
+    expect(scopedWarn).toHaveBeenCalled();
+    expect(JSON.parse(readConfigFile())).toEqual({ ...DEFAULT_CONFIG, theme: 'dark' });
   });
 
   it('quarantines corrupted JSON and falls back to defaults', () => {
