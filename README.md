@@ -1,6 +1,6 @@
 # Electron React Monorepo Template
 
-> 基于 **Electron 41 + Vite 8 + React 19 + ContextBridge (Typed IPC) + LinguiJS (中文优先 i18n) + TailwindCSS + Playwright + Biome** 构建的现代化、高性能、安全类型友好的桌面应用 Monorepo 模板。
+> 基于 **Electron 45 + Vite 8 + React 19 + ContextBridge (Typed IPC) + LinguiJS (中文优先 i18n) + TailwindCSS + Playwright + Biome** 构建的现代化、高性能、安全类型友好的桌面应用 Monorepo 模板。
 
 ---
 

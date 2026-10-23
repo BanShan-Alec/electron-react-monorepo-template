@@ -6,7 +6,7 @@
 
 ## 1. 技术栈速览
 
-Electron 41（`contextIsolation` + `sandbox`）· React 19 + TypeScript · Vite 8（Rolldown 内核）·
+Electron 45（`contextIsolation` + `sandbox`）· React 19 + TypeScript · Vite 8（Rolldown 内核）·
 Biome 2（格式化 + Lint）· LinguiJS 6（中文优先 Source-as-Key）· Vitest（单元）+
 Playwright（E2E，真实 Electron 窗口）· pnpm 10 monorepo · Node >= 24
 

@@ -2,7 +2,7 @@
 
 > 面向场景：其他 Electron 项目需要"一体化标题栏"——网页内容铺满窗口、同时保留操作系统原生控制按钮（macOS 红绿灯 / Windows 最小化-最大化-关闭），并支持主题联动。
 >
-> 依据：Electron 41 `electron.d.ts` 平台标注 + VS Code 源码（`src/vs/platform/windows/electron-main/windows.ts` 的 `defaultBrowserWindowOptions`、`windowImpl.ts` 的 `updateWindowControls`）+ 本仓库 Electron 41 / Windows 11 实测。参考实现见本仓库 `packages/main/src/modules/window/titlebar-overlay.ts` 等文件。
+> 依据：Electron 45 `electron.d.ts` 平台标注 + VS Code 源码（`src/vs/platform/windows/electron-main/windows.ts` 的 `defaultBrowserWindowOptions`、`windowImpl.ts` 的 `updateWindowControls`）+ 本仓库 Electron 45 / Windows 11 实测。参考实现见本仓库 `packages/main/src/modules/window/titlebar-overlay.ts` 等文件。
 
 ---
 
@@ -155,7 +155,7 @@ export function usePlatform() {
 `navigator.windowControlsOverlay` 是**验证 overlay 是否真正生效的唯一可靠手段**，以运行时探测为准，不要背版本号：
 
 ```ts
-// 注意：Electron 41 的方法名是 getTitlebarAreaRect()，
+// 注意：Chromium 当前的方法名是 getTitlebarAreaRect()，
 // 旧版 W3C 规范草案的 getTitlebarArea() 并不存在
 const wco = (navigator as Navigator & {
   windowControlsOverlay?: {
@@ -205,6 +205,6 @@ expect(parseFloat(getComputedStyle(header).height)).toBeGreaterThan(40);
 
 ## 5. 参考来源
 
-- `node_modules/electron/electron.d.ts`（Electron 41）：`TitleBarOverlay` / `setTitleBarOverlay` 的 `@platform` 标注，是最权威的本地契约
+- `node_modules/electron/electron.d.ts`（Electron 45）：`TitleBarOverlay` / `setTitleBarOverlay` 的 `@platform` 标注，是最权威的本地契约
 - VS Code：`src/vs/platform/windows/electron-main/windows.ts`（创建分支）、`windowImpl.ts`（运行时更新守卫、`height - 1` 边框补偿）
 - 本仓库实现：`packages/main/src/modules/window/titlebar-overlay.ts`、`index.module.ts`、`native-theme.module.ts`、`packages/renderer/src/styles/base.css`、`e2e/titlebar.spec.ts`
