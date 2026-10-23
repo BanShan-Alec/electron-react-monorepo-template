@@ -51,7 +51,7 @@
 | 开发态编排 | [scripts/dev.ts](../scripts/dev.ts) 的 `config` | dev server 端口、CDP/inspect 开关、watch 与重启 | `pnpm start` / `start:dist` |
 | 工具链 | `.config/`、各 `vite.config.ts`、`tsconfig`、Lingui、workflows | Lint/测试/编译/CI | 工具运行时 |
 | 运行时常量 | `shared/constants`、`main/src/constants` | 窗口几何、启动时值、超时、日志策略 | 编译进产物 |
-| 用户偏好 | `userData/app-config.json` | 主题、语言、托盘、自动更新 | 运行时持久化 |
+| 用户偏好 | `userData/config.json` | 主题、语言、托盘、自动更新 | 运行时持久化 |
 
 原则：**一个值只有一个 owner**。工具自己的 schema 文件（electron-builder / Vite / Playwright / Biome）保留原位，只把「值」抽出来共享。
 
@@ -152,12 +152,12 @@
 
 1. **跨端共享层**（`packages/shared/src/constants/`）：需要被多个进程或 E2E 共同引用的值与契约。新增跨端值时放这里，禁止在其它包复制同一数值。
 2. **主进程专属层**（`packages/main/src/constants/`）：只有主进程消费的实现参数，不进入跨端契约。
-3. **用户级运行配置**（`ConfigStore`）：通过设置页 / IPC 修改、持久化在 `userData` 的用户偏好，不需要重新构建。
+3. **用户级运行配置**（`ConfigStore`，引擎 electron-store）：通过设置页 / IPC 修改、持久化在 `userData/config.json` 的用户偏好，不需要重新构建。读盘由 shared 的 zod `configSchema` 整体校验，任一字段非法即回默认值；JSON 语法损坏的文件会被改名为 `config.json.corrupt` 隔离。历史版本的 `app-config.json` 不再读取（断代），可手动删除。
 
 修改方式：
 
 - 前两层改完必须重建对应包；shared 变更会经依赖传递，建议 `pnpm build` 或至少重建 main / renderer。
-- 第三层运行时生效，无需重建；注意 `userData` 目录名由 `productName` 派生。
+- 第三层运行时生效，无需重建；注意 `userData` 目录名由 `productName` 派生。配置引擎为 electron-store（内联进主进程 bundle），校验与默认值的单一事实源是 `shared/schemas/config.ts` 的 zod schema。
 
 ---
 
@@ -184,7 +184,7 @@
 3. **`MODE` ≠ `app.isPackaged`**：前者是开发/生产行为语义，后者是物理打包态；`start:dist` 是「未打包但生产行为」。
 4. **运行时常量是编译期的**：改了 shared/main constants 必须重建对应包，`pnpm start` 下的热更新不会自动带上主进程常量。
 5. **`.env` 已入库**：新增 secret 不要写进去，放 GitHub Secrets。
-6. **改 `productName` 会迁移用户数据目录**（`userData`、日志、`app-config.json`、`Local State`），发版前要想清楚。
+6. **改 `productName` 会迁移用户数据目录**（`userData`、日志、`config.json`、`Local State`），发版前要想清楚。
 7. **窗口状态存于 Chromium `Local State`**（pref key `windowStates`，按窗口 `name` 索引）：重置布局调用 `BrowserWindow.clearPersistedState('home')` 后重启；旧 `window-state.json` 已废弃，可手动删除。Windows 分数缩放（125%/150%/175%）下官方实现每次启动会漂移 1–2px，见上游 [electron#55245](https://github.com/electron/electron/issues/55245)；整数缩放不受影响。
 8. **新增语言**目前要动三处：`preferences.ts`、`lingui.config.ts`、`src/locales/<locale>/messages.po`。
 9. **工具 schema 文件不要合并**：electron-builder / Vite / Playwright / Biome 的文件位置是工具强制的，能抽的是值，不是文件。

@@ -212,8 +212,8 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     await expect(html).toHaveAttribute('data-theme', 'dark');
     await expect(html).toHaveAttribute('lang', 'en-US');
 
-    // 验证磁盘落盘的 app-config.json 文件确实保留了所有修改项
-    const configPath = path.join(electronCtx.tempUserDataDir, 'app-config.json');
+    // 验证磁盘落盘的 config.json 文件确实保留了所有修改项
+    const configPath = path.join(electronCtx.tempUserDataDir, 'config.json');
     expect(fs.existsSync(configPath)).toBe(true);
     const savedConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 

@@ -27,10 +27,5 @@ export type AppConfig = z.infer<typeof configSchema>;
 export const updateConfigInputSchema = configBaseSchema.partial();
 export type UpdateConfigInput = z.infer<typeof updateConfigInputSchema>;
 
-export const DEFAULT_CONFIG: AppConfig = {
-  theme: DEFAULT_THEME_MODE,
-  minimizeToTray: true,
-  language: DEFAULT_LOCALE,
-  autoCheckUpdate: true,
-  serverCounter: 0,
-};
+// 默认值单一来源：由 configSchema 各字段的 .default() 派生，勿在此手写字面量
+export const DEFAULT_CONFIG: AppConfig = configSchema.parse({});

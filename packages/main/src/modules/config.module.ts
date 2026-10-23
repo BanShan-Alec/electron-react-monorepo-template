@@ -1,62 +1,91 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { type AppConfig, DEFAULT_CONFIG } from '@app/shared/schemas/config';
+import { type AppConfig, configSchema, DEFAULT_CONFIG } from '@app/shared/schemas/config';
 import { app } from 'electron';
+import Store from 'electron-store';
 import type { AppModule } from '../AppModule';
 import type { ModuleContext } from '../ModuleContext';
+import { getLogManager } from './log.module';
 
 export type { AppConfig };
 export { DEFAULT_CONFIG };
 
 export class ConfigStore implements AppModule {
-  private readonly configFilePath: string;
+  private readonly store: Store<AppConfig> | null;
   private config: AppConfig;
 
   constructor(customDir?: string) {
-    const dir = customDir ?? (app ? app.getPath('userData') : os.tmpdir());
-    this.configFilePath = path.join(dir, 'app-config.json');
+    this.store = this.openStore(customDir);
     this.config = this.loadConfig();
   }
 
-  enable({ app }: ModuleContext): void {
-    // 应用启动生命周期：预热加载配置并监听退出保障落盘
-    this.loadConfig();
-    app.on('before-quit', () => {
-      this.persist();
-    });
+  enable(_context: ModuleContext): void {
+    // electron-store 每次 set 同步原子落盘，无需 before-quit 兜底
+  }
+
+  private openStore(customDir?: string): Store<AppConfig> | null {
+    // 刻意不传 schema（ajv）与 defaults：校验与默认值的单一真源是 shared 的 zod configSchema。
+    // 不传 name：落盘 electron-store 默认的 config.json，旧 app-config.json 断代不读。
+    try {
+      return new Store<AppConfig>({ cwd: customDir });
+    } catch (error) {
+      // conf 构造期即读整个文件，JSON 语法损坏会在此抛错
+      this.logWarn('Config file unreadable, quarantining and retrying:', error);
+    }
+    this.quarantineCorruptFile(customDir);
+    try {
+      return new Store<AppConfig>({ cwd: customDir });
+    } catch (error) {
+      // 重试仍失败（如磁盘/权限异常）：退化为仅内存模式，不阻塞启动
+      this.logWarn('Config store unavailable, running in memory only:', error);
+      return null;
+    }
+  }
+
+  private quarantineCorruptFile(customDir?: string): void {
+    try {
+      const dir = customDir ?? (app ? app.getPath('userData') : undefined);
+      if (!dir) return;
+      const file = path.join(dir, 'config.json');
+      if (fs.existsSync(file)) {
+        fs.renameSync(file, `${file}.corrupt`);
+      }
+    } catch {
+      // 隔离失败由随后的重试结果兜底
+    }
   }
 
   private loadConfig(): AppConfig {
+    if (!this.store) {
+      return { ...DEFAULT_CONFIG };
+    }
     try {
-      if (fs.existsSync(this.configFilePath)) {
-        const raw = fs.readFileSync(this.configFilePath, 'utf-8');
-        const parsed = JSON.parse(raw);
-        return { ...DEFAULT_CONFIG, ...parsed };
+      const parsed = configSchema.safeParse(this.store.store);
+      if (parsed.success) {
+        return parsed.data;
       }
-    } catch {
-      // 容错回退
+      this.logWarn('Invalid config on disk, falling back to defaults:', parsed.error.issues);
+    } catch (error) {
+      this.logWarn('Config file unreadable, falling back to defaults:', error);
     }
     return { ...DEFAULT_CONFIG };
   }
 
   private persist(): void {
+    if (!this.store) return;
     try {
-      const dir = path.dirname(this.configFilePath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      const tempPath = `${this.configFilePath}.${Date.now()}.tmp`;
-      const data = JSON.stringify(this.config, null, 2);
-      fs.writeFileSync(tempPath, data, 'utf-8');
-      fs.renameSync(tempPath, this.configFilePath);
+      // 整对象写回：顺带清掉磁盘上已废弃的残留键
+      this.store.store = this.config;
+    } catch (error) {
+      this.logWarn('Config write failed:', error);
+    }
+  }
+
+  private logWarn(message: string, detail: unknown): void {
+    try {
+      getLogManager().scoped(this).warn(message, detail);
     } catch {
-      // 降级使用普通写入
-      try {
-        fs.writeFileSync(this.configFilePath, JSON.stringify(this.config, null, 2), 'utf-8');
-      } catch {
-        // 静默处理磁盘异常
-      }
+      // 日志系统自身不可用时静默，不影响配置链路
     }
   }
 
@@ -69,10 +98,8 @@ export class ConfigStore implements AppModule {
   }
 
   public set(partial: Partial<AppConfig>): AppConfig {
-    this.config = {
-      ...this.config,
-      ...partial,
-    };
+    // IPC 入口已校验，此处兜住非 IPC 直连调用方（如 counter.service）
+    this.config = configSchema.parse({ ...this.config, ...partial });
     this.persist();
     return { ...this.config };
   }

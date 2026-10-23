@@ -152,7 +152,7 @@ sequenceDiagram
     participant Store as useAppStore (Zustand)
     participant I18n as i18n.ts (动态激活)
     participant MainIPC as ConfigService (主进程)
-    participant File as app-config.json (磁盘持久化)
+    participant File as config.json (磁盘持久化)
     participant Tray as TrayManager (系统托盘)
 
     User->>Settings: 下拉切换语言 (例: English)
@@ -215,4 +215,4 @@ export const updateConfigInputSchema = configBaseSchema.partial();
 ### 2. 自动化回归测试锁定（Playwright E2E）
 所有特性在交付前均由真实的 Electron 进程自动化测试（`pnpm run test:e2e:build`）进行全天候覆盖拦截：
 - **用例 2**：全链路多语言切换验证（UI 标题、Tab 单选框、设置卡片、Counter 计数器及主进程托盘右键菜单文案双向切换）；
-- **用例 4（核心卫士）**：连续修改 Theme -> Language -> TraySwitch，断言各特性状态完全隔离互不冲刷，并验证磁盘落盘的 `app-config.json` 数据一致性。
+- **用例 4（核心卫士）**：连续修改 Theme -> Language -> TraySwitch，断言各特性状态完全隔离互不冲刷，并验证磁盘落盘的 `config.json` 数据一致性。
