@@ -29,7 +29,7 @@ export class ConfigStore implements AppModule {
     try {
       return new Store<AppConfig>({ cwd: customDir });
     } catch (error) {
-      this.logWarn('Config file unreadable, resetting to defaults:', error);
+      this.logError('Config reset to defaults: config file is not valid JSON:', error);
     }
     try {
       const dir = customDir ?? (app ? app.getPath('userData') : undefined);
@@ -42,7 +42,7 @@ export class ConfigStore implements AppModule {
       }
       return new Store<AppConfig>({ cwd: customDir });
     } catch (error) {
-      this.logWarn('Config store unavailable, running in memory only:', error);
+      this.logError('Config reset failed to persist, running with defaults in memory only:', error);
       return null;
     }
   }
@@ -56,7 +56,10 @@ export class ConfigStore implements AppModule {
       return parsed.data;
     }
     // 检验失败即重置：默认值立即写回，覆盖坏文件
-    this.logWarn('Invalid config on disk, resetting to defaults:', parsed.error.issues);
+    this.logError(
+      'Config reset to defaults: on-disk config failed schema validation:',
+      parsed.error.issues,
+    );
     try {
       this.store.store = { ...DEFAULT_CONFIG };
     } catch (error) {
@@ -76,8 +79,16 @@ export class ConfigStore implements AppModule {
   }
 
   private logWarn(message: string, detail: unknown): void {
+    this.logScoped('warn', message, detail);
+  }
+
+  private logError(message: string, detail: unknown): void {
+    this.logScoped('error', message, detail);
+  }
+
+  private logScoped(level: 'warn' | 'error', message: string, detail: unknown): void {
     try {
-      getLogManager().scoped(this).warn(message, detail);
+      getLogManager().scoped(this)[level](message, detail);
     } catch {
       // 日志系统自身不可用时静默，不影响配置链路
     }

@@ -9,16 +9,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 describe('ConfigStore', () => {
   let dataDir: string;
   let scopedWarn: ReturnType<typeof vi.fn>;
+  let scopedError: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'config-store-test-'));
     // LogManager 构造含 electron-log 副作用，单测中拦截为纯 stub
     scopedWarn = vi.fn();
+    scopedError = vi.fn();
     vi.spyOn(logModule, 'getLogManager').mockReturnValue({
       scoped: () => ({
         warn: scopedWarn,
         info: vi.fn(),
-        error: vi.fn(),
+        error: scopedError,
         debug: vi.fn(),
       }),
     } as unknown as logModule.LogManager);
@@ -52,7 +54,9 @@ describe('ConfigStore', () => {
     writeConfigFile(JSON.stringify({ theme: 'dark', language: 'en-US', serverCounter: 1.5 }));
     const store = new ConfigStore(dataDir);
     expect(store.getAll()).toEqual(DEFAULT_CONFIG);
-    expect(scopedWarn).toHaveBeenCalled();
+    // 重置必须打 error 日志并写明触发原因
+    expect(scopedError).toHaveBeenCalledOnce();
+    expect(scopedError.mock.calls[0][0]).toContain('schema validation');
     // 检验失败即重置：默认值立即写回覆盖坏文件
     expect(JSON.parse(readConfigFile())).toEqual(DEFAULT_CONFIG);
   });
@@ -61,6 +65,8 @@ describe('ConfigStore', () => {
     writeConfigFile('{ not valid json !!');
     const store = new ConfigStore(dataDir);
     expect(store.getAll()).toEqual(DEFAULT_CONFIG);
+    expect(scopedError).toHaveBeenCalledOnce();
+    expect(scopedError.mock.calls[0][0]).toContain('not valid JSON');
     expect(JSON.parse(readConfigFile())).toEqual(DEFAULT_CONFIG);
     store.set({ theme: 'dark' });
     expect(JSON.parse(readConfigFile())).toEqual({ ...DEFAULT_CONFIG, theme: 'dark' });
