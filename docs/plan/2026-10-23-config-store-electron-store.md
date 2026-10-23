@@ -78,11 +78,11 @@ IPC/renderer 全链路零改动。
 
 - 2026-10-23 v1：定稿并批准。两处用户拍板：文件级自愈、旧 app-config.json 直接断代。
 - 2026-10-23 v2：执行期发现 conf@16 在**构造期**读取整个文件，JSON 语法损坏直接抛
-  SyntaxError（无绕过选项）。落地为：构造包 try/catch，坏文件改名 `config.json.corrupt`
-  隔离（保留用户数据可手工恢复）后重试一次，再失败退化为仅内存模式——维持「配置问题
-  不阻塞启动」契约。原计划「语法损坏整体回默认值」语义不变，仅实现路径调整。
+  SyntaxError（无绕过选项）。v2 方案=坏文件改名 `.corrupt` 隔离后重试。
+- 2026-10-24 v3：用户否决隔离方案，拍板**检验失败即重置**：schema 非法 → 默认值立即
+  写回覆盖；语法损坏 → 默认值直接覆盖坏文件后重建 store。不再产生 `.corrupt` 副本。
 
-## 7. 执行记录（2026-10-23）
+## 7. 执行记录（2026-10-23 ~ 10-24）
 
 - electron-store@12.0.0（+15 传递包）进 main devDependencies；构建零改动。
 - 门禁全绿：typecheck / lint / test 66/66 / e2e 26/26 / build:dir（asar 3.2MB，
@@ -93,4 +93,7 @@ IPC/renderer 全链路零改动。
   `.corrupt` 且 warn 落盘、默认值生效、不崩；合法 config.json 正确读入（`-> dark`）。
 - e2e settings 用例 4 与 configuration-guide / i18n 架构文档的 app-config.json 口径
   同批改为 config.json；新增单测 8 例（含隔离、断代残留键清理、customDir 隔离）。
+- **2026-10-24 v3 改造复验**：隔离逻辑删除，替换为「检验失败即重置」（schema 非法与
+  语法损坏两条路都直接用默认值覆盖坏文件）；单测 9 例重写对应断言后全绿，全量门禁
+  与打包 exe 冒烟按 v3 语义复跑通过（详见 PR #52 后续提交）。
 

@@ -23,44 +23,27 @@ export class ConfigStore implements AppModule {
     // electron-store 每次 set 同步原子落盘，无需 before-quit 兜底
   }
 
+  // conf 构造期即读取整个文件，JSON 语法损坏会直接抛错：
+  // 用默认值覆盖坏文件后重试一次，仍失败则退化为仅内存模式，不阻塞启动
   private openStore(customDir?: string): Store<AppConfig> | null {
-    // 刻意不传 schema（ajv）与 defaults：校验与默认值的单一真源是 shared 的 zod configSchema。
-    // 不传 name：落盘 electron-store 默认的 config.json，旧 app-config.json 断代不读。
     try {
       return new Store<AppConfig>({ cwd: customDir });
     } catch (error) {
-      // conf 构造期即读整个文件，JSON 语法损坏会在此抛错
-      this.logWarn('Config file unreadable, quarantining and retrying:', error);
+      this.logWarn('Config file unreadable, resetting to defaults:', error);
     }
-    this.quarantineCorruptFile(customDir);
     try {
-      return new Store<AppConfig>({ cwd: customDir });
-    } catch (error) {
-      // 重试仍失败（如磁盘/权限异常）：退化为仅内存模式，不阻塞启动
-      this.logWarn('Config store unavailable, running in memory only:', error);
-      return null;
-    }
-  }
-
-  private quarantineCorruptFile(customDir?: string): void {
-    try {
-      // store 尚未建成（构造期失败）时按同样规则推算路径
       const dir = customDir ?? (app ? app.getPath('userData') : undefined);
       if (dir) {
-        this.quarantineFile(path.join(dir, 'config.json'));
+        fs.writeFileSync(
+          path.join(dir, 'config.json'),
+          JSON.stringify(DEFAULT_CONFIG, null, '\t'),
+          'utf-8',
+        );
       }
-    } catch {
-      // 隔离失败由随后的重试结果兜底
-    }
-  }
-
-  private quarantineFile(file: string): void {
-    try {
-      if (fs.existsSync(file)) {
-        fs.renameSync(file, `${file}.corrupt`);
-      }
-    } catch {
-      // 隔离失败由随后的重试/写回兜底
+      return new Store<AppConfig>({ cwd: customDir });
+    } catch (error) {
+      this.logWarn('Config store unavailable, running in memory only:', error);
+      return null;
     }
   }
 
@@ -68,16 +51,16 @@ export class ConfigStore implements AppModule {
     if (!this.store) {
       return { ...DEFAULT_CONFIG };
     }
+    const parsed = configSchema.safeParse(this.store.store);
+    if (parsed.success) {
+      return parsed.data;
+    }
+    // 检验失败即重置：默认值立即写回，覆盖坏文件
+    this.logWarn('Invalid config on disk, resetting to defaults:', parsed.error.issues);
     try {
-      const parsed = configSchema.safeParse(this.store.store);
-      if (parsed.success) {
-        return parsed.data;
-      }
-      this.logWarn('Invalid config on disk, falling back to defaults:', parsed.error.issues);
-      // 隔离后由下次写盘重建，避免每次启动都带着无效数据回退默认值
-      this.quarantineFile(this.store.path);
+      this.store.store = { ...DEFAULT_CONFIG };
     } catch (error) {
-      this.logWarn('Config file unreadable, falling back to defaults:', error);
+      this.logWarn('Config write failed:', error);
     }
     return { ...DEFAULT_CONFIG };
   }

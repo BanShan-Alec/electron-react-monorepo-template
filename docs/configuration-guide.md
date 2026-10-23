@@ -152,7 +152,7 @@
 
 1. **跨端共享层**（`packages/shared/src/constants/`）：需要被多个进程或 E2E 共同引用的值与契约。新增跨端值时放这里，禁止在其它包复制同一数值。
 2. **主进程专属层**（`packages/main/src/constants/`）：只有主进程消费的实现参数，不进入跨端契约。
-3. **用户级运行配置**（`ConfigStore`，引擎 electron-store）：通过设置页 / IPC 修改、持久化在 `userData/config.json` 的用户偏好，不需要重新构建。读盘由 shared 的 zod `configSchema` 整体校验，任一字段非法即回默认值；JSON 语法损坏的文件会被改名为 `config.json.corrupt` 隔离。历史版本的 `app-config.json` 不再读取（断代），可手动删除。
+3. **用户级运行配置**（`ConfigStore`，引擎 electron-store）：通过设置页 / IPC 修改、持久化在 `userData/config.json` 的用户偏好，不需要重新构建。读盘由 shared 的 zod `configSchema` 整体校验，任一字段非法或 JSON 语法损坏即整体重置为默认值并写回覆盖。历史版本的 `app-config.json` 不再读取（断代），可手动删除。
 
 修改方式：
 
