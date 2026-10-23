@@ -1,6 +1,27 @@
 # Changelog
 
 
+## v1.10.0
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.9.1...v1.10.0)
+
+### 💅 代码重构 (Refactoring)
+
+- **window:** 主窗口状态改用官方 windowStatePersistence ([#50](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/50))
+
+### 📦 构建与依赖 (Build & Deps)
+
+- **deps:** Electron 升级至 45.0.0（Chromium 156 / Node 24.22）([#49](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/49))
+
+### ⚠️ 行为变更
+
+- 主窗口状态改存 Chromium `Local State`，旧 `window-state.json` 不再读取；升级后首次启动会重置窗口布局。
+- Windows 分数缩放（125%/150%/175%）下官方持久化每次启动可能漂移 1–2px，见上游 [electron/electron#55245](https://github.com/electron/electron/issues/55245)。
+
+### ❤️ Contributors
+
+- 半山Alec <627649674@qq.com>
+
 ## v1.9.1
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.9.0...v1.9.1)
