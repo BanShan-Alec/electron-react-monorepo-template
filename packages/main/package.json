@@ -16,7 +16,6 @@
     }
   },
   "dependencies": {
-    "electron-log": "^5.4.4",
     "electron-updater": "^6.8.3",
     "usb": "^3.2.1"
   },
@@ -27,6 +26,7 @@
     "@app/tsconfig": "workspace:*",
     "@sentry/electron": "^8.1.0",
     "@sentry/vite-plugin": "^5.4.0",
+    "electron-log": "^5.4.4",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",

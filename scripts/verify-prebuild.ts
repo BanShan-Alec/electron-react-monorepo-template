@@ -14,8 +14,8 @@ interface VerificationResult {
  * 1. 根目录 package.json name 规范校验（全小写无空格，杜绝 OTA 404 隐患）
  * 2. 根目录 package.json dependencies 边界校验（仅限 @app/main，防止 node_modules 卷入 asar 体积膨胀）
  *
- * 主进程 external 已由 build/main-externals.ts 从 dependencies 派生，两者不可能再漂移，
- * 原「双向对齐」门禁随之删除。
+ * 主进程 external 为 packages/main/vite.config.ts 中的显式清单（electron / usb / electron-updater），
+ * 新增运行时依赖需人工确认是否外置；原「dependencies 与 external 双向对齐」门禁已删除。
  */
 export async function verifyPrebuild(): Promise<VerificationResult> {
   const rootDir = findRepoRoot(__dirname);

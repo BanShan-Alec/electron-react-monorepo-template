@@ -87,9 +87,6 @@ importers:
 
   packages/main:
     dependencies:
-      electron-log:
-        specifier: ^5.4.4
-        version: 5.4.4
       electron-updater:
         specifier: ^6.8.3
         version: 6.8.3
@@ -115,6 +112,9 @@ importers:
       '@sentry/vite-plugin':
         specifier: ^5.4.0
         version: 5.4.0
+      electron-log:
+        specifier: ^5.4.4
+        version: 5.4.4
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
