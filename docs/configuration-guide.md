@@ -29,7 +29,7 @@
 | API 地址 | `.env` `API_BASE_URL` 或运行时 `APP_API_BASE_URL` | 构建 / 重启 |
 | Sentry | `.env` DSN，CI 配 `SENTRY_AUTH_TOKEN` | 打包生效 |
 | asar 阈值 | `.env` `MAX_ASAR_SIZE_MB` | 下次打包 |
-| 主进程新依赖 | `pnpm --filter @app/main add` | external 自动跟随 |
+| 主进程新依赖 | `pnpm --filter @app/main add [-D]` | 默认内联；需运行时 `require` 的加入 `external` |
 | 外链白名单 | `shared/constants/security.ts` | 重建 main |
 | 打包平台/图标 | `build/electron-builder.ts`、`build/resources/` | 重新打包 |
 | Vite dev server 端口 | `scripts/dev.ts` 的 `config.rendererPort` | 重启 `pnpm start` |
@@ -114,11 +114,10 @@
 | [app-identity.ts](../build/app-identity.ts) | 身份/版本/repo 解析 | 一般不用动，改根 `package.json` |
 | [env.ts](../build/env.ts) | 唯一 env 加载器 | 无需逐文件改 |
 | [repo-paths.ts](../build/repo-paths.ts) | 仓库根与固定产物目录 `<repo>/dist` | 产物目录不可配置 |
-| [main-externals.ts](../build/main-externals.ts) | 主进程 external | **不用手改**：`pnpm --filter @app/main add` 后自动外置；装成 `-D` 则自动内联 |
 | [sentry-config.ts](../build/sentry-config.ts) | release 名 `${name}@${version}`、DSN | 改命名模板在这里 |
-| [vite-lib.ts](../build/vite-lib.ts) | main/preload 公共构建默认值 | sourcemap/minify/outDir 在这里 |
-| [tsconfig-paths.ts](../build/tsconfig-paths.ts) | Vitest alias | 真源是 `packages/tsconfig/base.json` |
 | [electron-builder.ts](../build/electron-builder.ts) | 安装包目标、图标、artifactName、NSIS | 平台/产物策略在这里 |
+
+主进程构建策略：`ssr: { noExternal: true }`，`external` 显式列 `electron` / `usb` / `electron-updater`；其余模块全部内联，`electron-log` 因此放在 `devDependencies` 并打进 bundle。新增运行时依赖需手动确认是否加入 `external`。main / preload 的构建默认值各自内联，修改 sourcemap / minify 等需两边同步。
 
 当前打包目标：Windows `nsis x64`、macOS `dmg + zip`、Linux `deb`；图标在 `build/resources/`；产物命名 `${name}-${version}-${os}-${arch}.${ext}`。产物目录固定为 `<repo>/dist`，不可通过环境变量修改；自定义 electron-builder 配置也必须保持 `directories.output: 'dist'`，否则 postbuild 校验找不到产物。
 
@@ -165,11 +164,11 @@
 | 载体 | 管什么 | 备注 |
 | :--- | :--- | :--- |
 | `.config/biome.json` | 格式化 + Lint | 行宽 100、禁桶文件 |
-| `.config/vitest.config.ts` | 单测/基准 | alias 自动从 tsconfig 派生 |
+| `.config/vitest.config.ts` | 单测/基准 | alias 由 Vite 原生 `tsconfigPaths` 从 tsconfig 派生 |
 | `.config/playwright.config.ts` | E2E | 超时 45s、单 worker |
 | `.config/commitlint.config.ts` / `changelog.config.ts` | 提交规范 / 发版分类 | |
 | `packages/tsconfig/base.json` | 路径别名唯一真源 | `@app/*`、`@shared/*`、`@/*` |
-| 各包 `vite.config.ts` | 入口、插件、构建目标 | main/preload 共用 `vite-lib.ts` |
+| 各包 `vite.config.ts` | 入口、插件、构建目标 | main/preload 各自内联同一套构建默认值，改动需同步 |
 | `packages/renderer/lingui.config.ts` | 语言目录与 catalog | **语言列表仍是这里独立一份**，新增语言要同时改它和 `preferences.ts` |
 | `.github/workflows/*` | CI/发布 | Node 24、分支 main、required checks 4 个 |
 | `pnpm-workspace.yaml` / catalog | 依赖版本收敛 | |

@@ -9,7 +9,7 @@
 - [一、 Monorepo 依赖拓扑设计与防劣化原则](#一-monorepo-依赖拓扑设计与防劣化原则)
   - [1. 依赖分层总览表](#1-依赖分层总览表)
   - [2. 根目录的“极简依赖红线”](#2-根目录的极简依赖红线)
-  - [3. 主进程依赖与 Vite External 的自动派生机制](#3-主进程依赖与-vite-external-的自动派生机制)
+  - [3. 主进程依赖与 Vite External 的显式清单机制](#3-主进程依赖与-vite-external-的显式清单机制)
 - [二、 4 阶段全生命周期打包流水线](#二-4-阶段全生命周期打包流水线)
   - [1. 打包流水线架构图](#1-打包流水线架构图)
   - [2. 阶段详解与防护措施](#2-阶段详解与防护措施)
@@ -47,27 +47,31 @@
 
 ---
 
-### 3. 主进程依赖与 Vite External 的自动派生机制
+### 3. 主进程依赖与 Vite External 的显式清单机制
 
 主进程由 Vite / Rolldown 负责编译打包，此时存在一个核心平衡：**哪些库该内联（Bundle）进代码？哪些库该外置（External）在运行时通过 Node 加载？**
 
-本项目以 `packages/main/package.json` 的 `dependencies` 为唯一声明处，external 由其自动派生：
+主进程使用 `ssr: { noExternal: true }`：除显式 external 清单外，其余模块全部内联。
 
 ```mermaid
 graph LR
     subgraph A [packages/main/package.json]
-        Dep["dependencies: [electron-updater, electron-log, usb]"]
+        Dep["dependencies: electron-updater, usb"]
+        Dev["devDependencies: electron-log, zod, @sentry/electron"]
     end
 
-    subgraph B [build/main-externals.ts]
-        Ext["external = ['electron', ...dependencies]"]
+    subgraph B [packages/main/vite.config.ts]
+        Ext["external: ['electron', 'usb', 'electron-updater']"]
+        Bundle["noExternal: true → 其余全部内联"]
     end
 
-    Dep -->|自动派生| Ext
+    Dep --> Ext
+    Dev --> Bundle
 ```
 
-- **规则：external 从 dependencies 单向派生**：
-  `packages/main/vite.config.ts` 不再手写 external 清单，而是调用 `build/main-externals.ts` 的 `getMainExternalModules()`。声明在 `dependencies` 的模块自动外置（防止被 Vite 重复打包），`devDependencies`（如 `zod`）自动内联。两份清单不可能再漂移，因此前置门禁不再需要「双向对齐」检查。
+- **规则：external 只列必须运行时 `require` 的模块**：
+  `packages/main/vite.config.ts` 的 `external` 是显式清单，当前为 `electron`、`usb`、`electron-updater`。其中 `usb` 含原生 addon，`electron-updater` 依赖运行时资源与更新链路；`electron-log` 故意不列，由 `noExternal: true` 内联进 bundle，并放在 `devDependencies` 以免 asar 重复打包。
+- **新增依赖默认内联**：如果新库必须在运行时 `require`（原生模块、读取自身文件布局、动态加载），必须把实际 specifier（含子路径）加入 external；否则会被打进 bundle，可能失效或体积膨胀。
 
 ---
 
@@ -205,9 +209,9 @@ pnpm run verify:postbuild
 - **原因**：误将某个第三方库安装到了根目录的 `dependencies` 中。
 - **解法**：如果是构建工具或全局工具，移至根目录的 `devDependencies`；如果是运行时库，安装至对应的子包目录中（如 `pnpm --filter @app/main add xxx`）。
 
-#### Q3: 主进程新增依赖后为什么不需要改 `external`？
-- **原因**：`packages/main/vite.config.ts` 的 external 由 `build/main-externals.ts` 从 `packages/main/package.json` 的 `dependencies` 自动派生。
-- **做法**：直接 `pnpm --filter @app/main add <库名>` 安装为生产依赖即可；若希望内联进 bundle（如纯 JS 工具库），安装为 `devDependencies`。
+#### Q3: 主进程新增依赖后为什么需要确认 `external`？
+- **原因**：主进程使用 `ssr: { noExternal: true }`，只有显式写在 `rolldownOptions.external` 里的模块才会外置，其余默认内联。
+- **做法**：纯 JS 工具库直接安装为 `devDependencies` 即可内联；必须在运行时 `require` 的库（原生 addon、依赖自身资源/动态加载）安装为 `dependencies`，并把实际 specifier（含子路径）加入 external。
 
 #### Q4: 报错 `[verify-postbuild] asar 体积超过门禁上限 (XX MB > 10.00 MB)`
 - **原因**：打包产物异常膨胀，通常是因为打包时误包含了 `.map` 源码映射文件、或者将非必要的大体积静态资源/依赖打进了 asar。

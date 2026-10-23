@@ -29,9 +29,9 @@
 ### 2. 主进程（`packages/main/package.json`）
 主进程是整个 Electron 应用在 Node.js 环境下的运行宿主。
 - **`dependencies` 准入标准**：
-  **仅限生产环境需要通过 Node.js 原生 `require()` / `import` 动态加载的第三方库**（如 `electron-log`, `electron-updater` 或含 C++ 原生 Addon 的模块）。
-- **external 自动派生（构建期单一事实源）**：
-  `packages/main/vite.config.ts` 的 `rolldownOptions.external` 由 [`build/main-externals.ts`](../build/main-externals.ts) 从本文件 `dependencies` 自动派生（`electron` + 全部生产依赖），两侧不再手写两份清单，也不会漂移。新增运行时依赖只需执行 `pnpm --filter @app/main add <pkg-name>`，external 自动跟随。
+  **仅限生产环境必须在运行时 `require()` 的库**（如 `electron-updater`、含 C++ 原生 Addon 的 `usb`）。纯 JS 且允许编译期内联的库（如 `electron-log`）放 `devDependencies`，由 Vite 打进 bundle。
+- **external 是显式清单（`noExternal: true` 模式）**：
+  `packages/main/vite.config.ts` 使用 `ssr: { noExternal: true }`，只有 `rolldownOptions.external` 中精确列出的 specifier 才保持外置。当前清单为 `['electron', 'usb', 'electron-updater']`。新增依赖默认会被内联；若它必须在运行时 `require`（原生模块、读取自身文件布局或动态加载），必须手动加入 external，并写实际 specifier（含子路径，例如 `electron-log/main`）。
 
 ### 3. 渲染进程（`packages/renderer/package.json`）
 遵循标准 Web 前端工程通用分类习惯，开发者无需受 Electron 内部打包机制干扰：
@@ -51,7 +51,7 @@ Preload 脚本由 Vite 经 `ssr: { noExternal: true }` 构建为单文件 `dist/
 
 ## 三、深层原理：Vite SSR 与 electron-builder 的逻辑冲突与桥接
 
-在理解这套规则时，很多开发者会疑惑：*为什么主进程既配了 `rolldownOptions.external`，又在 `ssr` 下配置了 `noExternal: ['zod', /^@sentry\/.*/]`？*
+在理解这套规则时，很多开发者会疑惑：*为什么主进程既配了 `rolldownOptions.external`，又在 `ssr` 下配置 `noExternal: true`？*
 
 这源于 **Vite SSR（面向 Web 服务端）** 与 **electron-builder（面向离线桌面端）** 天生截然相反的打包心智模型：
 
@@ -67,7 +67,7 @@ Preload 脚本由 Vite 经 `ssr: { noExternal: true }` 构建为单文件 `dist/
 - **Vite SSR** 以为生产环境有 node_modules，默认不打包它，编译为 `const { z } = require("zod")`；
 - **electron-builder** 发现它们在 `devDependencies` 中，打包时直接将其丢弃，不拷贝进 `app.asar`；
 - **后果**：两边都没包含代码！程序在用户机器启动时执行到 `require(...)`，瞬间抛出 `Cannot find module` 报错崩溃。
-- **解法**：在 `vite.config.ts` 中配置 `ssr: { noExternal: ['zod', /^@sentry\/.*/] }`，强制命令 Vite 必须在编译期将其完整 JS 源码内联打包进 `dist/index.cjs` 并执行 Tree-shaking，既能避免运行时缺失，又能避免完整依赖包直接进入 asar 造成体积膨胀（保持在 ~2.54MB）。
+- **解法**：在 `vite.config.ts` 中配置 `ssr: { noExternal: true }`（只保留显式 external 清单），强制除 `electron` / `usb` / `electron-updater` 外的模块全部在编译期内联，包括 `zod`、`@sentry/electron` 与 `electron-log`。这样既避免运行时缺失，也避免完整依赖包进入 asar。
 
 ### 2. “争先恐后”陷阱（导致 asar 体积暴增 30 倍）
 以 **`antd`** 为例（误声明在根目录或主进程的 `dependencies` 树中）：
@@ -85,7 +85,7 @@ Preload 脚本由 Vite 经 `ssr: { noExternal: true }` 构建为单文件 `dist/
    ```bash
    pnpm --filter @app/main add <pkg-name>
    ```
-2. **无需手改 external**：`build/main-externals.ts` 会自动把新依赖加入 `rolldownOptions.external`。
+2. **确认是否需要外置**：默认会被内联；若该库必须在运行时 `require`（原生 addon、读取自身文件布局或动态加载），把实际 specifier 加入 `packages/main/vite.config.ts` 的 `rolldownOptions.external`。
 3. 运行校验：
    ```bash
    pnpm run verify:prebuild
@@ -118,6 +118,6 @@ pnpm --filter @app/renderer add -D vite-plugin-xxx @types/xxx
 
 | 校验门禁 | 触发时机 | 校验命令 | 核心检测内容 |
 | :--- | :--- | :--- | :--- |
-| **依赖拓扑检查** | PR 提交 / 本地打包前 | `pnpm run verify:prebuild` | 1. 根目录 `dependencies` 严格等于 `['@app/main']`<br>2. 根目录 `name` 符合 OTA 文件名规范（主进程 external 已由 `dependencies` 自动派生，无需对齐检查） |
+| **依赖拓扑检查** | PR 提交 / 本地打包前 | `pnpm run verify:prebuild` | 1. 根目录 `dependencies` 严格等于 `['@app/main']`<br>2. 根目录 `name` 符合 OTA 文件名规范（主进程 external 为显式清单，新增运行时依赖需人工确认是否外置） |
 | **asar 体积门禁** | 发版构建 / 打包测试 | `pnpm build:dir` | 校验打包出的 `app.asar` 体积不得超过 10.00 MB（防范任何意外依赖泄露） |
 | **运行时 Smoke 检查** | 发版构建 / 打包测试 | `pnpm build:dir` | 真实启动解包二进制程序，验证窗口创建、React `#root` 挂载及无报错退出 |

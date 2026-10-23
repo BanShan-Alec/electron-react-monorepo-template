@@ -2,16 +2,17 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import { findRepoRoot } from '../build/repo-paths.ts';
-import { readTsconfigAliases } from '../build/tsconfig-paths.ts';
 
 const configDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = findRepoRoot(configDir);
 const isBenchmark = process.env.BENCHMARK === 'true';
 
 export default defineConfig({
-  // 别名真源：packages/tsconfig/base.json（不再手写 @app/* 列表）
+  root: rootDir,
+  tsconfig: path.join(rootDir, 'tsconfig.json'),
+  // 别名真源：packages/tsconfig/base.json（Vite 8 原生 tsconfigPaths）
   resolve: {
-    alias: readTsconfigAliases(rootDir),
+    tsconfigPaths: true,
   },
   test: {
     environment: 'node',
