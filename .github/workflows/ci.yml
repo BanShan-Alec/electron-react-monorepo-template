@@ -51,6 +51,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-env
+      # Electron 42+ 改为首次运行时惰性下载二进制，提前预热以便失败尽早暴露
+      - run: pnpm exec electron --version
       # electron.launch 以 package.json main 为入口,需要先产出各包的构建产物
       - run: pnpm run build
       - run: pnpm run test:e2e
