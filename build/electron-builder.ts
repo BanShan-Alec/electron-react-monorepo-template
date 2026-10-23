@@ -1,4 +1,3 @@
-import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import { join } from 'node:path';
 import type { Configuration } from 'electron-builder';
@@ -6,13 +5,6 @@ import { APP_IDENTITY } from './app-identity';
 
 // 基于当前构建脚本目录确定全局确定的根目录
 const ROOT_DIR = join(__dirname, '..');
-
-// 首次克隆守护：若工作区子包尚未编译（如直接运行 electron-builder），自动执行构建
-const mainDistPath = join(ROOT_DIR, 'packages', 'main', 'dist', 'index.cjs');
-if (!fs.existsSync(mainDistPath)) {
-  console.log('⚡ [electron-builder] 检测到工作区子包尚未编译，正在自动执行预热构建...');
-  execSync('pnpm -r run build', { stdio: 'inherit' });
-}
 
 // 应用身份与 OTA 仓库坐标唯一事实源：根目录 package.json（不接受 .env 覆盖）
 // repository.url 缺失时使用 'local' / 'app' 占位，保证更新元数据生成且绝不阻断打包
