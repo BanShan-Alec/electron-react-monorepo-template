@@ -1,4 +1,4 @@
-import packageJson from '../package.json';
+import packageJson from '../../package.json';
 
 /**
  * 应用身份单一事实源解析（根目录 package.json）

@@ -1,7 +1,7 @@
 import { APP_IDENTITY } from './app-identity';
 import { getRepoEnvValue, loadRepoEnv } from './env';
 
-export interface SentryBuildConfig {
+export interface SentryBuildOptions {
   rootDir: string;
   appName: string;
   appVersion: string;
@@ -15,9 +15,9 @@ export interface SentryBuildConfig {
 /**
  * 统一解析根目录 package.json 身份与 .env 中的 Sentry 构建期配置
  *
- * 构建期基础设施模块：环境由 build/env.ts 单点加载，身份由 build/app-identity.ts 单点解析。
+ * 构建期基础设施模块：环境由 build/lib/env.ts 单点加载，身份由 build/lib/app-identity.ts 单点解析。
  */
-export function getSentryBuildConfig(fromDir: string): SentryBuildConfig {
+export function getSentryBuildOptions(fromDir: string): SentryBuildOptions {
   const env = loadRepoEnv(fromDir, 'production');
   const value = (key: string): string => getRepoEnvValue(env, key);
 

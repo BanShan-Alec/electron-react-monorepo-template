@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { join } from 'node:path';
 import type { Configuration } from 'electron-builder';
-import { APP_IDENTITY } from './app-identity';
+import { APP_IDENTITY } from './lib/app-identity';
 
 // 基于当前构建脚本目录确定全局确定的根目录
 const ROOT_DIR = join(__dirname, '..');

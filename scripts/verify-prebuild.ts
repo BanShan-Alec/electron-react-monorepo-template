@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { join } from 'node:path';
-import { findRepoRoot } from '../build/repo-paths.ts';
+import { findRepoRoot } from '../build/lib/repo-paths.ts';
 
 interface VerificationResult {
   valid: boolean;

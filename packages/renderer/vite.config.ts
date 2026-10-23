@@ -4,15 +4,15 @@ import { sentryVitePlugin } from '@sentry/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import { APP_IDENTITY } from '../../build/app-identity.ts';
-import { findRepoRoot } from '../../build/repo-paths.ts';
-import { getSentryBuildConfig } from '../../build/sentry-config.ts';
+import { APP_IDENTITY } from '../../build/lib/app-identity.ts';
+import { findRepoRoot } from '../../build/lib/repo-paths.ts';
+import { getSentryBuildOptions } from '../../build/lib/sentry-options.ts';
 import { appTitlePlugin } from './plugins/app-title.ts';
 import { startupShellInlinePlugin } from './plugins/startup-shell.ts';
 
 const currentDir = import.meta.dirname;
 const rootDir = findRepoRoot(currentDir);
-const sentryConfig = getSentryBuildConfig(currentDir);
+const sentryOptions = getSentryBuildOptions(currentDir);
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -29,13 +29,13 @@ export default defineConfig({
       macroTransform: true,
     }),
     sentryVitePlugin({
-      org: sentryConfig.sentryOrg,
-      project: sentryConfig.sentryProject,
-      authToken: sentryConfig.sentryAuthToken,
+      org: sentryOptions.sentryOrg,
+      project: sentryOptions.sentryProject,
+      authToken: sentryOptions.sentryAuthToken,
       telemetry: false,
-      disable: !sentryConfig.sentryAuthToken,
+      disable: !sentryOptions.sentryAuthToken,
       release: {
-        name: sentryConfig.releaseName,
+        name: sentryOptions.releaseName,
       },
       sourcemaps: {
         filesToDeleteAfterUpload: ['dist/**/*.map'],

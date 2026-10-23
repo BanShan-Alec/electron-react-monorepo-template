@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
-import { findRepoRoot } from '../build/repo-paths.ts';
+import { findRepoRoot } from '../build/lib/repo-paths.ts';
 
 const configDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = findRepoRoot(configDir);
