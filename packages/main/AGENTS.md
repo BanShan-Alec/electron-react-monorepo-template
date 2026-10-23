@@ -23,7 +23,7 @@ packages/main/src/
 ├── telemetry/            # 全链路追踪：tracer（AsyncLocalStorage）、ipc-tracer（handleTraced）、window-tracer
 ├── modules/              # 系统切片层：窗口、托盘、日志、主题、IPC、单实例、安全等
 │   ├── *.module.ts       # AppModule 生命周期单元
-│   ├── window/           # 窗口注册表、标题栏 overlay、无边框重绘、状态保持、更新窗口
+│   ├── window/           # 窗口注册表、标题栏 overlay、无边框重绘、官方状态持久化、更新窗口
 │   └── security/         # CSP、导航来源白名单、外链白名单
 └── errors/               # 领域异常定义（如 AppError）
 ```
