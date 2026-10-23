@@ -13,6 +13,14 @@ export interface LaunchElectronOptions {
    * 额外的环境变量
    */
   extraEnv?: Record<string, string>;
+  /**
+   * 复用的用户数据目录；不传则创建临时目录
+   */
+  userDataDir?: string;
+  /**
+   * cleanup 时是否删除用户数据目录；默认自建目录删除，外部传入的目录保留
+   */
+  cleanupUserData?: boolean;
 }
 
 export interface ElectronTestContext {
@@ -73,8 +81,11 @@ function killProcessTree(pid: number, tempUserDataDir?: string): void {
 export async function launchElectronApp(
   options: LaunchElectronOptions = {},
 ): Promise<ElectronTestContext> {
-  // 1. 创建隔离的临时用户数据目录
-  const tempUserDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-e2e-'));
+  // 1. 准备隔离的用户数据目录（外部传入时复用，用于验证跨进程持久化）
+  const ownsUserDataDir = !options.userDataDir;
+  const tempUserDataDir =
+    options.userDataDir ?? fs.mkdtempSync(path.join(os.tmpdir(), 'electron-e2e-'));
+  const shouldCleanupUserData = options.cleanupUserData ?? ownsUserDataDir;
 
   // 2. 启动 Electron 应用
   const electronApp = await electron.launch({
@@ -174,7 +185,7 @@ export async function launchElectronApp(
       }
     }
 
-    if (tempUserDataDir && fs.existsSync(tempUserDataDir)) {
+    if (shouldCleanupUserData && tempUserDataDir && fs.existsSync(tempUserDataDir)) {
       try {
         fs.rmSync(tempUserDataDir, { recursive: true, force: true });
       } catch {

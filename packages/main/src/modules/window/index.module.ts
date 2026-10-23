@@ -13,7 +13,6 @@ import { getUpdaterWindowModule } from './updater-window.module';
 import { forgetWindow, getWindow, registerWindow } from './window-registry';
 import { attachWindowsWindowRepaint } from './window-repaint';
 import { MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, resolveWindowBounds } from './window-size';
-import { DEFAULT_WINDOW_STATE, type WindowState, WindowStateKeeper } from './window-state-keeper';
 
 export interface WindowManagerOptions {
   initConfig: AppInitConfig;
@@ -26,21 +25,16 @@ export class WindowManager implements AppModule {
   private readonly renderer: { path: string } | URL;
   private readonly openDevTools: boolean;
   private readonly keepState: boolean;
-  private readonly windowStateKeeper: WindowStateKeeper | null;
 
   constructor({ initConfig, openDevTools = false, keepState = true }: WindowManagerOptions) {
     this.preload = initConfig.preload;
     this.renderer = initConfig.windows.home;
     this.openDevTools = openDevTools;
     this.keepState = keepState;
-    this.windowStateKeeper = keepState ? new WindowStateKeeper() : null;
   }
 
   async enable({ app: electronApp }: ModuleContext): Promise<void> {
     await electronApp.whenReady();
-    if (this.keepState && this.windowStateKeeper) {
-      this.windowStateKeeper.validateWithDisplays();
-    }
     await this.restoreOrCreateWindow(true);
 
     const handleReactivation = async () => {
@@ -61,27 +55,13 @@ export class WindowManager implements AppModule {
   }
 
   async createWindow(): Promise<BrowserWindow> {
-    const rawState: WindowState =
-      this.keepState && this.windowStateKeeper
-        ? this.windowStateKeeper.getState()
-        : DEFAULT_WINDOW_STATE;
-
-    const primaryDisplay = screen.getPrimaryDisplay();
-    const targetDisplay =
-      typeof rawState.x === 'number' && typeof rawState.y === 'number' && screen.getDisplayMatching
-        ? screen.getDisplayMatching({
-            x: rawState.x,
-            y: rawState.y,
-            width: rawState.width,
-            height: rawState.height,
-          })
-        : primaryDisplay;
-
-    const savedState = resolveWindowBounds(rawState, targetDisplay);
+    // 首次启动的尺寸与居中由纯函数计算；若存在官方持久化状态，
+    // Electron 会在构造期用保存的 bounds/displayMode 覆盖这些构造参数
+    const initialBounds = resolveWindowBounds(null, screen.getPrimaryDisplay());
 
     const logger = getLogManager().scoped(this);
 
-    logger.info('Creating browser window with state:', savedState);
+    logger.info('Creating browser window with initial bounds:', initialBounds);
 
     // 原生标题栏定制（平台分支参照 VS Code windows.ts/windowImpl.ts）：
     // - darwin: titleBarStyle hidden 保留红绿灯；titleBarOverlay: true 仅启用
@@ -94,12 +74,17 @@ export class WindowManager implements AppModule {
 
     const browserWindow = new BrowserWindow({
       title: app.getName(),
+      // 官方窗口状态持久化：唯一 name 即存储键，bounds 与 displayMode 均默认开启。
+      // 已知限制：Windows 分数缩放（1.25/1.5/1.75）下每次启动会漂移 1-2px，整数缩放稳定；
+      // 上游 issue：https://github.com/electron/electron/issues/55245
+      name: WINDOW_IDS.HOME,
+      windowStatePersistence: this.keepState,
       // 首屏渐进式加载：不设 show:false 门禁，窗口创建即可见，
       // 首个可视内容为 backgroundColor 主题底色（与 WCO overlay 同源），禁止白屏期
-      x: savedState.x,
-      y: savedState.y,
-      width: savedState.width,
-      height: savedState.height,
+      x: initialBounds.x,
+      y: initialBounds.y,
+      width: initialBounds.width,
+      height: initialBounds.height,
       // 最小尺寸下限，防止窗口缩到布局不可用（updater 窗口为 480×460）
       minWidth: MIN_WINDOW_WIDTH,
       minHeight: MIN_WINDOW_HEIGHT,
@@ -124,17 +109,13 @@ export class WindowManager implements AppModule {
 
     // 窗口创建即写入 renderer-home.log 的生命周期分隔行；reload 不重建窗口，不会重复写
     getLogManager().logWindowStarted(WINDOW_IDS.HOME);
+    logger.info('Browser window bounds after creation:', browserWindow.getNormalBounds());
 
     // 注册到 window-registry 唯一事实源
     registerWindow(WINDOW_IDS.HOME, browserWindow);
     browserWindow.on('closed', () => {
       forgetWindow(WINDOW_IDS.HOME, browserWindow);
     });
-
-    // 绑定窗口尺寸/位置状态跟踪（若开启）
-    if (this.keepState && this.windowStateKeeper) {
-      this.windowStateKeeper.track(browserWindow);
-    }
 
     // win32 dom-ready 补偿：无边框窗口在 dom-ready 前可能未完成首帧合成，
     // 补一次 show+focus 避免任务栏有图标但窗口不可见（对齐上游 desktopWindowLifecycle）
@@ -211,11 +192,6 @@ export class WindowManager implements AppModule {
     // 无边框重绘守护全生命周期挂载（win32）：跨屏拖拽 / Snap / 锁屏唤醒后补绘
     attachWindowsWindowRepaint(browserWindow);
 
-    // maximize 前置于 load：窗口创建即可见后，若在 load 后最大化会产生可见的尺寸跳变
-    if (savedState.isMaximized) {
-      browserWindow.maximize();
-    }
-
     if (this.renderer instanceof URL) {
       await browserWindow.loadURL(this.renderer.href);
     } else {
@@ -261,6 +237,3 @@ export function createWindowManagerModule(
     singletonWindowManager;
   return singletonWindowManager;
 }
-
-export type { WindowState };
-export { WindowStateKeeper };

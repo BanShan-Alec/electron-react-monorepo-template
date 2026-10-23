@@ -184,7 +184,23 @@
 - 2026-10-23 v1：初版。依据 41/43/44/45 发布版 `electron.d.ts`、v44/v45 源码与仓库现状核查。
 - 2026-10-23 v2：按用户决定取消旧 `window-state.json` 兼容，改为明确 breaking change；删除迁移相关文件、单测与验证步骤。
 - 2026-10-23 v3：按用户决定移除“旧文件被忽略”的 e2e 负向用例与对应手工验证。
+- 2026-10-23 v4：发现官方 bounds 持久化在 Windows 分数缩放（1.25/1.5/1.75）下每次启动漂移 1–2px；用户选择方案 B（保留官方 API），已上游提报 electron/electron#55245。
 
 ## 11. 执行记录
 
-待执行。
+### 2026-10-23（本地执行）
+
+- worktree：`H:\electron-app-temp5-electron45`；最终重放到 `main`（7a977c7，v1.9.1）。
+- **PR-A** 分支 `chore/electron-45`（PR #49）：
+  - `electron@45.0.0` 安装成功，lockfile 仅变动 Electron 依赖树（`@electron/get` 2→5 等）。
+  - typecheck / lint / unit（58） / build / build:dir / 打包态健康检查全绿；asar 2.86 MB。
+  - 全量 e2e 25/26：窗口几何用例失败。用 Electron 41 基线复证为既有环境问题（Windows 无边框窗口 `getBounds()` 含隐形边框，41/45 结果一致，仅 1px 差异）。
+  - CI 首轮 e2e 失败：预热命令 `electron --version` 在 Linux 无 root 的 chrome-sandbox 下启动失败；改为 `pnpm exec install-electron`（只下载不启动）后 6 项 checks 全绿。
+  - 提交：`2830562` chore(deps)、`957ad46` docs(plan)、`95d2f09` fix(ci)。
+- **PR-B** 分支 `refactor/window-state-persistence`（stacked 在 PR-A 上，提交 `f8999c3`）：
+  - 删除 `window-state-keeper.ts`；`WindowState` 契约移入 `window-size.ts`；主窗口改用 `name: WINDOW_IDS.HOME` + `windowStatePersistence`。
+  - 偏差：`persisted-state-restored` 在窗口构造期同步触发，构造完成后无法注册监听；改为创建后记录一次 `getNormalBounds()` 日志。
+  - 偏差：冷启动几何用例改为独立启动（worker 夹具可能被其他 spec 复用），像素容差放宽至 10px 以容纳 Windows 隐形边框；新增“同 userData 重启恢复 bounds”用例。
+  - typecheck / lint / unit（58） / 全量 e2e（27） / build:dir 全绿。
+- **已知限制（方案 B，用户已确认接受）**：Windows 分数缩放（1.25/1.5/1.75）下官方 `bounds` 持久化每次启动漂移 1–2px，整数缩放（1/2）稳定；旧 keeper 同样存在该问题且幅度更大（4–5px）。已上游提报 [electron/electron#55245](https://github.com/electron/electron/issues/55245)，代码注释与配置指南均已标注。
+- **待办**：PR #49 合并前需按 §9 完成 Windows 真机冒烟；PR-B 待 #49 合并后 rebase 到 main 再推送并开 PR。

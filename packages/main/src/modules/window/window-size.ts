@@ -10,7 +10,15 @@ import {
   POSITION_TOLERANCE_Y_TOP,
 } from '@app/shared/constants/window-geometry';
 import type { Display, Rectangle } from 'electron';
-import type { WindowState } from './window-state-keeper';
+
+/** 窗口几何状态：尺寸裁决纯函数与单测共用的类型契约 */
+export interface WindowState {
+  x?: number;
+  y?: number;
+  width: number;
+  height: number;
+  isMaximized: boolean;
+}
 
 /** 常量定义在 @app/shared/constants/window-geometry，此处仅为既有导入路径保留转发 */
 export {

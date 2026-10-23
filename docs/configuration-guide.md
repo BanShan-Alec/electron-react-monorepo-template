@@ -184,6 +184,7 @@
 3. **`MODE` ≠ `app.isPackaged`**：前者是开发/生产行为语义，后者是物理打包态；`start:dist` 是「未打包但生产行为」。
 4. **运行时常量是编译期的**：改了 shared/main constants 必须重建对应包，`pnpm start` 下的热更新不会自动带上主进程常量。
 5. **`.env` 已入库**：新增 secret 不要写进去，放 GitHub Secrets。
-6. **改 `productName` 会迁移用户数据目录**（`userData`、日志、`app-config.json`、`window-state.json`），发版前要想清楚。
-7. **新增语言**目前要动三处：`preferences.ts`、`lingui.config.ts`、`src/locales/<locale>/messages.po`。
-8. **工具 schema 文件不要合并**：electron-builder / Vite / Playwright / Biome 的文件位置是工具强制的，能抽的是值，不是文件。
+6. **改 `productName` 会迁移用户数据目录**（`userData`、日志、`app-config.json`、`Local State`），发版前要想清楚。
+7. **窗口状态存于 Chromium `Local State`**（pref key `windowStates`，按窗口 `name` 索引）：重置布局调用 `BrowserWindow.clearPersistedState('home')` 后重启；旧 `window-state.json` 已废弃，可手动删除。Windows 分数缩放（125%/150%/175%）下官方实现每次启动会漂移 1–2px，见上游 [electron#55245](https://github.com/electron/electron/issues/55245)；整数缩放不受影响。
+8. **新增语言**目前要动三处：`preferences.ts`、`lingui.config.ts`、`src/locales/<locale>/messages.po`。
+9. **工具 schema 文件不要合并**：electron-builder / Vite / Playwright / Biome 的文件位置是工具强制的，能抽的是值，不是文件。
