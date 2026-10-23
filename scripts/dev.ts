@@ -2,10 +2,10 @@ import { type ChildProcess, execSync, spawn } from 'node:child_process';
 import path from 'node:path';
 import electronPath from 'electron';
 import { build, createServer, type Plugin, type ViteDevServer } from 'vite';
-import { applyRepoEnv, loadRepoEnv } from '../build/env.ts';
+import { applyRepoEnv, loadRepoEnv } from '../build/lib/env.ts';
 import { ensurePortsAvailable, killProcessTree } from './port-guard.ts';
 
-// 统一从 build/env.ts 加载根 .env（外部注入优先），并向上锁定仓库根
+// 统一从 build/lib/env.ts 加载根 .env（外部注入优先），并向上锁定仓库根
 const repoEnv = loadRepoEnv(__dirname, 'development');
 applyRepoEnv(repoEnv);
 const ROOT_DIR = repoEnv.rootDir;

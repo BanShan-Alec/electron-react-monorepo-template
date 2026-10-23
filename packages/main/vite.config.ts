@@ -1,11 +1,11 @@
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { defineConfig } from 'vite';
-import { APP_IDENTITY } from '../../build/app-identity.ts';
-import { getRepoEnvValue, loadRepoEnv } from '../../build/env.ts';
-import { getSentryBuildConfig } from '../../build/sentry-config.ts';
+import { APP_IDENTITY } from '../../build/lib/app-identity.ts';
+import { getRepoEnvValue, loadRepoEnv } from '../../build/lib/env.ts';
+import { getSentryBuildOptions } from '../../build/lib/sentry-options.ts';
 
 const repoEnv = loadRepoEnv(__dirname, 'production');
-const sentryConfig = getSentryBuildConfig(__dirname);
+const sentryOptions = getSentryBuildOptions(__dirname);
 const prefix = getRepoEnvValue(repoEnv, 'ENV_PREFIX') || 'APP_';
 const isDev = process.env.MODE === 'development';
 
@@ -28,22 +28,22 @@ const envDefaults = ALLOWED_ENV_KEYS.reduce(
 export default defineConfig({
   define: {
     __ENV_PREFIX__: JSON.stringify(prefix),
-    __APP_VERSION__: JSON.stringify(sentryConfig.appVersion),
-    __SENTRY_DSN__: JSON.stringify(sentryConfig.sentryDsn),
-    __RELEASE_NAME__: JSON.stringify(sentryConfig.releaseName),
+    __APP_VERSION__: JSON.stringify(sentryOptions.appVersion),
+    __SENTRY_DSN__: JSON.stringify(sentryOptions.sentryDsn),
+    __RELEASE_NAME__: JSON.stringify(sentryOptions.releaseName),
     __GITHUB_OWNER__: JSON.stringify(APP_IDENTITY.repositoryOwner),
     __GITHUB_REPO__: JSON.stringify(APP_IDENTITY.repositoryName),
     __ENV_DEFAULTS__: JSON.stringify(envDefaults),
   },
   plugins: [
     sentryVitePlugin({
-      org: sentryConfig.sentryOrg,
-      project: sentryConfig.sentryProject,
-      authToken: sentryConfig.sentryAuthToken,
+      org: sentryOptions.sentryOrg,
+      project: sentryOptions.sentryProject,
+      authToken: sentryOptions.sentryAuthToken,
       telemetry: false,
-      disable: !sentryConfig.sentryAuthToken,
+      disable: !sentryOptions.sentryAuthToken,
       release: {
-        name: sentryConfig.releaseName,
+        name: sentryOptions.releaseName,
       },
       sourcemaps: {
         filesToDeleteAfterUpload: ['dist/**/*.map'],

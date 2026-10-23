@@ -1,10 +1,11 @@
 import { execSync } from 'node:child_process';
+import fs from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { applyRepoEnv, loadRepoEnv } from '../build/env.ts';
-import { getDistDir } from '../build/repo-paths.ts';
+import { applyRepoEnv, loadRepoEnv } from '../build/lib/env.ts';
+import { getDistDir } from '../build/lib/repo-paths.ts';
 
-// 统一从 build/env.ts 加载根 .env（外部注入优先），并向上锁定仓库根
+// 统一从 build/lib/env.ts 加载根 .env（外部注入优先），并向上锁定仓库根
 const repoEnv = loadRepoEnv(__dirname, 'production');
 applyRepoEnv(repoEnv);
 const ROOT_DIR = repoEnv.rootDir;
@@ -40,6 +41,22 @@ async function runBuild() {
   if (!values['skip-build']) {
     console.log('📦 Building workspace packages...');
     execSync('pnpm -r run build', { stdio: 'inherit' });
+  } else {
+    // --skip-build 语义：只打包现有产物。缺失即失败，绝不在配置层隐式补构建。
+    const requiredArtifacts = [
+      'packages/main/dist/index.cjs',
+      'packages/preload/dist/index.cjs',
+      'packages/renderer/dist/src/entries/home/index.html',
+      'packages/renderer/dist/src/entries/updater/index.html',
+    ];
+    const missing = requiredArtifacts.filter(
+      (artifact) => !fs.existsSync(join(ROOT_DIR, artifact)),
+    );
+    if (missing.length > 0) {
+      console.error(`❌ --skip-build 但缺少构建产物:\n  ${missing.join('\n  ')}`);
+      console.error('   请先运行 pnpm build，或去掉 --skip-build');
+      process.exit(1);
+    }
   }
 
   // 2. Assemble electron-builder packaging options

@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { defineConfig } from '@playwright/test';
-import { findRepoRoot } from '../build/repo-paths.ts';
+import { findRepoRoot } from '../build/lib/repo-paths.ts';
 
 // 基于配置文件自身位置向上锁定仓库物理根目录
 const ROOT_DIR = findRepoRoot(__dirname);

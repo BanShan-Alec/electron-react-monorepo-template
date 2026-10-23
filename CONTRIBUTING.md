@@ -152,13 +152,15 @@ main 受分支保护禁直推，发版走 PR 形态：
 - [`.config/vitest.config.ts`](.config/vitest.config.ts)：单元测试与基准测试配置（别名从 `packages/tsconfig/base.json` 派生）
 - [`.config/playwright.config.ts`](.config/playwright.config.ts)：Electron E2E 配置
 
-`build/` —— 生产构建与打包域：
-- [`build/electron-builder.ts`](build/electron-builder.ts)：Electron 生产环境打包配置与过滤规则
-- [`build/app-identity.ts`](build/app-identity.ts)：应用身份与 OTA 仓库坐标唯一解析器（根 `package.json`）
-- [`build/env.ts`](build/env.ts)：构建期环境变量统一加载器（外部注入优先于 `.env`）
-- [`build/repo-paths.ts`](build/repo-paths.ts)：仓库根目录与产物目录解析（禁止 `process.cwd()`）
-- [`build/sentry-config.ts`](build/sentry-config.ts)：Sentry 构建期公共配置与 DSN 注入器
+`build/` —— 声明式打包配置与资产：
+- [`build/electron-builder.ts`](build/electron-builder.ts)：Electron 生产环境打包配置与过滤规则（无顶层副作用）
 - [`build/resources/`](build/resources)：打包资源（应用图标、签名 entitlements 等），经 `extraResources` 复制进安装包
+
+`build/lib/` —— 可复用构建期库（可安全 import，不启动子进程、不读写产物）：
+- [`build/lib/app-identity.ts`](build/lib/app-identity.ts)：应用身份与 OTA 仓库坐标唯一解析器（根 `package.json`）
+- [`build/lib/env.ts`](build/lib/env.ts)：构建期环境变量统一加载器（外部注入优先于 `.env`）
+- [`build/lib/repo-paths.ts`](build/lib/repo-paths.ts)：仓库根目录与产物目录解析（禁止 `process.cwd()`）
+- [`build/lib/sentry-options.ts`](build/lib/sentry-options.ts)：Sentry 构建期参数与 DSN 注入器
 
 ---
 
@@ -210,7 +212,7 @@ pnpm -F @app/renderer remove <包名>
 
 | 目录与文件 | 模块标准 | 规范要求与说明 |
 | :--- | :--- | :--- |
-| **Node 脚本与构建配置**<br>`scripts/*.ts`<br>`build/*.ts`<br>`packages/{main,preload,renderer}/vite.config.ts` | **原生 ESM** (`import` / `export`) | • 统一使用 `import` 引入依赖，禁止 `require` / `module.exports`。<br>• 仓库根目录一律经 `build/repo-paths.ts` 的 `findRepoRoot()` 解析，严禁 `process.cwd()` 推导相对路径。<br>• 环境变量统一经 `build/env.ts` 的 `loadRepoEnv()` 加载，不得各自调用 `loadEnv`。<br>• `__dirname` / `import.meta.dirname` 由配置加载器（Vite / electron-builder / tsx）提供，就地使用，不写兼容垫片。<br>• TypeScript 类型引入使用零运行时的 `import type { ... } from '...'`。 |
+| **Node 脚本与构建配置**<br>`scripts/*.ts`<br>`build/*.ts`<br>`packages/{main,preload,renderer}/vite.config.ts` | **原生 ESM** (`import` / `export`) | • 统一使用 `import` 引入依赖，禁止 `require` / `module.exports`。<br>• 仓库根目录一律经 `build/lib/repo-paths.ts` 的 `findRepoRoot()` 解析，严禁 `process.cwd()` 推导相对路径。<br>• 环境变量统一经 `build/lib/env.ts` 的 `loadRepoEnv()` 加载，不得各自调用 `loadEnv`。<br>• `__dirname` / `import.meta.dirname` 由配置加载器（Vite / electron-builder / tsx）提供，就地使用，不写兼容垫片。<br>• TypeScript 类型引入使用零运行时的 `import type { ... } from '...'`。 |
 | **纯前端渲染进程**<br>`packages/renderer/`（含 `vite.config.ts`） | **原生 ESM** (`import` / `export`) | • `packages/renderer/package.json` 显式声明 `"type": "module"`，完整支持 Vite 与 React 前端生态。<br>• 可直接 `import` `build/` 下的构建期模块（均为 ESM）。 |
 
 ### 2. TypeScript 隔离配置

@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { _electron as electron } from '@playwright/test';
-import { getRepoEnvValue, loadRepoEnv } from '../build/env.ts';
-import { getDistDir } from '../build/repo-paths.ts';
+import { getRepoEnvValue, loadRepoEnv } from '../build/lib/env.ts';
+import { getDistDir } from '../build/lib/repo-paths.ts';
 
 interface PostbuildVerificationOptions {
   /**
