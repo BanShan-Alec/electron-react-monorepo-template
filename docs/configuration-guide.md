@@ -7,7 +7,7 @@
 ## 一、配置生效链路（先看这个）
 
 **开发态 `pnpm start`**
-`cross-env MODE=development` → [build/env.ts](../build/env.ts) 读 `.env`（外部优先）→ [scripts/dev.ts](../scripts/dev.ts) 按 `config` 起 Vite dev server（端口 / CDP / inspect）→ 构建 preload/main → 主进程启动 → preload 注入 `window.__APP_ENV__` → 渲染进程消费。
+`cross-env MODE=development` → [build/lib/env.ts](../build/lib/env.ts) 读 `.env`（外部优先）→ [scripts/dev.ts](../scripts/dev.ts) 按 `config` 起 Vite dev server（端口 / CDP / inspect）→ 构建 preload/main → 主进程启动 → preload 注入 `window.__APP_ENV__` → 渲染进程消费。
 
 **打包 `pnpm build:app`**
 默认 production → `verify:prebuild`（名称/根依赖）→ 构建全包 → electron-builder 用 `package.json` 身份与 `repository.url` 打包 → `verify:postbuild`（asar 阈值 + 真机冒烟）→ 生成 `app-update.yml` 供 OTA。
@@ -59,7 +59,7 @@
 
 ## 四、应用身份与 OTA 坐标（根 `package.json`）
 
-由 [app-identity.ts](../build/app-identity.ts) 统一解析，构建器、主进程、渲染进程都从这里取。
+由 [app-identity.ts](../build/lib/app-identity.ts) 统一解析，构建器、主进程、渲染进程都从这里取。
 
 | 字段 | 作用 | 改动影响 |
 | :--- | :--- | :--- |
@@ -77,7 +77,7 @@
 
 ### 加载链路
 
-1. `pnpm start` / `build:app` 先经 [env.ts](../build/env.ts) 的 `loadRepoEnv()` 读根 `.env`。
+1. `pnpm start` / `build:app` 先经 [env.ts](../build/lib/env.ts) 的 `loadRepoEnv()` 读根 `.env`。
 2. 外部注入（shell / CI / cross-env）**优先于** `.env`，由 `applyRepoEnv()` 补入，不会反向覆盖。
 3. 主进程构建时把白名单键内联成 `__ENV_DEFAULTS__`；preload 再经 `--app-meta` 注入 `window.__APP_ENV__` 给渲染进程。
 
@@ -100,7 +100,7 @@
 ### 新增一个环境变量的三条路径
 
 1. **只给主进程运行时用**：`.env.example` 加键 → `packages/main/src/env.d.ts` 的 `EnvKey` 加键 → `packages/main/vite.config.ts` 的 `ALLOWED_ENV_KEYS` 加键 → 代码里 `getEnv('XXX')`。
-2. **只给构建期用**：加到 `.env`，通过 `build/env.ts` 的 `getRepoEnvValue()` 读，不碰主进程类型。
+2. **只给构建期用**：加到 `.env`，通过 `build/lib/env.ts` 的 `getRepoEnvValue()` 读，不碰主进程类型。
 3. **要给渲染进程用**：扩展 `shared/types/env.ts` 的 `AppRuntimeEnv` + `env-packer` → 主进程 `getRuntimeEnvSnapshot()` 加字段 → 渲染进程读 `window.__APP_ENV__`。
 
 优先级始终是：`APP_XXX`（外部注入） > `.env` 的 `XXX`（构建期内联） > 代码 fallback。
@@ -111,11 +111,13 @@
 
 | 文件 | 管什么 | 怎么改 |
 | :--- | :--- | :--- |
-| [app-identity.ts](../build/app-identity.ts) | 身份/版本/repo 解析 | 一般不用动，改根 `package.json` |
-| [env.ts](../build/env.ts) | 唯一 env 加载器 | 无需逐文件改 |
-| [repo-paths.ts](../build/repo-paths.ts) | 仓库根与固定产物目录 `<repo>/dist` | 产物目录不可配置 |
-| [sentry-config.ts](../build/sentry-config.ts) | release 名 `${name}@${version}`、DSN | 改命名模板在这里 |
+| [lib/app-identity.ts](../build/lib/app-identity.ts) | 身份/版本/repo 解析 | 一般不用动，改根 `package.json` |
+| [lib/env.ts](../build/lib/env.ts) | 唯一 env 加载器 | 无需逐文件改 |
+| [lib/repo-paths.ts](../build/lib/repo-paths.ts) | 仓库根与固定产物目录 `<repo>/dist` | 产物目录不可配置 |
+| [lib/sentry-options.ts](../build/lib/sentry-options.ts) | release 名 `${name}@${version}`、DSN | 改命名模板在这里 |
 | [electron-builder.ts](../build/electron-builder.ts) | 安装包目标、图标、artifactName、NSIS | 平台/产物策略在这里 |
+
+`build/` 根只放声明式配置与资产；`build/lib/` 放可安全 import 的构建期库，不启动子进程、不读写产物。标准入口 `pnpm build:*` 会先构建 workspace；直接调用 electron-builder 前需先执行 `pnpm build`。
 
 主进程构建策略：`ssr: { noExternal: true }`，`external` 显式列 `electron` / `usb` / `electron-updater`；其余模块全部内联，`electron-log` 因此放在 `devDependencies` 并打进 bundle。新增运行时依赖需手动确认是否加入 `external`。main / preload 的构建默认值各自内联，修改 sourcemap / minify 等需两边同步。
 

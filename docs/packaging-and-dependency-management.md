@@ -79,6 +79,8 @@ graph LR
 
 当在终端执行 `pnpm run build:app` 时，工程将经历以下 4 个标准阶段：
 
+> 标准入口 `pnpm build:*` 会先完成 workspace 构建；若直接调用 `electron-builder`，需先执行 `pnpm build`——`build/electron-builder.ts` 只声明打包配置，不再隐式触发构建。
+
 ### 1. 打包流水线架构图
 
 ```mermaid
