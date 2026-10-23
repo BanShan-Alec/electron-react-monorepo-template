@@ -1,6 +1,22 @@
 # Changelog
 
 
+## v1.11.0
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.10.0...v1.11.0)
+
+### 💅 代码重构 (Refactoring)
+
+- **config:** ConfigStore 存储引擎改用 electron-store 并以 Zod 为单一真源 ([#52](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/52))
+
+### ⚠️ 行为变更
+
+- **BREAKING CHANGE**：配置改存 `userData/config.json`（electron-store 引擎，读盘由 Zod 整体校验），旧 `app-config.json` 不再读取；升级后首次启动用户设置重置为默认值，旧文件可手动删除。
+
+### ❤️ Contributors
+
+- 半山Alec <627649674@qq.com>
+
 ## v1.10.0
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.9.1...v1.10.0)
