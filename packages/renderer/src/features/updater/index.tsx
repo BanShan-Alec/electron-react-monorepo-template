@@ -1,6 +1,7 @@
 import { CheckCircleOutlined, CloseOutlined, CloudDownloadOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
+import { ErrorCode } from '@shared/constants/error-codes';
 import { Alert, Button, Card, Spin } from 'antd';
 import type React from 'react';
 import { ChangelogCard } from './components/ChangelogCard';
@@ -62,20 +63,32 @@ export const UpdaterFeature: React.FC = () => {
       snapshot.state === 'downloaded' ||
       snapshot.state === 'error');
 
-  const renderErrorContent = () => (
-    <>
-      <Alert
-        type="error"
-        showIcon
-        message={t`更新发生错误`}
-        description={snapshot.error || t`下载更新时发生网络异常，请稍后重试。`}
-      />
-      <div className="flex items-center justify-end gap-2 pt-2">
-        <Button onClick={handleClose}>{t`关闭`}</Button>
-        <Button type="primary" onClick={handleRetry}>{t`重试`}</Button>
-      </div>
-    </>
-  );
+  // 错误主文案按语义码本地化，原始报错降级为次要行保留排查线索
+  const renderErrorContent = () => {
+    const errorText = (() => {
+      switch (snapshot.code) {
+        case ErrorCode.UPDATER_NETWORK_ERROR:
+          return t`网络连接失败或超时，请检查网络后重试。`;
+        case ErrorCode.UPDATER_NOT_CONFIGURED:
+          return t`更新服务未配置。`;
+        default:
+          return t`更新过程中出现未知错误，请稍后重试。`;
+      }
+    })();
+
+    return (
+      <>
+        <Alert type="error" showIcon message={t`更新发生错误`} description={errorText} />
+        {snapshot.error && (
+          <p className="text-xs text-foreground-muted m-0 break-all">{snapshot.error}</p>
+        )}
+        <div className="flex items-center justify-end gap-2 pt-2">
+          <Button onClick={handleClose}>{t`关闭`}</Button>
+          <Button type="primary" onClick={handleRetry}>{t`重试`}</Button>
+        </div>
+      </>
+    );
+  };
 
   return (
     <div className="h-screen w-screen flex flex-col bg-background text-foreground select-none overflow-hidden border border-border">
