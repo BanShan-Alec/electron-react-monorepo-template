@@ -105,10 +105,6 @@ msgstr "Zod 严格模式入参校验与语义化错误码 Result 契约"
 msgid "Zod 校验"
 msgstr "Zod 校验"
 
-#: src/features/updater/index.tsx
-msgid "下载更新时发生网络异常，请稍后重试。"
-msgstr "下载更新时发生网络异常，请稍后重试。"
-
 #: src/features/updater/components/ProgressCard/index.tsx
 msgid "下载进度"
 msgstr "下载进度"
@@ -336,6 +332,10 @@ msgstr "打开失败"
 msgid "打开日志目录"
 msgstr "打开日志目录"
 
+#: src/features/settings/components/SettingsCard/index.tsx
+msgid "打开更新窗口失败"
+msgstr "打开更新窗口失败"
+
 #: src/features/calculator/components/CalculatorCard/index.tsx
 msgid "提示：尝试输入 B = 0 并选择除法 (÷) 触发服务端异常拦截"
 msgstr "提示：尝试输入 B = 0 并选择除法 (÷) 触发服务端异常拦截"
@@ -398,6 +398,14 @@ msgstr "更新已准备就绪"
 #: src/features/updater/components/ChangelogCard/index.tsx
 msgid "更新日志"
 msgstr "更新日志"
+
+#: src/features/updater/index.tsx
+msgid "更新服务未配置。"
+msgstr "更新服务未配置。"
+
+#: src/features/updater/index.tsx
+msgid "更新过程中出现未知错误，请稍后重试。"
+msgstr "更新过程中出现未知错误，请稍后重试。"
 
 #: src/features/usb/components/UsbCard/index.tsx
 msgid "未检测到连接的 USB 设备"
@@ -526,6 +534,10 @@ msgstr "经由安全 Controller & Preload 调起系统文件管理器与访达"
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "统一通过 window.api 消费 Result 契约，享受完备 IDE 智能提示，与主进程实现 100% 物理代码隔离。"
 msgstr "统一通过 window.api 消费 Result 契约，享受完备 IDE 智能提示，与主进程实现 100% 物理代码隔离。"
+
+#: src/features/updater/index.tsx
+msgid "网络连接失败或超时，请检查网络后重试。"
+msgstr "网络连接失败或超时，请检查网络后重试。"
 
 #. placeholder {0}: err.message
 #: src/features/usb/hooks/useUsbDevices.ts
