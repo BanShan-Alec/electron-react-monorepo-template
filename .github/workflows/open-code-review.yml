@@ -58,7 +58,8 @@ jobs:
           llm_url: ${{ secrets.OCR_LLM_URL }}
           llm_auth_token: ${{ secrets.OCR_LLM_TOKEN }}
           llm_model: ${{ secrets.OCR_LLM_MODEL }}
-          llm_use_anthropic: ''
+          # step_plan 端点走 anthropic messages 协议（/v1/messages），显式声明避免留空被歧义解析
+          llm_use_anthropic: 'true'
 
           # ===== 输出与语言配置 =====
           language: 'Chinese'

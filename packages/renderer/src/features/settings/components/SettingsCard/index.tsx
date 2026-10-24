@@ -2,9 +2,10 @@ import { SettingOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import type { AppConfig } from '@shared/schemas/config';
-import { Button, Card, Select, Skeleton, Switch } from 'antd';
+import { App, Button, Card, Select, Skeleton, Switch } from 'antd';
 import { memo } from 'react';
 import { CardTitle } from '@/components/ui/CardTitle';
+import { callIpc } from '@/lib/ipc';
 
 // 私有常量
 const LANGUAGE_OPTIONS = [
@@ -19,6 +20,7 @@ const TOGGLE_ROW_CLASS =
 
 const _SettingsCard = (props: ISettingsCardProps) => {
   useLingui();
+  const { message } = App.useApp();
   // 变量声明、解构
   const { appConfig, onUpdate, onReset, isLoading } = props;
 
@@ -112,9 +114,13 @@ const _SettingsCard = (props: ISettingsCardProps) => {
               <Button
                 type="primary"
                 size="small"
-                onClick={async () => {
-                  await window.api.updater.openWindow();
-                  await window.api.updater.check();
+                onClick={() => {
+                  // 检查动作内聚在 updater 窗口（开窗即查），此处只负责唤起窗口
+                  void callIpc('updater:open-window', window.api.updater.openWindow, []).catch(
+                    () => {
+                      message.error(t`打开更新窗口失败`);
+                    },
+                  );
                 }}
               >
                 {t`检查更新`}

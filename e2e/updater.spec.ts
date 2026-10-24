@@ -178,18 +178,21 @@ test.describe
     });
 
     test('用例 5：下载中断错误与重试', async ({ electronApp }) => {
-      // 模拟下载网络异常触发 error 态
+      // 模拟下载网络异常触发 error 态（带语义码，验证按 code 的本地化主文案 + 原始报错次要行）
       await electronApp.evaluate(() => {
         // biome-ignore lint/suspicious/noExplicitAny: electron runtime mock injection
         const mock = (globalThis as any).__updaterMock;
         mock?.emit({
           type: 'error',
           message: '网络连接异常中断，无法继续下载更新包',
+          code: 'UPDATER_NETWORK_ERROR',
         });
       });
 
-      // 断言错误提示展示
+      // 断言错误提示展示：标题 + 按语义码选择的本地化主文案
       await expect(updaterPage.getByText('更新失败')).toBeVisible();
+      await expect(updaterPage.getByText('网络连接失败或超时，请检查网络后重试。')).toBeVisible();
+      // 原始报错以次要行保留（排查线索）
       await expect(updaterPage.getByText('网络连接异常中断，无法继续下载更新包')).toBeVisible();
       await stepDelay(1200);
 

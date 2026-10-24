@@ -22,6 +22,7 @@ import { AppError } from '../errors/AppError';
 import { getAppConfigStore } from '../modules/config.module';
 import { getLogManager } from '../modules/log.module';
 import { getWindow, sendToWindow } from '../modules/window/window-registry';
+import { classifyUpdaterError } from './updater-classify';
 
 function isOtaSentryEnabled(): boolean {
   if (isTest || !isPackaged) return false;
@@ -87,6 +88,7 @@ export class UpdaterService {
     state: 'idle',
     progress: null,
     error: null,
+    code: null,
   };
 
   private windowDelegate: { show: () => Promise<unknown>; close?: () => void } | null = null;
@@ -217,6 +219,7 @@ export class UpdaterService {
         this.logger.info('Checking for update...');
         this.snapshot.state = 'checking';
         this.snapshot.error = null;
+        this.snapshot.code = null;
         this.emitState();
       });
 
@@ -230,6 +233,7 @@ export class UpdaterService {
           releaseNotes: notes.length > 0 ? notes : undefined,
           progress: null,
           error: null,
+          code: null,
         };
         this.emitState();
         this.windowDelegate?.show().catch((err) => {
@@ -244,6 +248,7 @@ export class UpdaterService {
           version: info?.version,
           progress: null,
           error: null,
+          code: null,
         };
         this.emitState();
       });
@@ -264,6 +269,7 @@ export class UpdaterService {
         this.snapshot.state = 'downloaded';
         this.snapshot.progress = null;
         this.snapshot.error = null;
+        this.snapshot.code = null;
         this.cancellationToken = null;
         this.emitState();
         this.reportSentryOtaEvent(
@@ -309,8 +315,13 @@ export class UpdaterService {
 
       updater.on('error', (err) => {
         this.logger.error('Update error:', err);
+        const wasDownloading = this.snapshot.state === 'downloading';
         this.snapshot.state = 'error';
         this.snapshot.error = err ? err.message : 'Unknown updater error';
+        this.snapshot.code = classifyUpdaterError(
+          err,
+          wasDownloading ? ErrorCode.UPDATER_DOWNLOAD_FAILED : ErrorCode.UPDATER_CHECK_FAILED,
+        );
         this.snapshot.progress = null;
         this.cancellationToken = null;
         this.emitState();
@@ -351,6 +362,7 @@ export class UpdaterService {
 
     this.snapshot.state = 'checking';
     this.snapshot.error = null;
+    this.snapshot.code = null;
     this.snapshot.progress = null;
     this.emitState();
 
@@ -402,8 +414,9 @@ export class UpdaterService {
         timer = setTimeout(
           () =>
             reject(
-              new Error(
+              new AppError(
                 `检查更新请求超时（${UPDATE_CHECK_TIMEOUT_MS / 1000} 秒），请检查网络连接后重试`,
+                ErrorCode.UPDATER_NETWORK_ERROR,
               ),
             ),
           UPDATE_CHECK_TIMEOUT_MS,
@@ -416,11 +429,14 @@ export class UpdaterService {
       }
       return this.getSnapshot();
     } catch (err) {
+      const code = classifyUpdaterError(err, ErrorCode.UPDATER_CHECK_FAILED);
       this.snapshot.state = 'error';
       this.snapshot.error = err instanceof Error ? err.message : String(err);
+      this.snapshot.code = code;
       this.emitState();
       this.reportSentryOtaError(err, OTA_STAGES.CHECKING);
-      throw new AppError(this.snapshot.error, ErrorCode.UPDATER_CHECK_FAILED);
+      this.logger.error('Update check failed:', err);
+      throw new AppError(this.snapshot.error, code);
     }
   }
 
@@ -484,6 +500,7 @@ export class UpdaterService {
     this.cancellationToken = new CancellationToken();
     this.snapshot.state = 'downloading';
     this.snapshot.error = null;
+    this.snapshot.code = null;
     this.emitState();
 
     if (isTest) {
@@ -528,12 +545,15 @@ export class UpdaterService {
         this.logger.info('Download cancelled by token');
         return this.getSnapshot();
       }
+      const code = classifyUpdaterError(err, ErrorCode.UPDATER_DOWNLOAD_FAILED);
       this.snapshot.state = 'error';
       this.snapshot.error = err instanceof Error ? err.message : String(err);
+      this.snapshot.code = code;
       this.cancellationToken = null;
       this.emitState();
       this.reportSentryOtaError(err, OTA_STAGES.DOWNLOADING);
-      throw new AppError(this.snapshot.error, ErrorCode.UPDATER_DOWNLOAD_FAILED);
+      this.logger.error('Update download failed:', err);
+      throw new AppError(this.snapshot.error, code);
     }
   }
 
@@ -552,6 +572,7 @@ export class UpdaterService {
       this.snapshot.state = 'available';
       this.snapshot.progress = null;
       this.snapshot.error = null;
+      this.snapshot.code = null;
       this.emitState();
 
       // 如果当前处于孤儿态（主窗口已关闭），取消后退出应用杜绝无界面僵尸进程
@@ -673,11 +694,11 @@ export class UpdaterService {
         this.emitState();
         break;
       case 'idle':
-        this.snapshot = { state: 'idle', progress: null, error: null };
+        this.snapshot = { state: 'idle', progress: null, error: null, code: null };
         this.emitState();
         break;
       case 'checking':
-        this.snapshot = { state: 'checking', progress: null, error: null };
+        this.snapshot = { state: 'checking', progress: null, error: null, code: null };
         this.emitState();
         break;
       case 'available':
@@ -690,6 +711,7 @@ export class UpdaterService {
             : undefined,
           progress: null,
           error: null,
+          code: null,
         };
         this.emitState();
         this.windowDelegate?.show().catch(() => {});
@@ -710,6 +732,7 @@ export class UpdaterService {
         this.snapshot.state = 'downloaded';
         this.snapshot.progress = null;
         this.snapshot.error = null;
+        this.snapshot.code = null;
         this.emitState();
         if (this.isOrphan) {
           this.stopOrphanWatchdog();
@@ -728,12 +751,13 @@ export class UpdaterService {
         break;
       }
       case 'up-to-date':
-        this.snapshot = { state: 'up-to-date', progress: null, error: null };
+        this.snapshot = { state: 'up-to-date', progress: null, error: null, code: null };
         this.emitState();
         break;
       case 'error':
         this.snapshot.state = 'error';
         this.snapshot.error = action.message;
+        this.snapshot.code = action.code ?? null;
         this.snapshot.progress = null;
         this.emitState();
         if (this.isOrphan) {
