@@ -47,7 +47,7 @@ jobs:
             }
 
       - name: OpenCodeReview PR Review
-        uses: alibaba/open-code-review@v1.12.11
+        uses: alibaba/open-code-review@v1.13.3
         with:
           # ===== PR 元信息适配（兼容 comment 触发与 PR 触发）=====
           pr_number: ${{ steps.pr_info.outputs.pr_number }}
@@ -60,6 +60,8 @@ jobs:
           llm_model: ${{ secrets.OCR_LLM_MODEL }}
           # step_plan 端点走 anthropic messages 协议（/v1/messages），显式声明避免留空被歧义解析
           llm_use_anthropic: 'true'
+          # Step Fun 按 key 限并发（limit 5），OCR 多分组并行会 429 partial，压到 4 留余量
+          review_concurrency: '4'
 
           # ===== 输出与语言配置 =====
           language: 'Chinese'
