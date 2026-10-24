@@ -1,6 +1,26 @@
 # Changelog
 
 
+## v1.11.1
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.11.0...v1.11.1)
+
+### 🩹 缺陷修复 (Bug Fixes)
+
+- **updater:** 更新失败按语义码分类并补主进程错误日志 ([#54](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/54))
+
+### 💅 代码重构 (Refactoring)
+
+- **renderer:** 渲染日志排障链路补强收尾 ([#55](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/55))
+
+### 🏡 工程维护 (Chores)
+
+- **ci:** OCR 升级 v1.13.3，限并发适配 429 ([#56](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/56))
+
+### ❤️ Contributors
+
+- 半山Alec <627649674@qq.com>
+
 ## v1.11.0
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.10.0...v1.11.0)
