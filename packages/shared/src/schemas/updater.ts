@@ -30,6 +30,7 @@ export const updaterSnapshotSchema = z.object({
   releaseNotes: z.array(z.string()).optional(),
   progress: updaterProgressSchema.nullable().optional(),
   error: z.string().nullable().optional(),
+  code: z.string().nullable().optional(),
 });
 
 export const updaterMockActionSchema = z.discriminatedUnion('type', [
@@ -65,5 +66,6 @@ export const updaterMockActionSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('error'),
     message: z.string().default('Failed to download update'),
+    code: z.string().optional(),
   }),
 ]);
