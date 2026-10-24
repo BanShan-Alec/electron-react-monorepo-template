@@ -66,6 +66,6 @@ export const updaterMockActionSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('error'),
     message: z.string().default('Failed to download update'),
-    code: z.string().optional(),
+    code: z.string().nullable().optional(),
   }),
 ]);
