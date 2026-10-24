@@ -87,8 +87,11 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
       },
     });
 
-    // 2. 落盘：Sentry 未激活（dev/无 DSN）时这是渲染崩溃的唯一磁盘痕迹
-    logger.error('React component crashed:', error, {
+    // 2. 落盘：Sentry 未激活（dev/无 DSN）时这是渲染崩溃的唯一磁盘痕迹；
+    //    组件名取 componentStack 首帧（即崩溃组件本身），免翻长栈定位
+    const crashedComponent =
+      /^\s*at\s+([A-Za-z0-9_$]+)/m.exec(errorInfo.componentStack ?? '')?.[1] ?? 'unknown';
+    logger.error(`React component crashed in <${crashedComponent}>:`, error, {
       componentStack: errorInfo.componentStack,
     });
 

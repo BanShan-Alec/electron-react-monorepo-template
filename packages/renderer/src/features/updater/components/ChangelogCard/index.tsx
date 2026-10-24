@@ -3,6 +3,12 @@ import { useLingui } from '@lingui/react';
 import { Card, Tag } from 'antd';
 import type React from 'react';
 import { useMemo, useState } from 'react';
+import { callIpc } from '@/lib/ipc';
+
+// 链接打开失败不打扰用户（含白名单拦截拒绝）：失败行已由 callIpc 统一落盘
+function openExternal(url: string): void {
+  void callIpc('shell:open-external', window.api.shell.openExternal, [url]).catch(() => {});
+}
 
 interface ChangelogCardProps {
   version?: string;
@@ -24,7 +30,7 @@ function formatInlineMarkdown(text: string): React.ReactNode[] {
           href={url}
           onClick={(e) => {
             e.preventDefault();
-            window.api?.shell?.openExternal?.(url);
+            openExternal(url);
           }}
           className="text-primary hover:underline cursor-pointer"
         >
@@ -47,7 +53,7 @@ function formatInlineMarkdown(text: string): React.ReactNode[] {
           href={token}
           onClick={(e) => {
             e.preventDefault();
-            window.api?.shell?.openExternal?.(token);
+            openExternal(token);
           }}
           className="text-primary hover:underline cursor-pointer"
         >
