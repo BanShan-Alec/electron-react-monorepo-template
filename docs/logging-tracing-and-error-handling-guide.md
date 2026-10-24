@@ -181,10 +181,14 @@ try {
    ```
    直接查到主进程对应的业务调用堆栈。
 
+   > 级别注意：`[IPC]` 行的级别取决于错误码——`INTERNAL_ERROR` 落 `[error]`，业务语义码（如 `UPDATER_ALREADY_RUNNING`）落 `[warn]`。
+
 3. **第三步：在 `traces.ndjson` 搜索该 Trace ID 查看耗时与事件**
    ```json
    {"type":"span","name":"ipc.receive:usb:get-device-list","trace_id":"38389d723a1d592e13dae64282fe13bc","duration_ms":29.6,"status":"ERROR","events":[{"name":"business_error","attributes":{"error.code":"INTERNAL_ERROR"}}]}
    ```
+
+4. **事件推送型错误的降级查法（无 trace 可捞时）**：不经 invoke 的错误（如 electron-updater 后台报错经 `updater:event:state` 推送、或窗口打开时拉到 `state === 'error'` 快照）在渲染侧只有一行「呈现行」（如 `[updater] Error state presented:`），不带 trace_id、不产生 span。此时按写入点文案检索 `main.log`（如 `Update error:`、`Update check failed:`），再回看 `renderer-<window>.log` 的呈现行对齐时间线。主进程背景异步（事件回调、定时器）同样无 trace，属预期，按写入点文案检索即可。
 
 ---
 
