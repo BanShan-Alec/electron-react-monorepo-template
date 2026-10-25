@@ -29,6 +29,7 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 10 monorepo · Node >= 24
 | `@app/renderer` | React 界面层：Feature 驱动 + LinguiJS | [packages/renderer/AGENTS.md](packages/renderer/AGENTS.md)（视觉另见 [DESIGN.md](packages/renderer/docs/DESIGN.md)） |
 | `@app/shared` | 跨端契约单一事实源：Schema / 通道 / 类型 | [packages/shared/AGENTS.md](packages/shared/AGENTS.md) |
 | `@app/pr-review` | PR 生命周期与 OCR 审查工具链 | [packages/pr-review/AGENTS.md](packages/pr-review/AGENTS.md) |
+| `@app/docs` | 解决方案合集文档站（Vocs，GitHub Pages 部署） | — |
 
 ## 4. 任务路由（先读包规则，再查深档）
 

@@ -11,6 +11,8 @@ out/
 
 # Caches & Tooling Output
 .vite/
+packages/docs/dist/
+packages/docs/src/pages.gen.ts
 .cache/
 *.tsbuildinfo
 .eslintcache

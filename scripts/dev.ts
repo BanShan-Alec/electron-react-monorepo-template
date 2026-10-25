@@ -3,6 +3,7 @@ import path from 'node:path';
 import electronPath from 'electron';
 import { build, createServer, type Plugin, type ViteDevServer } from 'vite';
 import { applyRepoEnv, loadRepoEnv } from '../build/lib/env.ts';
+import { ensureNoAppInstanceRunning } from './instance-guard.ts';
 import { ensurePortsAvailable, killProcessTree } from './port-guard.ts';
 
 // 统一从 build/lib/env.ts 加载根 .env（外部注入优先），并向上锁定仓库根
@@ -139,21 +140,26 @@ async function startRendererDevServer(): Promise<ViteDevServer> {
 
 /** 开发入口:编排渲染进程服务器与两个 watch 构建,副作用只发生在此。 */
 async function startDevServer(): Promise<void> {
-  // 0. 启动前端口排查与定向释放
+  // 0. 单实例排查：打包版托盘常驻 / 旧 dev 实例持有单实例锁会让新实例直接退出，
+  //    交互确认后终止；置于端口排查之前，dev-vs-dev 场景下对端 electron 被杀会连带
+  //    其 dev 会话自行退出并释放端口，一次确认解决两件事
+  await ensureNoAppInstanceRunning(ROOT_DIR);
+
+  // 1. 启动前端口排查与定向释放
   await ensurePortsAvailable([
     { port: config.rendererPort, desc: 'Vite Renderer' },
     { port: config.rendererCdpPort, desc: 'Renderer CDP Debugging' },
     { port: config.mainInspectPort, desc: 'Main Inspect Break' },
   ]);
 
-  // 1. Create and start Vite dev server for the renderer
+  // 2. Create and start Vite dev server for the renderer
   const rendererWatchServer = await startRendererDevServer();
 
-  // 2. Build independent plugins from factories
+  // 3. Build independent plugins from factories
   const preloadReloaderPlugin = createPreloadReloaderPlugin(rendererWatchServer);
   const electronLauncherPlugin = createElectronLauncherPlugin();
 
-  // 3. Watch and build packages with their respective plugins
+  // 4. Watch and build packages with their respective plugins
   await build({
     mode: config.mode,
     root: path.join(ROOT_DIR, 'packages', 'preload'),

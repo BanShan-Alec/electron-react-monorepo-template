@@ -1,0 +1,22 @@
+{
+  "name": "@app/docs",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Electron 解决方案合集文档站（Vocs）",
+  "scripts": {
+    "dev": "vocs dev --port 5174",
+    "build": "vocs build",
+    "preview": "vocs preview --port 5174"
+  },
+  "dependencies": {
+    "mermaid": "^11.0.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "vocs": "^2.10.3",
+    "waku": "1.0.0-rc.4"
+  },
+  "devDependencies": {
+    "vite": "catalog:"
+  }
+}
