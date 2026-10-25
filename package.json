@@ -31,6 +31,9 @@
     "start:dist": "cross-env MODE=production tsx scripts/dev.ts",
     "pr-review": "pnpm --filter @app/pr-review run cli",
     "i18n:extract": "pnpm --filter @app/renderer exec lingui extract --clean",
+    "docs:dev": "pnpm --filter @app/docs run dev",
+    "docs:build": "pnpm --filter @app/docs run build",
+    "docs:preview": "pnpm --filter @app/docs run preview",
     "test": "vitest run -c .config/vitest.config.ts",
     "test:pr-review": "pnpm --filter @app/pr-review run test",
     "test:watch": "vitest -c .config/vitest.config.ts",
@@ -81,7 +84,10 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "@sentry/cli",
-      "electron-winstaller"
+      "electron-winstaller",
+      "esbuild",
+      "es5-ext",
+      "vue-demi"
     ]
   }
 }

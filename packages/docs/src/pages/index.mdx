@@ -1,0 +1,18 @@
+# Electron 解决方案合集
+
+常见坑位的发版级解法目录——每个解法都能在本仓库找到经过发版验证的真实实现，按维度浏览、照代码抄作业。
+
+## 八个维度
+
+- [工程化基座](/engineering)：Monorepo 治理 · 依赖边界 · 配置继承 · 环境变量 · Biome · 提交规范
+- [类型安全的跨进程契约](/contracts)：通道常量 · Result&lt;T&gt; · zod 校验 · contextBridge 白名单
+- [开发体验](/dx)：双进程热重载 · 端口预检 · CDP 调试 · 进程树清理
+- [架构组织](/architecture)：MPA 多入口 · features 分域 · ModuleRunner · Controller/Service
+- [应用基础设施](/infrastructure)：antd + Tailwind + Lingui · 追踪与日志 · 托盘与单实例 · WCO 标题栏
+- [安全与性能防御](/security)：沙箱 · CSP 与外链白名单 · 路径稳健 · asar 体积门禁
+- [测试矩阵](/testing)：Vitest 单测 · Playwright E2E · 性能基线
+- [交付门禁与 AI 协同](/delivery)：动态打包 · 产物验证 · CI 门禁 · 差分热更新 · AI 评审
+
+## 这是什么
+
+本仓库同时是一套 [Electron 模板](https://github.com/BanShan-Alec/electron-react-monorepo-template)：文档里出现的每个解法都对应仓库中的真实实现与发版验证，不是纸上方案。拿模板的人按图索骥，踩坑的人按问题搜解法。
