@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Electron 解决方案合集文档站（Vocs）",
+  "description": "Electron React Template 解法文档站（Vocs）",
   "scripts": {
     "dev": "node --import ./scripts/vocs-windows-fix.mjs ./node_modules/vocs/dist/cli.js dev --port 5174 --host",
     "build": "node --import ./scripts/vocs-windows-fix.mjs ./node_modules/vocs/dist/cli.js build",

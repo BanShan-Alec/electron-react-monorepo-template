@@ -1,7 +1,7 @@
 /**
- * Node loader that patches a Vocs bug at module-load time on Windows.
+ * Node loader that patches Vocs bugs at module-load time on Windows.
  *
- * `recmaMdxLayout` (vocs/dist/internal/mdx.js) interpolates the page's
+ * Bug 1 — `recmaMdxLayout` (vocs/dist/internal/mdx.js) interpolates the page's
  * `path.relative()` result straight into a JS string literal:
  *
  *   filePath: "${filePath}",
@@ -11,30 +11,52 @@
  * with `Bad character escape sequence` (`\u` + `nit-tests`), and the build
  * aborts before any page is generated. The same interpolation also silently
  * drops separators for other nested pages (`ui\antd.md` -> `uiantd.md`).
- *
  * Rewriting to `JSON.stringify(filePath)` escapes the separators correctly.
+ *
+ * Bug 2 — the `slots()` Vite plugin (vocs/dist/internal/vite-plugins.js)
+ * interpolates the absolute `_slots.tsx` path into a generated virtual module:
+ *
+ *   import * as Slots from '${slotsPath}'
+ *
+ * On Windows that path is backslash-separated, so Rolldown receives
+ * `H:electron-app-temp5...` (separators eaten as escapes) and fails to resolve
+ * the import. Rewriting to `JSON.stringify(slotsPath)` emits a correct string
+ * literal.
+ *
  * Kept as a loader (instead of a pnpm patch) so the workaround stays inside
  * packages/docs and Linux builds run Vocs untouched; remove once Vocs ships a
- * fix upstream.
+ * fix upstream (tracked in https://github.com/wevm/vocs/issues/674).
  */
 
 // biome-ignore lint/suspicious/noTemplateCurlyInString: mirrors the Vocs source text verbatim
-const TARGET = 'filePath: "${filePath}",';
+const MDX_TARGET = 'filePath: "${filePath}",';
 // biome-ignore lint/suspicious/noTemplateCurlyInString: this is the JS code emitted into the module
-const PATCHED = 'filePath: ${JSON.stringify(filePath)},';
+const MDX_PATCHED = 'filePath: ${JSON.stringify(filePath)},';
 const MDX_MODULE_SUFFIX = '/vocs/dist/internal/mdx.js';
+
+// biome-ignore lint/suspicious/noTemplateCurlyInString: mirrors the Vocs source text verbatim
+const SLOTS_TARGET = "import * as Slots from '${slotsPath}'";
+// biome-ignore lint/suspicious/noTemplateCurlyInString: this is the JS code emitted into the module
+const SLOTS_PATCHED = 'import * as Slots from ${JSON.stringify(slotsPath)}';
+const VITE_PLUGINS_MODULE_SUFFIX = '/vocs/dist/internal/vite-plugins.js';
 
 /** @type {import('node:module').LoadHook} */
 export async function load(url, context, nextLoad) {
   const result = await nextLoad(url, context);
   // `source` is a string or a Buffer depending on how the entry was resolved.
-  if (!url.endsWith(MDX_MODULE_SUFFIX) || result.source == null) return result;
-  const source = String(result.source);
-  // Leave the module untouched if a future Vocs version changes or fixes this.
-  if (!source.includes(TARGET)) return result;
-  return {
-    ...result,
-    source: source.replace(TARGET, PATCHED),
-    shortCircuit: true,
-  };
+  if (result.source == null) return result;
+
+  let source = String(result.source);
+  let patched = false;
+
+  if (url.endsWith(MDX_MODULE_SUFFIX) && source.includes(MDX_TARGET)) {
+    source = source.replace(MDX_TARGET, MDX_PATCHED);
+    patched = true;
+  }
+  if (url.endsWith(VITE_PLUGINS_MODULE_SUFFIX) && source.includes(SLOTS_TARGET)) {
+    source = source.replace(SLOTS_TARGET, SLOTS_PATCHED);
+    patched = true;
+  }
+  if (!patched) return result;
+  return { ...result, source, shortCircuit: true };
 }

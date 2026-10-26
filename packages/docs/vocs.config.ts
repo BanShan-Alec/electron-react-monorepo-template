@@ -4,8 +4,12 @@ export default defineConfig({
   // 注意：必须从 vocs/config 子路径导入。主入口会拉起 React 组件链，
   // 其中的 ~icons 虚拟包在配置加载阶段无法解析（见 packages/docs 迁移记录）。
   basePath: '/electron-react-monorepo-template/',
-  title: 'Electron 解决方案合集',
+  // 站点品牌 = 根 package.json 的 productName；改动时两处须同步
+  title: 'Electron React Template',
   description: '常见 Electron 坑位的解法目录：每个解法都有本仓库经过发版验证的真实实现可抄',
+  // 导航栏 logo 与 favicon 共用应用图标（深浅色同一张，图标本身双色通用）
+  logoUrl: '/icon.png',
+  iconUrl: '/icon.png',
   // 默认 dynamic 是 Node 服务形态；GitHub Pages 纯静态托管必须显式 full-static
   renderStrategy: 'full-static',
   socials: [
@@ -21,6 +25,15 @@ export default defineConfig({
   ],
   sidebar: {
     '/': [
+      {
+        text: '前言',
+        collapsed: false,
+        items: [
+          { text: '什么是解决方案合集', link: '/introduction/what-is-this' },
+          { text: '快速上手', link: '/introduction/getting-started' },
+          { text: '与 AI 协作', link: '/introduction/ai-collaboration' },
+        ],
+      },
       {
         text: '工程化基座',
         collapsed: true,

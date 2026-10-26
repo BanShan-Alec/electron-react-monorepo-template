@@ -26,7 +26,7 @@
 | `@app/renderer` | React 界面层：Feature 驱动 + LinguiJS | `packages/renderer/AGENTS.md`（视觉另见 `packages/renderer/docs/DESIGN.md`） |
 | `@app/shared` | 跨端契约单一事实源：Schema / 通道 / 类型 | `packages/shared/AGENTS.md` |
 | `@app/pr-review` | PR 生命周期与 OCR 审查工具链 | `packages/pr-review/AGENTS.md` |
-| `@app/docs` | 解决方案合集文档站（Vocs，GitHub Pages 部署） | — |
+| `@app/docs` | Electron React Template 解法文档站（Vocs，GitHub Pages 部署） | — |
 
 四个主包的文件开头都声明同一件事——「本文件是该包规则的唯一真源」，README 不再承载目录树、铁律或 SOP，并回链根 `AGENTS.md`。`@app/pr-review` 从简，只有三条：改本包代码前读 Skill、CLI 入口收敛、`reviews/` 只读不手改。
 
