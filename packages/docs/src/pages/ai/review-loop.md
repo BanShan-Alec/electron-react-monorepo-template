@@ -1,3 +1,8 @@
+---
+title: AI 评审闭环（Open-code-review）
+description: PR 新开或评论触发 AI 审查，产物拉成本地多轮看板，门禁全绿后一条命令合并。
+---
+
 # AI 评审闭环（Open-code-review）
 
 > **TL;DR**：PR 新开或评论触发 AI 审查，产物拉成本地多轮看板，门禁全绿后一条命令合并。

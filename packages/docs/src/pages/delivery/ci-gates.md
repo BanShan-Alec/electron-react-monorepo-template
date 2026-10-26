@@ -1,3 +1,8 @@
+---
+title: CI 并行门禁（GitHub-Actions）
+description: "typecheck / lint / test / e2e / docs 五路并行，lint 顺带跑 `verify:prebuild` 做打包前静态拦截。"
+---
+
 # CI 并行门禁（GitHub-Actions）
 
 > **TL;DR**：typecheck / lint / test / e2e / docs 五路并行，lint 顺带跑 `verify:prebuild` 做打包前静态拦截

@@ -1,3 +1,8 @@
+---
+title: 路径稳健性（Relative-path）
+description: "构建脚本与运行期资源都锚定模块自身位置，不依赖 `process.cwd()`。"
+---
+
 # 路径稳健性（Relative-path）
 
 > **TL;DR**：构建脚本与运行期资源都锚定模块自身位置，不依赖 `process.cwd()`。

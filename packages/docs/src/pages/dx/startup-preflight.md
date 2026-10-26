@@ -1,3 +1,8 @@
+---
+title: 启动预检（Single-instance + Port）
+description: 起服务前先探测存量实例与端口占用，确认后定向清理，非 TTY 环境直接报错。
+---
+
 # 启动预检（Single-instance + Port）
 
 > **TL;DR**：起服务前先探测存量实例与端口占用，确认后定向清理，非 TTY 环境直接报错。

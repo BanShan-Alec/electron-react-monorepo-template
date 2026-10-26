@@ -1,3 +1,8 @@
+---
+title: 渲染进程沙箱（Sandbox）
+description: "每个 `BrowserWindow` 的 `webPreferences` 写死 Node 关闭、上下文隔离、沙箱与 `webview` 关闭，对外只留 preload 白名单桥。"
+---
+
 # 渲染进程沙箱（Sandbox）
 
 > **TL;DR**：每个 `BrowserWindow` 的 `webPreferences` 写死 Node 关闭、上下文隔离、沙箱与 `webview` 关闭，对外只留 preload 白名单桥。

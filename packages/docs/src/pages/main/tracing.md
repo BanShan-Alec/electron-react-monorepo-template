@@ -1,3 +1,8 @@
+---
+title: 全链路追踪（W3C-trace）
+description: "W3C traceparent 从 preload 贯穿主进程，日志前缀、`traces.ndjson` 与 `Result.traceId` 三个出口串起两端。"
+---
+
 # 全链路追踪（W3C-trace）
 
 > **TL;DR**：W3C traceparent 从 preload 贯穿主进程，日志前缀、`traces.ndjson` 与 `Result.traceId` 三个出口串起两端。

@@ -1,3 +1,8 @@
+---
+title: 配置持久化（Electron-store）
+description: 运行期配置落盘到 userData，zod 校验兜住坏文件与非法更新。
+---
+
 # 配置持久化（Electron-store）
 
 > **TL;DR**：运行期配置落盘到 userData，zod 校验兜住坏文件与非法更新。

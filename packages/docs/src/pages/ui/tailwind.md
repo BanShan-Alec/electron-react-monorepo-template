@@ -1,3 +1,8 @@
+---
+title: 样式与令牌（Tailwind-CSS）
+description: "层序声明 + `@theme inline` + tokens.css，工具类与 antd 组件读同一组变量。"
+---
+
 # 样式与令牌（Tailwind-CSS）
 
 > **TL;DR**：层序声明 + `@theme inline` + tokens.css，工具类与 antd 组件读同一组变量。

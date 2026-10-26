@@ -1,3 +1,8 @@
+---
+title: 分层架构（Controller / Service）
+description: IPC 事件只进 Controller，业务住 Service，纯逻辑服务不 import Electron，可在 node 环境直接单测。
+---
+
 # 分层架构（Controller / Service）
 
 > **TL;DR**：IPC 事件只进 Controller，业务住 Service，纯逻辑服务不 import Electron，可在 node 环境直接单测。

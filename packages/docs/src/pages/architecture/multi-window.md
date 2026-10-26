@@ -1,3 +1,8 @@
+---
+title: 多窗口入口（MPA）
+description: "home 与 updater 各有独立 `index.html` 入口，主进程只按 URL 或物理路径加载，更新窗口不背主应用的路由与卡片。"
+---
+
 # 多窗口入口（MPA）
 
 > **TL;DR**：home 与 updater 各有独立 `index.html` 入口，主进程只按 URL 或物理路径加载，更新窗口不背主应用的路由与卡片。

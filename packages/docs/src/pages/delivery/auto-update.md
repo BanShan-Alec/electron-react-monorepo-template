@@ -1,3 +1,8 @@
+---
+title: 应用更新（Electron-updater）
+description: 关掉自动下载与自动安装，改由快照状态机 + IPC 推送 + 孤儿下载看门狗推进。
+---
+
 # 应用更新（Electron-updater）
 
 > **TL;DR**：关掉自动下载与自动安装，改由快照状态机 + IPC 推送 + 孤儿下载看门狗推进

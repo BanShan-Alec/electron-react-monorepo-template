@@ -1,3 +1,8 @@
+---
+title: 开发编排（Vite + Electron）
+description: 一条命令串起渲染 dev server、preload 与主进程 watch 构建，用 MODE 切换开发态与生产预览，退出时按进程树清场。
+---
+
 # 开发编排（Vite + Electron）
 
 > **TL;DR**：一条命令串起渲染 dev server、preload 与主进程 watch 构建，用 MODE 切换开发态与生产预览，退出时按进程树清场。

@@ -1,3 +1,8 @@
+---
+title: 模块生命周期（ModuleRunner）
+description: "每个系统能力实现只含 `enable()` 的模块，由 ModuleRunner 串成顺序 Promise 链，删一行即整体退场。"
+---
+
 # 模块生命周期（ModuleRunner）
 
 > **TL;DR**：每个系统能力实现只含 `enable()` 的模块，由 ModuleRunner 串成顺序 Promise 链，删一行即整体退场。

@@ -1,3 +1,8 @@
+---
+title: 全局状态（Zustand）
+description: 单一无 Provider 的 store，主题与语言按字段订阅。
+---
+
 # 全局状态（Zustand）
 
 > **TL;DR**：单一无 Provider 的 store，主题与语言按字段订阅。

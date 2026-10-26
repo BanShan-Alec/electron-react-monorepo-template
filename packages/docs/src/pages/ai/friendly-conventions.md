@@ -1,3 +1,8 @@
+---
+title: AI 友好代码约定（Reference-style）
+description: 组件分区与中文提交等可判定约定，让人和 AI 写出同构的代码与提交历史。
+---
+
 # AI 友好代码约定（Reference-style）
 
 > **TL;DR**：组件分区与中文提交等可判定约定，让人和 AI 写出同构的代码与提交历史。

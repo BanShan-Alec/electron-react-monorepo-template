@@ -1,3 +1,8 @@
+---
+title: 端到端测试（Playwright）
+description: "Playwright 官方 `_electron` 拉起真实窗口，worker 级夹具单次冷启动并隔离用户数据目录。"
+---
+
 # 端到端测试（Playwright）
 
 > **TL;DR**：Playwright 官方 `_electron` 拉起真实窗口，worker 级夹具单次冷启动并隔离用户数据目录。

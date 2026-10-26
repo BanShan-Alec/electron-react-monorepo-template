@@ -1,3 +1,8 @@
+---
+title: 路由（Wouter）
+description: "hash 路由适配 `file://`，根路径与未知路径统一收敛。"
+---
+
 # 路由（Wouter）
 
 > **TL;DR**：hash 路由适配 `file://`，根路径与未知路径统一收敛。

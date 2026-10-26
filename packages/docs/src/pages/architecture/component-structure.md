@@ -1,3 +1,8 @@
+---
+title: 组件目录结构（Component-folder）
+description: "组件一律 `Xxx/index.tsx`，组件私有的 hook、lib、样式住同一文件夹，目录即组件边界。"
+---
+
 # 组件目录结构（Component-folder）
 
 > **TL;DR**：组件一律 `Xxx/index.tsx`，组件私有的 hook、lib、样式住同一文件夹，目录即组件边界。

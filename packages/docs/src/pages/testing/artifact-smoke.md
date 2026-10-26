@@ -1,3 +1,8 @@
+---
+title: 产物冒烟测试（Dist-smoke）
+description: "打包后真实拉起解包产物，等 React `#root` 挂载成功，跑不起来的环境显式跳过。"
+---
+
 # 产物冒烟测试（Dist-smoke）
 
 > **TL;DR**：打包后真实拉起解包产物，等 React `#root` 挂载成功，跑不起来的环境显式跳过。

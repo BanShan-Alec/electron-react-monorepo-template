@@ -1,3 +1,8 @@
+---
+title: 提交信息规范（Commitlint）
+description: commitlint 强制 Conventional Commits，并用自定义规则要求 subject 含简体中文。
+---
+
 # 提交信息规范（Commitlint）
 
 > **TL;DR**：commitlint 强制 Conventional Commits，并用自定义规则要求 subject 含简体中文

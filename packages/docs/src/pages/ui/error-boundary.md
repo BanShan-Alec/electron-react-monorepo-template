@@ -1,3 +1,8 @@
+---
+title: 错误边界（ErrorBoundary）
+description: 接住渲染异常，兜底 UI + 三路上报 + 一键恢复。
+---
+
 # 错误边界（ErrorBoundary）
 
 > **TL;DR**：接住渲染异常，兜底 UI + 三路上报 + 一键恢复。

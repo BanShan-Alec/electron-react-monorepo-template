@@ -1,3 +1,8 @@
+---
+title: React 组件编写规范（Code-partition + Hooks）
+description: 组件与 hook 共用一套分区注释，状态与 IPC 副作用收在 hook，展示组件只收 props 与回调。
+---
+
 # React 组件编写规范（Code-partition + Hooks）
 
 > **TL;DR**：组件与 hook 共用一套分区注释，状态与 IPC 副作用收在 hook，展示组件只收 props 与回调。

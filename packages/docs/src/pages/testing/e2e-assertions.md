@@ -1,3 +1,8 @@
+---
+title: 端到端断言策略（Shell-stub + Tolerance）
+description: "启动阶段整体替换 `shell` 模块，断言只锁协议与最终态，数值断言带容差。"
+---
+
 # 端到端断言策略（Shell-stub + Tolerance）
 
 > **TL;DR**：启动阶段整体替换 `shell` 模块，断言只锁协议与最终态，数值断言带容差。

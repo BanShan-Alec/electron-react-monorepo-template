@@ -1,3 +1,8 @@
+---
+title: 性能基线（Benchmark）
+description: benchmark 单独成套，用同构循环断言单次调用开销上界，默认门禁不跑。
+---
+
 # 性能基线（Benchmark）
 
 > **TL;DR**：benchmark 单独成套，用同构循环断言单次调用开销上界，默认门禁不跑。

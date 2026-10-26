@@ -1,3 +1,8 @@
+---
+title: 应用打包（Electron-builder）
+description: "electron-builder 用 TypeScript 写配置，应用身份收敛到根 `package.json`，三平台 target 由同一 CLI 入口分发。"
+---
+
 # 应用打包（Electron-builder）
 
 > **TL;DR**：electron-builder 用 TypeScript 写配置，应用身份收敛到根 `package.json`，三平台 target 由同一 CLI 入口分发

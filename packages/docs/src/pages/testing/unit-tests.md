@@ -1,3 +1,8 @@
+---
+title: 单元测试（Vitest）
+description: 一套 Vitest 配置按环境变量切分单测与 benchmark 范围，纯逻辑测试直接对边界取值。
+---
+
 # 单元测试（Vitest）
 
 > **TL;DR**：一套 Vitest 配置按环境变量切分单测与 benchmark 范围，纯逻辑测试直接对边界取值。
