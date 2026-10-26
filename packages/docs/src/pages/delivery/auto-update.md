@@ -60,7 +60,7 @@ public startOrphanWatchdog(timeoutMs = ORPHAN_WATCHDOG_TIMEOUT_MS): void {
 
 孤儿态下载完成时执行静默安装 `quitAndInstall(true, false)`——不打扰用户，重启即新版本。错误统一过 `classifyUpdaterError` 分类成语义化 `ErrorCode`，并按阶段打点 Sentry。
 
-差分升级的物料由本仓库备齐：打包配置声明 `generateUpdatesFilesForAllChannels: true` 生成全通道更新元数据（`build/electron-builder.ts`），Release 流水线把 `*.blockmap` 差分索引与 `latest.yml` 元数据连同安装包一起上传（见 [发版流水线](/delivery/release-pipeline)）。electron-updater 的升级客户端按 blockmap 比对新旧版本、只下载差异块——这是该库的内置行为，不在本仓库代码内，本仓库保证的是物料就位。未打包形态（源码运行）读不到 `resources/app-update.yml`，改用编译期注入的 `repository.url` 坐标手动 `setFeedURL`；dev 模式全链路模拟，不请求真实源。
+差分升级的物料由本仓库备齐：打包配置声明 `generateUpdatesFilesForAllChannels: true` 生成全通道更新元数据（`build/electron-builder.ts`），Release 流水线把 `*.blockmap` 差分索引与 `latest.yml` 元数据连同安装包一起上传（见 [发版流水线（Changelogen）](/delivery/release-pipeline)）。electron-updater 的升级客户端按 blockmap 比对新旧版本、只下载差异块——这是该库的内置行为，不在本仓库代码内，本仓库保证的是物料就位。未打包形态（源码运行）读不到 `resources/app-update.yml`，改用编译期注入的 `repository.url` 坐标手动 `setFeedURL`；dev 模式全链路模拟，不请求真实源。
 
 ## 怎么抄
 

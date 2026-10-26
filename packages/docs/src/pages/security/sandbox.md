@@ -30,7 +30,7 @@ webPreferences: {
 },
 ```
 
-每个 `BrowserWindow` 的 `webPreferences` 都写死这套组合：渲染层没有 Node、没有 `ipcRenderer` 直连、preload 与页面上下文隔离、沙箱开启、连 `webview` 标签都关掉。唯一的对外面就是 preload 暴露的白名单桥（见[「类型安全的 IPC 契约」](/security/ipc-contract)）。updater 窗口同样一份配置，不因为「只是个更新提示窗」就放松：
+每个 `BrowserWindow` 的 `webPreferences` 都写死这套组合：渲染层没有 Node、没有 `ipcRenderer` 直连、preload 与页面上下文隔离、沙箱开启、连 `webview` 标签都关掉。唯一的对外面就是 preload 暴露的白名单桥（见[「类型安全的 IPC 契约（Zod + ContextBridge）」](/security/ipc-contract)）。updater 窗口同样一份配置，不因为「只是个更新提示窗」就放松：
 
 → 源码：[packages/main/src/modules/window/updater-window.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/updater-window.module.ts)
 
