@@ -13,3 +13,14 @@
     padding-top: var(--vocs-spacing-banner);
   }
 }
+
+/* 小屏顶部导航品牌文本：Logo 组件渲染 title 全文（text-2xl 固定 24px），
+   约 400px 以下容器放不下折成两行（64px），第二行溢出 48px 导航条压住页面。
+   改为 nowrap + 字号随视口收缩（5vw 在 480px 处恰为 24px，边界连续无跳变，
+   下限 15px 保证 320px 机型仍单行放得下）。仅作用顶部导航，≥748px 不受影响。 */
+@media (width < 480px) {
+  [data-v-gutter-top] [data-v-logo-text] {
+    white-space: nowrap;
+    font-size: clamp(15px, 5vw, 24px);
+  }
+}
