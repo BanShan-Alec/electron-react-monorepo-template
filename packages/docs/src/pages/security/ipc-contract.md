@@ -1,4 +1,6 @@
-# 类型安全的跨进程契约
+# 类型安全的 IPC 契约（Zod + ContextBridge）
+
+> **TL;DR**：通道、入参与返回值在 `@app/shared` 定义一次，zod 校验入参，preload 按白名单暴露。
 
 ## 要解决的坑
 

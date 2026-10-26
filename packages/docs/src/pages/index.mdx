@@ -2,16 +2,25 @@
 
 常见坑位的发版级解法目录——每个解法都能在本仓库找到经过发版验证的真实实现，按维度浏览、照代码抄作业。
 
-## 八个维度
+## 九个维度
 
-- [工程化基座](/engineering)：Monorepo 治理 · 依赖边界 · 配置继承 · 环境变量 · Biome · 提交规范
-- [类型安全的跨进程契约](/contracts)：通道常量 · Result&lt;T&gt; · zod 校验 · contextBridge 白名单
-- [开发体验](/dx)：双进程热重载 · 端口预检 · CDP 调试 · 进程树清理
-- [架构组织](/architecture)：MPA 多入口 · features 分域 · ModuleRunner · Controller/Service
-- [应用基础设施](/infrastructure)：antd + Tailwind + Lingui · 追踪与日志 · 托盘与单实例 · WCO 标题栏
-- [安全与性能防御](/security)：沙箱 · CSP 与外链白名单 · 路径稳健 · asar 体积门禁
-- [测试矩阵](/testing)：Vitest 单测 · Playwright E2E · 性能基线
-- [交付门禁与 AI 协同](/delivery)：动态打包 · 产物验证 · CI 门禁 · 差分热更新 · AI 评审
+**工程化基座**：[依赖管理（Monorepo）](/engineering/dependency-management) · [环境变量管理（Dotenv）](/engineering/env-vars) · [编译配置继承（Tsconfig）](/engineering/tsconfig-inheritance) · [代码规范与风格（Biome）](/engineering/code-style) · [提交信息规范（Commitlint）](/engineering/commit-convention)
+
+**开发体验**：[开发编排（Vite + Electron）](/dx/dev-orchestration) · [启动预检（Single-instance + Port）](/dx/startup-preflight) · [远程调试端口（CDP）](/dx/debug-port) · [日志与链路排查（Usage）](/dx/log-troubleshooting)
+
+**架构组织**：[多窗口入口（MPA）](/architecture/multi-window) · [功能域组织（Features）](/architecture/feature-domains) · [组件目录结构（Component-folder）](/architecture/component-structure) · [React 组件编写规范（Code-partition + Hooks）](/architecture/react-conventions) · [模块生命周期（ModuleRunner）](/architecture/module-lifecycle) · [分层架构（Controller / Service）](/architecture/layering)
+
+**界面与交互**：[组件库（Antd）](/ui/antd) · [样式与令牌（Tailwind-CSS）](/ui/tailwind) · [国际化（Lingui）](/ui/lingui) · [路由（Wouter）](/ui/wouter) · [全局状态（Zustand）](/ui/zustand) · [错误边界（ErrorBoundary）](/ui/error-boundary) · [首屏体验（Startup-orchestration）](/ui/first-screen) · [原生窗口体验（WCO）](/ui/wco)
+
+**主进程运行时**：[全链路追踪（W3C-trace）](/main/tracing) · [本地日志（Electron-log）](/main/logging) · [崩溃上报（Sentry）](/main/crash-reporting) · [托盘常驻与单实例（Tray + Single-instance）](/main/tray-single-instance) · [配置持久化（Electron-store）](/main/config-persistence)
+
+**安全与性能**：[渲染进程沙箱（Sandbox）](/security/sandbox) · [内容安全策略（CSP）](/security/csp) · [路径稳健性（Relative-path）](/security/path-robustness) · [分包与体积门禁（Chunk + Asar）](/security/bundle-budget) · [类型安全的 IPC 契约（Zod + ContextBridge）](/security/ipc-contract)
+
+**测试矩阵**：[单元测试（Vitest）](/testing/unit-tests) · [主进程单元测试（EventEmitter）](/testing/main-process-tests) · [端到端测试（Playwright）](/testing/e2e-electron) · [端到端断言策略（Shell-stub + Tolerance）](/testing/e2e-assertions) · [性能基线（Benchmark）](/testing/performance-baseline) · [产物冒烟测试（Dist-smoke）](/testing/artifact-smoke)
+
+**交付门禁**：[应用打包（Electron-builder）](/delivery/packaging) · [源码映射隔离（Source-map）](/delivery/sourcemap) · [CI 并行门禁（GitHub-Actions）](/delivery/ci-gates) · [应用更新（Electron-updater）](/delivery/auto-update) · [发版流水线（Changelogen）](/delivery/release-pipeline)
+
+**AI 协同**：[AI 评审闭环（Open-code-review）](/ai/review-loop) · [AI 协作者约定（Agents.md）](/ai/collaboration-convention) · [AI 友好代码约定（Reference-style）](/ai/friendly-conventions)
 
 ## 这是什么
 
