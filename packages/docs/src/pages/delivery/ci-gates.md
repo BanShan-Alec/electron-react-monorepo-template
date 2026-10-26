@@ -1,3 +1,8 @@
+---
+title: CI 并行门禁（GitHub-Actions）
+description: "typecheck / lint / test / e2e / docs 五路并行，lint 顺带跑 `verify:prebuild` 做打包前静态拦截。"
+---
+
 # CI 并行门禁（GitHub-Actions）
 
 > **TL;DR**：typecheck / lint / test / e2e / docs 五路并行，lint 顺带跑 `verify:prebuild` 做打包前静态拦截
@@ -44,7 +49,7 @@ E2E 在真实 Electron 环境跑，两个前置缺一不可：先 `install-elect
 
 **前置门禁**在打包开始前（0 毫秒）静态拦截两类配置违规：
 
-1. 根 `package.json` 的 `name` 必须匹配 `/^[a-z0-9-_]+$/`——守住 [应用打包](/delivery/packaging) 里说的产物寻址规范
+1. 根 `package.json` 的 `name` 必须匹配 `/^[a-z0-9-_]+$/`——守住 [应用打包（Electron-builder）](/delivery/packaging) 里说的产物寻址规范
 2. 根 `dependencies` 只允许 `['@app/main']`——防止 electron-builder 扫依赖树时把渲染层等非主进程模块卷进 asar
 
 ```ts

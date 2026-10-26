@@ -1,0 +1,35 @@
+---
+title: 与 AI 协作（Agent-ready）
+description: 给 AI 协作者的复制即用提示词，以及 AGENTS.md 约定与 AI 评审闭环的入口
+---
+
+# 与 AI 协作（Agent-ready）
+
+本站与它背后的模板仓库都按「人机同席」设计：读者除了人还有 AI 协作者——仓库的 `AGENTS.md` 分层写明每包规则，本站提供结构化、可直接检索的解法正文与 Markdown 输出。
+
+## 给 AI 协作者的提示词
+
+把下面这段复制给你的 AI 编程助手，它就能带着仓库上下文使用本站：
+
+```text
+本仓库是一套 Electron 桌面端模板（electron-react-monorepo-template），
+附带一份解法文档站（packages/docs）。
+
+请先读根目录 AGENTS.md 与所在包的 AGENTS.md 再动手；
+涉及工程决策时，到 packages/docs/src/pages/ 下按维度找对应解法页，
+解法页里的源码链接指向仓库真实实现，修改前先对照。
+
+文档与代码不一致时，以代码为准，并提示我更新文档。
+```
+
+## 仓库侧的约定入口
+
+- **[AI 协作者约定（Agents.md）](/ai/collaboration-convention)**：根文件管全局（技术栈、红线、任务路由），各包文件管本包铁律——AI 进场先读规则再动手
+- **[AI 友好代码约定（Reference-style）](/ai/friendly-conventions)**：组件分区、中文提交等可判定约定，让人和 AI 写出同构的代码与提交历史
+- **[AI 评审闭环（Open-code-review）](/ai/review-loop)**：PR 新开或评论触发 AI 审查，产物拉成本地看板，门禁全绿后一条命令合并
+
+## 本站对 AI 友好的地方
+
+- 每页都有 `llms.txt` 与 Markdown 路由输出（Vocs 内建），AI 可直接拉取轻量文本而非解析 HTML
+- 解法页结构固定（坑 → 解法 → 怎么抄），标题带括号标签（如「应用打包（Electron-builder）」），适合语义检索
+- 正文中的源码链接全部指向仓库真实文件，AI 可以「读文档 → 跳源码」一步到位

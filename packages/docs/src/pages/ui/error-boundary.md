@@ -1,3 +1,8 @@
+---
+title: 错误边界（ErrorBoundary）
+description: 接住渲染异常，兜底 UI + 三路上报 + 一键恢复。
+---
+
 # 错误边界（ErrorBoundary）
 
 > **TL;DR**：接住渲染异常，兜底 UI + 三路上报 + 一键恢复。
@@ -10,7 +15,7 @@ React 组件在渲染或生命周期里抛异常，如果没有边界接住，�
 
 ## 本仓库的解法
 
-### 1. 类组件接住子树异常，fallback 替换整棵子树
+### 类组件接住子树异常，fallback 替换整棵子树
 
 → 源码：[packages/renderer/src/components/layout/ErrorBoundary/index.tsx](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/components/layout/ErrorBoundary/index.tsx)
 
@@ -54,7 +59,7 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
   }
 ```
 
-### 2. 挂在 Provider 之内，兜底 UI 直接用 antd 与 Lingui
+### 挂在 Provider 之内，兜底 UI 直接用 antd 与 Lingui
 
 边界在 `AppProviders` 里挂在 `AntdApp` 与 `ConfigProvider` 之内，再往上是 `StyleProvider`、`I18nProvider`（见[组件库（Antd）](/ui/antd)）。位置决定能力：`FallbackView` 里的 `Empty`、`Button` 能拿到 antd 主题与语言包，`t\`页面出错啦~\`` 能拿到 Lingui 实例。
 
@@ -72,7 +77,7 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
 
 边界包住的是 `AppProviders` 的 `children`，即 `Router` 与整棵 `App` 树（见[路由（Wouter）](/ui/wouter)）。
 
-### 3. 三路上报：Sentry、落盘日志、业务回调
+### 三路上报：Sentry、落盘日志、业务回调
 
 `componentDidCatch` 拿到 `error` 与 `componentStack`，按顺序做三件事：Sentry 上报（附带组件栈）；`logger.error` 落盘；最后调用可选的 `onError` 回调。落盘行里的组件名取 `componentStack` 首帧，不用翻长栈定位。
 
@@ -102,7 +107,7 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
   }
 ```
 
-### 4. 兜底 UI：dev 才显示错误信息，一键带跳过动画重载
+### 兜底 UI：dev 才显示错误信息，一键带跳过动画重载
 
 兜底是一张固定定位的全屏层（`fixed inset-0 z-50`），内容用 antd 的 `Empty` + `Button`。错误详情只在开发态出现，生产只显示一句「页面出错啦~」。
 
@@ -145,7 +150,7 @@ function FallbackView({ error, resetError }: IFallbackProps) {
 
 「刷新重试」先调 `resetError()` 重挂子树，再给当前 URL 加上 `skip_animation=1` 后 `location.replace`——启动协调器读到这个参数会直接放行动画门禁（见[首屏体验（Startup-orchestration）](/ui/first-screen)），重载不再重放 Logo 动画。
 
-### 5. 与主进程异常兜底的分工
+### 与主进程异常兜底的分工
 
 渲染层组件树里的异常归 `ErrorBoundary`；渲染进程进程级崩溃归主进程——进程都没了，渲染层自己报不了，只能主进程代报：
 

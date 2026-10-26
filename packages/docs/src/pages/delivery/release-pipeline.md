@@ -1,3 +1,8 @@
+---
+title: 发版流水线（Changelogen）
+description: "changelogen 本地提版并锁 tag，CI 三平台以 `-p never` 构建，单一 publish job 统一发 Release。"
+---
+
 # 发版流水线（Changelogen）
 
 > **TL;DR**：changelogen 本地提版并锁 tag，CI 三平台以 `-p never` 构建，单一 publish job 统一发 Release

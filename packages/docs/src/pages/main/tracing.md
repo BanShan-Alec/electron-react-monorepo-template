@@ -1,3 +1,8 @@
+---
+title: 全链路追踪（W3C-trace）
+description: "W3C traceparent 从 preload 贯穿主进程，日志前缀、`traces.ndjson` 与 `Result.traceId` 三个出口串起两端。"
+---
+
 # 全链路追踪（W3C-trace）
 
 > **TL;DR**：W3C traceparent 从 preload 贯穿主进程，日志前缀、`traces.ndjson` 与 `Result.traceId` 三个出口串起两端。
@@ -10,7 +15,7 @@
 
 → 源码：[packages/preload/src/telemetry/ipc-tracer.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/src/telemetry/ipc-tracer.ts)
 
-所有经 apiBridge 白名单的业务 IPC 调用自动携带 W3C traceparent（唯一绕过者是日志桥的 `DIAGNOSTICS_LOG` 直调，见[第 8 节](/main/logging)）：
+所有经 apiBridge 白名单的业务 IPC 调用自动携带 W3C traceparent（唯一绕过者是日志桥的 `DIAGNOSTICS_LOG` 直调，见[本地日志（Electron-log）](/main/logging)）：
 
 ```ts
 export async function invokeTraced<R = unknown, T = unknown>(
@@ -92,7 +97,7 @@ return this.storage.run(manualSpan.context, async () => {
 
 三个出口让 trace 真正可消费：
 
-- **每条主进程日志自动带前缀**——LogManager 注册 hook，活跃上下文存在时给日志行加 `[trace_id:xxx span_id:yyy]`（见[第 8 节](/main/logging)），拿一个 traceId 就能在 main.log 里 grep 出整条链路
+- **每条主进程日志自动带前缀**——LogManager 注册 hook，活跃上下文存在时给日志行加 `[trace_id:xxx span_id:yyy]`（见[本地日志（Electron-log）](/main/logging)），拿一个 traceId 就能在 main.log 里 grep 出整条链路
 - **span 落盘 traces.ndjson**——LogManager 监听 `onSpanEnd`，把 SpanRecord 以 NDJSON 逐行写入独立文件
 - **traceId 回注渲染层**——业务返回 `Result` 结构时注入 `traceId`：
 

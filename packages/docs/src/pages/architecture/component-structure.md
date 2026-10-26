@@ -1,3 +1,8 @@
+---
+title: 组件目录结构（Component-folder）
+description: "组件一律 `Xxx/index.tsx`，组件私有的 hook、lib、样式住同一文件夹，目录即组件边界。"
+---
+
 # 组件目录结构（Component-folder）
 
 > **TL;DR**：组件一律 `Xxx/index.tsx`，组件私有的 hook、lib、样式住同一文件夹，目录即组件边界。
@@ -10,7 +15,7 @@ Electron 项目最容易长歪的地方就是组织方式：
 
 ## 本仓库的解法
 
-### 3. 组件编写模板：一组件一文件夹 + 固定代码分区
+### 组件编写模板：一组件一文件夹 + 固定代码分区
 
 → 源码：[packages/renderer/src/features/counter/components/CounterCard/index.tsx](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/features/counter/components/CounterCard/index.tsx)
 

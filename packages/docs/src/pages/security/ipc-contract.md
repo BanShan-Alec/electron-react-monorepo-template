@@ -1,3 +1,8 @@
+---
+title: 类型安全的 IPC 契约（Zod + ContextBridge）
+description: "通道、入参与返回值在 `@app/shared` 定义一次，zod 校验入参，preload 按白名单暴露。"
+---
+
 # 类型安全的 IPC 契约（Zod + ContextBridge）
 
 > **TL;DR**：通道、入参与返回值在 `@app/shared` 定义一次，zod 校验入参，preload 按白名单暴露。
@@ -15,7 +20,7 @@ Electron 的 IPC 默认是「裸」的：
 
 ## 本仓库的解法
 
-### 1. 通道名集中定义
+### 通道名集中定义
 
 → 源码：[packages/shared/src/constants/ipc-channels.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/constants/ipc-channels.ts)
 
@@ -34,7 +39,7 @@ export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];
 
 通道只在这一处定义，业务代码里永远不出现字符串字面量。`as const` 加类型推导让「通道名」本身成为一个联合类型——别处想传不存在的通道，编译期就拦下。
 
-### 2. 统一返回结构 Result&lt;T&gt;
+### 统一返回结构 Result&lt;T&gt;
 
 → 源码：[packages/shared/src/types/result.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/types/result.ts)
 
@@ -46,7 +51,7 @@ export type Result<T> =
 
 所有 IPC handler 的返回值都是这个形状：成功必带 `data`，失败必带 `error` 和语义化 `code`，二者互斥由类型系统保证。渲染层拿到返回值先看 `success`，窄化之后 TypeScript 自动知道该访问 `data` 还是 `error`，不需要到处 try/catch。
 
-### 3. 入参用 zod schema 校验
+### 入参用 zod schema 校验
 
 → 源码：[packages/shared/src/schemas/counter.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/schemas/counter.ts)
 
@@ -85,7 +90,7 @@ handleTraced(
 
 handler 收到的入参类型标成 `unknown` 而不是 `StepInput`——跨进程来的数据在过 schema 之前一律当作不可信，校验通过后 `parseResult.data` 才是干净数据。
 
-### 4. contextBridge 白名单暴露
+### contextBridge 白名单暴露
 
 → 源码：[packages/preload/src/index.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/src/index.ts)
 

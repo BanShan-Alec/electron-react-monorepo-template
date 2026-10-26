@@ -1,3 +1,8 @@
+---
+title: 主进程单元测试（EventEmitter）
+description: "用 EventEmitter 顶替 `app`、在模块边界换桩，不启动 Electron 也能验证生命周期。"
+---
+
 # 主进程单元测试（EventEmitter）
 
 > **TL;DR**：用 EventEmitter 顶替 `app`、在模块边界换桩，不启动 Electron 也能验证生命周期。
@@ -8,7 +13,7 @@
 
 ## 本仓库的解法
 
-### 2. 主进程单测不启动 Electron：EventEmitter 顶替 + 模块边界打桩
+### 主进程单测不启动 Electron：EventEmitter 顶替 + 模块边界打桩
 
 → 源码：[packages/main/tests/unit/tray-lifecycle.test.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/tests/unit/tray-lifecycle.test.ts)
 

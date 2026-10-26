@@ -1,3 +1,8 @@
+---
+title: 产物冒烟测试（Dist-smoke）
+description: "打包后真实拉起解包产物，等 React `#root` 挂载成功，跑不起来的环境显式跳过。"
+---
+
 # 产物冒烟测试（Dist-smoke）
 
 > **TL;DR**：打包后真实拉起解包产物，等 React `#root` 挂载成功，跑不起来的环境显式跳过。
@@ -11,7 +16,7 @@
 
 ## 本仓库的解法
 
-### 1. 打包链固定串入 postbuild 验真
+### 打包链固定串入 postbuild 验真
 
 → 源码：[scripts/build.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/build.ts)
 
@@ -40,7 +45,7 @@ export function getDistDir(rootDir: string): string {
 
 验真失败时 `scripts/build.ts` 直接 `process.exit(1)`，打包流程不会再往下走；也可以脱离打包单独重跑 `pnpm verify:postbuild`。
 
-### 2. 跨平台发现解包产物
+### 跨平台发现解包产物
 
 `verifyPostbuild` 先用 `detectUnpackedArtifact` 在 dist 下找解包产物与 `app.asar`。Windows 认 `dist/win-unpacked/` 里第一个非 uninstall 的 `.exe`：
 
@@ -80,7 +85,7 @@ if (!artifact) {
 
 `asarPath` 随后交给体积门禁（默认 10MB）使用；门禁本体归安全维度，见[分包与体积门禁（Chunk + Asar）](/security/bundle-budget)，这里只做启动冒烟。
 
-### 3. 宿主与显示守卫：跑不起来就显式跳过
+### 宿主与显示守卫：跑不起来就显式跳过
 
 ```ts
 // 2. 跨平台宿主兼容性守卫：若当前环境无法直接拉起目标二进制（例如 Linux 交叉编译构建了 Windows exe），安全跳过运行时测试
@@ -102,7 +107,7 @@ if (process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND
 
 两道守卫都发生在体积门禁之后：跳过只影响「拉起进程」，体积校验仍然生效。
 
-### 4. 真实拉起产物，断言 #root 挂载
+### 真实拉起产物，断言 #root 挂载
 
 ```ts
 const tempUserDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-smoke-test-'));

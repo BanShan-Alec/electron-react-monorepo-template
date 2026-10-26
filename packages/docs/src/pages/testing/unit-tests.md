@@ -1,3 +1,8 @@
+---
+title: 单元测试（Vitest）
+description: 一套 Vitest 配置按环境变量切分单测与 benchmark 范围，纯逻辑测试直接对边界取值。
+---
+
 # 单元测试（Vitest）
 
 > **TL;DR**：一套 Vitest 配置按环境变量切分单测与 benchmark 范围，纯逻辑测试直接对边界取值。
@@ -10,7 +15,7 @@ Electron 项目做测试，坑大多出在「边界」上：
 
 ## 本仓库的解法
 
-### 1. 单测兜底纯逻辑：一套配置圈定范围
+### 单测兜底纯逻辑：一套配置圈定范围
 
 → 源码：[.config/vitest.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.config/vitest.config.ts)
 
@@ -64,7 +69,7 @@ it('should truncate over-long lines and keep the total length within max', () =>
 
 以「给一个功能补测试」为例，按要验证的东西选层：
 
-1. **纯逻辑**：在对应包建 `tests/unit/xxx.test.ts`（主进程在 `packages/main/tests/unit/`，shared 在 `packages/shared/tests/unit/`），根目录 `pnpm test` 自动收录；依赖 `electron` 的模块照第 2 节打桩，不启动运行时
+1. **纯逻辑**：在对应包建 `tests/unit/xxx.test.ts`（主进程在 `packages/main/tests/unit/`，shared 在 `packages/shared/tests/unit/`），根目录 `pnpm test` 自动收录；依赖 `electron` 的模块照[主进程单元测试（EventEmitter）](/testing/main-process-tests)的打桩手法，不启动运行时
 
 （`electron` 模块的打桩手法见[主进程单元测试（EventEmitter）](/testing/main-process-tests)。）
 

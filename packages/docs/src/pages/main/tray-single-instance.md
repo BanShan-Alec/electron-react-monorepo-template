@@ -1,3 +1,8 @@
+---
+title: 托盘常驻与单实例（Tray + Single-instance）
+description: 单实例锁挡住多开，关闭行为分流到托盘常驻，托盘提供复活与退出入口。
+---
+
 # 托盘常驻与单实例（Tray + Single-instance）
 
 > **TL;DR**：单实例锁挡住多开，关闭行为分流到托盘常驻，托盘提供复活与退出入口。

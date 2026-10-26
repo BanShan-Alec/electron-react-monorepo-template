@@ -1,3 +1,8 @@
+---
+title: 启动预检（Single-instance + Port）
+description: 起服务前先探测存量实例与端口占用，确认后定向清理，非 TTY 环境直接报错。
+---
+
 # 启动预检（Single-instance + Port）
 
 > **TL;DR**：起服务前先探测存量实例与端口占用，确认后定向清理，非 TTY 环境直接报错。
@@ -8,7 +13,7 @@
 
 ## 本仓库的解法
 
-### 3. 启动前预检：先单实例锁，后端口占用
+### 启动前预检：先单实例锁，后端口占用
 
 → 源码：[scripts/instance-guard.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/instance-guard.ts) · [scripts/port-guard.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/port-guard.ts)
 

@@ -1,6 +1,17 @@
+---
+title: 国际化（Lingui）
+description: 源码即 key，中文直写，构建期抽词条、运行时按语种动态加载。
+---
+
 # 国际化（Lingui）
 
 > **TL;DR**：源码即 key，中文直写，构建期抽词条、运行时按语种动态加载。
+
+## 要解决的坑
+
+传统 i18n 方案要求组件里写英文 key、再维护 key 到译文的映射表：写的时候想 key、翻的时候对暗号，key 命名还要防冲突，漏翻与死词条难以发现。
+
+## 本仓库的解法
 
 → 源码：[packages/renderer/lingui.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/lingui.config.ts)
 
@@ -35,6 +46,8 @@ useLingui();
 />
 ```
 
+## 抽词条与翻译
+
 构建期 `pnpm i18n:extract`（根 package.json 里定义为 `lingui extract --clean`）扫描 `src/` 把词条抽进 .po 目录，msgid 就是中文文案本身：
 
 ```po
@@ -44,6 +57,8 @@ msgstr "@app/shared 共享契约单一事实源"
 ```
 
 改了文案等于换了 msgid，旧词条会被 `--clean` 清掉，不会积压死词条；未翻译的条目在 en-US 目录里 msgstr 留空，一眼可见。
+
+## 运行时动态加载
 
 语言包不打进主 Bundle，运行时按需动态激活：
 

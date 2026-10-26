@@ -1,3 +1,8 @@
+---
+title: 源码映射隔离（Source-map）
+description: "生产构建用 `hidden` 模式生成 `.map`，Sentry 上传后删除本地文件，asar 再排除映射与类型声明。"
+---
+
 # 源码映射隔离（Source-map）
 
 > **TL;DR**：生产构建用 `hidden` 模式生成 `.map`，Sentry 上传后删除本地文件，asar 再排除映射与类型声明

@@ -1,3 +1,8 @@
+---
+title: 模块生命周期（ModuleRunner）
+description: "每个系统能力实现只含 `enable()` 的模块，由 ModuleRunner 串成顺序 Promise 链，删一行即整体退场。"
+---
+
 # 模块生命周期（ModuleRunner）
 
 > **TL;DR**：每个系统能力实现只含 `enable()` 的模块，由 ModuleRunner 串成顺序 Promise 链，删一行即整体退场。
@@ -10,7 +15,7 @@ Electron 项目最容易长歪的地方就是组织方式：
 
 ## 本仓库的解法
 
-### 4. 生命周期解耦：ModuleRunner 微内核，原生事件拆成可插拔模块
+### 生命周期解耦：ModuleRunner 微内核，原生事件拆成可插拔模块
 
 → 源码：[packages/main/src/AppModule.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/AppModule.ts)
 

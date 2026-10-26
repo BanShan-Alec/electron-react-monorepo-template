@@ -1,3 +1,8 @@
+---
+title: 远程调试端口（CDP）
+description: 渲染进程 CDP 与主进程断点端口都是配置项，注释一行即关闭对应能力。
+---
+
 # 远程调试端口（CDP）
 
 > **TL;DR**：渲染进程 CDP 与主进程断点端口都是配置项，注释一行即关闭对应能力。
@@ -8,7 +13,7 @@
 
 ## 本仓库的解法
 
-### 4. 调试端口即配置：注释一行开关一个能力
+### 调试端口即配置：注释一行开关一个能力
 
 → 源码：[scripts/dev.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/dev.ts)
 

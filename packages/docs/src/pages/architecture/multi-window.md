@@ -1,3 +1,8 @@
+---
+title: 多窗口入口（MPA）
+description: "home 与 updater 各有独立 `index.html` 入口，主进程只按 URL 或物理路径加载，更新窗口不背主应用的路由与卡片。"
+---
+
 # 多窗口入口（MPA）
 
 > **TL;DR**：home 与 updater 各有独立 `index.html` 入口，主进程只按 URL 或物理路径加载，更新窗口不背主应用的路由与卡片。
@@ -10,7 +15,7 @@ Electron 项目最容易长歪的地方就是组织方式：
 
 ## 本仓库的解法
 
-### 1. 多窗口物理入口：MPA 双入口，更新窗口独立成页
+### 多窗口物理入口：MPA 双入口，更新窗口独立成页
 
 → 源码：[packages/renderer/vite.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/vite.config.ts)
 

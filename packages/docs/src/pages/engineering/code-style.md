@@ -1,3 +1,8 @@
+---
+title: 代码规范与风格（Biome）
+description: "Biome 一份配置接管格式、检查与 import 排序，桶文件、`export *`、循环导入直接报错。"
+---
+
 # 代码规范与风格（Biome）
 
 > **TL;DR**：Biome 一份配置接管格式、检查与 import 排序，桶文件、`export *`、循环导入直接报错
@@ -8,7 +13,7 @@
 
 ## 本仓库的解法
 
-### 5. Biome 单工具：格式、检查、import 排序三合一
+### Biome 单工具：格式、检查、import 排序三合一
 
 → 源码：[.config/biome.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.config/biome.json)
 

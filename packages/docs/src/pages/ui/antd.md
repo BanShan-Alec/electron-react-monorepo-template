@@ -1,3 +1,8 @@
+---
+title: 组件库（Antd）
+description: 五层 Provider 装配与主题算法，颜色令牌交给 antd 官方算法输出。
+---
+
 # 组件库（Antd）
 
 > **TL;DR**：五层 Provider 装配与主题算法，颜色令牌交给 antd 官方算法输出。
