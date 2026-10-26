@@ -15,7 +15,7 @@ Electron 项目最容易长歪的地方就是组织方式：
 
 ## 本仓库的解法
 
-### 3. 组件编写模板：一组件一文件夹 + 固定代码分区
+### 组件编写模板：一组件一文件夹 + 固定代码分区
 
 → 源码：[packages/renderer/src/features/counter/components/CounterCard/index.tsx](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/features/counter/components/CounterCard/index.tsx)
 

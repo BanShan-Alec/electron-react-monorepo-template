@@ -15,7 +15,7 @@ Electron 项目最容易长歪的地方就是组织方式：
 
 ## 本仓库的解法
 
-### 2. 领域驱动组织：features/ 一个域一个目录，删功能就是删目录
+### 领域驱动组织：features/ 一个域一个目录，删功能就是删目录
 
 → 源码：[packages/renderer/src/features/counter/index.tsx](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/features/counter/index.tsx)
 

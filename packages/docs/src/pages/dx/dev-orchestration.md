@@ -18,7 +18,7 @@ Electron 项目的开发回路天生比纯 Web 重：
 
 ## 本仓库的解法
 
-### 1. 一条命令编排三路构建
+### 一条命令编排三路构建
 
 → 源码：[scripts/dev.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/dev.ts)
 
@@ -111,7 +111,7 @@ async writeBundle() {
 
 改哪层就重载哪层：渲染层改动即时生效，preload 改动全量刷新，主进程改动重启应用——语义明确，不假装三样东西都能热更。
 
-### 2. MODE 一个变量切换开发态与生产预览
+### MODE 一个变量切换开发态与生产预览
 
 → 源码：[packages/main/src/env.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/env.ts)
 
@@ -157,7 +157,7 @@ if (!process.env.MODE) {
 }
 ```
 
-### 5. 退出即清场：信号与进程树
+### 退出即清场：信号与进程树
 
 → 源码：[scripts/dev.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/dev.ts) · [scripts/port-guard.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/port-guard.ts)
 
@@ -197,7 +197,7 @@ try {
 } catch {}
 ```
 
-这把锤子在三处复用：终端退出信号清场、主进程重建时杀旧实例（第 1 节的 `writeBundle`）、端口与实例预检时杀占用者（[启动预检（Single-instance + Port）](/dx/startup-preflight)）。反方向也照顾到了——用户正常退出应用时，watch 脚本跟着结束，不留一个空转的终端：
+这把锤子在三处复用：终端退出信号清场、主进程重建时杀旧实例（「一条命令编排三路构建」小节的 `writeBundle`）、端口与实例预检时杀占用者（[启动预检（Single-instance + Port）](/dx/startup-preflight)）。反方向也照顾到了——用户正常退出应用时，watch 脚本跟着结束，不留一个空转的终端：
 
 ```ts
 /** Stops the watch script when the application has been quit */

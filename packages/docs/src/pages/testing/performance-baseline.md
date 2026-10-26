@@ -13,7 +13,7 @@ description: benchmark 单独成套，用同构循环断言单次调用开销上
 
 ## 本仓库的解法
 
-### 5. 性能基线：benchmark 单独成套，默认门禁不跑
+### 性能基线：benchmark 单独成套，默认门禁不跑
 
 → 源码：[packages/main/tests/benchmark/tracer-perf.test.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/tests/benchmark/tracer-perf.test.ts)
 

@@ -16,7 +16,7 @@ description: pnpm workspace + catalog 收拢公共工具链版本，根目录依
 
 ## 本仓库的解法
 
-### 1. pnpm workspace 多包隔离 + catalog 统一版本
+### pnpm workspace 多包隔离 + catalog 统一版本
 
 → 源码：[pnpm-workspace.yaml](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/pnpm-workspace.yaml)
 
@@ -61,7 +61,7 @@ public-hoist-pattern[]=*usb*
 
 `node-linker=isolated` 让没写进 `package.json` 的「幻影依赖」在编译期就报错，唯一的例外是原生二进制包（`usb` 系）按模式提升，保证 `.node` 文件能被 electron-builder 收集到。版本锁定还有一层：根 `package.json` 的 `"packageManager": "pnpm@10.34.5"` 与 `engines` 字段（`node >= 24`、`pnpm ^10`）把「用哪个包管理器、哪个 Node」也固化下来。
 
-### 2. 根目录依赖白名单 + CI 门禁
+### 根目录依赖白名单 + CI 门禁
 
 → 源码：[package.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/package.json)
 

@@ -15,7 +15,7 @@ Electron 项目最容易长歪的地方就是组织方式：
 
 ## 本仓库的解法
 
-### 1. 多窗口物理入口：MPA 双入口，更新窗口独立成页
+### 多窗口物理入口：MPA 双入口，更新窗口独立成页
 
 → 源码：[packages/renderer/vite.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/vite.config.ts)
 

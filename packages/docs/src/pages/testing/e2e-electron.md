@@ -13,7 +13,7 @@ description: "Playwright 官方 `_electron` 拉起真实窗口，worker 级夹�
 
 ## 本仓库的解法
 
-### 3. E2E 真实拉起 Electron：worker 级单次启动 + 隔离用户数据目录
+### E2E 真实拉起 Electron：worker 级单次启动 + 隔离用户数据目录
 
 → 源码：[e2e/helpers/electron.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/e2e/helpers/electron.ts)
 

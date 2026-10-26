@@ -16,7 +16,7 @@ description: 组件分区与中文提交等可判定约定，让人和 AI 写出
 
 ## 本仓库的解法
 
-### 1. 组件固定分区：把「怎么写」变成可复制的顺序
+### 组件固定分区：把「怎么写」变成可复制的顺序
 
 完整模板与分区清单见 [React 组件编写规范（Code-partition + Hooks）](/architecture/react-conventions)，这里只解释它为什么对 AI 有效。
 
@@ -24,13 +24,13 @@ description: 组件分区与中文提交等可判定约定，让人和 AI 写出
 
 规则真源在 `packages/renderer/AGENTS.md` §5「组件书写约定」，模板本体是一组件一文件夹下的 `index.tsx`；两份互为印证，文档站不复制模板正文。
 
-### 2. 中文提交规范：把「写清楚」变成硬校验
+### 中文提交规范：把「写清楚」变成硬校验
 
 完整的 commit 格式、type 枚举与 scope 约定见 [提交信息规范（Commitlint）](/engineering/commit-convention)。这里只保留与 AI 相关的一层：`subject` 必须包含简体中文，这是 `.config/commitlint.config.ts` 里的 `subject-chinese` 自定义插件规则，用 `/[\u4e00-\u9fa5]/` 判定，命中即 error；husky 的 `commit-msg` 钩子执行 commitlint，不合规的提交进不了历史。
 
 为什么值得为 AI 单独强调：提交信息是唯一会长期留存、又被机器消费的意图记录。`changelogen` 按 conventional commit 的 type 分节生成 changelog（`.config/changelog.config.ts` 把 feat / fix / perf / refactor 等映射到不同章节与 semver），`pnpm pr-review create` 则直接取分支首个提交的 subject 当 PR 标题——AI 写对一条 commit，版本记录与 PR 标题都不需要二次加工。
 
-### 3. 可判定：同构来自「机器能说不」
+### 可判定：同构来自「机器能说不」
 
 约定分三层落地，每一层都能给出 pass/fail：
 
@@ -40,7 +40,7 @@ description: 组件分区与中文提交等可判定约定，让人和 AI 写出
 
 对 AI 来说，可判定的意义是可以在提交前自检：跑一遍 `pnpm lint` / `pnpm typecheck` / `pnpm test`，规则通过与否不依赖评审者的口味。反过来，无法判定的「风格偏好」不要写成红线——AI 只能猜，猜错就是返工。
 
-### 4. 引用式：规则只留一个真源
+### 引用式：规则只留一个真源
 
 这一页不复制分区模板与 commit 格式，只解释动机并给出链接。原因和规则本身一致：同一份规则维护两处，改一处漏一处；对 AI 而言，上下文里多一份过时副本，比没有更糟。规则真源在 `packages/renderer/AGENTS.md`、`.config/commitlint.config.ts` 与 `.config/biome.json`，文档站只做索引。
 

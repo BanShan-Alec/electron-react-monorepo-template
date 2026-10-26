@@ -13,7 +13,7 @@ description: commitlint 强制 Conventional Commits，并用自定义规则要�
 
 ## 本仓库的解法
 
-### 6. commitlint 强制 Conventional Commits + 中文描述
+### commitlint 强制 Conventional Commits + 中文描述
 
 → 源码：[.config/commitlint.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.config/commitlint.config.ts)
 

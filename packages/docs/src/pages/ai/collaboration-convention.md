@@ -16,7 +16,7 @@ description: 根 AGENTS.md 放全局红线与任务路由，各包 AGENTS.md 放
 
 ## 本仓库的解法
 
-### 1. 两层 AGENTS.md：根管全局，包管局部
+### 两层 AGENTS.md：根管全局，包管局部
 
 → 源码：[AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/AGENTS.md) · [packages/main/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/AGENTS.md) · [packages/preload/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/AGENTS.md) · [packages/renderer/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/AGENTS.md) · [packages/shared/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/AGENTS.md) · [packages/pr-review/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/pr-review/AGENTS.md)
 
@@ -35,7 +35,7 @@ description: 根 AGENTS.md 放全局红线与任务路由，各包 AGENTS.md 放
 
 四个主包的文件开头都声明同一件事——「本文件是该包规则的唯一真源」，README 不再承载目录树、铁律或 SOP，并回链根 `AGENTS.md`。`@app/pr-review` 从简，只有三条：改本包代码前读 Skill、CLI 入口收敛、`reviews/` 只读不手改。
 
-### 2. 三条全局红线（一句话可判定）
+### 三条全局红线（一句话可判定）
 
 三条红线都写成单句可判定的形式，且各自挂在一个机器检查点上。
 
@@ -99,7 +99,7 @@ const rootDir = findRepoRoot(__dirname);
 
 → 源码：[build/lib/repo-paths.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/lib/repo-paths.ts) · [scripts/verify-prebuild.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/verify-prebuild.ts)
 
-### 3. 任务路由：先读包规则，再查深档
+### 任务路由：先读包规则，再查深档
 
 根 `AGENTS.md` 的任务路由是一张三列表：任务、先读、再查。节选几行（路径相对仓库根目录）：
 
@@ -113,7 +113,7 @@ const rootDir = findRepoRoot(__dirname);
 
 这张表把「AI 该读什么」从临场判断变成查表：新增业务域先去读四包 AGENTS.md，模块装配先读 main 的规则，日志问题先读横切规则。表里的「再查」列只给路径，不复制深档内容——规则与解释各留一处。
 
-### 4. 包级铁律：约束落在具体目录上
+### 包级铁律：约束落在具体目录上
 
 根文件只给底线，目录级约束住在各包 `AGENTS.md` 里，且都能对应到一个可执行的检查：
 
@@ -132,7 +132,7 @@ const rootDir = findRepoRoot(__dirname);
 }
 ```
 
-### 5. 横切规则：`.agents/rules` 按 globs 触发
+### 横切规则：`.agents/rules` 按 globs 触发
 
 不是所有规则都挂在某个包上。`.agents/rules/` 放横切规则，文件头用 globs 声明触发范围；目前一份 `logging-specification.md`，`globs: packages/**/*.{ts,tsx}`，规定落盘日志必须纯英文。根 `AGENTS.md` 只在「指针」与任务路由里引用它，不展开内容。
 

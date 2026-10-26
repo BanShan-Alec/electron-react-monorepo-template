@@ -13,7 +13,7 @@ description: 运行期配置落盘到 userData，zod 校验兜住坏文件与非
 
 ## 本仓库的解法
 
-### 1. schema 定义字段、默认值与更新入参
+### schema 定义字段、默认值与更新入参
 
 → 源码：[packages/shared/src/schemas/config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/schemas/config.ts)
 
@@ -45,7 +45,7 @@ export const DEFAULT_CONFIG: AppConfig = configSchema.parse({});
 
 `configSchema` 的每个字段都带 `.default()`：磁盘文件缺键时由 zod 补齐，不会因为旧版本少写一个字段就整份报废。更新入参单独用 `configBaseSchema.partial()` 表达——字段全可选，但出现即按同一套枚举与类型校验。`DEFAULT_CONFIG` 不手写字面量，而是 `configSchema.parse({})` 的结果，默认值只有 schema 这一处来源。
 
-### 2. 加载期自愈：坏 JSON 与校验失败都重置默认
+### 加载期自愈：坏 JSON 与校验失败都重置默认
 
 → 源码：[packages/main/src/modules/config.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/config.module.ts)
 
@@ -106,7 +106,7 @@ export const DEFAULT_CONFIG: AppConfig = configSchema.parse({});
 
 `new Store<AppConfig>({ cwd: customDir })` 不传 `name`，electron-store 的默认文件名是 `config`，最终落成 userData 下的 `config.json`；重置分支里写死的也是 `config.json`。
 
-### 3. 写入路径：先校验，再整对象落盘
+### 写入路径：先校验，再整对象落盘
 
 ```ts
   public set(partial: Partial<AppConfig>): AppConfig {
@@ -137,7 +137,7 @@ export const DEFAULT_CONFIG: AppConfig = configSchema.parse({});
 
 `persist` 用 `this.store.store = this.config` 整对象写回，顺带清掉磁盘上已废弃的残留键；写失败只落 warn，内存里的新值保留，下一次成功写入会一并落盘。`enable()` 是空实现，模块注释写明原因：electron-store 每次 set 同步原子落盘，无需在 `before-quit` 里再做兜底刷盘。
 
-### 4. 装配顺序与变更副作用
+### 装配顺序与变更副作用
 
 `ConfigStore` 本身就是一个 `AppModule`，在 `initApp` 的模块链里紧跟日志与 Sentry、排在 `createNativeThemeModule()` 之前注册：
 
@@ -176,7 +176,7 @@ export const DEFAULT_CONFIG: AppConfig = configSchema.parse({});
 
 渲染层 `useAppConfig` 挂载时拉 `config.get`，更新走 `config.update`（部分字段），恢复默认走 `config.reset`。
 
-### 5. 临时目录注入让持久化可单测
+### 临时目录注入让持久化可单测
 
 `ConfigStore` 构造函数接受 `customDir`，单测用临时目录建实例，不碰真实 userData（→ 源码：[packages/main/tests/unit/config-store.test.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/tests/unit/config-store.test.ts)）：
 

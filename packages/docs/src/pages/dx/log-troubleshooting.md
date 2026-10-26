@@ -17,7 +17,7 @@ description: 从诊断面板打开日志目录，用 traceId 把渲染层与主�
 
 ## 本仓库的解法
 
-### 1. 渲染层日志：统一用 `logger`，落到 `renderer-<窗口名>.log`
+### 渲染层日志：统一用 `logger`，落到 `renderer-<窗口名>.log`
 
 → 源码：[packages/preload/src/logger.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/src/logger.ts) · [packages/renderer/src/env.d.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/env.d.ts)
 
@@ -29,7 +29,7 @@ logger.info('Document started', { entry: 'home' });
 
 同一条日志有两个去处：DevTools 里能立刻看到回显，磁盘上落进当前窗口的 `renderer-home.log` / `renderer-updater.log`，每行以时间、级别开头，正文带 `[Renderer] [窗口名]` 前缀。`debug` 只在开发态出现，打包版排障看 `info` / `warn` / `error`。双写与 IPC 落盘怎么实现见 [本地日志（Electron-log）](/main/logging)。
 
-### 2. traceId：一次 IPC 调用两端共用同一个 ID
+### traceId：一次 IPC 调用两端共用同一个 ID
 
 → 源码：[packages/renderer/src/lib/ipc.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/lib/ipc.ts) · [packages/main/src/telemetry/tracer.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/telemetry/tracer.ts)
 
@@ -42,7 +42,7 @@ const targetLogger =
 
 于是渲染日志行出现 `[trace_id:...]`，主进程同一条链路写下的日志行带同一个 `[trace_id:... span_id:...]`。排障时拿渲染日志里的 trace_id 去 `main.log` 搜，就能对上主进程侧同一段处理与失败日志。trace 怎么生成、怎么跨进程传播，见 [全链路追踪（W3C-trace）](/main/tracing)。
 
-### 3. 诊断面板：打开目录，认清三个文件
+### 诊断面板：打开目录，认清三个文件
 
 → 源码：[packages/renderer/src/features/logging/hooks/useLogging.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/features/logging/hooks/useLogging.ts) · [packages/main/src/modules/log.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/log.module.ts)
 
@@ -60,7 +60,7 @@ const targetLogger =
 | `renderer-<窗口名>.log` | 渲染层按窗口分文件（`renderer-home.log` / `renderer-updater.log`），含 `[Window Lifecycle]` 窗口分隔行 |
 | `traces.ndjson` | 每个 span 一行 NDJSON，按 `trace_id` 关联调用拓扑 |
 
-### 4. 一次排障的推荐顺序
+### 一次排障的推荐顺序
 
 1. 打开诊断面板 →「打开日志目录」
 2. 在 `renderer-<窗口名>.log` 里按时间与关键词定位失败行；行内带 `[trace_id:...]` 就记下来

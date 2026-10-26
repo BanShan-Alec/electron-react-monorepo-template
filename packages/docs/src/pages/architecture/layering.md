@@ -15,7 +15,7 @@ Electron 项目最容易长歪的地方就是组织方式：
 
 ## 本仓库的解法
 
-### 5. 分层纪律：Controller/Service 分离，业务可脱离 Electron 单测
+### 分层纪律：Controller/Service 分离，业务可脱离 Electron 单测
 
 主进程纵向三层：`controllers/` 通信接入、`services/` 核心业务、`modules/` 系统切片。铁律是依赖只能单向流动 `IPC 事件 → Controller → Service`：Service 方法签名纯数据进出，不出现 `ipcMain`、事件对象，也不向渲染端回发消息。
 

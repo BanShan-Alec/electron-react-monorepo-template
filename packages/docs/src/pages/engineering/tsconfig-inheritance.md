@@ -13,7 +13,7 @@ description: "`@app/tsconfig` 提供 base/node/react 三档，各包 tsconfig �
 
 ## 本仓库的解法
 
-### 3. @app/tsconfig 继承包：编译配置一处定义
+### @app/tsconfig 继承包：编译配置一处定义
 
 → 源码：[packages/tsconfig/package.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/tsconfig/package.json)
 

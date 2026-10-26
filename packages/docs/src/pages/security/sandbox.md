@@ -15,7 +15,7 @@ Electron 的默认配置是「能跑」，不是「防住」：
 
 ## 本仓库的解法
 
-### 1. 渲染进程沙箱：webPreferences 四件套写死
+### 渲染进程沙箱：webPreferences 四件套写死
 
 → 源码：[packages/main/src/modules/window/index.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/index.module.ts)
 

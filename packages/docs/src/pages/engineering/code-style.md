@@ -13,7 +13,7 @@ description: "Biome 一份配置接管格式、检查与 import 排序，桶文�
 
 ## 本仓库的解法
 
-### 5. Biome 单工具：格式、检查、import 排序三合一
+### Biome 单工具：格式、检查、import 排序三合一
 
 → 源码：[.config/biome.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.config/biome.json)
 

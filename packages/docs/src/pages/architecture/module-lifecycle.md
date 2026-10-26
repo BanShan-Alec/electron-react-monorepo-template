@@ -15,7 +15,7 @@ Electron 项目最容易长歪的地方就是组织方式：
 
 ## 本仓库的解法
 
-### 4. 生命周期解耦：ModuleRunner 微内核，原生事件拆成可插拔模块
+### 生命周期解耦：ModuleRunner 微内核，原生事件拆成可插拔模块
 
 → 源码：[packages/main/src/AppModule.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/AppModule.ts)
 
