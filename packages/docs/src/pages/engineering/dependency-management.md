@@ -41,20 +41,28 @@ catalog:
 }
 ```
 
-升级 TypeScript 就是改 `pnpm-workspace.yaml` 一行，所有引用它的包同时生效，不存在「A 包 5.x、B 包 6.x」的版本漂移。多包隔离则由 `.npmrc` 钉死：
+升级 TypeScript 就是改 `pnpm-workspace.yaml` 一行，所有引用它的包同时生效，不存在「A 包 5.x、B 包 6.x」的版本漂移。隔离布局与安装策略同样收在 `pnpm-workspace.yaml`——pnpm 12 起 `.npmrc` 只读 registry 与 auth，其余设置一律走 workspace 文件：
 
-→ 源码：[.npmrc](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.npmrc)
+→ 源码：[pnpm-workspace.yaml](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/pnpm-workspace.yaml)
 
-```ini
-# 隔离布局（pnpm 默认）：放弃 hoisted 扁平化，保留幻影依赖隔离红利。
-node-linker=isolated
-auto-install-peers=true
-# 仅提升原生二进制包（以 .node 相关的组织或包名），普通业务依赖依然 100% 隔离
-public-hoist-pattern[]=@node-usb/*
-public-hoist-pattern[]=*usb*
+```yaml
+nodeLinker: isolated
+autoInstallPeers: true
+publicHoistPattern:
+  - '@node-usb/*'
+  - '*usb*'
+
+minimumReleaseAge: 1440
+
+allowBuilds:
+  '@sentry/cli': true
+  'electron-winstaller': true
+  esbuild: true
+  es5-ext: true
+  vue-demi: true
 ```
 
-`node-linker=isolated` 让没写进 `package.json` 的「幻影依赖」在编译期就报错，唯一的例外是原生二进制包（`usb` 系）按模式提升，保证 `.node` 文件能被 electron-builder 收集到。版本锁定还有一层：根 `package.json` 的 `"packageManager": "pnpm@10.34.5"` 与 `engines` 字段（`node >= 24`、`pnpm ^10`）把「用哪个包管理器、哪个 Node」也固化下来。
+`nodeLinker: isolated` 让没写进 `package.json` 的「幻影依赖」在编译期就报错，唯一的例外是原生二进制包（`usb` 系）按模式提升，保证 `.node` 文件能被 electron-builder 收集到。版本锁定还有一层：根 `package.json` 的 `"packageManager": "pnpm@12.15.0"` 与 `engines` 字段（`node >= 24`、`pnpm ^12`）把「用哪个包管理器、哪个 Node」也固化下来。
 
 ### 2. 根目录依赖白名单 + CI 门禁
 
@@ -93,21 +101,11 @@ lint:
     - run: pnpm run verify:prebuild
 ```
 
-依赖治理还有第三道闸——pnpm 的安装脚本白名单。默认 pnpm 10 会阻止依赖包执行任意生命周期脚本，只放行显式列出的：
+依赖治理还有第三道闸——pnpm 的安装脚本审批。pnpm 12 的 `strictDepBuilds` 默认开启：没列入 `allowBuilds` 却带构建脚本的依赖会直接让安装失败（`ERR_PNPM_IGNORED_BUILDS`），而不是静默跳过——本仓库被「electron 二进制静默缺失」坑过，快速失败正是要的状态。审批清单住在 `pnpm-workspace.yaml`（见上文），新依赖撞错时用 `pnpm ignored-builds` 列出全部待审批包、`pnpm approve-builds <包名>` 逐个审批，决策落回 `allowBuilds`——供应链面上多了一层「知情同意」。
 
-```json
-"pnpm": {
-  "onlyBuiltDependencies": [
-    "@sentry/cli",
-    "electron-winstaller",
-    "esbuild",
-    "es5-ext",
-    "vue-demi"
-  ]
-}
-```
+第四道闸管一个审批管不了的例外：electron 42+ 起 npm 包不带 install 生命周期脚本（二进制惰性下载），全新工作区装完不带 dist，`require('electron')` 直接报错——`allowBuilds` 对它无效，因为根本没有脚本可审批。根 `package.json` 的 postinstall 守卫每次安装后按 `dist/version` 判定，缺失或版本不符时补跑 install.js（命中机器级 zip 缓存约 2 秒）；CI 里由 e2e job 显式执行、守卫跳过：
 
-新依赖想跑 postinstall 脚本，必须在这里显式加名——供应链面上多了一层「知情同意」。
+→ 源码：[scripts/ensure-electron.mjs](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/ensure-electron.mjs)
 
 ### Node 版本与包管理器锁定
 
@@ -124,15 +122,15 @@ catalog 管的是依赖版本，Node 与 pnpm 本身的版本另有一套钉子�
 → 源码：[package.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/package.json)
 
 ```json
-  "packageManager": "pnpm@10.34.5",
+  "packageManager": "pnpm@12.15.0",
   "main": "node_modules/@app/main/dist/index.cjs",
   "engines": {
     "node": ">=24.0.0",
-    "pnpm": "^10.0.0"
+    "pnpm": "^12.0.0"
   },
 ```
 
-`engines` 只声明支持范围（`node >= 24.0.0`、`pnpm ^10.0.0`），真正决定装哪个 pnpm 的是 `packageManager`。CI 里没有单独的 pnpm 安装步骤：composite action 先用 `actions/setup-node@v4` 装 Node 24，再 `corepack enable`，之后 `pnpm` 命令由 corepack 按 `packageManager` 字段拉起对应版本；装依赖固定走 `--frozen-lockfile`，`pnpm-lock.yaml` 与 `package.json` 对不上就直接失败，CI 不会顺手改写锁文件。`COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'` 关掉 corepack 首次下载 pnpm 时的交互确认：
+`engines` 只声明支持范围（`node >= 24.0.0`、`pnpm ^12.0.0`），真正决定装哪个 pnpm 的是 `packageManager`。CI 里没有单独的 pnpm 安装步骤：composite action 先用 `actions/setup-node@v4` 装 Node 24，再 `corepack enable`，之后 `pnpm` 命令由 corepack 按 `packageManager` 字段拉起对应版本；装依赖固定走 `--frozen-lockfile`，`pnpm-lock.yaml` 与 `package.json` 对不上就直接失败，CI 不会顺手改写锁文件。`COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'` 关掉 corepack 首次下载 pnpm 时的交互确认：
 
 → 源码：[.github/actions/setup-env/action.yml](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.github/actions/setup-env/action.yml)
 
@@ -155,12 +153,12 @@ catalog 管的是依赖版本，Node 与 pnpm 本身的版本另有一套钉子�
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 ```
 
-`.npmrc` 首行 `registry=https://registry.npmmirror.com` 固定下载源，其余是前面已经交代的隔离布局。Node 大版本、pnpm 精确版本、下载源都落在仓库里，换机器或换 CI runner 不会装出另一套工具链。
+`.npmrc` 现在只剩 `registry=https://registry.npmmirror.com` 一行固定下载源，隔离布局与审批清单都已迁去 `pnpm-workspace.yaml`。Node 大版本、pnpm 精确版本、下载源都落在仓库里，换机器或换 CI runner 不会装出另一套工具链。
 
 ## 怎么抄
 
-1. **workspace 骨架**：`pnpm-workspace.yaml` 收包、把 typescript/vite 等公共版本放进 `catalog:`，各包一律 `"catalog:"` 引用；`.npmrc` 保持 isolated 布局，确有原生二进制再加 `public-hoist-pattern`
-2. **依赖白名单**：根 `dependencies` 只留装配包，写 `verify-prebuild` 脚本校验，挂进 CI 的 lint job；`pnpm.onlyBuiltDependencies` 按需放行安装脚本
+1. **workspace 骨架**：`pnpm-workspace.yaml` 收包、把 typescript/vite 等公共版本放进 `catalog:`，各包一律 `"catalog:"` 引用；隔离布局（`nodeLinker`）与提升模式（`publicHoistPattern`）也写在同一文件，`.npmrc` 只留 registry
+2. **依赖白名单**：根 `dependencies` 只留装配包，写 `verify-prebuild` 脚本校验，挂进 CI 的 lint job；`allowBuilds` 按需放行安装脚本，撞 `ERR_PNPM_IGNORED_BUILDS` 时用 `pnpm approve-builds` 审批；electron 二进制用 postinstall 守卫兜底
 
 注意点：
 
