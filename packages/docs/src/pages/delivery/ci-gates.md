@@ -1,4 +1,4 @@
-# CI 并行门禁（GitHub Actions）
+# CI 并行门禁（GitHub-Actions）
 
 > **TL;DR**：typecheck / lint / test / e2e / docs 五路并行，lint 顺带跑 `verify:prebuild` 做打包前静态拦截
 
@@ -58,7 +58,7 @@ const illegalRootDeps = rootDeps.filter((dep) => !allowedRootDeps.includes(dep))
 - **门禁**：build 脚本固定 prebuild → build → postbuild 三段。prebuild 只做静态规则（name 规范、依赖边界）
 - **CI 与发版**：typecheck / lint / test / e2e / docs 五个 required check 并行，公共环境收敛成 composite action
 
-postbuild 产物验真见 [产物冒烟测试（dist 启动验证）](/testing/artifact-smoke)。
+postbuild 产物验真见 [产物冒烟测试（Dist-smoke）](/testing/artifact-smoke)。
 
 注意点：
 

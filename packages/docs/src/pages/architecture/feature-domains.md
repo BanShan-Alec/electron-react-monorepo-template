@@ -1,4 +1,4 @@
-# 功能域组织（features 目录）
+# 功能域组织（Features）
 
 > **TL;DR**：渲染层一个业务域一个自包含目录，域间禁止互相 import，删功能就是删目录。
 
@@ -74,7 +74,7 @@ features/counter/
 
 ## 怎么抄
 
-承接[分层架构（Controller/Service）](/architecture/layering)的第 1–4 步，本页是渲染层与上架的后续步骤：
+承接[分层架构（Controller / Service）](/architecture/layering)的第 1–4 步，本页是渲染层与上架的后续步骤：
 
 5. **renderer 建域目录**：`features/<domain>/`（`index.tsx` + `hooks/` + `components/`），IPC 请求走 `lib/ipc.ts` 请求层
 6. **上架**：主窗口域在 `App.tsx` 路由或 dashboard 加一行；独立窗口域再加一个 MPA 入口与窗口模块

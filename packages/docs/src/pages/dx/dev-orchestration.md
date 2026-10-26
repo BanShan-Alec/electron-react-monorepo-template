@@ -1,4 +1,4 @@
-# 开发编排（Vite + Electron 双进程）
+# 开发编排（Vite + Electron）
 
 > **TL;DR**：一条命令串起渲染 dev server、preload 与主进程 watch 构建，用 MODE 切换开发态与生产预览，退出时按进程树清场。
 
@@ -24,7 +24,7 @@ Electron 项目的开发回路天生比纯 Web 重：
 "start:dist": "cross-env MODE=production tsx scripts/dev.ts",
 ```
 
-编排逻辑全部在 `scripts/dev.ts`，顺序固定——先排障（见 [启动预检（单实例与端口）](/dx/startup-preflight)），再起服务，最后挂两个 watch 构建：
+编排逻辑全部在 `scripts/dev.ts`，顺序固定——先排障（见 [启动预检（Single-instance + Port）](/dx/startup-preflight)），再起服务，最后挂两个 watch 构建：
 
 ```ts
 async function startDevServer(): Promise<void> {
@@ -192,7 +192,7 @@ try {
 } catch {}
 ```
 
-这把锤子在三处复用：终端退出信号清场、主进程重建时杀旧实例（第 1 节的 `writeBundle`）、端口与实例预检时杀占用者（[启动预检（单实例与端口）](/dx/startup-preflight)）。反方向也照顾到了——用户正常退出应用时，watch 脚本跟着结束，不留一个空转的终端：
+这把锤子在三处复用：终端退出信号清场、主进程重建时杀旧实例（第 1 节的 `writeBundle`）、端口与实例预检时杀占用者（[启动预检（Single-instance + Port）](/dx/startup-preflight)）。反方向也照顾到了——用户正常退出应用时，watch 脚本跟着结束，不留一个空转的终端：
 
 ```ts
 /** Stops the watch script when the application has been quit */

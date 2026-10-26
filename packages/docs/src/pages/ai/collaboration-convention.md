@@ -1,4 +1,4 @@
-# AI 协作者约定（AGENTS.md 分层与红线）
+# AI 协作者约定（Agents.md）
 
 > **TL;DR**：根 AGENTS.md 放全局红线与任务路由，各包 AGENTS.md 放本包铁律，AI 进场先读规则再动手。
 

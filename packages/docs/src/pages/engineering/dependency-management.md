@@ -1,4 +1,4 @@
-# 依赖管理（monorepo）
+# 依赖管理（Monorepo）
 
 > **TL;DR**：pnpm workspace + catalog 收拢公共工具链版本，根目录依赖白名单由 CI 门禁守住，Node 与 pnpm 版本一并钉死
 

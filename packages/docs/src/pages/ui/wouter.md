@@ -1,4 +1,4 @@
-# 路由（wouter）
+# 路由（Wouter）
 
 > **TL;DR**：hash 路由适配 `file://`，根路径与未知路径统一收敛。
 
@@ -47,7 +47,7 @@ function NavigationLogger() {
 }
 ```
 
-「崩溃前用户翻到过哪页」是定位问题的关键线索，主进程看不到这条线——这里的 `logger` 是 preload 暴露的全局日志桥（见[本地日志（electron-log）](/main/logging)）。
+「崩溃前用户翻到过哪页」是定位问题的关键线索，主进程看不到这条线——这里的 `logger` 是 preload 暴露的全局日志桥（见[本地日志（Electron-log）](/main/logging)）。
 
 ## 怎么抄
 

@@ -1,4 +1,4 @@
-# 全链路追踪（W3C trace）
+# 全链路追踪（W3C-trace）
 
 > **TL;DR**：W3C traceparent 从 preload 贯穿主进程，日志前缀、`traces.ndjson` 与 `Result.traceId` 三个出口串起两端。
 
@@ -107,7 +107,7 @@ const enrichedResult = {
 
 ## 怎么抄
 
-- **主进程交互**：走 [contracts.md](/security/ipc-contract) 的四步流程；经 `handleTraced` 注册的 IPC 自动获得 span、日志 trace 前缀与 `Result.traceId`，可观测性免费带
+- **主进程交互**：走 [类型安全的 IPC 契约（Zod + ContextBridge）](/security/ipc-contract) 的四步流程；经 `handleTraced` 注册的 IPC 自动获得 span、日志 trace 前缀与 `Result.traceId`，可观测性免费带
 - 跨端串线索用 traceId 或直接看 `traces.ndjson`
 
 注意点：

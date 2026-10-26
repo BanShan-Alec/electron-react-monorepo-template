@@ -1,4 +1,4 @@
-# 应用更新（electron-updater）
+# 应用更新（Electron-updater）
 
 > **TL;DR**：关掉自动下载与自动安装，改由快照状态机 + IPC 推送 + 孤儿下载看门狗推进
 
@@ -61,7 +61,7 @@ public startOrphanWatchdog(timeoutMs = ORPHAN_WATCHDOG_TIMEOUT_MS): void {
 
 - **升级与 AI 评审**：electron-updater 关 `autoDownload` / `autoInstallOnAppQuit`，包一层状态机 + IPC 推送 + 孤儿看门狗
 
-AI 评审部分见 [AI 评审闭环（OpenCodeReview + pr-review）](/ai/review-loop)。
+AI 评审部分见 [AI 评审闭环（Open-code-review）](/ai/review-loop)。
 
 注意点：
 

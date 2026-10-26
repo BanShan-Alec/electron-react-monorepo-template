@@ -39,7 +39,7 @@ export default defineConfig({
 
 单测跑在 `node` 环境（不引 jsdom），`packages/**/tests/**` 全量收录；benchmark 与 `@app/pr-review` 在 exclude 里点名排除，各自单独触发。配置文件放在 `.config/` 而非根目录，`root` 由 `findRepoRoot` 从配置文件自身位置向上推导，不依赖启动时的工作目录。
 
-（benchmark 的单独触发方式见[性能基线（Vitest benchmark）](/testing/performance-baseline)。）
+（benchmark 的单独触发方式见[性能基线（Benchmark）](/testing/performance-baseline)。）
 
 纯逻辑测试直接对边界取值，以渲染日志行截断为例：
 
@@ -66,7 +66,7 @@ it('should truncate over-long lines and keep the total length within max', () =>
 
 1. **纯逻辑**：在对应包建 `tests/unit/xxx.test.ts`（主进程在 `packages/main/tests/unit/`，shared 在 `packages/shared/tests/unit/`），根目录 `pnpm test` 自动收录；依赖 `electron` 的模块照第 2 节打桩，不启动运行时
 
-（`electron` 模块的打桩手法见[主进程单元测试（EventEmitter 打桩）](/testing/main-process-tests)。）
+（`electron` 模块的打桩手法见[主进程单元测试（EventEmitter）](/testing/main-process-tests)。）
 
 注意点：
 

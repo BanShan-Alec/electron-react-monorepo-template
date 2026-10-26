@@ -1,4 +1,4 @@
-# 托盘常驻与单实例（Tray + 单实例锁）
+# 托盘常驻与单实例（Tray + Single-instance）
 
 > **TL;DR**：单实例锁挡住多开，关闭行为分流到托盘常驻，托盘提供复活与退出入口。
 
@@ -58,7 +58,7 @@ browserWindow.on('close', () => {
 
 `minimizeToTray` 默认 `true`（→ 源码：[packages/shared/src/schemas/config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/schemas/config.ts)）；不拦截 close 事件而是让窗口自然销毁，内存彻底释放，比 `hide()` 常驻更干净。即便不开托盘常驻，更新正在下载时也会退守后台并弹系统通知，孤儿进程有 watchdog 收尾。
 
-这项偏好的加载、校验与落盘见 [配置持久化（electron-store）](/main/config-persistence)。
+这项偏好的加载、校验与落盘见 [配置持久化（Electron-store）](/main/config-persistence)。
 
 托盘补上「复活入口」：单击唤起/重建主窗口，右键菜单双语（主进程用不了 Lingui，文案在 `updateLanguage` 里按 zh-CN 分支手写）：
 

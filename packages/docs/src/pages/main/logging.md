@@ -1,4 +1,4 @@
-# 本地日志（electron-log）
+# 本地日志（Electron-log）
 
 > **TL;DR**：主进程、每个渲染窗口、遥测拓扑分文件落盘并独立轮转，作用域前缀与渲染层日志桥双写。
 
@@ -74,7 +74,7 @@ void ipcRenderer.invoke(IPC_CHANNELS.DIAGNOSTICS_LOG, payload).catch(() => {
 
 渲染日志进主进程前还有滑窗节流：每调用方每秒最多 50 条准入，超限静默丢弃并汇总一条告警，防止失控的渲染循环刷爆磁盘（→ 源码：[packages/main/src/services/diagnostics.service.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/services/diagnostics.service.ts)）。
 
-日志行里的 trace 前缀与 `traces.ndjson` 里的 span 记录由 [全链路追踪（W3C trace）](/main/tracing) 提供。
+日志行里的 trace 前缀与 `traces.ndjson` 里的 span 记录由 [全链路追踪（W3C-trace）](/main/tracing) 提供。
 
 ## 怎么抄
 

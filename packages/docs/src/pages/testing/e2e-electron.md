@@ -51,7 +51,7 @@ await page.waitForLoadState('domcontentloaded');
 
 每次启动都建独立的临时 user-data-dir：规避 Electron 单例锁冲突；持久化类用例显式传入目录即可复用，测「同一 userData 重启恢复窗口」——目录是否随用例清理由 `shouldCleanupUserData` 决定，自建目录默认删除、外部传入默认保留。启动参数带 `--disable-gpu` 等降级项，`MODE=test` 注入测试环境。
 
-（源码第 4 步的 shell 安全桩见[端到端断言策略（shell 打桩 + 容差）](/testing/e2e-assertions)。）
+（源码第 4 步的 shell 安全桩见[端到端断言策略（Shell-stub + Tolerance）](/testing/e2e-assertions)。）
 
 启动逻辑收敛成一个 worker 级夹具：
 

@@ -1,4 +1,4 @@
-# 产物冒烟测试（dist 启动验证）
+# 产物冒烟测试（Dist-smoke）
 
 > **TL;DR**：打包后真实拉起解包产物，等 React `#root` 挂载成功，跑不起来的环境显式跳过。
 
@@ -78,7 +78,7 @@ if (!artifact) {
 }
 ```
 
-`asarPath` 随后交给体积门禁（默认 10MB）使用；门禁本体归安全维度，见[分包与体积门禁（asar 硬门禁）](/security/bundle-budget)，这里只做启动冒烟。
+`asarPath` 随后交给体积门禁（默认 10MB）使用；门禁本体归安全维度，见[分包与体积门禁（Chunk + Asar）](/security/bundle-budget)，这里只做启动冒烟。
 
 ### 3. 宿主与显示守卫：跑不起来就显式跳过
 
@@ -148,7 +148,7 @@ try {
 1. 打包统一走 `scripts/build.ts`（`build:dir` / `build:win` / `build:mac` / `build:linux`），让 postbuild 默认执行；不要绕过它直接调 electron-builder
 2. 单独重跑用 `pnpm verify:postbuild`，先确认 `dist/` 里已有解包产物，否则脚本直接抛错
 3. 冒烟只锁「产物能启动 + `#root` 挂载」；交互与协议行为交给[端到端测试（Playwright）](/testing/e2e-electron)
-4. 交叉编译或无显示环境用平台 / DISPLAY 守卫显式跳过启动，跳过前体积门禁已经跑过（见[分包与体积门禁（asar 硬门禁）](/security/bundle-budget)）
+4. 交叉编译或无显示环境用平台 / DISPLAY 守卫显式跳过启动，跳过前体积门禁已经跑过（见[分包与体积门禁（Chunk + Asar）](/security/bundle-budget)）
 
 注意点：
 

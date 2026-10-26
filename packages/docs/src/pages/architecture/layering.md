@@ -1,4 +1,4 @@
-# 分层架构（Controller/Service）
+# 分层架构（Controller / Service）
 
 > **TL;DR**：IPC 事件只进 Controller，业务住 Service，纯逻辑服务不 import Electron，可在 node 环境直接单测。
 
@@ -93,12 +93,12 @@ export function classifyUpdaterError(err: unknown, fallback: ErrorCodeType): Err
 
 以新增一个业务域（如 counter）为例，六步：
 
-本页覆盖第 1–4 步，渲染层与上架步骤见[功能域组织（features 目录）](/architecture/feature-domains)。
+本页覆盖第 1–4 步，渲染层与上架步骤见[功能域组织（Features）](/architecture/feature-domains)。
 
-1. **shared 定义契约**：`IPC_CHANNELS` 加通道、zod schema、返回类型（详见[类型安全的跨进程契约](/security/ipc-contract)一文）
+1. **shared 定义契约**：`IPC_CHANNELS` 加通道、zod schema、返回类型（详见[类型安全的 IPC 契约（Zod + ContextBridge）](/security/ipc-contract)一文）
 2. **main 写 Service**：`services/<domain>.service.ts` 纯业务逻辑，单例导出
 3. **main 写 Controller**：`controllers/<domain>.controller.ts` 经 `handleTraced` 注册，safeParse 校验、`Result<T>` 包装；`controllers/index.ts` 登记一行
-4. **preload 加白名单**：`apiBridge` 加方法（详见[类型安全的跨进程契约](/security/ipc-contract)一文）
+4. **preload 加白名单**：`apiBridge` 加方法（详见[类型安全的 IPC 契约（Zod + ContextBridge）](/security/ipc-contract)一文）
 
 注意点：
 

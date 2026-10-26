@@ -56,7 +56,7 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
 
 ### 2. 挂在 Provider 之内，兜底 UI 直接用 antd 与 Lingui
 
-边界在 `AppProviders` 里挂在 `AntdApp` 与 `ConfigProvider` 之内，再往上是 `StyleProvider`、`I18nProvider`（见[组件库（antd）](/ui/antd)）。位置决定能力：`FallbackView` 里的 `Empty`、`Button` 能拿到 antd 主题与语言包，`t\`页面出错啦~\`` 能拿到 Lingui 实例。
+边界在 `AppProviders` 里挂在 `AntdApp` 与 `ConfigProvider` 之内，再往上是 `StyleProvider`、`I18nProvider`（见[组件库（Antd）](/ui/antd)）。位置决定能力：`FallbackView` 里的 `Empty`、`Button` 能拿到 antd 主题与语言包，`t\`页面出错啦~\`` 能拿到 Lingui 实例。
 
 ```tsx
         <ConfigProvider
@@ -70,7 +70,7 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
         </ConfigProvider>
 ```
 
-边界包住的是 `AppProviders` 的 `children`，即 `Router` 与整棵 `App` 树（见[路由（wouter）](/ui/wouter)）。
+边界包住的是 `AppProviders` 的 `children`，即 `Router` 与整棵 `App` 树（见[路由（Wouter）](/ui/wouter)）。
 
 ### 3. 三路上报：Sentry、落盘日志、业务回调
 
@@ -143,7 +143,7 @@ function FallbackView({ error, resetError }: IFallbackProps) {
 }
 ```
 
-「刷新重试」先调 `resetError()` 重挂子树，再给当前 URL 加上 `skip_animation=1` 后 `location.replace`——启动协调器读到这个参数会直接放行动画门禁（见[首屏体验（启动编排）](/ui/first-screen)），重载不再重放 Logo 动画。
+「刷新重试」先调 `resetError()` 重挂子树，再给当前 URL 加上 `skip_animation=1` 后 `location.replace`——启动协调器读到这个参数会直接放行动画门禁（见[首屏体验（Startup-orchestration）](/ui/first-screen)），重载不再重放 Logo 动画。
 
 ### 5. 与主进程异常兜底的分工
 

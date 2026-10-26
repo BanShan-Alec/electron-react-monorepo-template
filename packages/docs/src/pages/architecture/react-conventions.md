@@ -1,4 +1,4 @@
-# React 组件编写规范（代码分区与 hooks 约定）
+# React 组件编写规范（Code-partition + Hooks）
 
 > **TL;DR**：组件与 hook 共用一套分区注释，状态与 IPC 副作用收在 hook，展示组件只收 props 与回调。
 
@@ -12,7 +12,7 @@ Electron 项目最容易长歪的地方就是组织方式：
 
 分区顺序固定：私有常量 → 可抽离函数 → 变量解构 → 组件状态 → 网络IO → 数据转换 → 逻辑函数 → Effect → 渲染，之后是 props 类型定义，最后 memo 加双导出。分区注释留在文件里，暂空的分区也不删——读任何组件都是同一套自上而下的叙事，人和 AI 写出来的东西趋同。hook 文件不是组件，保持扁平 `useCounter.ts`，内部同样带这套分区注释。
 
-目录与组件壳体的约定见[组件目录结构（一组件一文件夹）](/architecture/component-structure)；本页只看文件内部怎么写。
+目录与组件壳体的约定见[组件目录结构（Component-folder）](/architecture/component-structure)；本页只看文件内部怎么写。
 
 ### 分区注释按 hook 的实际内容裁剪
 

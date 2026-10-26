@@ -1,4 +1,4 @@
-# 首屏体验（启动编排）
+# 首屏体验（Startup-orchestration）
 
 > **TL;DR**：动画、React 首帧、主进程就绪三路门禁，齐备才揭幕。
 

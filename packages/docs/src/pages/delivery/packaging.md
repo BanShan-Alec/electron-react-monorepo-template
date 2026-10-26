@@ -1,4 +1,4 @@
-# 应用打包（electron-builder）
+# 应用打包（Electron-builder）
 
 > **TL;DR**：electron-builder 用 TypeScript 写配置，应用身份收敛到根 `package.json`，三平台 target 由同一 CLI 入口分发
 

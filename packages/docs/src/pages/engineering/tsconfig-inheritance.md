@@ -1,4 +1,4 @@
-# 编译配置继承（tsconfig）
+# 编译配置继承（Tsconfig）
 
 > **TL;DR**：`@app/tsconfig` 提供 base/node/react 三档，各包 tsconfig 只剩 extends 与 include
 

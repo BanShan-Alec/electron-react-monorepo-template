@@ -51,4 +51,4 @@ function buildElectronArgs(): string[] {
 }
 ```
 
-效果：`pnpm start` 起来后终端直接打印 CDP endpoint，Chrome 打开 `chrome://inspect` 即可连接渲染进程断点、看 Performance 面板；要调主进程，取消 `mainInspectPort` 的注释即以 `--inspect-brk` 启动。注释掉一个属性，命令行参数、启动日志、启动前的端口预检（[启动预检（单实例与端口）](/dx/startup-preflight) 里 `ensurePortsAvailable` 会自动过滤未配置端口）三处一起联动，不存在第二处要同步的开关。
+效果：`pnpm start` 起来后终端直接打印 CDP endpoint，Chrome 打开 `chrome://inspect` 即可连接渲染进程断点、看 Performance 面板；要调主进程，取消 `mainInspectPort` 的注释即以 `--inspect-brk` 启动。注释掉一个属性，命令行参数、启动日志、启动前的端口预检（[启动预检（Single-instance + Port）](/dx/startup-preflight) 里 `ensurePortsAvailable` 会自动过滤未配置端口）三处一起联动，不存在第二处要同步的开关。

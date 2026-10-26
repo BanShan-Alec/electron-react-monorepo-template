@@ -1,8 +1,8 @@
-# 日志与链路排查（用法视角）
+# 日志与链路排查（Usage）
 
 > **TL;DR**：从诊断面板打开日志目录，用 traceId 把渲染层与主进程的日志串成一条链路。
 
-排障时最怕的不是没有日志，而是渲染层、主进程各写各的，出事以后对不上号。这一页只讲用法：一次操作留下哪些痕迹、出了问题按什么顺序把两端日志串起来。落盘与追踪的实现机制分别见 [本地日志（electron-log）](/main/logging) 与 [全链路追踪（W3C trace）](/main/tracing)。
+排障时最怕的不是没有日志，而是渲染层、主进程各写各的，出事以后对不上号。这一页只讲用法：一次操作留下哪些痕迹、出了问题按什么顺序把两端日志串起来。落盘与追踪的实现机制分别见 [本地日志（Electron-log）](/main/logging) 与 [全链路追踪（W3C-trace）](/main/tracing)。
 
 ## 要解决的坑
 
@@ -22,7 +22,7 @@
 logger.info('Document started', { entry: 'home' });
 ```
 
-同一条日志有两个去处：DevTools 里能立刻看到回显，磁盘上落进当前窗口的 `renderer-home.log` / `renderer-updater.log`，每行以时间、级别开头，正文带 `[Renderer] [窗口名]` 前缀。`debug` 只在开发态出现，打包版排障看 `info` / `warn` / `error`。双写与 IPC 落盘怎么实现见 [本地日志（electron-log）](/main/logging)。
+同一条日志有两个去处：DevTools 里能立刻看到回显，磁盘上落进当前窗口的 `renderer-home.log` / `renderer-updater.log`，每行以时间、级别开头，正文带 `[Renderer] [窗口名]` 前缀。`debug` 只在开发态出现，打包版排障看 `info` / `warn` / `error`。双写与 IPC 落盘怎么实现见 [本地日志（Electron-log）](/main/logging)。
 
 ### 2. traceId：一次 IPC 调用两端共用同一个 ID
 
@@ -35,7 +35,7 @@ const targetLogger =
   traceId && typeof logger.withTrace === 'function' ? logger.withTrace(traceId) : logger;
 ```
 
-于是渲染日志行出现 `[trace_id:...]`，主进程同一条链路写下的日志行带同一个 `[trace_id:... span_id:...]`。排障时拿渲染日志里的 trace_id 去 `main.log` 搜，就能对上主进程侧同一段处理与失败日志。trace 怎么生成、怎么跨进程传播，见 [全链路追踪（W3C trace）](/main/tracing)。
+于是渲染日志行出现 `[trace_id:...]`，主进程同一条链路写下的日志行带同一个 `[trace_id:... span_id:...]`。排障时拿渲染日志里的 trace_id 去 `main.log` 搜，就能对上主进程侧同一段处理与失败日志。trace 怎么生成、怎么跨进程传播，见 [全链路追踪（W3C-trace）](/main/tracing)。
 
 ### 3. 诊断面板：打开目录，认清三个文件
 
@@ -60,7 +60,7 @@ const targetLogger =
 1. 打开诊断面板 →「打开日志目录」
 2. 在 `renderer-<窗口名>.log` 里按时间与关键词定位失败行；行内带 `[trace_id:...]` 就记下来
 3. 用同一个 trace_id 搜 `main.log`，对照主进程侧的 IPC 失败与异常行
-4. 需要完整调用拓扑时，在 `traces.ndjson` 里按 trace_id 查 span（字段见 [全链路追踪（W3C trace）](/main/tracing)）
+4. 需要完整调用拓扑时，在 `traces.ndjson` 里按 trace_id 查 span（字段见 [全链路追踪（W3C-trace）](/main/tracing)）
 5. 开发态还可以直接看 DevTools 里的同一条回显；打包版排障则以落盘文件为准
 
 ## 怎么抄
@@ -69,4 +69,4 @@ const targetLogger =
 - 失败路径把 `callIpc` 抛出的 `IpcError.traceId` 带进日志（`logger.withTrace(traceId)`，或在最后一个参数附 `{ __trace_id: traceId }`），否则两端日志对不上
 - 诊断入口保留「打开日志目录」和「发送测试日志」两个动作，排障第一步不用记路径
 - 多窗口按窗口名分文件，不要让所有窗口挤进同一个文件
-- 日志突然变少，先在 `main.log` 搜 `Dropped N renderer log line(s)`；渲染日志的超长行会带 `[truncated N chars]` 标记，不是日志丢了（阈值见 [本地日志（electron-log）](/main/logging)）
+- 日志突然变少，先在 `main.log` 搜 `Dropped N renderer log line(s)`；渲染日志的超长行会带 `[truncated N chars]` 标记，不是日志丢了（阈值见 [本地日志（Electron-log）](/main/logging)）

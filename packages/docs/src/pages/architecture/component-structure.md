@@ -1,4 +1,4 @@
-# 组件目录结构（一组件一文件夹）
+# 组件目录结构（Component-folder）
 
 > **TL;DR**：组件一律 `Xxx/index.tsx`，组件私有的 hook、lib、样式住同一文件夹，目录即组件边界。
 
@@ -52,7 +52,7 @@ export { CounterCard };
 export default CounterCard;
 ```
 
-文件内部的分区顺序见 [React 组件编写规范（代码分区与 hooks 约定）](/architecture/react-conventions)，本页只看目录。
+文件内部的分区顺序见 [React 组件编写规范（Code-partition + Hooks）](/architecture/react-conventions)，本页只看目录。
 
 一组件一文件夹是标准形态，不存在扁平的 `Xxx.tsx` 组件文件：
 
