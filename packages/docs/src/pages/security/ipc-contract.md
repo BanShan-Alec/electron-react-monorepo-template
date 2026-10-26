@@ -1,4 +1,4 @@
-# 类型安全的跨进程契约
+# 类型安全的 IPC 契约（zod + contextBridge）
 
 ## 要解决的坑
 

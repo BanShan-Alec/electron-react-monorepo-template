@@ -2,16 +2,17 @@
 
 常见坑位的发版级解法目录——每个解法都能在本仓库找到经过发版验证的真实实现，按维度浏览、照代码抄作业。
 
-## 八个维度
+## 九个维度
 
-- [工程化基座](/engineering)：Monorepo 治理 · 依赖边界 · 配置继承 · 环境变量 · Biome · 提交规范
-- [类型安全的跨进程契约](/contracts)：通道常量 · Result&lt;T&gt; · zod 校验 · contextBridge 白名单
-- [开发体验](/dx)：双进程热重载 · 端口预检 · CDP 调试 · 进程树清理
-- [架构组织](/architecture)：MPA 多入口 · features 分域 · ModuleRunner · Controller/Service
-- [应用基础设施](/infrastructure)：antd + Tailwind + Lingui · 追踪与日志 · 托盘与单实例 · WCO 标题栏
-- [安全与性能防御](/security)：沙箱 · CSP 与外链白名单 · 路径稳健 · asar 体积门禁
-- [测试矩阵](/testing)：Vitest 单测 · Playwright E2E · 性能基线
-- [交付门禁与 AI 协同](/delivery)：动态打包 · 产物验证 · CI 门禁 · 差分热更新 · AI 评审
+- [工程化基座](/engineering)：依赖与工具链版本锁定 · 环境变量与编译配置 · 代码与提交规范
+- [开发体验](/dx)：双进程开发编排 · 启动预检 · CDP 调试 · 日志与链路排查
+- [架构组织](/architecture)：多窗口入口 · 功能域与组件规范 · 模块生命周期 · 分层架构
+- [界面与交互](/ui)：antd · Tailwind · Lingui · wouter · zustand · 错误边界 · 首屏体验 · WCO
+- [主进程运行时](/main)：全链路追踪 · 本地日志 · 崩溃上报 · 托盘与单实例 · 配置持久化
+- [安全与性能](/security)：沙箱 · CSP · 路径稳健性 · 分包与体积门禁 · IPC 契约
+- [测试矩阵](/testing)：单元测试 · 主进程单测 · E2E 与断言策略 · 性能基线 · 产物冒烟
+- [交付门禁](/delivery)：应用打包 · SourceMap 隔离 · CI 并行门禁 · 应用更新 · 发版流水线
+- [AI 协同](/ai)：AI 评审闭环 · 协作者约定 · AI 友好代码约定
 
 ## 这是什么
 
