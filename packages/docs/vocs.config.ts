@@ -6,8 +6,6 @@ export default defineConfig({
   basePath: '/electron-react-monorepo-template/',
   title: 'Electron 解决方案合集',
   description: '常见 Electron 坑位的解法目录：每个解法都有本仓库经过发版验证的真实实现可抄',
-  // 品牌双值（浅色 Claude clay / 深色 Paseo 绿），Vocs 运行时据此派生整套 accent 阶梯
-  accentColor: 'light-dark(#BA5B37, #7CCBA0)',
   // 默认 dynamic 是 Node 服务形态；GitHub Pages 纯静态托管必须显式 full-static
   renderStrategy: 'full-static',
   socials: [
@@ -16,16 +14,120 @@ export default defineConfig({
       link: 'https://github.com/BanShan-Alec/electron-react-monorepo-template',
     },
   ],
+  // 维度重组后的旧 URL 重定向（contracts 并入安全与性能；infrastructure 拆为界面与交互、主进程运行时）
+  redirects: [
+    { source: '/contracts', destination: '/security/ipc-contract', status: 301 },
+    { source: '/infrastructure', destination: '/ui/antd', status: 301 },
+  ],
   sidebar: {
     '/': [
-      { text: '工程化基座', link: '/engineering' },
-      { text: '类型安全的跨进程契约', link: '/contracts', badge: '试点' },
-      { text: '开发体验', link: '/dx' },
-      { text: '架构组织', link: '/architecture' },
-      { text: '应用基础设施', link: '/infrastructure' },
-      { text: '安全与性能防御', link: '/security' },
-      { text: '测试矩阵', link: '/testing' },
-      { text: '交付门禁与 AI 协同', link: '/delivery' },
+      {
+        text: '工程化基座',
+        collapsed: true,
+        items: [
+          { text: '依赖管理（Monorepo）', link: '/engineering/dependency-management' },
+          { text: '环境变量管理（Dotenv）', link: '/engineering/env-vars' },
+          { text: '编译配置继承（Tsconfig）', link: '/engineering/tsconfig-inheritance' },
+          { text: '代码规范与风格（Biome）', link: '/engineering/code-style' },
+          { text: '提交信息规范（Commitlint）', link: '/engineering/commit-convention' },
+        ],
+      },
+      {
+        text: '开发体验',
+        collapsed: true,
+        items: [
+          { text: '开发编排（Vite + Electron）', link: '/dx/dev-orchestration' },
+          { text: '启动预检（Single-instance + Port）', link: '/dx/startup-preflight' },
+          { text: '远程调试端口（CDP）', link: '/dx/debug-port' },
+          { text: '日志与链路排查（Usage）', link: '/dx/log-troubleshooting' },
+        ],
+      },
+      {
+        text: '架构组织',
+        collapsed: true,
+        items: [
+          { text: '多窗口入口（MPA）', link: '/architecture/multi-window' },
+          { text: '功能域组织（Features）', link: '/architecture/feature-domains' },
+          { text: '组件目录结构（Component-folder）', link: '/architecture/component-structure' },
+          {
+            text: 'React 组件编写规范（Code-partition + Hooks）',
+            link: '/architecture/react-conventions',
+          },
+          { text: '模块生命周期（ModuleRunner）', link: '/architecture/module-lifecycle' },
+          { text: '分层架构（Controller / Service）', link: '/architecture/layering' },
+        ],
+      },
+      {
+        text: '界面与交互',
+        collapsed: true,
+        items: [
+          { text: '组件库（Antd）', link: '/ui/antd' },
+          { text: '样式与令牌（Tailwind-CSS）', link: '/ui/tailwind' },
+          { text: '国际化（Lingui）', link: '/ui/lingui' },
+          { text: '路由（Wouter）', link: '/ui/wouter' },
+          { text: '全局状态（Zustand）', link: '/ui/zustand' },
+          { text: '错误边界（ErrorBoundary）', link: '/ui/error-boundary' },
+          { text: '首屏体验（Startup-orchestration）', link: '/ui/first-screen' },
+          { text: '原生窗口体验（WCO）', link: '/ui/wco' },
+        ],
+      },
+      {
+        text: '主进程运行时',
+        collapsed: true,
+        items: [
+          { text: '全链路追踪（W3C-trace）', link: '/main/tracing' },
+          { text: '本地日志（Electron-log）', link: '/main/logging' },
+          { text: '崩溃上报（Sentry）', link: '/main/crash-reporting' },
+          {
+            text: '托盘常驻与单实例（Tray + Single-instance）',
+            link: '/main/tray-single-instance',
+          },
+          { text: '配置持久化（Electron-store）', link: '/main/config-persistence' },
+        ],
+      },
+      {
+        text: '安全与性能',
+        collapsed: true,
+        items: [
+          { text: '渲染进程沙箱（Sandbox）', link: '/security/sandbox' },
+          { text: '内容安全策略（CSP）', link: '/security/csp' },
+          { text: '路径稳健性（Relative-path）', link: '/security/path-robustness' },
+          { text: '分包与体积门禁（Chunk + Asar）', link: '/security/bundle-budget' },
+          { text: '类型安全的 IPC 契约（Zod + ContextBridge）', link: '/security/ipc-contract' },
+        ],
+      },
+      {
+        text: '测试矩阵',
+        collapsed: true,
+        items: [
+          { text: '单元测试（Vitest）', link: '/testing/unit-tests' },
+          { text: '主进程单元测试（EventEmitter）', link: '/testing/main-process-tests' },
+          { text: '端到端测试（Playwright）', link: '/testing/e2e-electron' },
+          { text: '端到端断言策略（Shell-stub + Tolerance）', link: '/testing/e2e-assertions' },
+          { text: '性能基线（Benchmark）', link: '/testing/performance-baseline' },
+          { text: '产物冒烟测试（Dist-smoke）', link: '/testing/artifact-smoke' },
+        ],
+      },
+      {
+        text: '交付门禁',
+        collapsed: true,
+        items: [
+          { text: '应用打包（Electron-builder）', link: '/delivery/packaging' },
+          { text: '源码映射隔离（Source-map）', link: '/delivery/sourcemap' },
+          { text: 'CI 并行门禁（GitHub-Actions）', link: '/delivery/ci-gates' },
+          { text: '应用更新（Electron-updater）', link: '/delivery/auto-update' },
+          { text: '发版流水线（Changelogen）', link: '/delivery/release-pipeline' },
+        ],
+      },
+      {
+        text: 'AI 协同',
+        collapsed: true,
+        items: [
+          { text: 'AI 评审闭环（Open-code-review）', link: '/ai/review-loop' },
+          { text: 'AI 协作者约定（Agents.md）', link: '/ai/collaboration-convention' },
+          { text: 'AI 友好代码约定（Reference-style）', link: '/ai/friendly-conventions' },
+        ],
+      },
     ],
   },
 });

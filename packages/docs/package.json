@@ -5,14 +5,14 @@
   "type": "module",
   "description": "Electron 解决方案合集文档站（Vocs）",
   "scripts": {
-    "dev": "vocs dev --port 5174",
-    "build": "vocs build",
+    "dev": "node --import ./scripts/vocs-windows-fix.mjs ./node_modules/vocs/dist/cli.js dev --port 5174 --host",
+    "build": "node --import ./scripts/vocs-windows-fix.mjs ./node_modules/vocs/dist/cli.js build",
     "preview": "vocs preview --port 5174"
   },
   "dependencies": {
     "mermaid": "^11.0.0",
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "vocs": "^2.10.3",
     "waku": "1.0.0-rc.4"
   },
