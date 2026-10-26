@@ -10,39 +10,51 @@ showBanner: false
 
 import { Link } from 'vocs';
 
-<section className="vocs:flex vocs:flex-col vocs:items-center vocs:text-center vocs:pt-20 vocs:pb-10 vocs:px-6">
+<header className="vocs:mx-auto vocs:flex vocs:w-full vocs:max-w-[900px] vocs:items-center vocs:justify-between vocs:gap-6 vocs:px-8 vocs:pb-6 vocs:pt-8 max-[700px]:vocs:px-5 max-[700px]:vocs:pt-6">
+  <div className="vocs:inline-flex vocs:items-center vocs:gap-3">
+    <img
+      src="/electron-react-monorepo-template/icon.png"
+      alt="Electron React Template"
+      className="vocs:h-8 vocs:w-8"
+    />
+    <span className="vocs:text-[15px] vocs:font-semibold vocs:text-heading vocs:tracking-tight">
+      Electron React Template
+    </span>
+    <span className="vocs:text-[13px] vocs:font-medium vocs:text-muted">解法合集</span>
+  </div>
+</header>
 
-  <h1 className="vocs:text-[40px] vocs:leading-tight vocs:font-bold vocs:tracking-tight">
-    Electron 桌面端
-    <em className="vocs:block vocs:not-italic vocs:text-[var(--vocs-color-accent-text)]">
-      坑位解法合集。
-    </em>
+<section className="vocs:mx-auto vocs:w-full vocs:max-w-[900px] vocs:px-8 max-[700px]:vocs:px-5">
+
+  <h1 className="vocs:m-0 vocs:mb-[18px] vocs:text-[clamp(38px,5.6vw,64px)] vocs:font-semibold vocs:leading-[1.05] vocs:tracking-[-0.02em] vocs:text-heading">
+    <span className="vocs:block">Electron 桌面端</span>
+    <em className="vocs:block vocs:font-semibold vocs:not-italic vocs:text-heading">坑位解法合集。</em>
   </h1>
 
-  <p className="vocs:mt-6 vocs:max-w-[560px] vocs:text-[17px] vocs:text-[var(--vocs-color-text-2)]">
+  <p className="vocs:m-0 vocs:mb-8 vocs:max-w-[620px] vocs:text-xl vocs:leading-[1.6] vocs:text-secondary max-[700px]:vocs:text-[17px]">
     每个解法都对应本仓库经过发版验证的真实实现——模板使用者按图索骥，踩坑的人按问题搜解法、照代码抄作业。
   </p>
 
-  <div className="vocs:mt-8 vocs:flex vocs:gap-4">
+  <div className="vocs:mb-10 vocs:flex vocs:flex-wrap vocs:gap-3">
     <Link
       to="/introduction/what-is-this"
-      className="vocs:inline-flex vocs:min-h-12 vocs:items-center vocs:justify-center vocs:rounded-[var(--vocs-radius-lg)] vocs:border vocs:border-solid vocs:border-primary vocs:bg-surface vocs:px-[22px] vocs:text-[15px] vocs:font-medium vocs:text-heading vocs:no-underline vocs:transition-colors hover:vocs:border-[var(--vocs-color-accent-text)]"
+      className="vocs:inline-flex vocs:min-h-12 vocs:items-center vocs:justify-center vocs:gap-2.5 vocs:rounded-[var(--vocs-radius-lg)] vocs:border vocs:border-solid vocs:border-accent vocs:bg-accent vocs:px-[22px] vocs:text-[15px] vocs:font-medium vocs:text-accentInvert vocs:no-underline vocs:transition-opacity vocs:duration-100 vocs:hover:opacity-90"
     >
       开始阅读
     </Link>
     <Link
       to="https://github.com/BanShan-Alec/electron-react-monorepo-template"
-      className="vocs:inline-flex vocs:min-h-12 vocs:items-center vocs:justify-center vocs:rounded-[var(--vocs-radius-lg)] vocs:border vocs:border-solid vocs:border-primary vocs:bg-surface vocs:px-[22px] vocs:text-[15px] vocs:font-medium vocs:text-heading vocs:no-underline vocs:transition-colors hover:vocs:border-[var(--vocs-color-accent-text)]"
+      className="vocs:inline-flex vocs:min-h-12 vocs:items-center vocs:justify-center vocs:gap-2.5 vocs:rounded-[var(--vocs-radius-lg)] vocs:border vocs:border-solid vocs:border-primary vocs:bg-surface vocs:px-[22px] vocs:text-[15px] vocs:font-medium vocs:text-heading vocs:no-underline vocs:transition-colors vocs:duration-100 vocs:hover:border-secondary vocs:hover:bg-surfaceTint"
     >
       GitHub
     </Link>
   </div>
 
-</section>
-
-<details className="vocs:mt-4 vocs:mb-10 vocs:max-w-[720px] vocs:mx-auto vocs:rounded-lg vocs:border vocs:border-solid vocs:border-[var(--vocs-color-border)] vocs:px-5 vocs:py-4">
-  <summary className="vocs:cursor-pointer vocs:text-[14px] vocs:font-medium">Copy instructions for agent</summary>
-  <div className="vocs:mt-3">
+  <details className="vocs:mb-12 vocs:w-[min(100%,620px)] vocs:overflow-hidden vocs:rounded-[var(--vocs-radius-lg)] vocs:border vocs:border-solid vocs:border-primary vocs:bg-surface">
+    <summary className="vocs:cursor-pointer vocs:px-5 vocs:py-3 vocs:text-[13px] vocs:font-medium vocs:text-secondary">
+      Copy instructions for agent
+    </summary>
+    <div className="vocs:border-t vocs:border-solid vocs:border-primary vocs:px-5 vocs:py-4">
 
 ```text
 本仓库是一套 Electron 桌面端模板（electron-react-monorepo-template），
@@ -55,25 +67,43 @@ import { Link } from 'vocs';
 文档与代码不一致时，以代码为准，并提示我更新文档。
 ```
 
-  </div>
-</details>
+    </div>
+  </details>
 
-## 九个维度
+</section>
 
-**工程化基座**：[依赖管理（Monorepo）](/engineering/dependency-management) · [环境变量管理（Dotenv）](/engineering/env-vars) · [编译配置继承（Tsconfig）](/engineering/tsconfig-inheritance) · [代码规范与风格（Biome）](/engineering/code-style) · [提交信息规范（Commitlint）](/engineering/commit-convention)
+## 工程化基座
 
-**开发体验**：[开发编排（Vite + Electron）](/dx/dev-orchestration) · [启动预检（Single-instance + Port）](/dx/startup-preflight) · [远程调试端口（CDP）](/dx/debug-port) · [日志与链路排查（Usage）](/dx/log-troubleshooting)
+[依赖管理（Monorepo）](/engineering/dependency-management) · [环境变量管理（Dotenv）](/engineering/env-vars) · [编译配置继承（Tsconfig）](/engineering/tsconfig-inheritance) · [代码规范与风格（Biome）](/engineering/code-style) · [提交信息规范（Commitlint）](/engineering/commit-convention)
 
-**架构组织**：[多窗口入口（MPA）](/architecture/multi-window) · [功能域组织（Features）](/architecture/feature-domains) · [组件目录结构（Component-folder）](/architecture/component-structure) · [React 组件编写规范（Code-partition + Hooks）](/architecture/react-conventions) · [模块生命周期（ModuleRunner）](/architecture/module-lifecycle) · [分层架构（Controller / Service）](/architecture/layering)
+## 开发体验
 
-**界面与交互**：[组件库（Antd）](/ui/antd) · [样式与令牌（Tailwind-CSS）](/ui/tailwind) · [国际化（Lingui）](/ui/lingui) · [路由（Wouter）](/ui/wouter) · [全局状态（Zustand）](/ui/zustand) · [错误边界（ErrorBoundary）](/ui/error-boundary) · [首屏体验（Startup-orchestration）](/ui/first-screen) · [原生窗口体验（WCO）](/ui/wco)
+[开发编排（Vite + Electron）](/dx/dev-orchestration) · [启动预检（Single-instance + Port）](/dx/startup-preflight) · [远程调试端口（CDP）](/dx/debug-port) · [日志与链路排查（Usage）](/dx/log-troubleshooting)
 
-**主进程运行时**：[全链路追踪（W3C-trace）](/main/tracing) · [本地日志（Electron-log）](/main/logging) · [崩溃上报（Sentry）](/main/crash-reporting) · [托盘常驻与单实例（Tray + Single-instance）](/main/tray-single-instance) · [配置持久化（Electron-store）](/main/config-persistence)
+## 架构组织
 
-**安全与性能**：[渲染进程沙箱（Sandbox）](/security/sandbox) · [内容安全策略（CSP）](/security/csp) · [路径稳健性（Relative-path）](/security/path-robustness) · [分包与体积门禁（Chunk + Asar）](/security/bundle-budget) · [类型安全的 IPC 契约（Zod + ContextBridge）](/security/ipc-contract)
+[多窗口入口（MPA）](/architecture/multi-window) · [功能域组织（Features）](/architecture/feature-domains) · [组件目录结构（Component-folder）](/architecture/component-structure) · [React 组件编写规范（Code-partition + Hooks）](/architecture/react-conventions) · [模块生命周期（ModuleRunner）](/architecture/module-lifecycle) · [分层架构（Controller / Service）](/architecture/layering)
 
-**测试矩阵**：[单元测试（Vitest）](/testing/unit-tests) · [主进程单元测试（EventEmitter）](/testing/main-process-tests) · [端到端测试（Playwright）](/testing/e2e-electron) · [端到端断言策略（Shell-stub + Tolerance）](/testing/e2e-assertions) · [性能基线（Benchmark）](/testing/performance-baseline) · [产物冒烟测试（Dist-smoke）](/testing/artifact-smoke)
+## 界面与交互
 
-**交付门禁**：[应用打包（Electron-builder）](/delivery/packaging) · [源码映射隔离（Source-map）](/delivery/sourcemap) · [CI 并行门禁（GitHub-Actions）](/delivery/ci-gates) · [应用更新（Electron-updater）](/delivery/auto-update) · [发版流水线（Changelogen）](/delivery/release-pipeline)
+[组件库（Antd）](/ui/antd) · [样式与令牌（Tailwind-CSS）](/ui/tailwind) · [国际化（Lingui）](/ui/lingui) · [路由（Wouter）](/ui/wouter) · [全局状态（Zustand）](/ui/zustand) · [错误边界（ErrorBoundary）](/ui/error-boundary) · [首屏体验（Startup-orchestration）](/ui/first-screen) · [原生窗口体验（WCO）](/ui/wco)
 
-**AI 协同**：[AI 评审闭环（Open-code-review）](/ai/review-loop) · [AI 协作者约定（Agents.md）](/ai/collaboration-convention) · [AI 友好代码约定（Reference-style）](/ai/friendly-conventions)
+## 主进程运行时
+
+[全链路追踪（W3C-trace）](/main/tracing) · [本地日志（Electron-log）](/main/logging) · [崩溃上报（Sentry）](/main/crash-reporting) · [托盘常驻与单实例（Tray + Single-instance）](/main/tray-single-instance) · [配置持久化（Electron-store）](/main/config-persistence)
+
+## 安全与性能
+
+[渲染进程沙箱（Sandbox）](/security/sandbox) · [内容安全策略（CSP）](/security/csp) · [路径稳健性（Relative-path）](/security/path-robustness) · [分包与体积门禁（Chunk + Asar）](/security/bundle-budget) · [类型安全的 IPC 契约（Zod + ContextBridge）](/security/ipc-contract)
+
+## 测试矩阵
+
+[单元测试（Vitest）](/testing/unit-tests) · [主进程单元测试（EventEmitter）](/testing/main-process-tests) · [端到端测试（Playwright）](/testing/e2e-electron) · [端到端断言策略（Shell-stub + Tolerance）](/testing/e2e-assertions) · [性能基线（Benchmark）](/testing/performance-baseline) · [产物冒烟测试（Dist-smoke）](/testing/artifact-smoke)
+
+## 交付门禁
+
+[应用打包（Electron-builder）](/delivery/packaging) · [源码映射隔离（Source-map）](/delivery/sourcemap) · [CI 并行门禁（GitHub-Actions）](/delivery/ci-gates) · [应用更新（Electron-updater）](/delivery/auto-update) · [发版流水线（Changelogen）](/delivery/release-pipeline)
+
+## AI 协同
+
+[AI 评审闭环（Open-code-review）](/ai/review-loop) · [AI 协作者约定（Agents.md）](/ai/collaboration-convention) · [AI 友好代码约定（Reference-style）](/ai/friendly-conventions)
