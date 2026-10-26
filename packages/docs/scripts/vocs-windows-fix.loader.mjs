@@ -40,6 +40,14 @@ const SLOTS_TARGET = "import * as Slots from '${slotsPath}'";
 const SLOTS_PATCHED = 'import * as Slots from ${JSON.stringify(slotsPath)}';
 const VITE_PLUGINS_MODULE_SUFFIX = '/vocs/dist/internal/vite-plugins.js';
 
+// Bug 3 — `getPagesFromDir` (vocs/dist/internal/llms.js) builds llms.txt page
+// paths from `fs.glob` results. Node's glob returns backslash-separated paths
+// on Windows, and the `file.replace(pagesDir, '')` prefix strip targets a
+// forward-slash path, so the strip misses and route entries end up as
+// `\ai\collaboration-convention` in llms.txt — unresolvable links for LLMs.
+// Normalizing separators to `/` before the strip fixes every nav entry.
+const LLMS_MODULE_SUFFIX = '/vocs/dist/internal/llms.js';
+
 /** @type {import('node:module').LoadHook} */
 export async function load(url, context, nextLoad) {
   const result = await nextLoad(url, context);
@@ -55,6 +63,22 @@ export async function load(url, context, nextLoad) {
   }
   if (url.endsWith(VITE_PLUGINS_MODULE_SUFFIX) && source.includes(SLOTS_TARGET)) {
     source = source.replace(SLOTS_TARGET, SLOTS_PATCHED);
+    patched = true;
+  }
+  if (url.endsWith(LLMS_MODULE_SUFFIX) && source.includes('path: file')) {
+    // SEP = a single backslash character, spelled via fromCharCode to keep this
+    // file free of literal-backslash escaping hazards.
+    const SEP_INJECT = 'const SEP = String.fromCharCode(92);\n';
+    source = SEP_INJECT + source;
+    // Replace the getPagesFromDir map body: normalize glob separators AND the
+    // pagesDir prefix to `/` before the strip, otherwise one of the two always
+    // misses on Windows (glob returns `\`, path.resolve returns mixed).
+    const ORIGINAL = `        path: file
+            .replace(pagesDir, '')`;
+    const REPLACED = `        path: file
+            .replaceAll(SEP, '/')
+            .replace(pagesDir.replaceAll(SEP, '/'), '')`;
+    source = source.replace(ORIGINAL, REPLACED);
     patched = true;
   }
   if (!patched) return result;
