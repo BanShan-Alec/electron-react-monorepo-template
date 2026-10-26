@@ -40,6 +40,16 @@ const SLOTS_TARGET = "import * as Slots from '${slotsPath}'";
 const SLOTS_PATCHED = 'import * as Slots from ${JSON.stringify(slotsPath)}';
 const VITE_PLUGINS_MODULE_SUFFIX = '/vocs/dist/internal/vite-plugins.js';
 
+// Bug 4 — the `userStyles()` Vite plugin (same module) interpolates the
+// absolute `_root.css` path into a generated import:
+//
+//   import styles from '${stylesPath}?url';
+//
+// Same backslash-eating as Bug 2: Rolldown receives `H:electron-app-temp5...`
+// and fails to resolve the import. `JSON.stringify` emits a correct literal.
+const STYLES_TARGET = "import styles from '${stylesPath}?url';";
+const STYLES_PATCHED = "import styles from ${JSON.stringify(stylesPath + '?url')};";
+
 // Bug 3 — `getPagesFromDir` (vocs/dist/internal/llms.js) builds llms.txt page
 // paths from `fs.glob` results. Node's glob returns backslash-separated paths
 // on Windows, and the `file.replace(pagesDir, '')` prefix strip targets a
@@ -63,6 +73,10 @@ export async function load(url, context, nextLoad) {
   }
   if (url.endsWith(VITE_PLUGINS_MODULE_SUFFIX) && source.includes(SLOTS_TARGET)) {
     source = source.replace(SLOTS_TARGET, SLOTS_PATCHED);
+    patched = true;
+  }
+  if (url.endsWith(VITE_PLUGINS_MODULE_SUFFIX) && source.includes(STYLES_TARGET)) {
+    source = source.replace(STYLES_TARGET, STYLES_PATCHED);
     patched = true;
   }
   if (url.endsWith(LLMS_MODULE_SUFFIX) && source.includes('path: file')) {
