@@ -1,7 +1,7 @@
 import { t } from '@lingui/core/macro';
 import type { CounterResult } from '@shared/types/counter';
 import { App } from 'antd';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useManualRequest } from '@/hooks/useManualRequest';
 import { callIpc } from '@/lib/ipc';
 
@@ -60,19 +60,19 @@ export function useCounter() {
   const isUpdating = loading && counter !== undefined;
 
   // 逻辑处理函数
-  const handleIncrement = useCallback(() => {
+  const handleIncrement = () => {
     void runCounterOp('increment').catch(() => {
       // 过期响应 CancelledError 与业务异常均已丢弃/提示，此处防止未处理拒绝
     });
-  }, [runCounterOp]);
+  };
 
-  const handleDecrement = useCallback(() => {
+  const handleDecrement = () => {
     void runCounterOp('decrement').catch(() => {});
-  }, [runCounterOp]);
+  };
 
-  const handleReset = useCallback(() => {
+  const handleReset = () => {
     void runCounterOp('reset').catch(() => {});
-  }, [runCounterOp]);
+  };
 
   return {
     count: counter?.count ?? 0,
