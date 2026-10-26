@@ -1,5 +1,7 @@
 # 依赖管理（monorepo）
 
+> **TL;DR**：pnpm workspace + catalog 收拢公共工具链版本，根目录依赖白名单由 CI 门禁守住，Node 与 pnpm 版本一并钉死
+
 ## 要解决的坑
 
 一个 Electron + React 的 monorepo 长大之后，工程层面的问题会集中爆发：

@@ -1,5 +1,7 @@
 # 样式与令牌（Tailwind v4）
 
+> **TL;DR**：层序声明 + `@theme inline` + tokens.css，工具类与 antd 组件读同一组变量。
+
 → 源码：[packages/renderer/src/styles/index.css](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/styles/index.css)
 
 ```css

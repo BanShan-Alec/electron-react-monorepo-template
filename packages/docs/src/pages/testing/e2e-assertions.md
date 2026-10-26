@@ -1,5 +1,7 @@
 # 端到端断言策略（shell 打桩 + 容差）
 
+> **TL;DR**：启动阶段整体替换 `shell` 模块，断言只锁协议与最终态，数值断言带容差。
+
 ## 要解决的坑
 
 - `shell.openExternal` 这类接口在无头 CI 里会穿透到操作系统，唤起的外部进程持有 stdio 管道，Playwright Worker 收不了尾

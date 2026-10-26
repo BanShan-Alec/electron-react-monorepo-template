@@ -1,5 +1,7 @@
 # 模块生命周期（ModuleRunner）
 
+> **TL;DR**：每个系统能力实现只含 `enable()` 的模块，由 ModuleRunner 串成顺序 Promise 链，删一行即整体退场。
+
 ## 要解决的坑
 
 Electron 项目最容易长歪的地方就是组织方式：

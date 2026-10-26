@@ -1,5 +1,7 @@
 # 组件库（antd）
 
+> **TL;DR**：五层 Provider 装配与主题算法，颜色令牌交给 antd 官方算法输出。
+
 → 源码：[packages/renderer/src/components/layout/AppProviders/index.tsx](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/components/layout/AppProviders/index.tsx)
 
 ```tsx

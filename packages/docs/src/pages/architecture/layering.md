@@ -1,5 +1,7 @@
 # 分层架构（Controller/Service）
 
+> **TL;DR**：IPC 事件只进 Controller，业务住 Service，纯逻辑服务不 import Electron，可在 node 环境直接单测。
+
 ## 要解决的坑
 
 Electron 项目最容易长歪的地方就是组织方式：

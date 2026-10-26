@@ -1,5 +1,7 @@
 # 代码规范与风格（Biome）
 
+> **TL;DR**：Biome 一份配置接管格式、检查与 import 排序，桶文件、`export *`、循环导入直接报错
+
 ## 要解决的坑
 
 - Prettier 管格式、ESLint 管检查，import 排序还得再配一个插件，三套配置互相打架，规则形同虚设

@@ -1,5 +1,7 @@
 # 首屏体验（启动编排）
 
+> **TL;DR**：动画、React 首帧、主进程就绪三路门禁，齐备才揭幕。
+
 用户从双击图标到看见可用界面，中间隔着三段等待：Logo 动画、React 首帧、主进程就绪。启动编排的策略是三者齐备才揭幕，任何一路失联则由兜底放行。
 
 → 源码：[packages/renderer/src/startup/coordinator.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/startup/coordinator.ts)

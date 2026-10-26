@@ -1,5 +1,7 @@
 # 国际化（Lingui）
 
+> **TL;DR**：源码即 key，中文直写，构建期抽词条、运行时按语种动态加载。
+
 → 源码：[packages/renderer/lingui.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/lingui.config.ts)
 
 ```ts

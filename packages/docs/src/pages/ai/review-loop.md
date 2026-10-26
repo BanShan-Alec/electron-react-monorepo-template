@@ -1,5 +1,7 @@
 # AI 评审闭环（OpenCodeReview + pr-review）
 
+> **TL;DR**：PR 新开或评论触发 AI 审查，产物拉成本地多轮看板，门禁全绿后一条命令合并。
+
 ## 要解决的坑
 
 - AI 评审没有固定入口：PR 评论刷屏、历史意见没人收、代码修复后旧 review threads 挂着

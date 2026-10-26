@@ -1,5 +1,7 @@
 # 渲染进程沙箱（contextIsolation + sandbox）
 
+> **TL;DR**：每个 `BrowserWindow` 的 `webPreferences` 写死 Node 关闭、上下文隔离、沙箱与 `webview` 关闭，对外只留 preload 白名单桥。
+
 ## 要解决的坑
 
 Electron 的默认配置是「能跑」，不是「防住」：

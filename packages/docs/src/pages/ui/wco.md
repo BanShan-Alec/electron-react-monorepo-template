@@ -1,5 +1,7 @@
 # 原生窗口体验（WCO）
 
+> **TL;DR**：系统标题栏让位但窗口管理仍归操作系统，overlay 与窗口底色同源防白闪。
+
 → 源码：[packages/main/src/modules/window/index.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/index.module.ts)
 
 Window Controls Overlay：系统标题栏让位给内容，但窗口管理仍归操作系统——Win11 贴靠、最大化动画、系统菜单全部保留。平台分支参照 VS Code 的做法：

@@ -1,5 +1,7 @@
 # AI 协作者约定（AGENTS.md 分层与红线）
 
+> **TL;DR**：根 AGENTS.md 放全局红线与任务路由，各包 AGENTS.md 放本包铁律，AI 进场先读规则再动手。
+
 ## 要解决的坑
 
 - 仓库知识散在 README、CONTRIBUTING 和各个包的注释里：AI 进场先猜一轮，该读哪个文件、哪条规则优先、改错了谁来拦

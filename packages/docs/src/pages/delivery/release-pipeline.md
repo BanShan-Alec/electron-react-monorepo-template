@@ -1,5 +1,7 @@
 # 发版流水线（changelogen + tag）
 
+> **TL;DR**：changelogen 本地提版并锁 tag，CI 三平台以 `-p never` 构建，单一 publish job 统一发 Release
+
 ## 要解决的坑
 
 - 发版靠手工：提版本、打 tag、三平台构建、发 Release，每步都可能漏，版本号和 tag 对不上一致性就崩

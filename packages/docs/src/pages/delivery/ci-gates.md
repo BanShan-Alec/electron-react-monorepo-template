@@ -1,5 +1,7 @@
 # CI 并行门禁（GitHub Actions）
 
+> **TL;DR**：typecheck / lint / test / e2e / docs 五路并行，lint 顺带跑 `verify:prebuild` 做打包前静态拦截
+
 ## CI 五路并行门禁
 
 → 源码：[.github/workflows/ci.yml](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.github/workflows/ci.yml) · [.github/actions/setup-env/action.yml](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.github/actions/setup-env/action.yml)

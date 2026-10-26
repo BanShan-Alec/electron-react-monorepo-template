@@ -1,5 +1,7 @@
 # 全局状态（zustand）
 
+> **TL;DR**：单一无 Provider 的 store，主题与语言按字段订阅。
+
 → 源码：[packages/renderer/src/stores/useAppStore.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/stores/useAppStore.ts)
 
 ```ts

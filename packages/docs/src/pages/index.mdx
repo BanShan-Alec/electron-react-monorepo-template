@@ -4,15 +4,23 @@
 
 ## 九个维度
 
-- [工程化基座](/engineering)：依赖与工具链版本锁定 · 环境变量与编译配置 · 代码与提交规范
-- [开发体验](/dx)：双进程开发编排 · 启动预检 · CDP 调试 · 日志与链路排查
-- [架构组织](/architecture)：多窗口入口 · 功能域与组件规范 · 模块生命周期 · 分层架构
-- [界面与交互](/ui)：antd · Tailwind · Lingui · wouter · zustand · 错误边界 · 首屏体验 · WCO
-- [主进程运行时](/main)：全链路追踪 · 本地日志 · 崩溃上报 · 托盘与单实例 · 配置持久化
-- [安全与性能](/security)：沙箱 · CSP · 路径稳健性 · 分包与体积门禁 · IPC 契约
-- [测试矩阵](/testing)：单元测试 · 主进程单测 · E2E 与断言策略 · 性能基线 · 产物冒烟
-- [交付门禁](/delivery)：应用打包 · SourceMap 隔离 · CI 并行门禁 · 应用更新 · 发版流水线
-- [AI 协同](/ai)：AI 评审闭环 · 协作者约定 · AI 友好代码约定
+**工程化基座**：[依赖管理（monorepo）](/engineering/dependency-management) · [环境变量管理（dotenv）](/engineering/env-vars) · [编译配置继承（tsconfig）](/engineering/tsconfig-inheritance) · [代码规范与风格（Biome）](/engineering/code-style) · [提交信息规范（commitlint）](/engineering/commit-convention)
+
+**开发体验**：[开发编排（Vite + Electron 双进程）](/dx/dev-orchestration) · [启动预检（单实例与端口）](/dx/startup-preflight) · [远程调试端口（CDP）](/dx/debug-port) · [日志与链路排查（用法视角）](/dx/log-troubleshooting)
+
+**架构组织**：[多窗口入口（MPA）](/architecture/multi-window) · [功能域组织（features 目录）](/architecture/feature-domains) · [组件目录结构（一组件一文件夹）](/architecture/component-structure) · [React 组件编写规范（代码分区与 hooks 约定）](/architecture/react-conventions) · [模块生命周期（ModuleRunner）](/architecture/module-lifecycle) · [分层架构（Controller/Service）](/architecture/layering)
+
+**界面与交互**：[组件库（antd）](/ui/antd) · [样式与令牌（Tailwind v4）](/ui/tailwind) · [国际化（Lingui）](/ui/lingui) · [路由（wouter）](/ui/wouter) · [全局状态（zustand）](/ui/zustand) · [错误边界（ErrorBoundary）](/ui/error-boundary) · [首屏体验（启动编排）](/ui/first-screen) · [原生窗口体验（WCO）](/ui/wco)
+
+**主进程运行时**：[全链路追踪（W3C trace）](/main/tracing) · [本地日志（electron-log）](/main/logging) · [崩溃上报（Sentry）](/main/crash-reporting) · [托盘常驻与单实例（Tray + 单实例锁）](/main/tray-single-instance) · [配置持久化（electron-store）](/main/config-persistence)
+
+**安全与性能**：[渲染进程沙箱（contextIsolation + sandbox）](/security/sandbox) · [内容安全策略（CSP）](/security/csp) · [路径稳健性（模块相对定位）](/security/path-robustness) · [分包与体积门禁（asar 硬门禁）](/security/bundle-budget) · [类型安全的 IPC 契约（zod + contextBridge）](/security/ipc-contract)
+
+**测试矩阵**：[单元测试（Vitest）](/testing/unit-tests) · [主进程单元测试（EventEmitter 打桩）](/testing/main-process-tests) · [端到端测试（Playwright）](/testing/e2e-electron) · [端到端断言策略（shell 打桩 + 容差）](/testing/e2e-assertions) · [性能基线（Vitest benchmark）](/testing/performance-baseline) · [产物冒烟测试（dist 启动验证）](/testing/artifact-smoke)
+
+**交付门禁**：[应用打包（electron-builder）](/delivery/packaging) · [源码映射隔离（SourceMap）](/delivery/sourcemap) · [CI 并行门禁（GitHub Actions）](/delivery/ci-gates) · [应用更新（electron-updater）](/delivery/auto-update) · [发版流水线（changelogen + tag）](/delivery/release-pipeline)
+
+**AI 协同**：[AI 评审闭环（OpenCodeReview + pr-review）](/ai/review-loop) · [AI 协作者约定（AGENTS.md 分层与红线）](/ai/collaboration-convention) · [AI 友好代码约定（引用式）](/ai/friendly-conventions)
 
 ## 这是什么
 

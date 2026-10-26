@@ -1,5 +1,7 @@
 # 端到端测试（Playwright）
 
+> **TL;DR**：Playwright 官方 `_electron` 拉起真实窗口，worker 级夹具单次冷启动并隔离用户数据目录。
+
 ## 要解决的坑
 
 - E2E 要拉起真实窗口：Electron 冷启动慢、单例锁冲突、进程树残留，任何一项都能把 CI 拖挂

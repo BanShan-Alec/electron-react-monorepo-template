@@ -1,5 +1,7 @@
 # 全链路追踪（W3C trace）
 
+> **TL;DR**：W3C traceparent 从 preload 贯穿主进程，日志前缀、`traces.ndjson` 与 `Result.traceId` 三个出口串起两端。
+
 ## 要解决的坑
 
 用户报障只有一句「点了一下就崩了」——渲染层的操作在主进程日志里找不到痕迹，两边日志各记各的串不起来。

@@ -1,5 +1,7 @@
 # 应用打包（electron-builder）
 
+> **TL;DR**：electron-builder 用 TypeScript 写配置，应用身份收敛到根 `package.json`，三平台 target 由同一 CLI 入口分发
+
 ## 要解决的坑
 
 - 打包配置写死在 JSON 里：appId、产物名、发布坐标散落多处，改个应用名要跨文件对齐；产物命名不规范这类问题，直到 GitHub Release 寻址 404 才暴露

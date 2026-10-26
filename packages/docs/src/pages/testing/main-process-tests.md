@@ -1,5 +1,7 @@
 # 主进程单元测试（EventEmitter 打桩）
 
+> **TL;DR**：用 EventEmitter 顶替 `app`、在模块边界换桩，不启动 Electron 也能验证生命周期。
+
 ## 要解决的坑
 
 - 主进程模块大量依赖 `electron` 运行时（`app`、`BrowserWindow`、`Tray`），直接 import 就没法在纯 Node 环境跑，单测无从下手

@@ -1,5 +1,7 @@
 # 提交信息规范（commitlint）
 
+> **TL;DR**：commitlint 强制 Conventional Commits，并用自定义规则要求 subject 含简体中文
+
 ## 要解决的坑
 
 - 提交信息 `fix`、`修改bug`、`asdf` 随意写，changelog 没法自动生成，版本管理退化成手工记账

@@ -1,5 +1,7 @@
 # 编译配置继承（tsconfig）
 
+> **TL;DR**：`@app/tsconfig` 提供 base/node/react 三档，各包 tsconfig 只剩 extends 与 include
+
 ## 要解决的坑
 
 - 五六个包各配各的 TypeScript，`strict` 开关和路径别名改一处漏四处；typescript、vite 这类公共依赖在每个包里各写一个版本号，升一次级要全局搜索替换

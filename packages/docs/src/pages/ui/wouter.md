@@ -1,5 +1,7 @@
 # 路由（wouter）
 
+> **TL;DR**：hash 路由适配 `file://`，根路径与未知路径统一收敛。
+
 → 源码：[packages/renderer/src/entries/home/index.tsx](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/entries/home/index.tsx)
 
 ```tsx
