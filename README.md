@@ -136,7 +136,7 @@ electron-react-monorepo-template/
 
 ### 环境要求
 - **Node.js**: `>= 24.0.0`
-- **pnpm**: `>= 10.0.0`
+- **pnpm**: `>= 12.0.0`
 
 ### 1. 安装依赖
 ```bash
@@ -144,7 +144,7 @@ pnpm install
 ```
 
 > [!NOTE]
-> 根目录已预设 `.npmrc`，内置国内淘宝镜像源与 pnpm 隔离布局（`node-linker=isolated`）策略。跨包通用依赖版本由 `pnpm-workspace.yaml` 的 `catalog:` 集中收敛（详见 [CONTRIBUTING.md](CONTRIBUTING.md)）。
+> 根目录已预设 `.npmrc`（国内淘宝镜像源）与 `pnpm-workspace.yaml`（`nodeLinker: isolated` 隔离布局 + 公共依赖 `catalog:` 收敛），详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ### 2. 启动本地开发
 ```bash

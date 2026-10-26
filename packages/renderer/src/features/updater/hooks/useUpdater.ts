@@ -12,6 +12,8 @@ const INITIAL_SNAPSHOT: UpdaterSnapshot = {
 export function useUpdater() {
   const [snapshot, setSnapshot] = useState<UpdaterSnapshot>(INITIAL_SNAPSHOT);
 
+  // 唯一保留的 useCallback：本引用进下方挂载 effect 的依赖，Biome 分析源码层要求稳定；
+  // 编译器构建期会以 DropManualMemoization 换成自己的记忆化，运行期无双份开销
   const handleCheck = useCallback(async () => {
     try {
       const data = await callIpc('updater:check', window.api.updater.check, []);
@@ -21,39 +23,39 @@ export function useUpdater() {
     }
   }, []);
 
-  const handleDownload = useCallback(async () => {
+  const handleDownload = async () => {
     try {
       const data = await callIpc('updater:download', window.api.updater.download, []);
       setSnapshot(data);
     } catch {
       // 同上
     }
-  }, []);
+  };
 
-  const handleCancel = useCallback(async () => {
+  const handleCancel = async () => {
     try {
       const data = await callIpc('updater:cancel', window.api.updater.cancel, []);
       setSnapshot(data);
     } catch {
       // 同上
     }
-  }, []);
+  };
 
-  const handleInstall = useCallback(async () => {
+  const handleInstall = async () => {
     try {
       await callIpc('updater:install', window.api.updater.install, []);
     } catch {
       // 同上
     }
-  }, []);
+  };
 
-  const handleClose = useCallback(async () => {
+  const handleClose = async () => {
     try {
       await callIpc('updater:close-window', window.api.updater.closeWindow, []);
     } catch {
       // 同上
     }
-  }, []);
+  };
 
   useEffect(() => {
     // 挂载初次拉取快照；检查入口内聚在窗口：开窗即查（checking/downloading 进行中则直接吃后续推送）
@@ -99,13 +101,13 @@ export function useUpdater() {
     }
   }, [snapshot.state, snapshot.code, snapshot.error]);
 
-  const handleRetry = useCallback(async () => {
+  const handleRetry = async () => {
     if (snapshot.version) {
       await handleDownload();
     } else {
       await handleCheck();
     }
-  }, [snapshot.version, handleDownload, handleCheck]);
+  };
 
   return {
     snapshot,

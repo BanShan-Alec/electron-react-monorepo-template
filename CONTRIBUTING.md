@@ -166,7 +166,7 @@ main 受分支保护禁直推，发版走 PR 形态：
 
 ## 六、依赖管理与安装规范 (pnpm Workspace)
 
-本项目为 pnpm monorepo（`packageManager: pnpm@10.34.5`），子包位于 `packages/{main,preload,renderer,shared,tsconfig}`，`pnpm-workspace.yaml` 的 `catalog:` 段统一收敛跨包共享依赖版本，依赖实体统一落在根 `node_modules/.pnpm`。以下命令均在**根目录**执行。
+本项目为 pnpm 12 monorepo（`packageManager: pnpm@12.15.0`），子包位于 `packages/{main,preload,renderer,shared,tsconfig}`，`pnpm-workspace.yaml` 统一收敛跨包共享依赖版本（`catalog:`）与全部非 auth/registry 设置（`nodeLinker` / `allowBuilds` 等；v12 起 `.npmrc` 只读 registry 与 auth），依赖实体统一落在根 `node_modules/.pnpm`。以下命令均在**根目录**执行。
 
 ### 1. 常用命令速查
 
@@ -201,6 +201,12 @@ pnpm -F @app/main up electron-log  # 子包升级
 pnpm remove -w <包名>             # 卸载（-F 同理卸载子包依赖）
 pnpm -F @app/renderer remove <包名>
 ```
+
+### 5. pnpm 12 构建审批与缓存设置
+
+- **构建脚本审批**：`strictDepBuilds` 默认开启，未列入 `allowBuilds` 且带构建脚本的依赖会直接让安装失败（`ERR_PNPM_IGNORED_BUILDS`）——这是故意的快速失败，避免重演「electron 二进制静默缺失」。处置：`pnpm ignored-builds` 查看全部待审批包 → `pnpm approve-builds <包名>` 审批，决策写入 `pnpm-workspace.yaml` 的 `allowBuilds`。
+- **electron 二进制兜底**：electron 42+ 起 npm 包无 install 生命周期脚本，二进制惰性下载——全新工作区装完不带 dist，`require('electron')` 直接报错。根 `postinstall` 守卫 `scripts/ensure-electron.mjs` 每次安装后按 `dist/version` 判定，缺失或版本不符时执行 install.js（命中机器级 zip 缓存约 2 秒）；CI 由 e2e job 显式执行、守卫在 CI 环境跳过。二进制损坏或 electron 升级后同样自动重装。
+- **minimumReleaseAge: 1440**：发布不满 24 小时的依赖禁止安装（供应链防护）。确需安装全新冠名版本时，用 `minimumReleaseAgeExclude` 按包临时豁免，不要全局关闭。
 
 ---
 
