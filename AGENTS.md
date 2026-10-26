@@ -8,7 +8,7 @@
 
 Electron 45（`contextIsolation` + `sandbox`）· React 19 + TypeScript · Vite 8（Rolldown 内核）·
 Biome 2（格式化 + Lint）· LinguiJS 6（中文优先 Source-as-Key）· Vitest（单元）+
-Playwright（E2E，真实 Electron 窗口）· pnpm 10 monorepo · Node >= 24
+Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 
 ## 2. 全局红线（包无关，一句话可判定）
 
