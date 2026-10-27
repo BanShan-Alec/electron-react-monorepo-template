@@ -30,7 +30,7 @@ if (metaArg) {
 }
 contextBridge.exposeInMainWorld('__APP_ENV__', Object.freeze(runtimeEnv ?? {}));
 
-// 启动就绪桥（spec §4.6 / ADR-0003）：先拉后推，主进程信号先于窗口时经快照补发不丢。
+// 启动就绪桥：先拉后推，主进程信号先于窗口时经快照补发不丢。
 // 求值时即预取快照并注册推送监听（不等 onMainReady 被调用）——晚到信号经跨世界
 // 纯 Event 派发给壳协调器（contextIsolation 下无 payload Event 可见），payload 经回调携带
 const mainReadyCallbacks = new Set<(payload: StartupMainReadyPayload) => void>();
@@ -113,7 +113,7 @@ export const apiBridge: ElectronApi = {
       };
     },
   },
-  // 启动就绪桥（spec §4.6 / ADR-0003）：快照走求值期预取的 Promise，推送回调按注册表分发
+  // 启动就绪桥：快照走求值期预取的 Promise，推送回调按注册表分发
   startup: {
     getSnapshot: () => startupSnapshotPromise,
     onMainReady: (cb: (payload: StartupMainReadyPayload) => void) => {

@@ -19,11 +19,8 @@ export default defineConfig({
       link: 'https://github.com/BanShan-Alec/electron-react-monorepo-template',
     },
   ],
-  // 维度重组后的旧 URL 重定向（contracts 并入安全与性能；infrastructure 拆为界面与交互、主进程运行时）
-  redirects: [
-    { source: '/contracts', destination: '/security/ipc-contract', status: 301 },
-    { source: '/infrastructure', destination: '/ui/antd', status: 301 },
-  ],
+  // 注意：不配 redirects——它是 waku 运行时中间件，full-static 部署（GitHub Pages）执行不到；
+  // 旧 URL 跳转必须用 public/<path>/index.html 物理跳转页（见 public/*/index.html）。
   sidebar: {
     '/': [
       {
@@ -54,6 +51,7 @@ export default defineConfig({
           { text: '启动预检（Single-instance + Port）', link: '/dx/startup-preflight' },
           { text: '远程调试端口（CDP）', link: '/dx/debug-port' },
           { text: '日志与链路排查（Usage）', link: '/dx/log-troubleshooting' },
+          { text: '配置项归属（Configuration-map）', link: '/dx/configuration-map' },
         ],
       },
       {
@@ -83,6 +81,7 @@ export default defineConfig({
           { text: '错误边界（ErrorBoundary）', link: '/ui/error-boundary' },
           { text: '首屏体验（Startup-orchestration）', link: '/ui/first-screen' },
           { text: '原生窗口体验（WCO）', link: '/ui/wco' },
+          { text: '窗口位置与尺寸（Window-state）', link: '/ui/window-state' },
         ],
       },
       {

@@ -180,7 +180,7 @@ const { runAsync: runCounterOp } = useManualRequest(async (action: CounterAction
 - **编译期提取**：`macroTransform` 在构建期自动提取词条生成 PO 文件（`pnpm i18n:extract`），漏译在编译期暴露。
 - **按需加载**：`locales/i18n.ts` 经 `dynamicActivate` 动态 import 语言包 Chunk，antd 组件库 locale 同步切换。
 - **切换订阅**：卡片经 `useLingui()` 订阅语言上下文，全局语言状态收敛在 `stores/useAppStore.ts`。
-- 日常实操 SOP 见 [docs/i18n/guide.md](../../docs/i18n/guide.md)；全链路架构见 [docs/i18n/architecture.md](../../docs/i18n/architecture.md)。
+- 日常实操 SOP 与全链路架构见 [国际化（Lingui）](../docs/src/pages/ui/lingui.md)。
 
 ## 7. 提交前门禁
 

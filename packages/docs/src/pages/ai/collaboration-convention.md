@@ -106,10 +106,10 @@ const rootDir = findRepoRoot(__dirname);
 | 任务 | 先读 | 再查 |
 | --- | --- | --- |
 | 新增业务域（shared→preload→main→renderer 全链路） | 四包的 AGENTS.md | README「全栈端到端功能开发 SOP」 |
-| 模块装配 / 启动流程 / 运行时 | `main/AGENTS.md` | `docs/module-and-runtime-specification.md` |
+| 模块装配 / 启动流程 / 运行时 | `main/AGENTS.md` | `packages/docs/src/pages/architecture/module-lifecycle.md` |
 | renderer 页面 / 卡片 / 请求层 | `renderer/AGENTS.md` | — |
-| 日志 / 异常 / 链路追踪 | `.agents/rules/logging-specification.md` | `docs/logging-tracing-and-error-handling-guide.md` · `docs/logging-and-exception-audit.md` |
-| 发版流程 / tag / changelogen | 全局红线 | `.github/CICD.md` · `docs/adr/0004` |
+| 日志 / 异常 / 链路追踪 | `.agents/rules/logging-specification.md` | `packages/docs/src/pages/main/logging.md` · `packages/docs/src/pages/main/tracing.md` |
+| 发版流程 / tag / changelogen | 全局红线 | `.github/CICD.md` |
 
 这张表把「AI 该读什么」从临场判断变成查表：新增业务域先去读四包 AGENTS.md，模块装配先读 main 的规则，日志问题先读横切规则。表里的「再查」列只给路径，不复制深档内容——规则与解释各留一处。
 

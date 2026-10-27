@@ -32,8 +32,7 @@ pnpm --filter @app/renderer lint       # Biome 代码规范与格式化检查
 
 ## 跨包与文档关联
 
-- 多语言架构深度指南：参见 [docs/i18n/architecture.md](../../docs/i18n/architecture.md)
-- 多语言日常实操 SOP：参见 [docs/i18n/guide.md](../../docs/i18n/guide.md)
+- 多语言实操与架构：参见 [国际化（Lingui）](../docs/src/pages/ui/lingui.md)
 - 契约源头：参见 [packages/shared/README.md](../shared/README.md)
 - 安全桥接：参见 [packages/preload/README.md](../preload/README.md)
 - 主进程实现：参见 [packages/main/README.md](../main/README.md)

@@ -49,7 +49,7 @@ logger.error(`Renderer process gone unexpectedly: reason=${details.reason}`);
 
 ## 6. 跨进程排障链路（trace_id 约定）
 
-- **invoke 主干已通**：走 `callIpc` 的调用失败，渲染失败行（`logIpc`）、主进程同一调用的日志行（AsyncLocalStorage 注入）、`traces.ndjson` span 三处共用同一 trace_id，凭行内 `[trace_id:...]` 互查；三文件联动查法见 `docs/logging-tracing-and-error-handling-guide.md` §三.4。
+- **invoke 主干已通**：走 `callIpc` 的调用失败，渲染失败行（`logIpc`）、主进程同一调用的日志行（AsyncLocalStorage 注入）、`traces.ndjson` span 三处共用同一 trace_id，凭行内 `[trace_id:...]` 互查。
 - **事件推送路径无 trace**：不经 invoke 的错误（如 `updater:event:state` 推送）其呈现行不带 trace_id、不产生 span，真实原因按写入点文案到 `main.log` 检索（降级查法）。
 - **主进程背景异步无 trace 属预期**：electron-updater 事件回调、定时器等不在任何 invoke 上下文内，按写入点文案检索即可。
 - **启动静默降级必须有行**：UI 静默回落默认值（如 `config.get` 失败不弹窗）时，落盘日志是唯一痕迹，不得空吞——这是「UI 有错必有行」铁律在无提示侧的对偶。
@@ -67,3 +67,20 @@ logger.error(`Renderer process gone unexpectedly: reason=${details.reason}`);
 | 同步读取 | 1 | 不适用（`usePlatform`，非 Result） | 不适用 |
 
 裸调违规于 2026-10-24 审计后清零（修复见 PR #54、#55）。
+
+## 8. 异常上报约定（Sentry）
+
+落盘日志与 Sentry 上报是两条独立链路：日志全量留在本地，Sentry 只收需要跨用户聚合的异常。判断标准：
+
+| 场景 | 上报 Sentry | 日志级别 |
+| --- | :---: | :---: |
+| 未捕获的全局崩溃 / OOM | ✅ 必报（SDK 自动托管） | `error` |
+| 底层硬件 / 驱动不可逆故障（如 USB 枚举崩溃） | ✅ 上报 | `error` |
+| 文件读写权限异常 / IO 崩溃 | ✅ 上报 | `error` |
+| 表单校验未通过（`VALIDATION_ERROR`） | ❌ 不报 | `warn` |
+| 用户主动取消对话框 / 取消升级 | ❌ 不报 | `info` |
+| 接口网络超时（偶发重试成功） | ❌ 不报 | `warn` |
+
+- **上报必须带分组信息**：`tags.domain`（业务域，如 `hardware.usb`）、平台字段，以及 `extra.traceId` / `extra.code`——云端异常与本地日志靠 trace_id 对账。
+- **IPC 级别随错误码**：主进程 IPC 失败的日志级别由 `ipc-tracer` 按 `ErrorCode` 决定，业务层不要重复定级，也不要手写数字状态码。
+- **展示脱敏、日志留存**：底层错误串只进日志；界面呈现走 i18n 文案，不得把原始错误串直接抛给用户。
