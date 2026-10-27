@@ -30,7 +30,7 @@ export async function initApp(initConfig: AppInitConfig) {
     .init(createConfigModule())
     .init(createNativeThemeModule())
     .init(createIPCModule())
-    // 主进程就绪源：链位在 WindowManager 之前，信号先于窗口与壳（spec §4.6 / ADR-0003）
+    // 主进程就绪源：链位在 WindowManager 之前，信号先于窗口与壳
     .init(createStartupReadinessModule())
     .init(createWindowManagerModule({ initConfig }))
     .init(createUpdaterWindowModule({ initConfig }))

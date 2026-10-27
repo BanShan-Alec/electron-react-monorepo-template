@@ -14,16 +14,15 @@
 | **`@app/main`** | [`packages/main/`](packages/main) | **本地微型后端**：基于 ModuleRunner 流水线管理窗口与系统生命周期，采用 `Controller ➔ Service` 严格分层处理 IPC 请求与原生系统交互 | [Main 架构指南](packages/main/README.md) |
 | **`@app/preload`** | [`packages/preload/`](packages/preload) | **安全隔离桥接**：在 Context Isolation 沙箱保护下，将强类型的 `apiBridge` 通过 `contextBridge` 安全暴露为 `window.api` | [Preload 架构指南](packages/preload/README.md) |
 | **`@app/renderer`** | [`packages/renderer/`](packages/renderer) | **现代前端界面**：React 19 + TailwindCSS + antd + LinguiJS，采用自包含 Feature 驱动架构，统一通过 `useIpc` 消费数据 | [Renderer 架构指南](packages/renderer/README.md) |
-| **🌐 多语言架构** | [`docs/i18n/`](docs/i18n) | **中文优先现代国际化**：LinguiJS 6、Source-as-Key 理念、Vite 8 AST 宏优化、按需独立 Chunk 拆分与跨进程原生托盘联动 | [i18n 架构指南](docs/i18n/architecture.md) · [实操 SOP](docs/i18n/guide.md) |
+| **🌐 多语言架构** | [`packages/renderer/`](packages/renderer) | **中文优先现代国际化**：LinguiJS 6、Source-as-Key 理念、Vite 8 AST 宏优化、按需独立 Chunk 拆分与跨进程原生托盘联动 | [国际化（Lingui）](packages/docs/src/pages/ui/lingui.md) |
 | **🧪 E2E 自动化测试** | [`e2e/`](e2e) | **端到端质量防护**：基于 Playwright 驱动真实打包/运行态 Electron 进程，常态化保障主题、多语言、托盘及防冲刷逻辑 | [测试用例集](e2e/settings.spec.ts) |
-| **📜 日志、Trace 与异常** | [`docs/logging-tracing-and-error-handling-guide.md`](docs/logging-tracing-and-error-handling-guide.md) | **可观测性与异常上报**：主/渲染进程 ScopedLogger 实战规范、Mini-OTel W3C 跨进程 Trace 贯通与 Sentry 分级闭环上报指南 | [实战开发速查](docs/logging-tracing-and-error-handling-guide.md) · [系统审查指南](docs/logging-and-exception-audit.md) |
-| **🚀 首屏渐进式加载** | [`docs/adr/`](docs/adr) | **启动体验设计定稿**：窗口即时呈现（废除 ready-to-show 门禁）、内联启动壳与双门禁就绪协调、win32 无边框重绘守护与主题底色同源 | [ADR-0001 窗口材质裁决](docs/adr/0001-first-screen-keeps-opaque-wco-window.md) · [ADR-0003 门禁注册表](docs/adr/0003-startup-gate-registry.md) |
-| **🪟 WCO 标题栏接入** | [`docs/wco-native-titlebar-integration.md`](docs/wco-native-titlebar-integration.md) | **跨项目一体化标题栏指南**：平台契约矩阵（darwin/win32/linux）、三条铁律与运行时更新约束，参照本仓 `titlebar-overlay.ts` 落地 | [WCO 接入指南](docs/wco-native-titlebar-integration.md) |
-| **📦 依赖拓扑与打包隔离** | [`docs/dependency-rules.md`](docs/dependency-rules.md) | **Monorepo 依赖分层与防膨胀门禁**：根目录仅允许 `@app/main`，主进程 external 为显式清单（electron / usb / electron-updater），其余依赖编译期内联，Renderer 遵循通用 Web 规范 | [依赖与打包隔离规范](docs/dependency-rules.md) |
-| **🌐 运行环境与模式规范** | [`docs/environment-specification.md`](docs/environment-specification.md) | **全栈运行环境与模式控制**：彻底统一基于 `MODE`（dev/prod/test），解耦物理打包态 `app.isPackaged`，建立 `@app/shared`、Main、Renderer 三级门面与测试隔离防护 | [环境控制规范](docs/environment-specification.md) |
+| **📜 日志、Trace 与异常** | [`packages/main/`](packages/main) | **可观测性与异常上报**：主/渲染进程 ScopedLogger 实战规范、Mini-OTel W3C 跨进程 Trace 贯通与 Sentry 分级闭环上报指南 | [本地日志](packages/docs/src/pages/main/logging.md) · [全链路追踪](packages/docs/src/pages/main/tracing.md) |
+| **🚀 首屏渐进式加载** | [`packages/renderer/`](packages/renderer) | **启动体验设计定稿**：窗口即时呈现（废除 ready-to-show 门禁）、内联启动壳与门禁注册表就绪协调、win32 无边框重绘守护与主题底色同源 | [首屏体验（Startup-orchestration）](packages/docs/src/pages/ui/first-screen.md) |
+| **🪟 WCO 标题栏接入** | [`packages/main/`](packages/main) | **跨项目一体化标题栏指南**：平台契约矩阵（darwin/win32/linux）、三条铁律与运行时更新约束，参照本仓 `titlebar-overlay.ts` 落地 | [原生窗口体验（WCO）](packages/docs/src/pages/ui/wco.md) |
+| **📦 依赖拓扑与打包隔离** | [`pnpm-workspace.yaml`](pnpm-workspace.yaml) | **Monorepo 依赖分层与防膨胀门禁**：根目录仅允许 `@app/main`，主进程 external 为显式清单（electron / usb / electron-updater），其余依赖编译期内联，Renderer 遵循通用 Web 规范 | [依赖管理（Monorepo）](packages/docs/src/pages/engineering/dependency-management.md) |
+| **🌐 运行环境与模式规范** | [`packages/shared/`](packages/shared) | **全栈运行环境与模式控制**：彻底统一基于 `MODE`（dev/prod/test），解耦物理打包态 `app.isPackaged`，建立 `@app/shared`、Main、Renderer 三级门面与测试隔离防护 | [环境变量管理（Dotenv）](packages/docs/src/pages/engineering/env-vars.md) |
 | **工程质量规范** | [`CONTRIBUTING.md`](CONTRIBUTING.md) | **研发与提交守则**：全库 Biome 静态检查与格式化、桶文件禁令（noBarrelFile）、Conventional Commits 提交校验及 changelogen 自动化发布 | [团队工程规范](CONTRIBUTING.md) |
-| **⚙️ CI/CD 与工作流** | [`.github/`](.github) | **自动化研发管线**：PR 门禁（typecheck / lint / test / e2e）、OpenCodeReview AI 审查、CodeQL 安全扫描、tag 驱动的三平台自动发版与 `pnpm pr` 工作流命令 | [CI/CD 流程指南](.github/CICD.md) |
-| **🎨 模板定制速查** | [`docs/template-customization-guide.md`](docs/template-customization-guide.md) | **新项目品牌重塑指南**：从模板派生新应用时，关于应用标识、包名、多端原生图标及环境变量替换的轻量级速查清单 | [定制与替换速查表](docs/template-customization-guide.md) |
+| **⚙️ CI/CD 与工作流** | [`.github/`](.github) | **自动化研发管线**：PR 门禁（typecheck / lint / test / e2e / docs）、OpenCodeReview AI 审查、CodeQL 安全扫描、tag 驱动的三平台自动发版与 `pnpm pr-review` 工作流命令 | [CI/CD 流程指南](.github/CICD.md) |
 
 > 🤖 **AI 协作者入口**：[AGENTS.md](AGENTS.md)（全局红线 + 各包规则索引 + 任务路由）。
 
@@ -90,7 +89,7 @@ flowchart LR
 4. **Phase 4：在 `@app/renderer` 构建自包含 Feature 消费**
    - 在 `src/features/notes/` 下建立自包含域（`index.tsx`、`hooks/`、`components/`）；
    - 在 hook 中调用 `useIpc('notes.create', window.api.notes.create)`，自动获得解构后的 `data` 与异常捕获，传递给展示卡片；
-   - 界面多语言文案编写与一键提取请参考 [多语言实操手册](docs/i18n/guide.md)。
+   - 界面多语言文案编写与一键提取请参考 [国际化（Lingui）](packages/docs/src/pages/ui/lingui.md)。
    - 📖 *组件分层规范请参考：[Renderer 规范](packages/renderer/README.md#feature-规范)*
 
 ---
@@ -101,14 +100,6 @@ flowchart LR
 electron-react-monorepo-template/
 ├── .config/                  # 工程工具链配置（Biome、Commitlint、changelogen、Vitest、Playwright）
 ├── build/                    # 打包配置与原生静态资源（图标、entitlements 等）
-├── docs/                     # 架构深度原理与开发指南
-│   ├── adr/                  # [架构决策] ADR-0001 首屏窗口保持不透明与 WCO 材质裁决
-│   ├── i18n/                 # [多语言] 架构设计 (architecture.md) 与实操 SOP (guide.md)
-│   ├── electron-path-resolution-deep-dive.md # 跨平台路径管理底层原理与避坑深度实践
-│   ├── electron-github-ota-deep-dive.md      # 跨平台打包与 GitHub OTA 自动更新深度指南
-│   ├── logging-tracing-and-error-handling-guide.md # 日志打法、Mini-OTel 链路追踪与 Sentry 闭环速查指南
-│   ├── logging-and-exception-audit.md # 日志轮转与跨进程异常分级防护指南
-│   └── wco-native-titlebar-integration.md # WCO 原生标题栏跨项目接入指南
 ├── e2e/                      # Playwright E2E 自动化测试套件（真实 Electron 运行态驱动）
 │   ├── helpers/              # Electron 启动器、隔离用户数据目录与生命周期夹具
 │   ├── first-screen.spec.ts  # 首屏渐进式加载验收用例（AC-1~AC-5）
@@ -132,7 +123,7 @@ electron-react-monorepo-template/
 ## 🚀 快速上手
 
 > [!TIP]
-> 如果你是首次从本模板创建新项目，建议先阅读 **[模板新项目定制速查清单](docs/template-customization-guide.md)**，快速完成应用名称、App ID、多端图标及发布源的个性化替换。
+> 如果你是首次从本模板创建新项目，建议先阅读 **[配置项归属（Configuration-map）](packages/docs/src/pages/dx/configuration-map.md)**，快速完成应用名称、App ID、多端图标及环境变量的个性化替换。
 
 ### 环境要求
 - **Node.js**: `>= 24.0.0`

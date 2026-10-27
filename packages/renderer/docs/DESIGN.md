@@ -16,4 +16,4 @@ AI 在 renderer 写样式时唯一需要遵守的视觉纪律；品牌定制入�
 ## 指针
 
 - 当前品牌色值以 `src/styles/tokens.css` 为唯一真源，本文不复制色板（避免双源漂移）。
-- 品牌定制（换 logo / 主色 / 应用名）入口：[docs/template-customization-guide.md](../../../docs/template-customization-guide.md)。
+- 品牌定制（换 logo / 主色 / 应用名）入口：[配置项归属（Configuration-map）](../../docs/src/pages/dx/configuration-map.md)。

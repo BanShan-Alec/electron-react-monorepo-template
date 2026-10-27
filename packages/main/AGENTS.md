@@ -56,7 +56,7 @@ packages/main/src/
 - ❌ **禁止在 Controller 中写实质业务**（如操作数据库、复杂运算、读写文件），Controller 只做参数校验、调用与返回。
 - ❌ **禁止裸传错误**：不得返回裸 Error 对象，必须映射为带 `ErrorCode` 的 `Result<never>`。
 - ❌ **禁止反向依赖 Renderer**：主进程代码仅消费 `@app/shared`。唯一合法例外：`index.ts` 进程装配阶段经 `require.resolve('@app/renderer')` / `require.resolve('@app/renderer/updater')` 获取生产静态 HTML 产物物理路径。
-- ❌ **禁止遗漏原生模块 external 对齐**：主进程声明的生产依赖必须 100% 在 `packages/main/vite.config.ts` 的 `rolldownOptions.external` 中排除，由 CI 门禁 `pnpm verify:deps` 自动保护（规范见 [docs/dependency-rules.md](../../docs/dependency-rules.md)）。`@sentry/electron` 是 devDependency、经 `ssr.noExternal` 主动内联，不在 external 之列，不构成违例。
+- ❌ **禁止遗漏原生模块 external 对齐**：主进程声明的生产依赖必须 100% 在 `packages/main/vite.config.ts` 的 `rolldownOptions.external` 中排除，由 CI 门禁 `pnpm verify:prebuild` 自动保护。`@sentry/electron` 是 devDependency、经 `ssr.noExternal` 主动内联，不在 external 之列，不构成违例。
 
 ## 5. 新增业务领域标准开发范式 (SOP)
 
@@ -130,4 +130,4 @@ export function registerAllControllers(): void {
 ## 6. 提交前门禁
 
 根目录执行：`pnpm typecheck` · `pnpm lint` · `pnpm test`（与 CI 同款检查，本地先过再推送）；
-改动主进程生产依赖或 vite external 后追加 `pnpm verify:deps`。
+改动主进程生产依赖或 vite external 后追加 `pnpm verify:prebuild`。
