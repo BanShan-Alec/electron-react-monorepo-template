@@ -51,7 +51,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-env
-      # Electron 42+ 改为首次运行时惰性下载二进制；只下载不启动，规避 Linux sandbox 限制
+      # 保险冗余：根 postinstall 的 install-electron 已装（zip 由 setup-env 缓存预热）；
+      # 此步确保即便 postinstall 被跳过或改动，e2e 启动前二进制必在位
       - run: pnpm exec install-electron
       # electron.launch 以 package.json main 为入口,需要先产出各包的构建产物
       - run: pnpm run build
