@@ -81,7 +81,7 @@ packages/shared/
 - **单一事实源**：在 `constants/env.ts` 与 `types/env.ts` 中定义 `APP_ENV`（`'development' | 'production' | 'test'`）与 `AppEnv` 类型。
 - **门面消费**：主进程 (`packages/main/src/env.ts`) 提供权威读取门面；渲染进程经 `window.__APP_ENV__` 同步消费（类型声明见 `packages/renderer/src/env.d.ts`）。运行环境以 `MODE` 变量为唯一驱动源，严禁业务代码直接读取原生 `process.env.*`。
 - **跨端传递**：运行时环境由 `utils/env-packer.ts` 编解码，主进程经 `additionalArguments` 注入、preload 解包冻结后暴露，改配置不触发重新编译。
-- **详细规范**：参见全局架构文档 [全栈运行环境与模式控制规范](../../docs/environment-specification.md)。
+- **详细规范**：参见文档站 [环境变量管理（Dotenv）](../docs/src/pages/engineering/env-vars.md)。
 
 ## 3. 命名规范与风格
 

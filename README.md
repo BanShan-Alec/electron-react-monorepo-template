@@ -100,7 +100,7 @@ pnpm start     # 开发模式：Vite DevServer + Electron 双进程热重载
 | `pnpm build:win` / `:mac` / `:linux` | 分平台打包安装包 |
 | `pnpm test` / `pnpm test:e2e` | Vitest 单元测试 / Playwright 桌面端 E2E |
 
-完整命令清单见 [CONTRIBUTING.md](CONTRIBUTING.md) 与根 `package.json` 的 `scripts`。从模板派生自己的应用，按[模板定制速查](docs/template-customization-guide.md)替换应用名、App ID、图标与发布源。
+完整命令清单见 [CONTRIBUTING.md](CONTRIBUTING.md) 与根 `package.json` 的 `scripts`。从模板派生自己的应用，按[配置项归属（Configuration-map）](packages/docs/src/pages/dx/configuration-map.md)替换应用名、App ID、图标与发布源。
 
 ## 📚 文档站
 

@@ -5,7 +5,7 @@ import { handleTraced } from '../telemetry/ipc-tracer';
 import { broadcast } from './window/window-registry';
 
 /**
- * 主进程就绪源（specs/first-screen-loading.md §4.6 / ADR-0003）
+ * 主进程就绪源
  *
  * ModuleRunner 链位在 IPC 模块之后、WindowManager 之前：enable() 完成即代表
  * 主进程初始化链就绪，此时窗口尚未创建——信号必然先于壳监听器的注册，

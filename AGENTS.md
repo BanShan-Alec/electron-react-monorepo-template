@@ -13,7 +13,7 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 ## 2. 全局红线（包无关，一句话可判定）
 
 1. **根目录禁增业务依赖**：根 `package.json` 的 `dependencies` 只能包含 `@app/main`。
-   （2026-10-18 立；门禁：CI `verify:deps`，规范见 [docs/dependency-rules.md](docs/dependency-rules.md)）
+   （2026-10-18 立；门禁：CI `verify:prebuild`）
 2. **禁止桶文件**：不得新增只做重导出的 `index.ts`，严禁 `export *`；Biome `noBarrelFile` /
    `noReExportAll` 为 error，不设白名单。组件 `Xxx/index.tsx`（一组件一文件夹的本体实现）不是桶文件，除外。
    （2026-10-18 立；例外澄清见 [CONTRIBUTING.md](CONTRIBUTING.md) §一.3）
@@ -36,27 +36,32 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 | 任务 | 先读 | 再查 |
 | --- | --- | --- |
 | 新增业务域（shared→preload→main→renderer 全链路） | 四包的 AGENTS.md | README「全栈端到端功能开发 SOP」 |
-| 模块装配 / 启动流程 / 运行时 | main/AGENTS.md | docs/module-and-runtime-specification.md |
-| 运行环境 / MODE / env 门面 | shared/AGENTS.md | docs/environment-specification.md |
-| 依赖拓扑 / 打包隔离 / external | main/AGENTS.md | docs/dependency-rules.md |
-| 路径管理 / 跨平台资源 / ASAR 避坑 | main/AGENTS.md | docs/electron-path-resolution-deep-dive.md |
-| 打包产物 / 安装包 / OTA 升级 | main/AGENTS.md | docs/packaging-and-dependency-management.md · docs/electron-github-ota-deep-dive.md |
+| 模块装配 / 启动流程 / 运行时 | main/AGENTS.md | packages/docs/src/pages/architecture/module-lifecycle.md · packages/docs/src/pages/architecture/layering.md |
+| 运行环境 / MODE / env 门面 | shared/AGENTS.md | packages/docs/src/pages/engineering/env-vars.md · packages/docs/src/pages/dx/dev-orchestration.md |
+| 依赖拓扑 / 打包隔离 / external | main/AGENTS.md | packages/docs/src/pages/engineering/dependency-management.md |
+| 路径管理 / 跨平台资源 / ASAR 避坑 | main/AGENTS.md | packages/docs/src/pages/security/path-robustness.md |
+| 打包产物 / 安装包 / OTA 升级 | main/AGENTS.md | packages/docs/src/pages/delivery/packaging.md · packages/docs/src/pages/delivery/auto-update.md |
 | renderer 页面 / 卡片 / 请求层 | renderer/AGENTS.md | — |
-| 视觉 / token / 品牌定制 | renderer/docs/DESIGN.md | docs/template-customization-guide.md |
-| 多语言词条与架构 | renderer/AGENTS.md | docs/i18n/guide.md · docs/i18n/architecture.md |
-| 日志 / 异常 / 链路追踪 | .agents/rules/logging-specification.md | docs/logging-tracing-and-error-handling-guide.md · docs/logging-and-exception-audit.md |
-| 首屏 / 启动壳 / WCO 标题栏 | main/AGENTS.md | docs/adr/0001-0003 · docs/wco-native-titlebar-integration.md |
-| 测试 / 排错 / 提 PR / 触发 review | 全局红线 | docs/code-review.md · CONTRIBUTING §二 |
-| 发版流程 / tag / changelogen | 全局红线 | .github/CICD.md · docs/adr/0004 |
+| 视觉 / token / 品牌定制 | renderer/docs/DESIGN.md | — |
+| 多语言词条与架构 | renderer/AGENTS.md | packages/docs/src/pages/ui/lingui.md |
+| 日志 / 异常 / 链路追踪 | .agents/rules/logging-specification.md | packages/docs/src/pages/main/logging.md · packages/docs/src/pages/main/tracing.md |
+| 首屏 / 启动壳 / WCO 标题栏 | main/AGENTS.md | packages/docs/src/pages/ui/first-screen.md · packages/docs/src/pages/ui/wco.md · packages/docs/src/pages/ui/window-state.md |
+| 测试 / 排错 / 提 PR / 触发 review | 全局红线 | packages/docs/src/pages/ai/review-loop.md · CONTRIBUTING §二 |
+| 发版流程 / tag / changelogen | 全局红线 | .github/CICD.md |
 
 ## 5. 常用命令（根目录执行）
 
 `pnpm start` / `start:dist` · `pnpm test` · `pnpm test:e2e` · `pnpm lint` / `lint:fix` ·
 `pnpm typecheck` · `pnpm i18n:extract` · `pnpm build:dir` / `build:win` / `build:mac` /
-`build:linux` · `pnpm verify:deps` · `pnpm pr-review <pull|trigger|create|status|merge>`
+`build:linux` · `pnpm verify:prebuild` · `pnpm pr-review <pull|trigger|create|status|merge>`
 
 ## 6. 指针
 
 - 人类向全局工程规范（Biome 细节 / commit / husky / changelogen / .config / pnpm / CJS 脚本）：[CONTRIBUTING.md](CONTRIBUTING.md)
 - 横切规则（globs 触发，落盘日志英文）：[.agents/rules/logging-specification.md](.agents/rules/logging-specification.md)
-- 架构决策记录：docs/adr/（0001-0006）
+
+## 7. 模块系统与脚本执行约定
+
+- **全仓 ESM-only**：包源码统一 ES Module；`.ts` 脚本用 `tsx` 直接执行（`scripts/*.ts`、pr-review CLI），不引入 ts-node/CJS 包装。
+- **main / preload 产物是 CJS**：Vite 以 lib 形式输出 `dist/index.cjs`，`package.json` 的 `main`/`exports` 指向它；源码仍是 ESM，由构建器转译。
+- **renderer 的 Node 隔离是约定、未机械 enforce**：靠 `packages/tsconfig/react.json` 的 `types: ["vite/client"]` 白名单约束，但 `vite.config.ts` 与 `src` 同属一个 program，Node 类型会经 `vite` 传递进来。不要在 renderer 里 `import 'node:fs'` 或使用 `__dirname` / `process`，typecheck 不会拦。
