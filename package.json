@@ -81,5 +81,8 @@
   },
   "dependencies": {
     "@app/main": "workspace:*"
+  },
+  "config": {
+    "electron_mirror": "https://npmmirror.com/mirrors/electron/"
   }
 }
