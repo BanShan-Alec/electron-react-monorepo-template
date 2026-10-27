@@ -108,7 +108,7 @@ lint:
 
 依赖治理还有第三道闸——pnpm 的安装脚本审批。pnpm 12 的 `strictDepBuilds` 默认开启：没列入 `allowBuilds` 却带构建脚本的依赖会直接让安装失败（`ERR_PNPM_IGNORED_BUILDS`），而不是静默跳过——本仓库被「electron 二进制静默缺失」坑过，快速失败正是要的状态。审批清单住在 `pnpm-workspace.yaml`（见上文），新依赖撞错时用 `pnpm ignored-builds` 列出全部待审批包、`pnpm approve-builds <包名>` 逐个审批，决策落回 `allowBuilds`——供应链面上多了一层「知情同意」。
 
-第四道闸管一个审批管不了的例外：electron 42+ 起 npm 包不带 install 生命周期脚本（二进制惰性下载），全新工作区装完不带 dist，`require('electron')` 直接报错——`allowBuilds` 对它无效，因为根本没有脚本可审批。解法是根 `package.json` 的 postinstall 一行 `install-electron`：安装后调用官方安装器，版本/dist 判定由它自己完成（就绪约 100ms 空转，缺失命中机器级 zip 缓存约 2 秒）。二进制下载源也收进仓库——同文件 `config.electron_mirror` 指向 npmmirror：`.npmrc` 的 registry 键管 npm 包、管不了 electron 二进制（pnpm 不把 `.npmrc` 自定义键注入脚本环境，`config` 字段才是实测有效通道），国内安装开箱走镜像。CI 侧 setup-env 用 `actions/cache` 预热三平台缓存目录，消掉每个 job 重复下载的带宽与抖动，e2e job 另留显式步骤作保险：
+第四道闸管一个审批管不了的例外：electron 42+ 起 npm 包不带 install 生命周期脚本（二进制惰性下载），全新工作区装完不带 dist，`require('electron')` 直接报错——`allowBuilds` 对它无效，因为根本没有脚本可审批。解法是根 `package.json` 的 postinstall 一行 `install-electron`：安装后调用官方安装器，版本/dist 判定由它自己完成（就绪约 100ms 空转，缺失命中机器级 zip 缓存约 2 秒）。二进制下载源也收进仓库——同文件 `config.electron_mirror` 指向 npmmirror，国内安装开箱走镜像。CI 侧 setup-env 用 `actions/cache` 预热三平台缓存目录，消掉每个 job 重复下载的带宽与抖动，e2e job 另留显式步骤作保险：
 
 → 源码：[package.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/package.json)（postinstall 一行 + config.electron_mirror）
 
