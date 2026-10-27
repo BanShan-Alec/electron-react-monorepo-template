@@ -24,3 +24,20 @@
     font-size: clamp(15px, 5vw, 24px);
   }
 }
+
+/* 滚动条：Vocs 默认 *{ scrollbar-color: light-dark(gray10, gray7) } 的 thumb
+   偏重。定稿 = 浅色比浏览器默认浅两档、深色比浏览器默认深两档（灰阶刻度）：
+   浏览器默认浅色 thumb ≈#c1c1c1（L≈0.80，介于 gray10/gray11 之间）→ 上两档取
+   gray12（L 0.933）；深色默认 ≈#6e6e6e（L≈0.52，≈gray7）→ 下两档取 gray5
+   （L 0.26，贴近深色背景、滚动条退居背景）。本文件经 userStyles 排在核心
+   CSS 之后，同选择器同优先级天然覆盖。 */
+* {
+  scrollbar-color: light-dark(var(--vocs-color-gray12), var(--vocs-color-gray5)) transparent;
+}
+
+/* 隐藏 Ask AI 浮动气泡（用户指定 CSS 隐藏、不改页面 frontmatter）：底部
+   「Ask AI...」触发栏。Ctrl+I 弹出的菜单 portal 与「Copy page for AI」按钮
+   保留不动。 */
+[data-v-ask-ai-container] {
+  display: none;
+}
