@@ -58,7 +58,7 @@ Electron 45 · React 19 · Vite 8 · TypeScript 6 · antd · TailwindCSS · Ling
 
 **[查看完整解法目录 →](https://banshan-alec.github.io/electron-react-monorepo-template/)**
 
-[工程化基座](https://banshan-alec.github.io/electron-react-monorepo-template/engineering/dependency-management/) · [开发体验](https://banshan-alec.github.io/electron-react-monorepo-template/dx/dev-orchestration/) · [架构组织](https://banshan-alec.github.io/electron-react-monorepo-template/architecture/multi-window/) · [界面与交互](https://banshan-alec.github.io/electron-react-monorepo-template/ui/antd/) · [主进程运行时](https://banshan-alec.github.io/electron-react-monorepo-template/main/tracing/) · [安全与性能](https://banshan-alec.github.io/electron-react-monorepo-template/security/sandbox/) · [测试矩阵](https://banshan-alec.github.io/electron-react-monorepo-template/testing/unit-tests/) · [交付门禁](https://banshan-alec.github.io/electron-react-monorepo-template/delivery/packaging/) · [AI 协同](https://banshan-alec.github.io/electron-react-monorepo-template/ai/review-loop/)
+[工程化基座](https://banshan-alec.github.io/electron-react-monorepo-template/engineering/) · [开发体验](https://banshan-alec.github.io/electron-react-monorepo-template/dx/) · [架构组织](https://banshan-alec.github.io/electron-react-monorepo-template/architecture/) · [界面与交互](https://banshan-alec.github.io/electron-react-monorepo-template/ui/) · [主进程运行时](https://banshan-alec.github.io/electron-react-monorepo-template/main/) · [安全与性能](https://banshan-alec.github.io/electron-react-monorepo-template/security/) · [测试矩阵](https://banshan-alec.github.io/electron-react-monorepo-template/testing/) · [交付门禁](https://banshan-alec.github.io/electron-react-monorepo-template/delivery/) · [AI 协同](https://banshan-alec.github.io/electron-react-monorepo-template/ai/)
 
 ## 🏗️ 仓库架构
 
