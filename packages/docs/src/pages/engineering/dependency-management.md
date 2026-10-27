@@ -108,9 +108,9 @@ lint:
 
 依赖治理还有第三道闸——pnpm 的安装脚本审批。pnpm 12 的 `strictDepBuilds` 默认开启：没列入 `allowBuilds` 却带构建脚本的依赖会直接让安装失败（`ERR_PNPM_IGNORED_BUILDS`），而不是静默跳过——本仓库被「electron 二进制静默缺失」坑过，快速失败正是要的状态。审批清单住在 `pnpm-workspace.yaml`（见上文），新依赖撞错时用 `pnpm ignored-builds` 列出全部待审批包、`pnpm approve-builds <包名>` 逐个审批，决策落回 `allowBuilds`——供应链面上多了一层「知情同意」。
 
-第四道闸管一个审批管不了的例外：electron 42+ 起 npm 包不带 install 生命周期脚本（二进制惰性下载），全新工作区装完不带 dist，`require('electron')` 直接报错——`allowBuilds` 对它无效，因为根本没有脚本可审批。根 `package.json` 的 postinstall 守卫每次安装后按 `dist/version` 判定，缺失或版本不符时补跑 install.js（命中机器级 zip 缓存约 2 秒）；CI 里由 e2e job 显式执行、守卫跳过：
+第四道闸管一个审批管不了的例外：electron 42+ 起 npm 包不带 install 生命周期脚本（二进制惰性下载），全新工作区装完不带 dist，`require('electron')` 直接报错——`allowBuilds` 对它无效，因为根本没有脚本可审批。解法是根 `package.json` 的 postinstall 一行 `install-electron`：安装后调用官方安装器，版本/dist 判定由它自己完成（就绪约 100ms 空转，缺失命中机器级 zip 缓存约 2 秒）。CI 侧 setup-env 用 `actions/cache` 预热三平台缓存目录，消掉每个 job 重复下载的带宽与抖动，e2e job 另留显式步骤作保险：
 
-→ 源码：[scripts/ensure-electron.mjs](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/ensure-electron.mjs)
+→ 源码：[package.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/package.json)（postinstall 一行）
 
 ### Node 版本与包管理器锁定
 
@@ -163,7 +163,7 @@ catalog 管的是依赖版本，Node 与 pnpm 本身的版本另有一套钉子�
 ## 怎么抄
 
 1. **workspace 骨架**：`pnpm-workspace.yaml` 收包、把 typescript/vite 等公共版本放进 `catalog:`，各包一律 `"catalog:"` 引用；隔离布局（`nodeLinker`）与提升模式（`publicHoistPattern`）也写在同一文件，`.npmrc` 只留 registry
-2. **依赖白名单**：根 `dependencies` 只留装配包，写 `verify-prebuild` 脚本校验，挂进 CI 的 lint job；`allowBuilds` 按需放行安装脚本，撞 `ERR_PNPM_IGNORED_BUILDS` 时用 `pnpm approve-builds` 审批；electron 二进制用 postinstall 守卫兜底
+2. **依赖白名单**：根 `dependencies` 只留装配包，写 `verify-prebuild` 脚本校验，挂进 CI 的 lint job；`allowBuilds` 按需放行安装脚本，撞 `ERR_PNPM_IGNORED_BUILDS` 时用 `pnpm approve-builds` 审批；electron 二进制用 postinstall 一行 `install-electron` 兜底，CI 侧缓存其机器级 zip 目录
 
 注意点：
 

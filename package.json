@@ -52,7 +52,7 @@
     "release:minor": "changelogen --release --minor",
     "release:major": "changelogen --release --major",
     "prepare": "husky",
-    "postinstall": "node scripts/ensure-electron.mjs"
+    "postinstall": "install-electron"
   },
   "lint-staged": {
     "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}": [

@@ -205,7 +205,7 @@ pnpm -F @app/renderer remove <包名>
 ### 5. pnpm 12 构建审批与缓存设置
 
 - **构建脚本审批**：`strictDepBuilds` 默认开启，未列入 `allowBuilds` 且带构建脚本的依赖会直接让安装失败（`ERR_PNPM_IGNORED_BUILDS`）——这是故意的快速失败，避免重演「electron 二进制静默缺失」。处置：`pnpm ignored-builds` 查看全部待审批包 → `pnpm approve-builds <包名>` 审批，决策写入 `pnpm-workspace.yaml` 的 `allowBuilds`。
-- **electron 二进制兜底**：electron 42+ 起 npm 包无 install 生命周期脚本，二进制惰性下载——全新工作区装完不带 dist，`require('electron')` 直接报错。根 `postinstall` 守卫 `scripts/ensure-electron.mjs` 每次安装后按 `dist/version` 判定，缺失或版本不符时执行 install.js（命中机器级 zip 缓存约 2 秒）；CI 由 e2e job 显式执行、守卫在 CI 环境跳过。二进制损坏或 electron 升级后同样自动重装。
+- **electron 二进制兜底**：electron 42+ 起 npm 包无 install 生命周期脚本，二进制惰性下载——全新工作区装完不带 dist，`require('electron')` 直接报错。根 `postinstall` 一行 `install-electron` 在每次安装后调用官方安装器（内部自带版本/dist 判定：就绪时约 100ms 空转，缺失时命中机器级 zip 缓存约 2 秒）；二进制损坏或 electron 升级后同样自动重装。CI 侧由 setup-env 的 `actions/cache` 预热三平台 electron 缓存目录，e2e job 另留一步显式安装作保险冗余。国内网络拉不动 github.com 时设 `ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/"`。
 - **minimumReleaseAge: 1440**：发布不满 24 小时的依赖禁止安装（供应链防护）。确需安装全新冠名版本时，用 `minimumReleaseAgeExclude` 按包临时豁免，不要全局关闭。
 
 ---
