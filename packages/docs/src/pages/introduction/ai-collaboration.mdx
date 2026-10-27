@@ -30,6 +30,6 @@ description: 给 AI 协作者的复制即用提示词，以及 AGENTS.md 约定�
 
 ## 本站对 AI 友好的地方
 
-- 每页都有 `llms.txt` 与 Markdown 路由输出（Vocs 内建），AI 可直接拉取轻量文本而非解析 HTML
+- 站点根目录提供 `llms.txt`（带描述的页面索引）与 `llms-full.txt`（全站全文），每个页面另有预生成的 Markdown 版本（`/assets/md/<页面路径>.md`），AI 可直接拉取轻量文本而非解析 HTML
 - 解法页结构固定（坑 → 解法 → 怎么抄），标题带括号标签（如「应用打包（Electron-builder）」），适合语义检索
 - 正文中的源码链接全部指向仓库真实文件，AI 可以「读文档 → 跳源码」一步到位
