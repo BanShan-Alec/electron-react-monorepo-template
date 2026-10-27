@@ -76,8 +76,7 @@ electron-react-monorepo-template/
 ├── .github/           # CI / CodeQL / OpenCodeReview / Docs / Release
 ├── build/             # electron-builder 动态打包 + Sentry 构建配置
 ├── scripts/           # dev / build / port-guard / verify-prebuild / verify-postbuild
-├── e2e/               # Playwright 桌面端 E2E
-└── docs/              # 仓库内深度文档（ADR / 环境 / 依赖 / 打包等）
+└── e2e/               # Playwright 桌面端 E2E
 ```
 
 各业务包的职责、README 与规则文件都在 `packages/<name>/` 下，AI 协作者从根 [AGENTS.md](AGENTS.md) 的任务路由进入。
