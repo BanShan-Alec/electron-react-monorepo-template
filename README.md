@@ -44,9 +44,9 @@ Electron 45 · React 19 · Vite 8 · TypeScript 6 · antd · TailwindCSS · Ling
 
 ## 📸 截图
 
-**应用主窗口**
+**应用主窗口（深色主题）**
 
-![应用主窗口](assets/screenshots/app-main-window.png)
+![应用主窗口](assets/screenshots/app-on-desktop.jpg)
 
 **文档站**
 
