@@ -169,3 +169,35 @@ catalog 管的是依赖版本，Node 与 pnpm 本身的版本另有一套钉子�
 
 - 第三方运行时依赖只进子包的 `dependencies`（如 `packages/main` 的 `electron-updater`），根目录出现第二个 `dependencies` 条目就是门禁失败
 - 公共工具链（`typescript`、`vite`、`zod`、`@types/node`、`vitest`）的版本只出现在 `pnpm-workspace.yaml` 的 `catalog:`，包内一律 `"catalog:"` 引用；业务依赖版本声明在各自的包里（如 `packages/main` 的 `electron-updater`、`usb`），同一依赖被多个包共用时应升入 catalog，避免两包各钉一个版本
+
+## FAQ
+
+### 主进程新增第三方依赖放哪里？
+
+```bash
+pnpm --filter @app/main add <pkg-name>
+```
+
+默认会被编译期内联。只有该库必须在运行时 `require`（含原生 addon、读取自身文件布局或动态加载）时，才需要把实际 specifier（含子路径）加入 `packages/main/vite.config.ts` 的 `rolldownOptions.external`。装完跑一次 `pnpm verify:prebuild`：根目录 `name` 规范与 `dependencies` 边界仍会被校验。
+
+### 主进程新增轻量纯 JS 工具库（希望直接打进 index.cjs）？
+
+```bash
+pnpm --filter @app/main add -D <pkg-name>
+```
+
+不需要改 `external`：主进程构建是 `ssr: { noExternal: true }`，除显式 external 清单外的模块都会被编译进 bundle——`electron-log` 放在 `devDependencies` 就是这个原因。
+
+### 渲染进程新增前端库或业务工具？
+
+按常规 Web 习惯即可：
+
+```bash
+# 业务代码使用的库
+pnpm --filter @app/renderer add lodash-es dayjs
+
+# 仅开发期使用的 Vite 插件或类型
+pnpm --filter @app/renderer add -D vite-plugin-xxx @types/xxx
+```
+
+渲染进程不需要任何 Electron 特殊配置：构建产物只搬运 dist，依赖分类与普通前端项目一致。

@@ -57,7 +57,7 @@ export function getTitleBarOverlayOptions(): { color: string; symbolColor: strin
 }
 ```
 
-`backgroundColor` 在渲染进程起来之前就生效，首帧看到的就是主题底色而非白屏。这对色值与 tokens.css 的容器底色变量同值对齐（`--color-bg-container`：浅 #ffffff / 暗 #141414）——源码注释自己写明「overlay 颜色与 tokens.css 主题变量对齐」；「严禁在别处硬编码」约束的是主进程 JS 侧：这对色值只在 titlebar-overlay.ts 一处计算，别处不得再写死。窗口状态持久化直接用 Electron 官方的 `windowStatePersistence`（按窗口 name 记忆 bounds 与最大化状态），另配 win32 dom-ready 补偿 `show+focus`，规避无边框窗口偶发的「任务栏有图标但窗口不可见」。
+`backgroundColor` 在渲染进程起来之前就生效，首帧看到的就是主题底色而非白屏。这对色值与 tokens.css 的容器底色变量同值对齐（`--color-bg-container`：浅 #ffffff / 暗 #141414）——源码注释自己写明「overlay 颜色与 tokens.css 主题变量对齐」；「严禁在别处硬编码」约束的是主进程 JS 侧：这对色值只在 titlebar-overlay.ts 一处计算，别处不得再写死。窗口位置与尺寸的记忆与首启计算见[窗口位置与尺寸（Window-state）](/ui/window-state)。
 
 ## 注意点
 
