@@ -1,202 +1,137 @@
-# Electron React Monorepo Template
+<div align="center">
 
-> 基于 **Electron 45 + Vite 8 + React 19 + ContextBridge (Typed IPC) + LinguiJS (中文优先 i18n) + TailwindCSS + Playwright + Biome** 构建的现代化、高性能、安全类型友好的桌面应用 Monorepo 模板。
+<img src="build/resources/icon.png" alt="Electron React Template" width="96" />
 
----
+# Electron React Template
 
-## 🗺️ 架构导航与文档索引 (Architecture Hub)
+Electron 桌面端坑位解法合集：每个解法都对应本仓库经过发版验证的真实实现<br />
+仓库同时是一套可 clone 的 Electron Monorepo 模板——clone 下来，解法就是你的起步代码
 
-本项目严格采用技术分层与自包含领域划分，根目录作为全景导航入口，各子包职责与独立文档规范索引如下：
+<p>
+<a href="https://github.com/BanShan-Alec/electron-react-monorepo-template/actions/workflows/ci.yml"><img src="https://github.com/BanShan-Alec/electron-react-monorepo-template/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/license-Unlicense-blue.svg" alt="License: Unlicense" /></a>
+<a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-%3E%3D24.0.0-339933?logo=node.js&logoColor=white" alt="Node.js" /></a>
+</p>
 
-| 模块 / 子包 / 文档 | 物理路径 | 核心职责 | 详细指南 |
-| :--- | :--- | :--- | :--- |
-| **`@app/shared`** | [`packages/shared/`](packages/shared) | **跨端契约单一事实源**：统一管理 Zod 运行时 Schema、IPC Channel 常量、纯 TypeScript 返回接口与 `Result<T>` 契约模型（无桶文件直出） | [Shared 架构指南](packages/shared/README.md) |
-| **`@app/main`** | [`packages/main/`](packages/main) | **本地微型后端**：基于 ModuleRunner 流水线管理窗口与系统生命周期，采用 `Controller ➔ Service` 严格分层处理 IPC 请求与原生系统交互 | [Main 架构指南](packages/main/README.md) |
-| **`@app/preload`** | [`packages/preload/`](packages/preload) | **安全隔离桥接**：在 Context Isolation 沙箱保护下，将强类型的 `apiBridge` 通过 `contextBridge` 安全暴露为 `window.api` | [Preload 架构指南](packages/preload/README.md) |
-| **`@app/renderer`** | [`packages/renderer/`](packages/renderer) | **现代前端界面**：React 19 + TailwindCSS + antd + LinguiJS，采用自包含 Feature 驱动架构，统一通过 `useIpc` 消费数据 | [Renderer 架构指南](packages/renderer/README.md) |
-| **🌐 多语言架构** | [`docs/i18n/`](docs/i18n) | **中文优先现代国际化**：LinguiJS 6、Source-as-Key 理念、Vite 8 AST 宏优化、按需独立 Chunk 拆分与跨进程原生托盘联动 | [i18n 架构指南](docs/i18n/architecture.md) · [实操 SOP](docs/i18n/guide.md) |
-| **🧪 E2E 自动化测试** | [`e2e/`](e2e) | **端到端质量防护**：基于 Playwright 驱动真实打包/运行态 Electron 进程，常态化保障主题、多语言、托盘及防冲刷逻辑 | [测试用例集](e2e/settings.spec.ts) |
-| **📜 日志、Trace 与异常** | [`docs/logging-tracing-and-error-handling-guide.md`](docs/logging-tracing-and-error-handling-guide.md) | **可观测性与异常上报**：主/渲染进程 ScopedLogger 实战规范、Mini-OTel W3C 跨进程 Trace 贯通与 Sentry 分级闭环上报指南 | [实战开发速查](docs/logging-tracing-and-error-handling-guide.md) · [系统审查指南](docs/logging-and-exception-audit.md) |
-| **🚀 首屏渐进式加载** | [`docs/adr/`](docs/adr) | **启动体验设计定稿**：窗口即时呈现（废除 ready-to-show 门禁）、内联启动壳与双门禁就绪协调、win32 无边框重绘守护与主题底色同源 | [ADR-0001 窗口材质裁决](docs/adr/0001-first-screen-keeps-opaque-wco-window.md) · [ADR-0003 门禁注册表](docs/adr/0003-startup-gate-registry.md) |
-| **🪟 WCO 标题栏接入** | [`docs/wco-native-titlebar-integration.md`](docs/wco-native-titlebar-integration.md) | **跨项目一体化标题栏指南**：平台契约矩阵（darwin/win32/linux）、三条铁律与运行时更新约束，参照本仓 `titlebar-overlay.ts` 落地 | [WCO 接入指南](docs/wco-native-titlebar-integration.md) |
-| **📦 依赖拓扑与打包隔离** | [`docs/dependency-rules.md`](docs/dependency-rules.md) | **Monorepo 依赖分层与防膨胀门禁**：根目录仅允许 `@app/main`，主进程 external 为显式清单（electron / usb / electron-updater），其余依赖编译期内联，Renderer 遵循通用 Web 规范 | [依赖与打包隔离规范](docs/dependency-rules.md) |
-| **🌐 运行环境与模式规范** | [`docs/environment-specification.md`](docs/environment-specification.md) | **全栈运行环境与模式控制**：彻底统一基于 `MODE`（dev/prod/test），解耦物理打包态 `app.isPackaged`，建立 `@app/shared`、Main、Renderer 三级门面与测试隔离防护 | [环境控制规范](docs/environment-specification.md) |
-| **工程质量规范** | [`CONTRIBUTING.md`](CONTRIBUTING.md) | **研发与提交守则**：全库 Biome 静态检查与格式化、桶文件禁令（noBarrelFile）、Conventional Commits 提交校验及 changelogen 自动化发布 | [团队工程规范](CONTRIBUTING.md) |
-| **⚙️ CI/CD 与工作流** | [`.github/`](.github) | **自动化研发管线**：PR 门禁（typecheck / lint / test / e2e）、OpenCodeReview AI 审查、CodeQL 安全扫描、tag 驱动的三平台自动发版与 `pnpm pr` 工作流命令 | [CI/CD 流程指南](.github/CICD.md) |
-| **🎨 模板定制速查** | [`docs/template-customization-guide.md`](docs/template-customization-guide.md) | **新项目品牌重塑指南**：从模板派生新应用时，关于应用标识、包名、多端原生图标及环境变量替换的轻量级速查清单 | [定制与替换速查表](docs/template-customization-guide.md) |
+<p>
+<a href="https://banshan-alec.github.io/electron-react-monorepo-template/">文档站</a> ·
+<a href="#-解法地图">解法地图</a> ·
+<a href="#-仓库架构">仓库架构</a> ·
+<a href="#-快速开始">快速开始</a> ·
+<a href="CONTRIBUTING.md">贡献指南</a> ·
+<a href="AGENTS.md">AGENTS.md</a>
+</p>
 
-> 🤖 **AI 协作者入口**：[AGENTS.md](AGENTS.md)（全局红线 + 各包规则索引 + 任务路由）。
+<p>
+Electron 45 · React 19 · Vite 8 · TypeScript 6 · antd · TailwindCSS · LinguiJS · Biome · Playwright
+</p>
 
----
-
-## 🔄 跨端 IPC 通信拓扑模型
-
-```mermaid
-flowchart LR
-    subgraph Renderer["渲染进程 (Renderer)"]
-        UI["Feature UI 组件"] --> Hook["useIpc / useManualRequest"]
-        Hook --> WindowApi["window.api (类型推导)"]
-    end
-
-    subgraph Preload["预加载沙箱 (Preload)"]
-        WindowApi -.-> Bridge["contextBridge.exposeInMainWorld"]
-        Bridge --> Invoke["ipcRenderer.invoke(CHANNEL, input)"]
-    end
-
-    subgraph Main["主进程 (Main - 本地微型后端)"]
-        Invoke -.-> Controller["Controller (Zod.safeParse 校验)"]
-        Controller --> Service["Service (纯业务/原生能力)"]
-        Service --> PackResult["catchToResult ➔ Result&lt;T&gt;"]
-    end
-
-    subgraph Shared["契约共享层 (Shared - 单一事实源)"]
-        Schema["Zod Schemas"] -.-> Controller
-        Channels["IPC_CHANNELS"] -.-> Preload
-        Channels -.-> Controller
-        Types["ElectronApi &amp; Result&lt;T&gt;"] -.-> Renderer
-        Types -.-> Preload
-    end
-
-    PackResult -.-> Hook
-```
+</div>
 
 ---
 
-## 🛠️ 全栈端到端功能开发 SOP (End-to-End Pipeline)
+> [!TIP]
+> **完整文档站**：[banshan-alec.github.io/electron-react-monorepo-template](https://banshan-alec.github.io/electron-react-monorepo-template/)
+>
+> 按 9 个维度组织的解法页，每页固定「坑 → 解法 → 怎么抄」，源码链接直达仓库真实文件。
 
-当需要新增一个业务领域（以新增 `notes` 便签领域为例）时，请严格遵照以下 **4 阶段标准流水线** 进行端到端开发：
+## ✨ 为什么是这份合集？
 
-```
-[Phase 1: Shared 契约] ➔ [Phase 2: Main 逻辑] ➔ [Phase 3: Preload 桥接] ➔ [Phase 4: Renderer 消费]
-```
+- **发版级，而非片段** —— 每个解法都随本仓库的安装包发出去、被真实更新过若干版本；不是开发态能跑就贴出来的 workaround
+- **源码可直接抄** —— 解法页固定三段式「要解决的坑 → 本仓库的解法 → 怎么抄」，每段实现都链到仓库真实文件
+- **成体系，不是清单堆叠** —— 9 个维度覆盖从工程基座到交付门禁，坑与坑之间的关联写在同一个体系里
+- **模板即载体** —— 整份合集就是一个可 clone 的 Electron Monorepo 模板，照着解法改造即可起步
 
-1. **Phase 1：在 `@app/shared` 声明跨端契约**
-   - 在 `schemas/notes.ts` 中定义 Zod 入参校验模型并推导类型；
-   - 在 `types/notes.ts` 中定义返回数据接口 `NoteItem`；
-   - 在 `constants/ipc-channels.ts` 中注册唯一通道常量 `IPC_CHANNELS.NOTES_CREATE`；
-   - 在 `types/api.ts` 中扩充 `ElectronApi` 声明。
-   - 📖 *完整代码模板请参考：[Shared 规范 - 新增业务开发范式](packages/shared/README.md#4-新增业务领域开发范式-sop)*
+## 🧭 解法地图
 
-2. **Phase 2：在 `@app/main` 实现主进程能力**
-   - 编写 `services/notes.service.ts` 实现业务逻辑与持久化（单例导出，不感知 IPC）；
-   - 编写 `controllers/notes.controller.ts` 执行 Zod `.safeParse()` 校验入参，并调用 `notesService`，异常统一包装为 `Result<T>`；
-   - 在 `controllers/index.ts` 中显式挂载注册 `registerNotesControllers()`。
-   - 📖 *完整代码模板请参考：[Main 规范 - 新增业务开发范式](packages/main/README.md#4-新增业务领域标准开发范式-sop)*
+### 工程化基座
 
-3. **Phase 3：在 `@app/preload` 挂载安全桥接**
-   - 在 `src/index.ts` 的 `apiBridge` 中对齐 `ElectronApi.notes` 的方法实现，调用 `ipcRenderer.invoke(IPC_CHANNELS.NOTES_CREATE, input)`。
-   - 📖 *安全约束请参考：[Preload 规范](packages/preload/README.md)*
+[依赖管理（Monorepo）](https://banshan-alec.github.io/electron-react-monorepo-template/engineering/dependency-management/) · [环境变量管理（Dotenv）](https://banshan-alec.github.io/electron-react-monorepo-template/engineering/env-vars/) · [编译配置继承（Tsconfig）](https://banshan-alec.github.io/electron-react-monorepo-template/engineering/tsconfig-inheritance/) · [代码规范与风格（Biome）](https://banshan-alec.github.io/electron-react-monorepo-template/engineering/code-style/) · [提交信息规范（Commitlint）](https://banshan-alec.github.io/electron-react-monorepo-template/engineering/commit-convention/)
 
-4. **Phase 4：在 `@app/renderer` 构建自包含 Feature 消费**
-   - 在 `src/features/notes/` 下建立自包含域（`index.tsx`、`hooks/`、`components/`）；
-   - 在 hook 中调用 `useIpc('notes.create', window.api.notes.create)`，自动获得解构后的 `data` 与异常捕获，传递给展示卡片；
-   - 界面多语言文案编写与一键提取请参考 [多语言实操手册](docs/i18n/guide.md)。
-   - 📖 *组件分层规范请参考：[Renderer 规范](packages/renderer/README.md#feature-规范)*
+### 开发体验
 
----
+[开发编排（Vite + Electron）](https://banshan-alec.github.io/electron-react-monorepo-template/dx/dev-orchestration/) · [启动预检（Single-instance + Port）](https://banshan-alec.github.io/electron-react-monorepo-template/dx/startup-preflight/) · [远程调试端口（CDP）](https://banshan-alec.github.io/electron-react-monorepo-template/dx/debug-port/) · [日志与链路排查（Usage）](https://banshan-alec.github.io/electron-react-monorepo-template/dx/log-troubleshooting/)
 
-## 📂 项目全局结构
+### 架构组织
+
+[多窗口入口（MPA）](https://banshan-alec.github.io/electron-react-monorepo-template/architecture/multi-window/) · [功能域组织（Features）](https://banshan-alec.github.io/electron-react-monorepo-template/architecture/feature-domains/) · [组件目录结构（Component-folder）](https://banshan-alec.github.io/electron-react-monorepo-template/architecture/component-structure/) · [React 组件编写规范（Code-partition + Hooks）](https://banshan-alec.github.io/electron-react-monorepo-template/architecture/react-conventions/) · [模块生命周期（ModuleRunner）](https://banshan-alec.github.io/electron-react-monorepo-template/architecture/module-lifecycle/) · [分层架构（Controller / Service）](https://banshan-alec.github.io/electron-react-monorepo-template/architecture/layering/)
+
+### 界面与交互
+
+[组件库（Antd）](https://banshan-alec.github.io/electron-react-monorepo-template/ui/antd/) · [样式与令牌（Tailwind-CSS）](https://banshan-alec.github.io/electron-react-monorepo-template/ui/tailwind/) · [国际化（Lingui）](https://banshan-alec.github.io/electron-react-monorepo-template/ui/lingui/) · [路由（Wouter）](https://banshan-alec.github.io/electron-react-monorepo-template/ui/wouter/) · [全局状态（Zustand）](https://banshan-alec.github.io/electron-react-monorepo-template/ui/zustand/) · [错误边界（ErrorBoundary）](https://banshan-alec.github.io/electron-react-monorepo-template/ui/error-boundary/) · [首屏体验（Startup-orchestration）](https://banshan-alec.github.io/electron-react-monorepo-template/ui/first-screen/) · [原生窗口体验（WCO）](https://banshan-alec.github.io/electron-react-monorepo-template/ui/wco/)
+
+### 主进程运行时
+
+[全链路追踪（W3C-trace）](https://banshan-alec.github.io/electron-react-monorepo-template/main/tracing/) · [本地日志（Electron-log）](https://banshan-alec.github.io/electron-react-monorepo-template/main/logging/) · [崩溃上报（Sentry）](https://banshan-alec.github.io/electron-react-monorepo-template/main/crash-reporting/) · [托盘常驻与单实例（Tray + Single-instance）](https://banshan-alec.github.io/electron-react-monorepo-template/main/tray-single-instance/) · [配置持久化（Electron-store）](https://banshan-alec.github.io/electron-react-monorepo-template/main/config-persistence/)
+
+### 安全与性能
+
+[渲染进程沙箱（Sandbox）](https://banshan-alec.github.io/electron-react-monorepo-template/security/sandbox/) · [内容安全策略（CSP）](https://banshan-alec.github.io/electron-react-monorepo-template/security/csp/) · [路径稳健性（Relative-path）](https://banshan-alec.github.io/electron-react-monorepo-template/security/path-robustness/) · [分包与体积门禁（Chunk + Asar）](https://banshan-alec.github.io/electron-react-monorepo-template/security/bundle-budget/) · [类型安全的 IPC 契约（Zod + ContextBridge）](https://banshan-alec.github.io/electron-react-monorepo-template/security/ipc-contract/)
+
+### 测试矩阵
+
+[单元测试（Vitest）](https://banshan-alec.github.io/electron-react-monorepo-template/testing/unit-tests/) · [主进程单元测试（EventEmitter）](https://banshan-alec.github.io/electron-react-monorepo-template/testing/main-process-tests/) · [端到端测试（Playwright）](https://banshan-alec.github.io/electron-react-monorepo-template/testing/e2e-electron/) · [端到端断言策略（Shell-stub + Tolerance）](https://banshan-alec.github.io/electron-react-monorepo-template/testing/e2e-assertions/) · [性能基线（Benchmark）](https://banshan-alec.github.io/electron-react-monorepo-template/testing/performance-baseline/) · [产物冒烟测试（Dist-smoke）](https://banshan-alec.github.io/electron-react-monorepo-template/testing/artifact-smoke/)
+
+### 交付门禁
+
+[应用打包（Electron-builder）](https://banshan-alec.github.io/electron-react-monorepo-template/delivery/packaging/) · [源码映射隔离（Source-map）](https://banshan-alec.github.io/electron-react-monorepo-template/delivery/sourcemap/) · [CI 并行门禁（GitHub-Actions）](https://banshan-alec.github.io/electron-react-monorepo-template/delivery/ci-gates/) · [应用更新（Electron-updater）](https://banshan-alec.github.io/electron-react-monorepo-template/delivery/auto-update/) · [发版流水线（Changelogen）](https://banshan-alec.github.io/electron-react-monorepo-template/delivery/release-pipeline/)
+
+### AI 协同
+
+[AI 评审闭环（Open-code-review）](https://banshan-alec.github.io/electron-react-monorepo-template/ai/review-loop/) · [AI 协作者约定（Agents.md）](https://banshan-alec.github.io/electron-react-monorepo-template/ai/collaboration-convention/) · [AI 友好代码约定（Reference-style）](https://banshan-alec.github.io/electron-react-monorepo-template/ai/friendly-conventions/)
+
+## 🏗️ 仓库架构
 
 ```text
 electron-react-monorepo-template/
-├── .config/                  # 工程工具链配置（Biome、Commitlint、changelogen、Vitest、Playwright）
-├── build/                    # 打包配置与原生静态资源（图标、entitlements 等）
-├── docs/                     # 架构深度原理与开发指南
-│   ├── adr/                  # [架构决策] ADR-0001 首屏窗口保持不透明与 WCO 材质裁决
-│   ├── i18n/                 # [多语言] 架构设计 (architecture.md) 与实操 SOP (guide.md)
-│   ├── electron-path-resolution-deep-dive.md # 跨平台路径管理底层原理与避坑深度实践
-│   ├── electron-github-ota-deep-dive.md      # 跨平台打包与 GitHub OTA 自动更新深度指南
-│   ├── logging-tracing-and-error-handling-guide.md # 日志打法、Mini-OTel 链路追踪与 Sentry 闭环速查指南
-│   ├── logging-and-exception-audit.md # 日志轮转与跨进程异常分级防护指南
-│   └── wco-native-titlebar-integration.md # WCO 原生标题栏跨项目接入指南
-├── e2e/                      # Playwright E2E 自动化测试套件（真实 Electron 运行态驱动）
-│   ├── helpers/              # Electron 启动器、隔离用户数据目录与生命周期夹具
-│   ├── first-screen.spec.ts  # 首屏渐进式加载验收用例（AC-1~AC-5）
-│   └── settings.spec.ts      # 主题、多语言、托盘及防冲刷自动化测试用例
 ├── packages/
-│   ├── main/                 # [主进程] Controller/Service 分层、窗口与系统生命周期
-│   ├── preload/              # [Preload] 安全沙箱桥接、暴露 window.api 契约
-│   ├── renderer/             # [渲染进程] React 19 + Tailwind 前端应用 (Feature 驱动 + LinguiJS)
-│   ├── shared/               # [共享层] 跨进程契约、Zod Schemas、IPC 常量与类型定义
-│   └── tsconfig/             # 共享的 TypeScript 基础配置
-├── scripts/                  # 工程构建与启动脚本（TS 编写）
-│   ├── dev.ts                # 开发服务启动与热重启编排
-│   └── build.ts              # 跨平台打包构建 CLI
-├── pnpm-workspace.yaml       # pnpm monorepo 与依赖 Catalog 配置
-├── package.json              # 根项目元数据与通用脚本
-└── CONTRIBUTING.md           # 团队工程规范、Git 提交指南与版本发布
+│   ├── main/          # 主进程：ModuleRunner 模块链 + Controller/Service
+│   ├── preload/       # 预加载桥：apiBridge 封闭暴露面 + invokeTraced 链路追踪
+│   ├── renderer/      # 渲染进程：React 19 + 双入口 + features 领域架构
+│   ├── shared/        # 跨进程契约层：IPC_CHANNELS / Result<T> / zod schemas
+│   ├── pr-review/     # PR 生命周期与 AI 审查看板 CLI
+│   ├── docs/          # 解法文档站（Vocs，GitHub Pages 部署）
+│   └── tsconfig/      # base / node / react 编译配置继承包
+├── .config/           # Biome / commitlint / changelogen / Playwright / Vitest
+├── .github/           # CI / CodeQL / OpenCodeReview / Docs / Release
+├── build/             # electron-builder 动态打包 + Sentry 构建配置
+├── scripts/           # dev / build / port-guard / verify-prebuild / verify-postbuild
+├── e2e/               # Playwright 桌面端 E2E
+└── docs/              # 仓库内深度文档（ADR / 环境 / 依赖 / 打包等）
 ```
 
----
+各业务包的职责、README 与规则文件都在 `packages/<name>/` 下，AI 协作者从根 [AGENTS.md](AGENTS.md) 的任务路由进入。
 
-## 🚀 快速上手
+## 🚀 快速开始
 
-> [!TIP]
-> 如果你是首次从本模板创建新项目，建议先阅读 **[模板新项目定制速查清单](docs/template-customization-guide.md)**，快速完成应用名称、App ID、多端图标及发布源的个性化替换。
-
-### 环境要求
-- **Node.js**: `>= 24.0.0`
-- **pnpm**: `>= 12.0.0`
-
-### 1. 安装依赖
-```bash
-pnpm install
-```
-
-> [!NOTE]
-> 根目录已预设 `.npmrc`（国内淘宝镜像源）与 `pnpm-workspace.yaml`（`nodeLinker: isolated` 隔离布局 + 公共依赖 `catalog:` 收敛），详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
-
-### 2. 启动本地开发
-```bash
-pnpm start
-```
-执行后将自动启动 Vite Dev Server 并唤起 Electron 窗口。主进程代码改动将自动增量编译并重启应用；前端页面改动享受即时 HMR。
-
-> [!NOTE]
-> dev server 固定端口 `5173`（strictPort）：重复执行 `pnpm start` 会检测端口占用并提示结束占用的进程，不会静默复用旧实例。开放 renderer CDP 端点 `9222`（主进程 inspect 为 `9229`）。
-
----
-
-## 🛠️ 构建与打包
-
-本项目将打包逻辑收拢于 `scripts/build.ts` 与 `build/electron-builder.ts`：
+| 依赖 | 版本要求 |
+| :--- | :--- |
+| Node.js | >= 24.0.0 |
+| pnpm | ^12.0.0（仓库锁定 pnpm@12.15.0） |
 
 ```bash
-# 仅编译各 Package 产物并打包为原生应用目录（快速调试）
-pnpm run build:dir
-
-# 打包 Windows 安装程序 (.exe / NSIS)
-pnpm run build:win
-
-# 打包 macOS 安装程序 (.dmg)
-pnpm run build:mac
-
-# 打包 Linux 安装包 (.deb)
-pnpm run build:linux
+pnpm install   # 安装工作区依赖（.npmrc 已内置 npmmirror 镜像加速）
+pnpm start     # 开发模式：Vite DevServer + Electron 双进程热重载
 ```
 
-打包产物输出至根目录下的 `dist/` 文件夹中。
+| 命令 | 用途 |
+| :--- | :--- |
+| `pnpm start` | 开发模式（Vite + Electron 热重载） |
+| `pnpm build:win` / `:mac` / `:linux` | 分平台打包安装包 |
+| `pnpm test` / `pnpm test:e2e` | Vitest 单元测试 / Playwright 桌面端 E2E |
 
----
+完整命令清单见 [CONTRIBUTING.md](CONTRIBUTING.md) 与根 `package.json` 的 `scripts`。从模板派生自己的应用，按[模板定制速查](docs/template-customization-guide.md)替换应用名、App ID、图标与发布源。
 
-## 📋 质量保障与工程规范
+## 📚 文档站
 
-- **静态检查与格式化**：全库由 Biome 驱动，秒级完成代码质量巡检。
-  ```bash
-  pnpm run lint       # 检查格式与规范
-  pnpm run lint:fix   # 自动修复格式与 Lint 问题
-  pnpm run typecheck  # 执行全项目 TypeScript 类型检查
-  ```
-- **多语言词条增量提取**：
-  ```bash
-  pnpm run i18n:extract   # 扫描全工程 AST 并增量更新中英文 PO 字典
-  ```
-- **端到端自动化测试（Playwright E2E）**：
-  ```bash
-  pnpm run test:e2e       # 运行现有 E2E 测试套件
-  pnpm run test:e2e:build # 重新全量编译并在真实 Electron 窗口中运行 E2E 验证
-  ```
-- **禁止桶文件（No Barrel Files）**：全库开启 `performance.noBarrelFile: "error"`，跨模块导入必须直达具体文件。
-- **提交规范**：遵循 Conventional Commits 规范，提交说明**强制要求包含简体中文**（由 Commitlint + Husky 拦截校验）。
-- **版本发布与 Changelog**：通过 `pnpm run release` 自动推导语义化版本号并生成变更日志。
-- 更多详细规则请参考 **[CONTRIBUTING.md](CONTRIBUTING.md)**。
+完整内容在 **[banshan-alec.github.io/electron-react-monorepo-template](https://banshan-alec.github.io/electron-react-monorepo-template/)**。每页固定「要解决的坑 → 本仓库的解法 → 怎么抄」，源码链接直达仓库真实文件；站点同时输出 `llms.txt` / `llms-full.txt` 与每页 Markdown 路由，AI 协作者可直接检索。
+
+站点源码在 `packages/docs/`（Vocs 构建，GitHub Pages 部署），本地预览 `pnpm docs:dev`。
+
+## 🤝 贡献
+
+欢迎 PR。动手前请读 [CONTRIBUTING.md](CONTRIBUTING.md)；提交信息遵循 Conventional Commits，且 subject 必须包含简体中文（commitlint + husky 自动校验）。使用 AI 协作者请先读 [AGENTS.md](AGENTS.md)。文档与代码不一致时以代码为准，并欢迎提 PR 修正。
+
+## 📄 License
+
+本项目以 [The Unlicense](LICENSE) 发布，奉献至公共领域：可自由用于任何商业或非商业用途。
