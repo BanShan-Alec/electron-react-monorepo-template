@@ -42,6 +42,16 @@ Electron 45 · React 19 · Vite 8 · TypeScript 6 · antd · TailwindCSS · Ling
 - **成体系，不是清单堆叠** —— 9 个维度覆盖从工程基座到交付门禁，坑与坑之间的关联写在同一个体系里
 - **模板即载体** —— 整份合集就是一个可 clone 的 Electron Monorepo 模板，照着解法改造即可起步
 
+## 📸 截图
+
+**应用主窗口**
+
+![应用主窗口](assets/screenshots/app-main-window.png)
+
+**文档站**
+
+![文档站](assets/screenshots/docs-site.png)
+
 ## 🧭 解法地图
 
 完整目录以文档站为准（9 个维度，页面增删只改站点，不在 README 里重复维护）：
