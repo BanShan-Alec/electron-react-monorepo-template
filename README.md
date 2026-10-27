@@ -44,41 +44,11 @@ Electron 45 · React 19 · Vite 8 · TypeScript 6 · antd · TailwindCSS · Ling
 
 ## 🧭 解法地图
 
-### 工程化基座
+完整目录以文档站为准（9 个维度，页面增删只改站点，不在 README 里重复维护）：
 
-[依赖管理（Monorepo）](https://banshan-alec.github.io/electron-react-monorepo-template/engineering/dependency-management/) · [环境变量管理（Dotenv）](https://banshan-alec.github.io/electron-react-monorepo-template/engineering/env-vars/) · [编译配置继承（Tsconfig）](https://banshan-alec.github.io/electron-react-monorepo-template/engineering/tsconfig-inheritance/) · [代码规范与风格（Biome）](https://banshan-alec.github.io/electron-react-monorepo-template/engineering/code-style/) · [提交信息规范（Commitlint）](https://banshan-alec.github.io/electron-react-monorepo-template/engineering/commit-convention/)
+**[查看完整解法目录 →](https://banshan-alec.github.io/electron-react-monorepo-template/)**
 
-### 开发体验
-
-[开发编排（Vite + Electron）](https://banshan-alec.github.io/electron-react-monorepo-template/dx/dev-orchestration/) · [启动预检（Single-instance + Port）](https://banshan-alec.github.io/electron-react-monorepo-template/dx/startup-preflight/) · [远程调试端口（CDP）](https://banshan-alec.github.io/electron-react-monorepo-template/dx/debug-port/) · [日志与链路排查（Usage）](https://banshan-alec.github.io/electron-react-monorepo-template/dx/log-troubleshooting/)
-
-### 架构组织
-
-[多窗口入口（MPA）](https://banshan-alec.github.io/electron-react-monorepo-template/architecture/multi-window/) · [功能域组织（Features）](https://banshan-alec.github.io/electron-react-monorepo-template/architecture/feature-domains/) · [组件目录结构（Component-folder）](https://banshan-alec.github.io/electron-react-monorepo-template/architecture/component-structure/) · [React 组件编写规范（Code-partition + Hooks）](https://banshan-alec.github.io/electron-react-monorepo-template/architecture/react-conventions/) · [模块生命周期（ModuleRunner）](https://banshan-alec.github.io/electron-react-monorepo-template/architecture/module-lifecycle/) · [分层架构（Controller / Service）](https://banshan-alec.github.io/electron-react-monorepo-template/architecture/layering/)
-
-### 界面与交互
-
-[组件库（Antd）](https://banshan-alec.github.io/electron-react-monorepo-template/ui/antd/) · [样式与令牌（Tailwind-CSS）](https://banshan-alec.github.io/electron-react-monorepo-template/ui/tailwind/) · [国际化（Lingui）](https://banshan-alec.github.io/electron-react-monorepo-template/ui/lingui/) · [路由（Wouter）](https://banshan-alec.github.io/electron-react-monorepo-template/ui/wouter/) · [全局状态（Zustand）](https://banshan-alec.github.io/electron-react-monorepo-template/ui/zustand/) · [错误边界（ErrorBoundary）](https://banshan-alec.github.io/electron-react-monorepo-template/ui/error-boundary/) · [首屏体验（Startup-orchestration）](https://banshan-alec.github.io/electron-react-monorepo-template/ui/first-screen/) · [原生窗口体验（WCO）](https://banshan-alec.github.io/electron-react-monorepo-template/ui/wco/)
-
-### 主进程运行时
-
-[全链路追踪（W3C-trace）](https://banshan-alec.github.io/electron-react-monorepo-template/main/tracing/) · [本地日志（Electron-log）](https://banshan-alec.github.io/electron-react-monorepo-template/main/logging/) · [崩溃上报（Sentry）](https://banshan-alec.github.io/electron-react-monorepo-template/main/crash-reporting/) · [托盘常驻与单实例（Tray + Single-instance）](https://banshan-alec.github.io/electron-react-monorepo-template/main/tray-single-instance/) · [配置持久化（Electron-store）](https://banshan-alec.github.io/electron-react-monorepo-template/main/config-persistence/)
-
-### 安全与性能
-
-[渲染进程沙箱（Sandbox）](https://banshan-alec.github.io/electron-react-monorepo-template/security/sandbox/) · [内容安全策略（CSP）](https://banshan-alec.github.io/electron-react-monorepo-template/security/csp/) · [路径稳健性（Relative-path）](https://banshan-alec.github.io/electron-react-monorepo-template/security/path-robustness/) · [分包与体积门禁（Chunk + Asar）](https://banshan-alec.github.io/electron-react-monorepo-template/security/bundle-budget/) · [类型安全的 IPC 契约（Zod + ContextBridge）](https://banshan-alec.github.io/electron-react-monorepo-template/security/ipc-contract/)
-
-### 测试矩阵
-
-[单元测试（Vitest）](https://banshan-alec.github.io/electron-react-monorepo-template/testing/unit-tests/) · [主进程单元测试（EventEmitter）](https://banshan-alec.github.io/electron-react-monorepo-template/testing/main-process-tests/) · [端到端测试（Playwright）](https://banshan-alec.github.io/electron-react-monorepo-template/testing/e2e-electron/) · [端到端断言策略（Shell-stub + Tolerance）](https://banshan-alec.github.io/electron-react-monorepo-template/testing/e2e-assertions/) · [性能基线（Benchmark）](https://banshan-alec.github.io/electron-react-monorepo-template/testing/performance-baseline/) · [产物冒烟测试（Dist-smoke）](https://banshan-alec.github.io/electron-react-monorepo-template/testing/artifact-smoke/)
-
-### 交付门禁
-
-[应用打包（Electron-builder）](https://banshan-alec.github.io/electron-react-monorepo-template/delivery/packaging/) · [源码映射隔离（Source-map）](https://banshan-alec.github.io/electron-react-monorepo-template/delivery/sourcemap/) · [CI 并行门禁（GitHub-Actions）](https://banshan-alec.github.io/electron-react-monorepo-template/delivery/ci-gates/) · [应用更新（Electron-updater）](https://banshan-alec.github.io/electron-react-monorepo-template/delivery/auto-update/) · [发版流水线（Changelogen）](https://banshan-alec.github.io/electron-react-monorepo-template/delivery/release-pipeline/)
-
-### AI 协同
-
-[AI 评审闭环（Open-code-review）](https://banshan-alec.github.io/electron-react-monorepo-template/ai/review-loop/) · [AI 协作者约定（Agents.md）](https://banshan-alec.github.io/electron-react-monorepo-template/ai/collaboration-convention/) · [AI 友好代码约定（Reference-style）](https://banshan-alec.github.io/electron-react-monorepo-template/ai/friendly-conventions/)
+工程化基座 · 开发体验 · 架构组织 · 界面与交互 · 主进程运行时 · 安全与性能 · 测试矩阵 · 交付门禁 · AI 协同
 
 ## 🏗️ 仓库架构
 
