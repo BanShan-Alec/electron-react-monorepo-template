@@ -19,11 +19,8 @@ export default defineConfig({
       link: 'https://github.com/BanShan-Alec/electron-react-monorepo-template',
     },
   ],
-  // 维度重组后的旧 URL 重定向（contracts 并入安全与性能；infrastructure 拆为界面与交互、主进程运行时）
-  redirects: [
-    { source: '/contracts', destination: '/security/ipc-contract', status: 301 },
-    { source: '/infrastructure', destination: '/ui/antd', status: 301 },
-  ],
+  // 注意：不配 redirects——它是 waku 运行时中间件，full-static 部署（GitHub Pages）执行不到；
+  // 旧 URL 跳转必须用 public/<path>/index.html 物理跳转页（见 public/*/index.html）。
   sidebar: {
     '/': [
       {
