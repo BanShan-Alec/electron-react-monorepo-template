@@ -14,7 +14,7 @@ const INFO_CELL_CLASS = 'bg-background-sunken p-2.5 rounded-lg border border-bor
 function InfoCell({ label, value }: { label: string; value: string }) {
   return (
     <div className={INFO_CELL_CLASS}>
-      <span className="text-foreground-secondary block text-[11px]">{label}</span>
+      <span className="text-foreground-secondary block text-xs">{label}</span>
       <span className="font-semibold text-foreground mt-0.5 block font-mono">{value}</span>
     </div>
   );

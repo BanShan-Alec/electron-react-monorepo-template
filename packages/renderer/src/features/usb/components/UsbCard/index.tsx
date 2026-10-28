@@ -69,7 +69,7 @@ const _UsbCard = (props: IUsbCardProps) => {
                   <div className="min-w-0">
                     <div className="font-semibold text-foreground truncate">{displayName}</div>
                     {device.manufacturerName && device.productName && (
-                      <div className="text-[11px] text-foreground-secondary truncate">
+                      <div className="text-xs text-foreground-secondary truncate">
                         {device.manufacturerName}
                       </div>
                     )}
@@ -77,10 +77,10 @@ const _UsbCard = (props: IUsbCardProps) => {
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0 font-mono">
-                  <Tag color="blue" className="mr-0 text-[11px]">
+                  <Tag color="blue" className="mr-0 text-xs">
                     VID: {device.vendorIdHex}
                   </Tag>
-                  <Tag color="cyan" className="mr-0 text-[11px]">
+                  <Tag color="cyan" className="mr-0 text-xs">
                     PID: {device.productIdHex}
                   </Tag>
                 </div>

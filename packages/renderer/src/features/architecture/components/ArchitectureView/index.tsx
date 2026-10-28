@@ -11,7 +11,7 @@ import { StatusTag } from '@/components/ui/StatusTag';
 const STEP_CARD_CLASS =
   'flex items-start gap-3 p-3.5 bg-background-sunken rounded-lg border border-border';
 const CODE_BLOCK_CLASS =
-  'text-[11px] font-mono text-foreground-secondary bg-background/80 p-3 rounded-lg overflow-x-auto stable-scrollbar leading-relaxed flex-1';
+  'text-xs font-mono text-foreground-secondary bg-background/80 p-3 rounded-lg overflow-x-auto stable-scrollbar leading-relaxed flex-1';
 
 const LEGACY_CODE_ZH = `// 1. 渲染端强行引用主进程类型 (打破物理隔离)
 import type { AppRouter } from '@app/main/router';

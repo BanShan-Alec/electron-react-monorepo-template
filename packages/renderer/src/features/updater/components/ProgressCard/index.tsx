@@ -43,7 +43,7 @@ export const ProgressCard: React.FC<ProgressCardProps> = ({ progress }) => {
 
         <Progress percent={percent} status="active" showInfo={false} />
 
-        <div className="flex items-center justify-between text-[11px] text-foreground-muted">
+        <div className="flex items-center justify-between text-xs text-foreground-muted">
           <span>
             {t`传输速率`}: <span className="font-mono text-foreground-secondary">{speedText}</span>
           </span>
