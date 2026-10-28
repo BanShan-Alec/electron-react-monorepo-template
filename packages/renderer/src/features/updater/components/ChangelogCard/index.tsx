@@ -1,8 +1,9 @@
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Card, Tag } from 'antd';
+import { Tag } from 'antd';
 import type React from 'react';
 import { useMemo, useState } from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 import { callIpc } from '@/lib/ipc';
 
 // 链接打开失败不打扰用户（含白名单拦截拒绝）：失败行已由 callIpc 统一落盘
@@ -85,9 +86,9 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
   }, [releaseNotes]);
 
   return (
-    <Card
+    <AppCard
       size="small"
-      className="bg-background-elevated border border-border rounded-lg"
+      className="bg-background-elevated"
       title={
         <div className="flex items-center justify-between py-1">
           <div className="flex items-center gap-2">
@@ -136,6 +137,6 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
           </div>
         )}
       </div>
-    </Card>
+    </AppCard>
   );
 };

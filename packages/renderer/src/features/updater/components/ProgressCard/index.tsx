@@ -1,8 +1,9 @@
 import type { UpdaterProgress } from '@app/shared/types/updater';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Card, Progress } from 'antd';
+import { Progress } from 'antd';
 import type React from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 
 interface ProgressCardProps {
   progress?: UpdaterProgress | null;
@@ -32,7 +33,7 @@ export const ProgressCard: React.FC<ProgressCardProps> = ({ progress }) => {
   const totalText = progress ? formatBytes(progress.total) : '0 MB';
 
   return (
-    <Card size="small" className="bg-background-elevated border border-border rounded-lg">
+    <AppCard size="small" className="bg-background-elevated">
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
           <span className="font-medium text-foreground">{t`下载进度`}</span>
@@ -50,6 +51,6 @@ export const ProgressCard: React.FC<ProgressCardProps> = ({ progress }) => {
           <span className="font-mono font-medium">{`${percent}%`}</span>
         </div>
       </div>
-    </Card>
+    </AppCard>
   );
 };

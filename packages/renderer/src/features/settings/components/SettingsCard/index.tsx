@@ -2,8 +2,9 @@ import { SettingOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import type { AppConfig } from '@shared/schemas/config';
-import { App, Button, Card, Select, Skeleton, Switch } from 'antd';
+import { App, Button, Select, Skeleton, Switch } from 'antd';
 import { memo } from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
 import { callIpc } from '@/lib/ipc';
 
@@ -42,8 +43,7 @@ const _SettingsCard = (props: ISettingsCardProps) => {
 
   // 组件渲染
   return (
-    <Card
-      className="glass-card transition-all duration-200 hover:border-border/80"
+    <AppCard
       title={
         <CardTitle
           icon={<SettingOutlined />}
@@ -137,7 +137,7 @@ const _SettingsCard = (props: ISettingsCardProps) => {
           {t`正在读取偏好设置...`}
         </div>
       )}
-    </Card>
+    </AppCard>
   );
 };
 

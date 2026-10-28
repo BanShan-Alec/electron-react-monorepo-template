@@ -2,8 +2,9 @@ import { DesktopOutlined, ReloadOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import type { SystemInfo } from '@shared/types/system';
-import { Button, Card, Skeleton } from 'antd';
+import { Button, Skeleton } from 'antd';
 import { memo } from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
 
 // 私有常量
@@ -42,8 +43,7 @@ const _SystemInfoCard = (props: ISystemInfoCardProps) => {
 
   // 组件渲染
   return (
-    <Card
-      className="glass-card transition-all duration-200 hover:border-border/80"
+    <AppCard
       title={
         <CardTitle
           icon={<DesktopOutlined />}
@@ -91,7 +91,7 @@ const _SystemInfoCard = (props: ISystemInfoCardProps) => {
           {t`正在探测系统运行环境...`}
         </div>
       )}
-    </Card>
+    </AppCard>
   );
 };
 

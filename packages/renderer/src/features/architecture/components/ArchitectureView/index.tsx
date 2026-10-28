@@ -1,8 +1,8 @@
 import { BulbOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Card } from 'antd';
 import { memo } from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
 import { CodeHighlight } from '@/components/ui/CodeHighlight';
 import { StatusTag } from '@/components/ui/StatusTag';
@@ -86,8 +86,7 @@ const _ArchitectureView = (_props: IProps) => {
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
       {/* Flow Diagram Card */}
-      <Card
-        className="glass-card"
+      <AppCard
         title={
           <CardTitle
             icon={<BulbOutlined />}
@@ -118,12 +117,12 @@ const _ArchitectureView = (_props: IProps) => {
             description={t`统一通过 window.api 消费 Result 契约，享受完备 IDE 智能提示，与主进程实现 100% 物理代码隔离。`}
           />
         </div>
-      </Card>
+      </AppCard>
 
       {/* Code Comparison Card */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Legacy / Coupled */}
-        <div className="glass-card rounded-lg p-4 border border-danger/30 flex flex-col">
+        <div className="app-card rounded-lg p-4 border border-danger/30 flex flex-col">
           <div className="flex items-center justify-between pb-2 mb-3 border-b border-danger/20">
             <span className="text-xs font-semibold text-foreground flex items-center">
               <CloseCircleOutlined className="text-danger mr-1.5" />
@@ -135,7 +134,7 @@ const _ArchitectureView = (_props: IProps) => {
         </div>
 
         {/* Fullstack Standard */}
-        <div className="glass-card rounded-lg p-4 border border-success/30 flex flex-col">
+        <div className="app-card rounded-lg p-4 border border-success/30 flex flex-col">
           <div className="flex items-center justify-between pb-2 mb-3 border-b border-success/20">
             <span className="text-xs font-semibold text-foreground flex items-center">
               <CheckCircleOutlined className="text-success mr-1.5" />

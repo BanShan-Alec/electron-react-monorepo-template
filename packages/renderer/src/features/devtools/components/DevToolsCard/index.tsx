@@ -1,8 +1,9 @@
 import { CodeOutlined, GithubOutlined, StopOutlined, ToolOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Button, Card } from 'antd';
+import { Button } from 'antd';
 import { memo } from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
 import { statusBoxClass } from '@/lib/classNames';
 
@@ -27,8 +28,7 @@ const _DevToolsCard = (props: IDevToolsCardProps) => {
 
   // 组件渲染
   return (
-    <Card
-      className="glass-card transition-all duration-200 hover:border-border/80"
+    <AppCard
       title={
         <CardTitle
           icon={<ToolOutlined />}
@@ -56,7 +56,7 @@ const _DevToolsCard = (props: IDevToolsCardProps) => {
 
         {actionMessage && <div className={statusBoxClass()}>{actionMessage}</div>}
       </div>
-    </Card>
+    </AppCard>
   );
 };
 

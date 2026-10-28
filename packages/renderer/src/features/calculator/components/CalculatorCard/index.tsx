@@ -2,8 +2,9 @@ import { FunctionOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import type { CalcOperator } from '@shared/types/calculator';
-import { Alert, Button, Card, Input, Select, Tag } from 'antd';
+import { Alert, Button, Input, Select, Tag } from 'antd';
 import { memo } from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
 
 // 私有常量
@@ -34,8 +35,7 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
 
   // 组件渲染
   return (
-    <Card
-      className="glass-card transition-all duration-200 hover:border-border/80"
+    <AppCard
       title={
         <CardTitle
           icon={<FunctionOutlined />}
@@ -88,7 +88,7 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
           <Tag>{t`Zod 校验`}</Tag>
         </div>
       </div>
-    </Card>
+    </AppCard>
   );
 };
 

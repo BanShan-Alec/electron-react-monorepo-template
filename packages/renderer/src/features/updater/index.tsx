@@ -2,8 +2,9 @@ import { CheckCircleOutlined, CloseOutlined, CloudDownloadOutlined } from '@ant-
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { ErrorCode } from '@shared/constants/error-codes';
-import { Alert, Button, Card, Spin } from 'antd';
+import { Alert, Button, Spin } from 'antd';
 import type React from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 import { ChangelogCard } from './components/ChangelogCard';
 import { ProgressCard } from './components/ProgressCard';
 import { useUpdater } from './hooks/useUpdater';
@@ -176,14 +177,14 @@ export const UpdaterFeature: React.FC = () => {
 
         {!showChangelog && snapshot.state === 'downloaded' && (
           <div className="flex flex-col gap-2">
-            <Card size="small" className="bg-background-elevated border border-border rounded-lg">
+            <AppCard size="small" className="bg-background-elevated">
               <div className="flex items-center gap-3">
                 <CheckCircleOutlined className="text-success text-2xl shrink-0" />
                 <div className="text-xs text-foreground-secondary">
                   {t`新版本已完成下载，重启应用后即可完成升级。`}
                 </div>
               </div>
-            </Card>
+            </AppCard>
             <div className="flex items-center justify-end gap-2 pt-2">
               <Button onClick={handleClose}>{t`稍后安装`}</Button>
               <Button type="primary" onClick={handleInstall}>{t`重启并安装`}</Button>

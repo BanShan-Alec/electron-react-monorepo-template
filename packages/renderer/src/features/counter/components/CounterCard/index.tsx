@@ -1,8 +1,9 @@
 import { CalculatorOutlined, MinusOutlined, PlusOutlined, RedoOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Button, Card, Select } from 'antd';
+import { Button, Select } from 'antd';
 import { memo } from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
 
 // 私有常量
@@ -31,8 +32,7 @@ const _CounterCard = (props: ICounterCardProps) => {
 
   // 组件渲染
   return (
-    <Card
-      className="glass-card transition-all duration-200 hover:border-border/80"
+    <AppCard
       title={
         <CardTitle
           icon={<CalculatorOutlined />}
@@ -81,7 +81,7 @@ const _CounterCard = (props: ICounterCardProps) => {
           </Button>
         </div>
       </div>
-    </Card>
+    </AppCard>
   );
 };
 

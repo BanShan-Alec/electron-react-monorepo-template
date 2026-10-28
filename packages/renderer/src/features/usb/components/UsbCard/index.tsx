@@ -2,8 +2,9 @@ import { ApiOutlined, ReloadOutlined, UsbOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import type { UsbDeviceItem } from '@shared/types/usb';
-import { Badge, Button, Card, Empty, Skeleton, Tag } from 'antd';
+import { Badge, Button, Empty, Skeleton, Tag } from 'antd';
 import { memo } from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
 
 export interface IUsbCardProps {
@@ -19,8 +20,7 @@ const _UsbCard = (props: IUsbCardProps) => {
   const showSkeleton = isLoading && devices.length === 0;
 
   return (
-    <Card
-      className="glass-card transition-all duration-200 hover:border-border/80"
+    <AppCard
       title={
         <CardTitle
           icon={<UsbOutlined />}
@@ -89,7 +89,7 @@ const _UsbCard = (props: IUsbCardProps) => {
           })}
         </div>
       )}
-    </Card>
+    </AppCard>
   );
 };
 
