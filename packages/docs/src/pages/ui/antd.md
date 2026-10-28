@@ -33,7 +33,7 @@ description: 五层 Provider 装配与主题算法，颜色令牌交给 antd 官
 
 五层 Provider 各司其职：`I18nProvider` 挂 Lingui 的 i18n 实例（见[国际化（Lingui）](/ui/lingui)）；`StyleProvider layer` 把 cssinjs 注入的 antd 样式收进 `@layer antd`（让 Tailwind 工具类能直接覆盖组件样式，见[样式与令牌（Tailwind-CSS）](/ui/tailwind)）；`ConfigProvider` 挂主题算法与语言包；`AntdApp` 提供消息/弹窗上下文；`ErrorBoundary` 兜住渲染异常。
 
-主题配置不覆盖颜色类令牌，只调两个尺寸令牌（源文件头注释自称「不覆盖任何设计令牌」，与这两行相抵，以代码为准）：
+主题配置只给一个品牌种子与一个尺寸令牌：颜色不逐个覆盖，浅/深两套由官方算法派生。
 
 → 源码：[packages/renderer/src/styles/antd-theme.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/styles/antd-theme.ts)
 
@@ -42,14 +42,14 @@ export function getAntdThemeConfig(mode: ThemeMode) {
   return {
     algorithm: mode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
     token: {
+      colorPrimary: BRAND_PRIMARY,
       controlHeightSM: 28,
-      paddingInlineSM: 10,
     },
   };
 }
 ```
 
-深浅两套色彩 Token 全部交给 antd 官方算法输出，视觉基线对齐 antd 原版——自定义颜色不写在主题里，而是走 CSS 变量层（见[样式与令牌（Tailwind-CSS）](/ui/tailwind)），antd 升级时视觉不会跑偏。
+深浅两套色彩 Token 全部交给 antd 官方算法输出，视觉基线对齐 antd 原版。品牌色只在 `design-tokens.ts` 改一个种子：`ConfigProvider` 与布局壳的 CSS 变量由同一次 `getDesignToken()` 派生，换品牌或 antd 升级都不会出现两边不同步。
 
 ## 怎么抄
 

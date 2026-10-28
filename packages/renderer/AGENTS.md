@@ -33,7 +33,7 @@ src/
 │   └── en-US/messages.po   # 英文对照翻译字典
 ├── startup/                # 首屏启动壳协调器（三源门禁，构建期内联进 index.html）
 ├── stores/                 # 全局 zustand store（themeMode / resolvedTheme / language）
-└── styles/                 # tokens.css + antd-theme.ts + base.css + index.css
+└── styles/                 # design-tokens.ts + tokens.css + antd-theme.ts + base.css + index.css
 ../plugins/
 └── startup-shell.ts        # 构建期插件（包根目录）：启动壳占位符内联
 ```
