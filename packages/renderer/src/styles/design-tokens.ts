@@ -24,6 +24,7 @@ const VAR_MAP = {
   '--color-text-primary': (t) => t.colorText,
   '--color-text-secondary': (t) => t.colorTextSecondary,
   '--color-text-muted': (t) => t.colorTextTertiary,
+  '--color-text-on-primary': (t) => t.colorTextLightSolid,
   '--color-border': (t) => t.colorBorder,
   '--color-primary': (t) => t.colorPrimary,
   '--color-primary-hover': (t) => t.colorPrimaryHover,

@@ -41,7 +41,7 @@ const _Header = (props: IHeaderProps) => {
       {/* Layer 1: 系统标题栏（高度 32px，与原生 WCO 按钮/红绿灯同轴避让并独占窗口拖拽） */}
       <div className="drag-region h-8 px-4 flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-4 h-4 rounded bg-primary text-white flex items-center justify-center text-xs shrink-0">
+          <div className="w-4 h-4 rounded bg-primary text-on-primary flex items-center justify-center text-xs shrink-0">
             <ThunderboltFilled />
           </div>
           <span className="text-xs font-semibold text-foreground tracking-tight truncate">

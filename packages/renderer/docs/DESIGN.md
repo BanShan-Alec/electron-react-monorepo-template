@@ -36,6 +36,7 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 ## 3. 颜色与文字
 
 - 三档文字：`text-foreground`（主）/ `text-foreground-secondary`（辅助）/ `text-foreground-muted`（仅 placeholder、disabled）。
+- 主色实心块上的文字用 `text-on-primary`（antd `colorTextLightSolid`），不写 `text-white`。
 - 语义色（success / warning / danger / primary）**只做图标、圆点、描边、表面**；承载信息的文字用中性色。
 - 语义状态用 `StatusTag`（§4）。antd 的 `Tag color="warning|success|error"` 文字色是基色，浅色下 1.83–3.68:1，禁止承载信息。
 - 代码文字用 `font-mono`；数字与版本号同理。
