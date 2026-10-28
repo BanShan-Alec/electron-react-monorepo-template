@@ -87,7 +87,7 @@ const _SystemInfoCard = (props: ISystemInfoCardProps) => {
           <InfoCell label={t`V8 引擎版本`} value={`v${systemInfo.v8Version}`} />
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center p-6 text-foreground-muted text-xs">
+        <div className="flex-1 flex items-center justify-center p-6 text-foreground-secondary text-xs">
           {t`正在探测系统运行环境...`}
         </div>
       )}

@@ -83,7 +83,7 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
 
         {error && <Alert type="error" showIcon title={error} />}
 
-        <div className="flex items-center justify-between text-xs text-foreground-muted mt-1 pt-2 border-t border-border/40">
+        <div className="flex items-center justify-between text-xs text-foreground-secondary mt-1 pt-2 border-t border-border/40">
           <span>{t`提示：尝试输入 B = 0 并选择除法 (÷) 触发服务端异常拦截`}</span>
           <Tag>{t`Zod 校验`}</Tag>
         </div>

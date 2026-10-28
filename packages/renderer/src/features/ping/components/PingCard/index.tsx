@@ -58,7 +58,7 @@ const _PingCard = (props: IPingCardProps) => {
               <span className="text-2xl font-semibold text-foreground font-mono">
                 {latency !== null ? `${latency}` : '--'}
               </span>
-              <span className="text-xs text-foreground-muted font-mono">ms</span>
+              <span className="text-xs text-foreground-secondary font-mono">ms</span>
               {latency !== null && renderLatencyTag(latency)}
             </div>
           </div>

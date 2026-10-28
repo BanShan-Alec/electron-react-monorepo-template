@@ -91,7 +91,7 @@ const _SettingsCard = (props: ISettingsCardProps) => {
           <div className={TOGGLE_ROW_CLASS}>
             <label htmlFor="tray-switch" className="cursor-pointer select-none flex-1 pr-3">
               <span className="text-foreground font-medium block">{t`点击关闭时最小化到托盘`}</span>
-              <span className="text-xs text-foreground-muted block mt-0.5">
+              <span className="text-xs text-foreground-secondary block mt-0.5">
                 {t`保持后台常驻与托盘图标交互`}
               </span>
             </label>
@@ -106,7 +106,7 @@ const _SettingsCard = (props: ISettingsCardProps) => {
           <div className={TOGGLE_ROW_CLASS}>
             <div className="flex-1 pr-3">
               <span className="text-foreground font-medium block">{t`软件更新 (Updater)`}</span>
-              <span className="text-xs text-foreground-muted block mt-0.5">
+              <span className="text-xs text-foreground-secondary block mt-0.5">
                 {t`检查最新版本与下载安装`}
               </span>
             </div>
@@ -133,7 +133,7 @@ const _SettingsCard = (props: ISettingsCardProps) => {
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center p-6 text-foreground-muted text-xs">
+        <div className="flex-1 flex items-center justify-center p-6 text-foreground-secondary text-xs">
           {t`正在读取偏好设置...`}
         </div>
       )}

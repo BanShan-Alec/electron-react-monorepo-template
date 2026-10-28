@@ -80,7 +80,7 @@ export const UpdaterFeature: React.FC = () => {
       <>
         <Alert type="error" showIcon message={t`更新发生错误`} description={errorText} />
         {snapshot.error && (
-          <p className="text-xs text-foreground-muted m-0 break-all">{snapshot.error}</p>
+          <p className="text-xs text-foreground-secondary m-0 break-all">{snapshot.error}</p>
         )}
         <div className="flex items-center justify-end gap-2 pt-2">
           <Button onClick={handleClose}>{t`关闭`}</Button>
@@ -102,7 +102,7 @@ export const UpdaterFeature: React.FC = () => {
             <h2 className="text-sm font-semibold text-foreground tracking-tight m-0 leading-5 truncate">
               {header.title}
             </h2>
-            <p className="text-xs text-foreground-muted m-0 mt-0.5 leading-4 truncate">
+            <p className="text-xs text-foreground-secondary m-0 mt-0.5 leading-4 truncate">
               {header.subtitle}
             </p>
           </div>
@@ -130,7 +130,7 @@ export const UpdaterFeature: React.FC = () => {
           <div className="flex-1 flex flex-col items-center justify-center gap-2.5 p-6 text-center">
             <CheckCircleOutlined className="text-success text-3xl mb-1" />
             <span className="text-sm font-medium text-foreground">{t`已是最新版本`}</span>
-            <span className="text-xs text-foreground-muted">{t`您的应用已保持在最新版本，无需更新。`}</span>
+            <span className="text-xs text-foreground-secondary">{t`您的应用已保持在最新版本，无需更新。`}</span>
           </div>
         )}
 
@@ -177,7 +177,7 @@ export const UpdaterFeature: React.FC = () => {
             <Card size="small" className="bg-background-elevated border border-border rounded-lg">
               <div className="flex items-center gap-3">
                 <CheckCircleOutlined className="text-success text-2xl shrink-0" />
-                <div className="text-xs text-foreground-muted">
+                <div className="text-xs text-foreground-secondary">
                   {t`新版本已完成下载，重启应用后即可完成升级。`}
                 </div>
               </div>

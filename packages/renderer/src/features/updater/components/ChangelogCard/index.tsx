@@ -99,7 +99,7 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
             )}
           </div>
           {formattedDate && (
-            <span className="text-xs text-foreground-muted font-normal">{formattedDate}</span>
+            <span className="text-xs text-foreground-secondary font-normal">{formattedDate}</span>
           )}
         </div>
       }
@@ -121,7 +121,7 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
               ))}
             </ul>
           ) : (
-            <p className="text-foreground-muted italic">{t`包含常规稳定性改进与性能优化。`}</p>
+            <p className="text-foreground-secondary italic">{t`包含常规稳定性改进与性能优化。`}</p>
           )}
         </div>
         {isLongNotes && (
