@@ -1,10 +1,58 @@
 import fs from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { findRepoRoot } from '../build/lib/repo-paths.ts';
 
 interface VerificationResult {
   valid: boolean;
   errors: string[];
+}
+
+// 设计系统门禁：字号不进任意值；hex 颜色只允许出现在品牌种子里
+const RENDERER_SRC_DIR = 'packages/renderer/src';
+const HEX_ALLOWLIST = new Set([`${RENDERER_SRC_DIR}/styles/design-tokens.ts`]);
+
+function lineOf(content: string, index = 0): number {
+  return content.slice(0, index).split('\n').length;
+}
+
+function listSourceFiles(dir: string): string[] {
+  if (!fs.existsSync(dir)) {
+    return [];
+  }
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      return listSourceFiles(fullPath);
+    }
+    return /\.(ts|tsx)$/.test(entry.name) ? [fullPath] : [];
+  });
+}
+
+function verifyDesignSystem(rootDir: string): string[] {
+  const problems: string[] = [];
+  const files = listSourceFiles(join(rootDir, RENDERER_SRC_DIR));
+
+  for (const file of files) {
+    const content = fs.readFileSync(file, 'utf8');
+    const relativePath = relative(rootDir, file).replace(/\\/g, '/');
+
+    for (const match of content.matchAll(/text-\[\d+(?:\.\d+)?px\]/g)) {
+      problems.push(
+        `[字号离阶] ${relativePath}:${lineOf(content, match.index)} "${match[0]}"，改用 12/14/16/24/36 阶`,
+      );
+    }
+
+    if (HEX_ALLOWLIST.has(relativePath)) {
+      continue;
+    }
+    for (const match of content.matchAll(/#[0-9a-fA-F]{3,8}\b/g)) {
+      problems.push(
+        `[硬编码颜色] ${relativePath}:${lineOf(content, match.index)} "${match[0]}"，改用 var(--color-*) 或语义类`,
+      );
+    }
+  }
+
+  return problems;
 }
 
 /**
@@ -13,6 +61,7 @@ interface VerificationResult {
  * 核心职责：在打包开始前（0 毫秒）执行静态拦截，防止配置违规导致的构建失败、体积膨胀或生产崩溃。
  * 1. 根目录 package.json name 规范校验（全小写无空格，杜绝 OTA 404 隐患）
  * 2. 根目录 package.json dependencies 边界校验（仅限 @app/main，防止 node_modules 卷入 asar 体积膨胀）
+ * 3. renderer 样式门禁：禁止 text-[Npx] 离阶字号与种子之外的 hex 颜色
  *
  * 主进程 external 为 packages/main/vite.config.ts 中的显式清单（electron / usb / electron-updater），
  * 新增运行时依赖需人工确认是否外置；原「dependencies 与 external 双向对齐」门禁已删除。
@@ -55,6 +104,14 @@ export async function verifyPrebuild(): Promise<VerificationResult> {
     );
   } else {
     console.log('  ✅ 根目录 dependencies 边界校验通过 (严格仅限 @app/main)');
+  }
+
+  // 3. renderer 样式门禁（详见 DESIGN.md §2 §8）
+  const designProblems = verifyDesignSystem(rootDir);
+  if (designProblems.length > 0) {
+    errors.push(...designProblems);
+  } else {
+    console.log('  ✅ renderer 样式规范校验通过 (字号阶 / 颜色令牌)');
   }
 
   const valid = errors.length === 0;
