@@ -44,7 +44,7 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
         />
       }
     >
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-1 flex-col justify-between gap-3">
         <div className="flex items-center gap-2">
           <Input
             type="number"
