@@ -80,7 +80,9 @@ export const UpdaterFeature: React.FC = () => {
       <>
         <Alert type="error" showIcon message={t`更新发生错误`} description={errorText} />
         {snapshot.error && (
-          <p className="text-xs text-foreground-secondary m-0 break-all">{snapshot.error}</p>
+          <p className="text-xs text-foreground-secondary m-0 break-all select-text">
+            {snapshot.error}
+          </p>
         )}
         <div className="flex items-center justify-end gap-2 pt-2">
           <Button onClick={handleClose}>{t`关闭`}</Button>

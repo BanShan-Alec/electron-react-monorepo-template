@@ -8,7 +8,7 @@ import { CardTitle } from '@/components/ui/CardTitle';
 
 // 私有常量
 const INFO_GRID_CLASS = 'grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs';
-const INFO_CELL_CLASS = 'bg-background-sunken p-2.5 rounded-lg border border-border/60';
+const INFO_CELL_CLASS = 'bg-background-sunken p-2.5 rounded-lg border border-border/60 select-text';
 
 // 可抽离的逻辑处理函数/组件
 function InfoCell({ label, value }: { label: string; value: string }) {

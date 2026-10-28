@@ -60,7 +60,7 @@ const _UsbCard = (props: IUsbCardProps) => {
             return (
               <div
                 key={deviceKey}
-                className="bg-background-sunken p-2.5 rounded-lg border border-border/60 flex items-center justify-between gap-3 text-xs"
+                className="bg-background-sunken p-2.5 rounded-lg border border-border/60 flex items-center justify-between gap-3 text-xs select-text"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-7 h-7 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
