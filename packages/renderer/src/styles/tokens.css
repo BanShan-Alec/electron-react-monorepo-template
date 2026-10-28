@@ -1,26 +1,10 @@
 /*
- * Ant Design v6 默认设计令牌镜像（Single Source: antd theme.getDesignToken()）
- * 浅色为 antd 默认算法输出；暗色为 antd 官方暗色算法输出。
- * Tailwind 语义类（bg-background / text-foreground / bg-primary ...）经 index.css 的 @theme inline 映射到这些变量，
- * 保证布局壳层与 antd 组件视觉完全同源，不再使用自研配色。
+ * 非颜色类设计令牌（颜色不在此文件：唯一来源是 styles/design-tokens.ts）。
+ * design-tokens.ts 在 createRoot 之前把 --color-* 写到 documentElement，
+ * 这里只保留不来自 antd 的令牌：color-scheme、滚动条、语法高亮。
  */
 :root {
   color-scheme: light;
-  --color-bg-primary: #f5f5f5;
-  --color-bg-sunken: #fafafa;
-  --color-bg-elevated: #fafafa;
-  --color-bg-container: #ffffff;
-  --color-bg-card: #ffffff;
-  --color-text-primary: rgba(0, 0, 0, 0.88);
-  --color-text-secondary: rgba(0, 0, 0, 0.65);
-  --color-text-muted: rgba(0, 0, 0, 0.45);
-  --color-primary: #1677ff;
-  --color-primary-hover: #4096ff;
-  --color-primary-light: #e6f4ff;
-  --color-border: #d9d9d9;
-  --color-success: #52c41a;
-  --color-warning: #faad14;
-  --color-danger: #ff4d4f;
 
   /* 滚动条：antd 中性色 alpha 梯度 colorFill → colorTextQuaternary → colorTextTertiary */
   --color-scrollbar-thumb: rgba(0, 0, 0, 0.15);
@@ -40,21 +24,6 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --color-bg-primary: #000000;
-  --color-bg-sunken: #1f1f1f;
-  --color-bg-elevated: #1f1f1f;
-  --color-bg-container: #141414;
-  --color-bg-card: #141414;
-  --color-text-primary: rgba(255, 255, 255, 0.85);
-  --color-text-secondary: rgba(255, 255, 255, 0.65);
-  --color-text-muted: rgba(255, 255, 255, 0.45);
-  --color-primary: #1668dc;
-  --color-primary-hover: #3c89e8;
-  --color-primary-light: #15325b;
-  --color-border: #424242;
-  --color-success: #49aa19;
-  --color-warning: #d89614;
-  --color-danger: #dc4446;
 
   /* 滚动条：antd 中性色 alpha 梯度 colorFill → colorTextQuaternary → colorTextTertiary */
   --color-scrollbar-thumb: rgba(255, 255, 255, 0.18);

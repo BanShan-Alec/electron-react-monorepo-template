@@ -1,6 +1,7 @@
 import { LIGHT_COLOR_SCHEME_QUERY } from '@app/shared/constants/preferences';
 import { useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
+import { applyTheme } from '@/styles/design-tokens';
 
 /**
  * 应用级主题联动（跨 feature 的壳层职责，故置于 hooks/ 而非任一域）：
@@ -16,8 +17,7 @@ export function useTheme() {
 
   // 组件Effect
   useEffect(() => {
-    document.documentElement.dataset.theme = resolvedTheme;
-    document.documentElement.classList.toggle('dark', resolvedTheme === 'dark');
+    applyTheme(resolvedTheme);
   }, [resolvedTheme]);
 
   useEffect(() => {
