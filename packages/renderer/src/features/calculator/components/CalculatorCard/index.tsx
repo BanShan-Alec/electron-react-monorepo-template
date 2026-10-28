@@ -58,7 +58,7 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
             value={op}
             options={OPERATOR_OPTIONS}
             onChange={onOpChange}
-            className="font-mono font-bold"
+            className="font-mono font-semibold"
           />
 
           <Input
@@ -77,7 +77,7 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
         {result !== null && (
           <div className="p-3 bg-success/10 border border-success/30 rounded-lg flex items-center justify-between">
             <span className="text-xs text-foreground-secondary font-medium">{t`计算结果:`}</span>
-            <span className="text-base font-bold text-foreground font-mono">{result}</span>
+            <span className="text-base font-semibold text-foreground font-mono">{result}</span>
           </div>
         )}
 

@@ -113,7 +113,7 @@ export const UpdaterFeature: React.FC = () => {
         <button
           type="button"
           aria-label="Close"
-          className="no-drag text-foreground-muted hover:text-foreground hover:bg-foreground/10 active:bg-foreground/15 rounded-md w-8 h-8 transition-colors duration-150 inline-flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 shrink-0"
+          className="no-drag text-foreground-muted hover:text-foreground hover:bg-foreground/10 active:bg-foreground/20 rounded-md w-8 h-8 transition-colors duration-150 inline-flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 shrink-0"
           onClick={handleClose}
         >
           <CloseOutlined className="text-sm" />

@@ -42,7 +42,7 @@ const _UsbCard = (props: IUsbCardProps) => {
       ) : devices.length === 0 ? (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t`未检测到连接的 USB 设备`} />
       ) : (
-        <div className="flex flex-col gap-2.5 max-h-[320px] overflow-y-auto pr-1">
+        <div className="flex flex-col gap-2.5 max-h-80 overflow-y-auto pr-1">
           {devices.map((device) => {
             const displayName =
               device.productName ||

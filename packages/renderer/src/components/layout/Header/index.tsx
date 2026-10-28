@@ -56,7 +56,7 @@ const _Header = (props: IHeaderProps) => {
       </div>
 
       {/* Layer 2: 业务导航栏（非拖拽区，左侧 Tabs 标签页，右侧副标题描述） */}
-      <div className="px-6 flex items-center justify-between gap-4 -mb-[1px]">
+      <div className="px-6 flex items-center justify-between gap-4 -mb-px">
         {/* 左侧：Tabs 页面切换 */}
         <div className="flex items-center min-w-0">
           <Tabs
