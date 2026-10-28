@@ -30,7 +30,7 @@ const _UsbCard = (props: IUsbCardProps) => {
       }
       extra={
         <div className="flex items-center gap-2">
-          <Badge count={devices.length} overflowCount={99} color="#10b981" />
+          <Badge count={devices.length} overflowCount={99} color="var(--color-success)" />
           <Button
             type="primary"
             size="small"
