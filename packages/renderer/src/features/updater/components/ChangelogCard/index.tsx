@@ -87,7 +87,7 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
   return (
     <Card
       size="small"
-      className="bg-background-secondary border border-border rounded-lg"
+      className="bg-background-elevated border border-border rounded-lg"
       title={
         <div className="flex items-center justify-between py-1">
           <div className="flex items-center gap-2">

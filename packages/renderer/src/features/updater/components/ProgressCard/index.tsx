@@ -32,7 +32,7 @@ export const ProgressCard: React.FC<ProgressCardProps> = ({ progress }) => {
   const totalText = progress ? formatBytes(progress.total) : '0 MB';
 
   return (
-    <Card size="small" className="bg-background-secondary border border-border rounded-lg">
+    <Card size="small" className="bg-background-elevated border border-border rounded-lg">
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
           <span className="font-medium text-foreground">{t`下载进度`}</span>

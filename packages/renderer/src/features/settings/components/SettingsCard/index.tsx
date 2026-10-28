@@ -14,7 +14,7 @@ const LANGUAGE_OPTIONS = [
 ];
 
 const TOGGLE_ROW_CLASS =
-  'settings-toggle-row flex items-center justify-between bg-background-secondary p-3 rounded-lg border border-border';
+  'settings-toggle-row flex items-center justify-between bg-background-sunken p-3 rounded-lg border border-border';
 
 // 可抽离的逻辑处理函数/组件
 
@@ -62,7 +62,7 @@ const _SettingsCard = (props: ISettingsCardProps) => {
       ) : appConfig ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
           {/* 主题模式 */}
-          <div className="flex flex-col gap-1.5 bg-background-secondary p-3 rounded-lg border border-border">
+          <div className="flex flex-col gap-1.5 bg-background-sunken p-3 rounded-lg border border-border">
             <label htmlFor="theme-select" className="text-foreground-secondary font-medium">
               {t`外观主题 (Theme)`}
             </label>
@@ -75,7 +75,7 @@ const _SettingsCard = (props: ISettingsCardProps) => {
           </div>
 
           {/* 默认语言 */}
-          <div className="flex flex-col gap-1.5 bg-background-secondary p-3 rounded-lg border border-border">
+          <div className="flex flex-col gap-1.5 bg-background-sunken p-3 rounded-lg border border-border">
             <label htmlFor="lang-select" className="text-foreground-secondary font-medium">
               {t`界面语言 (Language)`}
             </label>

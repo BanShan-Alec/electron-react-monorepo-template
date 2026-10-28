@@ -7,7 +7,8 @@
 :root {
   color-scheme: light;
   --color-bg-primary: #f5f5f5;
-  --color-bg-secondary: #fafafa;
+  --color-bg-sunken: #fafafa;
+  --color-bg-elevated: #fafafa;
   --color-bg-container: #ffffff;
   --color-bg-card: #ffffff;
   --color-text-primary: rgba(0, 0, 0, 0.88);
@@ -40,7 +41,8 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
   --color-bg-primary: #000000;
-  --color-bg-secondary: #1f1f1f;
+  --color-bg-sunken: #1f1f1f;
+  --color-bg-elevated: #1f1f1f;
   --color-bg-container: #141414;
   --color-bg-card: #141414;
   --color-text-primary: rgba(255, 255, 255, 0.85);

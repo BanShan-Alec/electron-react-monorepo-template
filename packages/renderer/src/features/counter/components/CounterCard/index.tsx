@@ -41,7 +41,7 @@ const _CounterCard = (props: ICounterCardProps) => {
         />
       }
     >
-      <div className="flex flex-col items-center justify-center p-4 bg-background-secondary rounded-lg border border-border gap-4">
+      <div className="flex flex-col items-center justify-center p-4 bg-background-sunken rounded-lg border border-border gap-4">
         <div className="flex flex-col items-center">
           <span className="text-xs text-foreground-secondary font-medium">{t`当前持久化数值`}</span>
           <span className="text-4xl font-semibold text-primary font-mono mt-1">{count}</span>

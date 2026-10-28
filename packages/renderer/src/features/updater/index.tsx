@@ -174,7 +174,7 @@ export const UpdaterFeature: React.FC = () => {
 
         {!showChangelog && snapshot.state === 'downloaded' && (
           <div className="flex flex-col gap-2">
-            <Card size="small" className="bg-background-secondary border border-border rounded-lg">
+            <Card size="small" className="bg-background-elevated border border-border rounded-lg">
               <div className="flex items-center gap-3">
                 <CheckCircleOutlined className="text-success text-2xl shrink-0" />
                 <div className="text-xs text-foreground-muted">

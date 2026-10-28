@@ -29,7 +29,8 @@
  */
 @theme inline {
   --color-background: var(--color-bg-primary, #0f172a);
-  --color-background-secondary: var(--color-bg-secondary, #1e293b);
+  --color-background-sunken: var(--color-bg-sunken, #1e293b);
+  --color-background-elevated: var(--color-bg-elevated, #1e293b);
   --color-background-card: var(--color-bg-card, rgba(30, 41, 59, 0.7));
   --color-background-container: var(--color-bg-container, #1e293b);
   --color-foreground: var(--color-text-primary, #f8fafc);

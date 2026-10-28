@@ -47,7 +47,7 @@ const _PingCard = (props: IPingCardProps) => {
         />
       }
     >
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-background-secondary rounded-lg border border-border">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-background-sunken rounded-lg border border-border">
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <div className="flex flex-col">
             <span className="text-xs text-foreground-secondary font-medium">

@@ -8,7 +8,7 @@ import { CodeHighlight } from '@/components/ui/CodeHighlight';
 
 // 私有常量
 const STEP_CARD_CLASS =
-  'flex items-start gap-3 p-3.5 bg-background-secondary rounded-lg border border-border';
+  'flex items-start gap-3 p-3.5 bg-background-sunken rounded-lg border border-border';
 const CODE_BLOCK_CLASS =
   'text-[11px] font-mono text-foreground-secondary bg-background/80 p-3 rounded-lg overflow-x-auto stable-scrollbar leading-relaxed flex-1';
 
