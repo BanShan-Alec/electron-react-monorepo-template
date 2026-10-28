@@ -24,7 +24,7 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 | font-weight | 400 / 500 / 600 | 700 只出现在 antd 组件内部；正文不加粗 |
 | line-height | 默认；标题 `leading-tight`；长文/代码 `leading-relaxed` | 不逐处手调 |
 | color | 文字三档 + 语义四色（§3） | 语义色不做正文前景 |
-| margin / padding | Tailwind 4px 阶 | 组间距 > 组内距 |
+| margin / padding | Tailwind 4px 阶（Tabs 底边对缝允许 `-mb-px`） | 组间距 > 组内距 |
 | width | 看板 `max-w-7xl`；架构 `max-w-5xl` | 同页不混用两种内容列宽 |
 | height | 控件 28（SM）/ 32；卡片随内容 | 行内等高由 `AppCard` body flex 承担 |
 | box-shadow | `.app-card` 一组三级投影 | 不另写自定义阴影 |
@@ -85,7 +85,7 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 - 已知例外（记录在案，不作为缺陷上报）：
   - 主按钮白字 / 浅色主色链接 4.10:1；
   - 暗色主色链接 3.55:1；
-  - `colorTextTertiary` 3.36:1（仅限 placeholder / disabled）。
+  - `colorTextTertiary` 3.36:1（仅限 placeholder / disabled / 非文本次要图标）；
 - 自定义可点元素必须有 `focus-visible` 焦点环（2px + offset）；禁止 `focus:outline-none` 无替代。
 - 纯图标按钮必须有 `aria-label`，文案走 `t` 宏，不硬编码英文。
 
