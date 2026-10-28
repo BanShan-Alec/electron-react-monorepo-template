@@ -1,9 +1,10 @@
 import { ApiOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Button, Card, Tag } from 'antd';
+import { Button, Card } from 'antd';
 import { memo } from 'react';
 import { CardTitle } from '@/components/ui/CardTitle';
+import { StatusTag } from '@/components/ui/StatusTag';
 
 // 私有常量
 const FAST_LATENCY_MS = 5;
@@ -12,12 +13,12 @@ const NORMAL_LATENCY_MS = 15;
 // 可抽离的逻辑处理函数/组件
 function renderLatencyTag(latency: number) {
   if (latency < FAST_LATENCY_MS) {
-    return <Tag color="success">{t`极速`}</Tag>;
+    return <StatusTag tone="success">{t`极速`}</StatusTag>;
   }
   if (latency < NORMAL_LATENCY_MS) {
-    return <Tag color="processing">{t`正常`}</Tag>;
+    return <StatusTag tone="info">{t`正常`}</StatusTag>;
   }
-  return <Tag color="warning">{t`延迟稍高`}</Tag>;
+  return <StatusTag tone="warning">{t`延迟稍高`}</StatusTag>;
 }
 
 const _PingCard = (props: IPingCardProps) => {

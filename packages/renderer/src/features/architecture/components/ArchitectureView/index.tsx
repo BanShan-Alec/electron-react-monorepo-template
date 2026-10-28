@@ -1,10 +1,11 @@
 import { BulbOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Card, Tag } from 'antd';
+import { Card } from 'antd';
 import { memo } from 'react';
 import { CardTitle } from '@/components/ui/CardTitle';
 import { CodeHighlight } from '@/components/ui/CodeHighlight';
+import { StatusTag } from '@/components/ui/StatusTag';
 
 // 私有常量
 const STEP_CARD_CLASS =
@@ -128,7 +129,7 @@ const _ArchitectureView = (_props: IProps) => {
               <CloseCircleOutlined className="text-danger mr-1.5" />
               {t`传统散装 / 进程穿透方式`}
             </span>
-            <Tag color="error">{t`代码耦合 & 契约混乱`}</Tag>
+            <StatusTag tone="danger">{t`代码耦合 & 契约混乱`}</StatusTag>
           </div>
           <CodeHighlight code={legacyCode} className={CODE_BLOCK_CLASS} />
         </div>
@@ -140,7 +141,7 @@ const _ArchitectureView = (_props: IProps) => {
               <CheckCircleOutlined className="text-success mr-1.5" />
               {t`Fullstack 规范分层方式`}
             </span>
-            <Tag color="success">{t`物理隔离 & Result 契约`}</Tag>
+            <StatusTag tone="success">{t`物理隔离 & Result 契约`}</StatusTag>
           </div>
           <CodeHighlight code={standardCode} className={CODE_BLOCK_CLASS} />
         </div>
