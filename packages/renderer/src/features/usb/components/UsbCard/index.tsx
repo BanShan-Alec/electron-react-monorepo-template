@@ -31,13 +31,7 @@ const _UsbCard = (props: IUsbCardProps) => {
       extra={
         <div className="flex items-center gap-2">
           <Badge count={devices.length} overflowCount={99} color="var(--color-success)" />
-          <Button
-            type="primary"
-            size="small"
-            icon={<ReloadOutlined />}
-            loading={isLoading}
-            onClick={onRefresh}
-          >
+          <Button size="small" icon={<ReloadOutlined />} loading={isLoading} onClick={onRefresh}>
             {t`刷新`}
           </Button>
         </div>

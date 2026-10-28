@@ -52,13 +52,7 @@ const _SystemInfoCard = (props: ISystemInfoCardProps) => {
         />
       }
       extra={
-        <Button
-          type="primary"
-          size="small"
-          icon={<ReloadOutlined />}
-          loading={isLoading}
-          onClick={onRefresh}
-        >
+        <Button size="small" icon={<ReloadOutlined />} loading={isLoading} onClick={onRefresh}>
           {t`刷新`}
         </Button>
       }
