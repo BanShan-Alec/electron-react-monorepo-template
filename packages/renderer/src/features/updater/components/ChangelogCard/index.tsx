@@ -129,7 +129,7 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
             <button
               type="button"
               onClick={() => setExpanded(!expanded)}
-              className="text-primary hover:text-primary-hover text-xs font-normal cursor-pointer focus:outline-none transition-colors"
+              className="text-primary hover:text-primary-hover text-xs font-normal cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               {expanded ? t`收起` : t`展开全部`}
             </button>
