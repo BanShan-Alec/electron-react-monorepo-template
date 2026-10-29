@@ -3,7 +3,6 @@ import type { AppConfig } from '@shared/schemas/config';
 import { App } from 'antd';
 import { useEffect } from 'react';
 import { useIpc } from '@/hooks/useIpc';
-import type { SupportedLocale } from '@/locales/i18n';
 import { useAppStore } from '@/stores/useAppStore';
 
 // 私有常量
@@ -24,7 +23,7 @@ export function useAppConfig() {
   } = useIpc('config.get', window.api.config.get, {
     onSuccess: (data) => {
       setThemeMode(data.theme);
-      setLanguage(data.language as SupportedLocale);
+      setLanguage(data.language);
     },
     onError: (err) => {
       const detail = err.message;
@@ -52,7 +51,7 @@ export function useAppConfig() {
     {
       onSuccess: (data) => {
         setThemeMode(data.theme);
-        setLanguage(data.language as SupportedLocale);
+        setLanguage(data.language);
       },
       onError: (err) => {
         const detail = err.message;
@@ -69,7 +68,7 @@ export function useAppConfig() {
         setThemeMode(partial.theme);
       }
       if (partial.language !== undefined) {
-        setLanguage(partial.language as SupportedLocale);
+        setLanguage(partial.language);
       }
       await fetchConfig();
     } catch {

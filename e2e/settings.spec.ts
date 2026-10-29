@@ -143,6 +143,18 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     await expect(page.locator('.ant-tabs-tab', { hasText: '总览看板' })).toBeVisible();
     await expect(page.getByText('应用偏好设置 (ConfigStore)')).toBeVisible();
     await expect(page.getByText('IPC 计数器 (Counter)')).toBeVisible();
+
+    // 4. 跟随系统：解析到受支持语种（CI 通常为 en-US），再切回中文
+    await langSelect.click();
+    await page
+      .locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')
+      .getByText('跟随系统 (System)', { exact: true })
+      .click();
+    await expect(html).toHaveAttribute('lang', /^(zh-CN|en-US)$/);
+
+    await langSelect.click();
+    await zhOption.click();
+    await expect(html).toHaveAttribute('lang', 'zh-CN');
   });
 
   test('用例 3：点击关闭时最小化到托盘交互与关闭拦截', async ({

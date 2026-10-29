@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import type { LanguageMode } from '@app/shared/constants/preferences';
 import { WINDOW_IDS } from '@app/shared/constants/windows';
 import { app, Menu, nativeImage, Tray } from 'electron';
 import type { AppModule } from '../AppModule';
@@ -28,7 +29,7 @@ export class TrayManager implements AppModule {
     return this.contextMenu;
   }
 
-  public updateLanguage(lang: string): void {
+  public updateLanguage(lang: LanguageMode): void {
     if (!this.tray) return;
 
     this.tray.setToolTip(`${app.getName()} - ${mainMessage(lang, 'trayTooltipSuffix')}`);

@@ -9,11 +9,6 @@ import { CardTitle } from '@/components/ui/CardTitle';
 import { callIpc } from '@/lib/ipc';
 
 // 私有常量
-const LANGUAGE_OPTIONS = [
-  { label: '简体中文 (zh-CN)', value: 'zh-CN' },
-  { label: 'English (en-US)', value: 'en-US' },
-];
-
 const TOGGLE_ROW_CLASS =
   'settings-toggle-row flex flex-wrap items-center justify-between gap-y-2 bg-background-sunken p-3 rounded-lg border border-border';
 
@@ -35,6 +30,11 @@ const _SettingsCard = (props: ISettingsCardProps) => {
     { label: t`跟随系统 (System)`, value: 'system' },
     { label: t`浅色模式 (Light)`, value: 'light' },
     { label: t`深色模式 (Dark)`, value: 'dark' },
+  ];
+  const languageOptions = [
+    { label: t`跟随系统 (System)`, value: 'system' },
+    { label: '简体中文 (zh-CN)', value: 'zh-CN' },
+    { label: 'English (en-US)', value: 'en-US' },
   ];
 
   // 逻辑处理函数
@@ -82,7 +82,7 @@ const _SettingsCard = (props: ISettingsCardProps) => {
             <Select
               id="lang-select"
               value={appConfig.language}
-              options={LANGUAGE_OPTIONS}
+              options={languageOptions}
               onChange={(value) => onUpdate({ language: value as AppConfig['language'] })}
             />
           </div>

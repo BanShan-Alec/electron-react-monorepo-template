@@ -1,4 +1,9 @@
-import type { SupportedLocale } from '@app/shared/constants/preferences';
+import {
+  type LanguageMode,
+  resolveLocale,
+  type SupportedLocale,
+} from '@app/shared/constants/preferences';
+import { app } from 'electron';
 
 /**
  * 主进程原生 UI 文案（托盘菜单 / 系统通知）。
@@ -39,6 +44,8 @@ const MAIN_MESSAGES: Record<SupportedLocale, MainMessages> = {
 
 export type MainMessageKey = keyof MainMessages;
 
-export function mainMessage(locale: string, key: MainMessageKey): string {
-  return MAIN_MESSAGES[locale === 'en-US' ? 'en-US' : 'zh-CN'][key];
+export function mainMessage(mode: LanguageMode, key: MainMessageKey): string {
+  // 原生 UI 拿不到渲染层的 navigator.language，用 Electron 的 OS 语言解析
+  const locale = resolveLocale(mode, app.isReady() ? app.getLocale() : '');
+  return MAIN_MESSAGES[locale][key];
 }
