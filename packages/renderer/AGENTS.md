@@ -180,7 +180,8 @@ const { runAsync: runCounterOp } = useManualRequest(async (action: CounterAction
 - **提取与校验**：`macroTransform` 只做宏转换，不产出词条；改文案后必须 `pnpm i18n:extract` 抽词条、补 en-US 译文，再跑 `pnpm i18n:check`（缺译即失败）。漏译不会在编译期报错，只会在运行时回落成中文。
 - **按需加载**：`locales/i18n.ts` 经 `dynamicActivate` 动态 import 语言包 Chunk，antd 组件库 locale 同步切换。
 - **切换订阅**：卡片经 `useLingui()` 订阅语言上下文，全局语言状态收敛在 `stores/useAppStore.ts`。
-- **英文文案**：优先短短语；按钮/标签 ≤3 词、卡片标题 ≤5 词；Sentence case；术语按术语表；中文源括号里的实现名词可省略。细则见 [国际化（i18n）](../docs/src/pages/ui/i18n.md)。
+- **英文文案**：优先短短语；按钮/标签 ≤3 词、卡片标题 ≤5 词；Sentence case；术语按术语表；中文源括号里的实现名词可省略。细则见 [国际化文案规范（Copy）](../docs/src/pages/ui/i18n-copy.md)。
+- 机制、选型与实操 SOP 见 [国际化（i18n）](../docs/src/pages/ui/i18n.md)。
 
 ## 7. 提交前门禁
 

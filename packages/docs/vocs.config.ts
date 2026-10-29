@@ -76,6 +76,7 @@ export default defineConfig({
           { text: '组件库（Antd）', link: '/ui/antd' },
           { text: '样式与令牌（Tailwind-CSS）', link: '/ui/tailwind' },
           { text: '国际化（i18n）', link: '/ui/i18n' },
+          { text: '国际化文案规范（Copy）', link: '/ui/i18n-copy' },
           { text: '路由（Wouter）', link: '/ui/wouter' },
           { text: '全局状态（Zustand）', link: '/ui/zustand' },
           { text: '错误边界（ErrorBoundary）', link: '/ui/error-boundary' },
