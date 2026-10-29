@@ -21,9 +21,34 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * 语义色 → 运行时 CSS 变量别名（变量实体由 design-tokens.ts 注入）。
+ * 项目语义色 → antd cssVar 变量。
+ * 实体由 ConfigProvider 在 .css-var-app 作用域注入（applyColorScheme 把类挂到 <html>），
+ * 这里只做改名，组件与 Tailwind 不直接依赖 --ant-* 名字。
+ */
+@layer base {
+  :root {
+    --color-bg-primary: var(--ant-color-bg-layout);
+    --color-bg-container: var(--ant-color-bg-container);
+    --color-bg-elevated: var(--ant-color-bg-elevated);
+    --color-bg-sunken: var(--ant-color-fill-alter);
+    --color-text-primary: var(--ant-color-text);
+    --color-text-secondary: var(--ant-color-text-secondary);
+    --color-text-muted: var(--ant-color-text-tertiary);
+    --color-text-on-primary: var(--ant-color-text-light-solid);
+    --color-border: var(--ant-color-border);
+    --color-primary: var(--ant-color-primary);
+    --color-primary-hover: var(--ant-color-primary-hover);
+    --color-primary-light: var(--ant-color-primary-bg);
+    --color-success: var(--ant-color-success);
+    --color-warning: var(--ant-color-warning);
+    --color-danger: var(--ant-color-error);
+  }
+}
+
+/*
+ * 语义色 → Tailwind 工具类别名。
  * inline 必须带：映射值是 var() 引用，工具类需内联引用本体而非再包一层主题变量。
- * 不写 fallback：变量在 createRoot 前注入，缺失应当显形（透明），而不是退回另一套品牌色。
+ * 不写 fallback：颜色链路断了应当显形（透明），而不是退回另一套品牌色。
  */
 @theme inline {
   --color-background: var(--color-bg-primary);

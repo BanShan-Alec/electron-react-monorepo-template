@@ -10,8 +10,8 @@
     height: 100%;
     width: 100%;
     overflow: hidden;
-    background-color: var(--color-bg-primary);
-    color: var(--color-text-primary);
+    background-color: var(--window-bg);
+    color: var(--window-fg);
     font-family:
       -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     user-select: none;

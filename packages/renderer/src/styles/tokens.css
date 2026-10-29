@@ -1,10 +1,13 @@
 /*
- * 非颜色类设计令牌（颜色不在此文件：唯一来源是 styles/design-tokens.ts）。
- * design-tokens.ts 在 createRoot 之前把 --color-* 写到 documentElement，
- * 这里只保留不来自 antd 的令牌：color-scheme、滚动条、语法高亮。
+ * 非 antd 令牌：color-scheme、滚动条、语法高亮，以及 React 渲染前的窗口画布。
+ * 颜色由 antd cssVar 注入（见 styles/design-tokens.ts 与 index.css）。
  */
 :root {
   color-scheme: light;
+
+  /* React 渲染前的窗口画布；值必须与 antd colorBgLayout / colorText 一致（单测校验） */
+  --window-bg: #f5f5f5;
+  --window-fg: rgba(0, 0, 0, 0.88);
 
   /* 滚动条：antd 中性色 alpha 梯度 colorFill → colorTextQuaternary → colorTextTertiary */
   --color-scrollbar-thumb: rgba(0, 0, 0, 0.15);
@@ -24,6 +27,10 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
+
+  /* React 渲染前的窗口画布；值必须与 antd colorBgLayout / colorText 一致（单测校验） */
+  --window-bg: #000000;
+  --window-fg: rgba(255, 255, 255, 0.85);
 
   /* 滚动条：antd 中性色 alpha 梯度 colorFill → colorTextQuaternary → colorTextTertiary */
   --color-scrollbar-thumb: rgba(255, 255, 255, 0.18);

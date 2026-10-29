@@ -1,58 +1,27 @@
-import { theme } from 'antd';
-
 /**
- * 颜色令牌唯一来源：antd 官方算法 + BRAND_PRIMARY 种子。
+ * 品牌色与主题模式入口。
  *
- * antd 组件的颜色由 ConfigProvider 的 token 在 cssinjs 内计算，布局壳的颜色读
- * 这里写进 documentElement 的 CSS 变量。两边必须来自同一次 getDesignToken()，
- * 手抄色值会在 antd 升级或换品牌时静默漂移。
+ * 颜色值由 antd cssVar 在 ConfigProvider 内生成（--ant-*），本文件只负责：
+ * 1. BRAND_PRIMARY —— 唯一品牌种子；
+ * 2. CSS_VAR_KEY —— cssVar 作用域类名，必须挂在 <html>；
+ * 3. applyColorScheme —— 切 data-theme / .dark / 作用域类。
  *
- * applyTheme 必须在 createRoot 之前调用：变量先落到 <html>，React 首帧才有色。
+ * 颜色链路见 DESIGN.md §3；不要在组件里读 getDesignToken 或写 CSS 变量。
  */
 
 export type ThemeMode = 'light' | 'dark';
 
 export const BRAND_PRIMARY = '#1677ff';
 
-type ThemeTokens = ReturnType<typeof theme.getDesignToken>;
+/**
+ * cssVar.key 会被 antd 原样用作类名（不是前缀）。
+ * 类必须挂在 <html>：index.css 的 :root 语义别名要能解析 --ant-*。
+ */
+export const CSS_VAR_KEY = 'css-var-app';
 
-const VAR_MAP = {
-  '--color-bg-primary': (t) => t.colorBgLayout,
-  '--color-bg-container': (t) => t.colorBgContainer,
-  '--color-bg-elevated': (t) => t.colorBgElevated,
-  '--color-bg-sunken': (t) => t.colorFillAlter,
-  '--color-text-primary': (t) => t.colorText,
-  '--color-text-secondary': (t) => t.colorTextSecondary,
-  '--color-text-muted': (t) => t.colorTextTertiary,
-  '--color-text-on-primary': (t) => t.colorTextLightSolid,
-  '--color-border': (t) => t.colorBorder,
-  '--color-primary': (t) => t.colorPrimary,
-  '--color-primary-hover': (t) => t.colorPrimaryHover,
-  '--color-primary-light': (t) => t.colorPrimaryBg,
-  '--color-success': (t) => t.colorSuccess,
-  '--color-warning': (t) => t.colorWarning,
-  '--color-danger': (t) => t.colorError,
-} satisfies Record<`--color-${string}`, (tokens: ThemeTokens) => string>;
-
-export type ThemeCssVars = { [K in keyof typeof VAR_MAP]: string };
-
-export function buildThemeCssVars(mode: ThemeMode, seed: string = BRAND_PRIMARY): ThemeCssVars {
-  const tokens = theme.getDesignToken({
-    algorithm: mode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
-    token: { colorPrimary: seed },
-  });
-
-  return Object.fromEntries(
-    Object.entries(VAR_MAP).map(([name, read]) => [name, read(tokens)]),
-  ) as ThemeCssVars;
-}
-
-export function applyTheme(mode: ThemeMode): void {
+export function applyColorScheme(mode: ThemeMode): void {
   const root = document.documentElement;
   root.dataset.theme = mode;
   root.classList.toggle('dark', mode === 'dark');
-
-  for (const [name, value] of Object.entries(buildThemeCssVars(mode))) {
-    root.style.setProperty(name, value);
-  }
+  root.classList.add(CSS_VAR_KEY);
 }
