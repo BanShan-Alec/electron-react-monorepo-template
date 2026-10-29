@@ -82,3 +82,4 @@ useEffect(() => {
 ## 注意点
 
 - 深浅主题的视觉差异由 `data-theme` 属性 + antd 官方算法驱动，不要用 `dark:` 前缀类堆业务分支
+- 完整的合规链路、三道门禁与「改哪里」见[设计规范与令牌（Design Tokens）](/ui/design-tokens)

@@ -52,6 +52,8 @@ export function getAntdThemeConfig(mode: ThemeMode) {
 
 深浅两套色彩 Token 全部交给 antd 官方算法输出，视觉基线对齐 antd 原版。品牌色只在 `design-tokens.ts` 改一个种子：`ConfigProvider` 用 `cssVar` 注入 `--ant-*`，布局壳的 `:root` 语义别名指向这些变量。`cssVar.key` 会被 antd 原样用作类名（不是前缀），类必须挂在 `<html>`——`applyColorScheme()` 负责这件事，portal 才能继承。
 
+token 全链路、三道门禁与「改哪里」见[设计规范与令牌（Design Tokens）](/ui/design-tokens)。
+
 ## 怎么抄
 
 以「新增一个功能页面」为例：

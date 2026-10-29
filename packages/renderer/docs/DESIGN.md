@@ -126,4 +126,5 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 
 - 品牌色唯一真源：`src/styles/design-tokens.ts` 的 `BRAND_PRIMARY`。
 - cssVar 作用域类：同文件的 `CSS_VAR_KEY`；`applyColorScheme()` 负责挂到 `<html>`。
+- 人类向的链路与合规说明：[设计规范与令牌（Design Tokens）](../../docs/src/pages/ui/design-tokens.md)。
 - 品牌定制（换 logo / 主色 / 应用名）：[配置项归属（Configuration-map）](../../docs/src/pages/dx/configuration-map.md)。
