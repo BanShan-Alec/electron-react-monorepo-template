@@ -1,6 +1,6 @@
 # DESIGN.md — renderer 视觉规范
 
-AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：唯一来源是 `src/styles/design-tokens.ts` 的 `BRAND_PRIMARY`，浅/深两套由 antd 算法派生。
+AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：唯一来源是 `src/styles/design-tokens.ts` 的 `BRAND_PRIMARY`，浅/深两套由 antd 算法派生并经 cssVar 暴露为 `--ant-*`。
 
 ## 0. 基线
 
@@ -12,9 +12,9 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 
 1. **禁硬编码**：颜色只用 `var(--color-*)` / Tailwind 语义类；字号不进任意值；间距走 4px 阶。
 2. **层级秩序**：`index.css` 首行 `@layer theme, base, antd, components, utilities`，`AppProviders` 用 `<StyleProvider layer>` 收 antd 样式。覆盖只看层：utilities 压 antd；自有组件类进 `components`；**不写层外裸样式**。唯一豁免：`tokens.css` 的 `:root` 非颜色令牌（滚动条 / 语法高亮）。
-3. **改品牌 = 改一个种子**：`BRAND_PRIMARY` → `applyTheme()` 在 `createRoot` 前注入 `--color-*`；`antd-theme.ts` 把同一种子交给 `ConfigProvider`。
+3. **改品牌 = 改一个种子**：`BRAND_PRIMARY` → `ConfigProvider.theme.cssVar = { key: 'css-var-app' }` → antd 注入 `--ant-*`；`index.css` 的 `:root` 再映射成项目语义 `--color-*`。
 4. **antd 组件样式只经 `antd-theme.ts` / `ConfigProvider`**：不在组件里写 `:global`、不覆盖 `.ant-*` 内部类；需要固定形态时封装组件（见 §4）。
-5. **深浅色**：`applyTheme()` 统一切换 `data-theme`、`.dark`、颜色变量；组件内不读 `prefers-color-scheme`。
+5. **深浅色**：`applyColorScheme()` 统一切换 `data-theme`、`.dark` 与 `css-var-app` 作用域类；antd 算法由 `ConfigProvider` 随 `resolvedTheme` 切换。组件内不读 `prefers-color-scheme`。
 
 ## 2. 十二个系统
 
@@ -37,6 +37,8 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 
 - 三档文字：`text-foreground`（主）/ `text-foreground-secondary`（辅助）/ `text-foreground-muted`（仅 placeholder、disabled）。
 - 主色实心块上的文字用 `text-on-primary`（antd `colorTextLightSolid`），不写 `text-white`。
+- 颜色链路：`--ant-*`（antd cssVar，作用域 `.css-var-app` 必须挂在 `<html>`）→ `--color-*`（项目语义，`index.css` 的 `:root`）→ Tailwind 类。组件只消费最后一层。
+- React 渲染前的窗口画布用 `--window-bg` / `--window-fg`（`tokens.css`），只作用于 `html, body`，不进业务组件。
 - 语义色（success / warning / danger / primary）**只做图标、圆点、描边、表面**；承载信息的文字用中性色。
 - 语义状态用 `StatusTag`（§4）。antd 的 `Tag color="warning|success|error"` 文字色是基色，浅色下 1.83–3.68:1，禁止承载信息。
 - 代码文字用 `font-mono`；数字与版本号同理。
@@ -101,8 +103,10 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 2. 无 `text-[Npx]`、无 tsx 内 hex 颜色、无未定义语义类（`verify:prebuild` 会拦前两项）。
 3. 浅/深各看一眼：文字可读、卡片无空洞、hover 不削弱描边。
 4. 新组件先查 `components/ui`（`AppCard` / `StatusTag` / `CardTitle` / `CodeHighlight`）再动手。
+5. 颜色链路改动后确认 `<html>` 有 `css-var-app` 类且 `--color-primary` 非空（e2e `settings.spec` 已断言）。
 
 ## 指针
 
 - 品牌色唯一真源：`src/styles/design-tokens.ts` 的 `BRAND_PRIMARY`。
+- cssVar 作用域类：同文件的 `CSS_VAR_KEY`；`applyColorScheme()` 负责挂到 `<html>`。
 - 品牌定制（换 logo / 主色 / 应用名）：[配置项归属（Configuration-map）](../../docs/src/pages/dx/configuration-map.md)。

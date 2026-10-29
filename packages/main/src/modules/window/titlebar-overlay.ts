@@ -32,7 +32,7 @@ export function getWindowBackgroundColor(): string {
   return nativeTheme.shouldUseDarkColors ? '#141414' : '#ffffff';
 }
 
-/** overlay 颜色与 tokens.css 主题变量对齐（浅色 #ffffff/#141414 容器底色 + 主文字色） */
+/** overlay 颜色与 antd colorBgContainer / colorText 同值（浅 #ffffff / 深 #141414 + 主文字色） */
 export function getTitleBarOverlayOptions(): { color: string; symbolColor: string } {
   const shouldUseDarkColors = nativeTheme.shouldUseDarkColors;
   return {
