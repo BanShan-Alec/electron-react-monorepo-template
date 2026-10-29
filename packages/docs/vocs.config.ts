@@ -1,10 +1,10 @@
 import { defineConfig } from 'vocs/config';
-import { SIDEBAR } from './src/navigation';
+import { BASE_PATH, SIDEBAR } from './src/navigation';
 
 export default defineConfig({
   // 注意：必须从 vocs/config 子路径导入。主入口会拉起 React 组件链，
   // 其中的 ~icons 虚拟包在配置加载阶段无法解析（见 packages/docs 迁移记录）。
-  basePath: '/electron-react-monorepo-template/',
+  basePath: BASE_PATH,
   // 站点品牌 = 根 package.json 的 productName；改动时两处须同步
   title: 'Electron React Template',
   description: '常见 Electron 坑位的解法目录：每个解法都有本仓库经过发版验证的真实实现可抄',

@@ -1,6 +1,9 @@
 export type NavigationItem = { text: string; link: string };
 export type NavigationGroup = { text: string; collapsed: boolean; items: NavigationItem[] };
 
+/** 站点部署 basePath；vocs.config.ts 与首页目录链接共用，避免手写第二份。 */
+export const BASE_PATH = '/electron-react-monorepo-template/';
+
 /**
  * 文档站导航的单一真源。
  * vocs.config.ts 消费它生成侧栏；首页 PageDirectory 消费同一份数据生成目录。

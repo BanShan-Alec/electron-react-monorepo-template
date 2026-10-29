@@ -1,5 +1,9 @@
 import { Fragment } from 'react';
-import { SIDEBAR_GROUPS } from '../navigation';
+import { BASE_PATH, SIDEBAR_GROUPS } from '../navigation';
+
+function toHref(link: string) {
+  return link.startsWith('http') ? link : `${BASE_PATH}${link.replace(/^\//, '')}`;
+}
 
 /**
  * 首页目录与侧栏共用 src/navigation.ts 的同一份数据。
@@ -17,7 +21,7 @@ export function PageDirectory() {
               {group.items.map((item, index) => (
                 <Fragment key={item.link}>
                   {index > 0 ? ' · ' : null}
-                  <a data-v="" data-v-link="true" href={item.link}>
+                  <a data-v="" data-v-link="true" href={toHref(item.link)}>
                     {item.text}
                   </a>
                 </Fragment>
