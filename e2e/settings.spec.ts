@@ -1,12 +1,46 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import type { Page } from '@playwright/test';
 import { expect, test } from './helpers/fixture';
+
+async function readPrimaryButtonBg(page: Page) {
+  return page.evaluate(() => {
+    const button = document.querySelector('.ant-btn-primary');
+    return button ? getComputedStyle(button).backgroundColor : null;
+  });
+}
+
+async function readTokenSnapshot(page: Page) {
+  return page.evaluate(() => {
+    const root = document.documentElement;
+    const rootStyle = getComputedStyle(root);
+    const portal = document.createElement('div');
+    portal.className = 'bg-background-container text-foreground';
+    document.body.appendChild(portal);
+    const portalStyle = getComputedStyle(portal);
+    const snapshot = {
+      hasScopeClass: root.classList.contains('css-var-app'),
+      antdPrimary: rootStyle.getPropertyValue('--ant-color-primary').trim(),
+      projectPrimary: rootStyle.getPropertyValue('--color-primary').trim(),
+      portalBg: portalStyle.backgroundColor,
+      portalFg: portalStyle.color,
+    };
+    portal.remove();
+    return snapshot;
+  });
+}
 
 test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试', () => {
   test('用例 1：外观主题切换与根节点类名生效', async ({ page }) => {
     // 默认应为跟随系统或浅色/暗色已解析
     const html = page.locator('html');
     await expect(html).toHaveAttribute('data-theme', /.+/);
+
+    const initialTokens = await readTokenSnapshot(page);
+    expect(initialTokens.hasScopeClass).toBe(true);
+    expect(initialTokens.antdPrimary).not.toBe('');
+    expect(initialTokens.projectPrimary).toBe(initialTokens.antdPrimary);
+    expect(initialTokens.portalBg).not.toBe('rgba(0, 0, 0, 0)');
 
     // 1. 切换至深色模式 (Dark)
     const themeSelect = page.locator('#theme-select');
@@ -19,6 +53,13 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     const isDarkClassPresent = await html.evaluate((el) => el.classList.contains('dark'));
     expect(isDarkClassPresent).toBe(true);
 
+    const darkTokens = await readTokenSnapshot(page);
+    expect(darkTokens.antdPrimary).toBe('#1668dc');
+    expect(darkTokens.projectPrimary).toBe('#1668dc');
+    await expect.poll(() => readPrimaryButtonBg(page), { timeout: 2000 }).toBe('rgb(22, 104, 220)');
+    expect(darkTokens.portalBg).toBe('rgb(20, 20, 20)');
+    expect(darkTokens.portalFg).toBe('rgba(255, 255, 255, 0.85)');
+
     // 2. 切换至浅色模式 (Light)
     await themeSelect.click();
     const lightOption = page.locator('.ant-select-item-option-content', { hasText: '浅色模式' });
@@ -28,6 +69,13 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     await expect(html).toHaveAttribute('data-theme', 'light');
     const isLightClassPresent = await html.evaluate((el) => el.classList.contains('dark'));
     expect(isLightClassPresent).toBe(false);
+
+    const lightTokens = await readTokenSnapshot(page);
+    expect(lightTokens.antdPrimary).toBe('#1677ff');
+    expect(lightTokens.projectPrimary).toBe('#1677ff');
+    await expect.poll(() => readPrimaryButtonBg(page), { timeout: 2000 }).toBe('rgb(22, 119, 255)');
+    expect(lightTokens.portalBg).toBe('rgb(255, 255, 255)');
+    expect(lightTokens.portalFg).toBe('rgba(0, 0, 0, 0.88)');
   });
 
   test('用例 2：全链路多语言切换（Header + Settings + Counter + 系统托盘）', async ({
