@@ -5,6 +5,7 @@ import { ErrorCode } from '@shared/constants/error-codes';
 import { Alert, Button, Spin } from 'antd';
 import type React from 'react';
 import { AppCard } from '@/components/ui/AppCard';
+import { EllipsisText } from '@/components/ui/EllipsisText';
 import { ChangelogCard } from './components/ChangelogCard';
 import { ProgressCard } from './components/ProgressCard';
 import { useUpdater } from './hooks/useUpdater';
@@ -102,17 +103,15 @@ export const UpdaterFeature: React.FC = () => {
             <CloudDownloadOutlined />
           </div>
           <div className="min-w-0 flex-1">
-            <h2
-              className="text-sm font-semibold text-foreground tracking-tight m-0 leading-5 truncate"
-              title={header.title}
-            >
-              {header.title}
+            <h2 className="text-sm font-semibold text-foreground tracking-tight m-0 leading-5">
+              <EllipsisText className="block truncate" tooltip={header.title}>
+                {header.title}
+              </EllipsisText>
             </h2>
-            <p
-              className="text-xs text-foreground-secondary m-0 mt-0.5 leading-4 truncate"
-              title={header.subtitle}
-            >
-              {header.subtitle}
+            <p className="text-xs text-foreground-secondary m-0 mt-0.5 leading-4">
+              <EllipsisText className="block truncate" tooltip={header.subtitle}>
+                {header.subtitle}
+              </EllipsisText>
             </p>
           </div>
         </div>

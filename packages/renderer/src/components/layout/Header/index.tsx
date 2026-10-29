@@ -4,6 +4,7 @@ import { useLingui } from '@lingui/react';
 import { Badge, Tabs } from 'antd';
 import { memo } from 'react';
 import { useLocation } from 'wouter';
+import { EllipsisText } from '@/components/ui/EllipsisText';
 
 // 可抽离的逻辑处理函数/组件
 
@@ -21,6 +22,7 @@ const _Header = (props: IHeaderProps) => {
   // 网络IO
 
   // 数据转换
+  const appName = window.__APP_ENV__?.appName || 'Electron App';
   const tabItems = [
     { key: '/dashboard', label: t`总览看板` },
     { key: '/architecture', label: t`架构全貌` },
@@ -44,9 +46,12 @@ const _Header = (props: IHeaderProps) => {
           <div className="w-4 h-4 rounded bg-primary text-on-primary flex items-center justify-center text-xs shrink-0">
             <ThunderboltFilled />
           </div>
-          <span className="text-xs font-semibold text-foreground tracking-tight truncate">
-            {window.__APP_ENV__?.appName || 'Electron App'}
-          </span>
+          <EllipsisText
+            className="text-xs font-semibold text-foreground tracking-tight truncate"
+            tooltip={appName}
+          >
+            {appName}
+          </EllipsisText>
           <Badge
             count={window.__APP_ENV__?.appVersion || 'v0.0.0'}
             color="var(--color-primary)"

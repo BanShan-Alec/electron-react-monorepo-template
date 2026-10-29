@@ -69,6 +69,12 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 
 中性文字 + 6px 语义色圆点；颜色只是辅助，文字本身能读。
 
+### 截断文本：`EllipsisText`
+
+- 单行省略一律用它，不手写原生 `title`：只有真正溢出时才弹 antd Tooltip。
+- 作为 flex 子项时组件自带 `min-w-0`（否则省略由外层容器裁出，自身检测不到溢出）。
+- 多行截断仍用 `line-clamp-*`，不在本组件职责内。
+
 ### 表单行
 
 - 标签 12px `text-foreground-secondary`；控件高度 28（small）；行内 `gap-1.5`。
@@ -111,7 +117,7 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 1. `pnpm typecheck`、`pnpm lint`、`pnpm test` 全绿。
 2. 无 `text-[Npx]`、无 tsx 内 hex 颜色、无未定义语义类（`verify:prebuild` 会拦前两项）。
 3. 浅/深各看一眼：文字可读、卡片无空洞、hover 不削弱描边。
-4. 新组件先查 `components/ui`（`AppCard` / `StatusTag` / `CardTitle` / `CodeHighlight`）再动手。
+4. 新组件先查 `components/ui`（`AppCard` / `StatusTag` / `CardTitle` / `CodeHighlight` / `EllipsisText`）再动手。
 5. 颜色链路改动后确认 `<html>` 有 `css-var-app` 类且 `--color-primary` 非空（e2e `settings.spec` 已断言）。
 6. 改文案后跑 `pnpm i18n:extract` + `pnpm i18n:check`；英文按长度预算自查，并在中英两种语言下各看一眼标题是否被截断。
 
