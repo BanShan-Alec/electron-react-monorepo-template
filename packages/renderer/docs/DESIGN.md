@@ -58,6 +58,7 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 
 - 一律 `AppCard`，不直接用 antd `Card`，不再引入 `glass-card`。
 - 卡片只有一个内容块时，给它 `flex-1`（body 已是 flex column），避免行内等高留下空白。
+- 卡片头右侧动作（`extra`）与标题之间由 `AppCard` 统一留 12px，不在各卡片里手写 `ml-*`。
 - hover 由 `AppCard` 提供（`border-primary/40` + 投影过渡），组件内不再写 `hover:border-*`。
 - 卡内凹槽用 `bg-background-sunken`；页面上的浮起卡片用 `bg-background-elevated`。
 
