@@ -42,6 +42,12 @@ function verifyDesignSystem(rootDir: string): string[] {
       );
     }
 
+    for (const match of content.matchAll(/var\(--ant-[a-z-]+\)/g)) {
+      problems.push(
+        `[antd 变量越界] ${relativePath}:${lineOf(content, match.index)} "${match[0]}"，请走项目语义别名（--color-*）或 Tailwind 类`,
+      );
+    }
+
     if (HEX_ALLOWLIST.has(relativePath)) {
       continue;
     }
