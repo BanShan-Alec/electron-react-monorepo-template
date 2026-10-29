@@ -38,7 +38,7 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 界面文案按 [国际化（i18n）](../../docs/src/pages/ui/i18n.md) 的四条原则与长度预算写；布局侧守四条：
 
 1. 不给文本容器写死宽度（`w-[...]`、`w-16` 只用于图标/圆点/Logo），按钮靠 `px` 与内容撑开。
-2. 截断必须有兜底：`truncate` / `line-clamp-*` 的文本要带原生 `title` 或 Tooltip，不让信息无声消失。
+2. 截断必须有兜底：文本一律单行 `truncate`（或 `line-clamp-*`），**仅在实际被截断时**用 `Tooltip` / 原生 `title` 显示全文；不靠放开换行把内容顶成两行（会破坏卡片头高度节奏）。
 3. `justify-between` 行允许换行（`flex-wrap` + `gap-y`），不靠挤压文本维持单行。
 4. 长 token（路径、型号、URL）必须有 `break-words` 或 `break-all`；诊断输出优先 `statusBoxClass({ breakAll: true })`。
 
