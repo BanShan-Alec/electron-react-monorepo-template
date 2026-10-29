@@ -17,9 +17,10 @@ export function useUsbDevices() {
   } = useIpc('usb.getDeviceList', window.api.usb.getDeviceList, {
     onError: (err) => {
       const isDescriptorError = /getString error|error 31/i.test(err.message);
+      const detail = err.message;
       const tip = isDescriptorError
         ? t`无法读取部分 USB 设备描述符，请检查设备连接或系统权限`
-        : t`获取 USB 设备列表失败: ${err.message}`;
+        : t`获取 USB 设备列表失败: ${detail}`;
       message.error(tip);
     },
   });

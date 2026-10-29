@@ -33,6 +33,15 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 | opacity | 表面/描边只用 10/20/30/40/60/80 | 文字不用 alpha 造灰，取三档文字色 |
 | z-index | 30（sticky header）/ 50（overlay） | 新增层级先登记，禁止 9999 |
 
+### 文案与膨胀
+
+界面文案按 [国际化（i18n）](../../docs/src/pages/ui/i18n.md) 的四条原则与长度预算写；布局侧守四条：
+
+1. 不给文本容器写死宽度（`w-[...]`、`w-16` 只用于图标/圆点/Logo），按钮靠 `px` 与内容撑开。
+2. 截断必须有兜底：`truncate` / `line-clamp-*` 的文本要带原生 `title` 或 Tooltip，不让信息无声消失。
+3. `justify-between` 行允许换行（`flex-wrap` + `gap-y`），不靠挤压文本维持单行。
+4. 长 token（路径、型号、URL）必须有 `break-words` 或 `break-all`；诊断输出优先 `statusBoxClass({ breakAll: true })`。
+
 ## 3. 颜色与文字
 
 - 三档文字：`text-foreground`（主）/ `text-foreground-secondary`（辅助）/ `text-foreground-muted`（仅 placeholder、disabled）。
@@ -104,6 +113,7 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 3. 浅/深各看一眼：文字可读、卡片无空洞、hover 不削弱描边。
 4. 新组件先查 `components/ui`（`AppCard` / `StatusTag` / `CardTitle` / `CodeHighlight`）再动手。
 5. 颜色链路改动后确认 `<html>` 有 `css-var-app` 类且 `--color-primary` 非空（e2e `settings.spec` 已断言）。
+6. 改文案后跑 `pnpm i18n:extract` + `pnpm i18n:check`；英文按长度预算自查，并在中英两种语言下各看一眼标题是否被截断。
 
 ## 指针
 

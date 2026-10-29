@@ -44,9 +44,10 @@ const _UsbCard = (props: IUsbCardProps) => {
       ) : (
         <div className="flex flex-col gap-2.5 max-h-80 overflow-y-auto pr-1">
           {devices.map((device) => {
+            const { manufacturerName } = device;
             const displayName =
               device.productName ||
-              (device.manufacturerName ? `${device.manufacturerName} Device` : t`未知 USB 设备`);
+              (manufacturerName ? t`${manufacturerName} 设备` : t`未知 USB 设备`);
             const deviceKey =
               device.serialNumber ||
               `${device.vendorIdHex}-${device.productIdHex}-${device.deviceClass}-${device.deviceSubClass ?? 0}-${device.deviceProtocol ?? 0}`;

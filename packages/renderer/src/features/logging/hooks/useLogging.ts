@@ -31,14 +31,16 @@ export function useLogging() {
         [],
       );
       logger.info('Log folder opened');
-      return t`📂 已打开日志目录: ${data.path}`;
+      const { path } = data;
+      return t`📂 已打开日志目录: ${path}`;
     },
     {
       onSuccess: (status) => {
         setLogStatus(status);
       },
       onError: (err) => {
-        message.error(t`日志操作失败: ${err.message}`);
+        const detail = err.message;
+        message.error(t`日志操作失败: ${detail}`);
       },
     },
   );

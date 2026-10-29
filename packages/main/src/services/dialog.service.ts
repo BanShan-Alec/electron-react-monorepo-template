@@ -59,7 +59,7 @@ export class DialogService {
 
   async showItemInFolder(path: string): Promise<void> {
     if (!fs.existsSync(path)) {
-      throw new AppError(`目标文件或目录不存在: ${path}`, ErrorCode.NOT_FOUND);
+      throw new AppError(`Target path does not exist: ${path}`, ErrorCode.NOT_FOUND);
     }
     shell.showItemInFolder(path);
   }

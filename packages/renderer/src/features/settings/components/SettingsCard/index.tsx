@@ -15,7 +15,7 @@ const LANGUAGE_OPTIONS = [
 ];
 
 const TOGGLE_ROW_CLASS =
-  'settings-toggle-row flex items-center justify-between bg-background-sunken p-3 rounded-lg border border-border';
+  'settings-toggle-row flex flex-wrap items-center justify-between gap-y-2 bg-background-sunken p-3 rounded-lg border border-border';
 
 // 可抽离的逻辑处理函数/组件
 

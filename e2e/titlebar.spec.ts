@@ -46,15 +46,11 @@ test.describe('TitleBarOverlay (WCO) E2E 验证', () => {
 
     // 前序用例可能已把语言切到 en-US，选项文案按中英文同时匹配
     await themeSelect.click();
-    await page
-      .locator('.ant-select-item-option-content', { hasText: /深色模式|Dark Mode/ })
-      .click();
+    await page.locator('.ant-select-item-option-content', { hasText: /深色模式|Dark/ }).click();
     await expect(html).toHaveAttribute('data-theme', 'dark');
 
     await themeSelect.click();
-    await page
-      .locator('.ant-select-item-option-content', { hasText: /浅色模式|Light Mode/ })
-      .click();
+    await page.locator('.ant-select-item-option-content', { hasText: /浅色模式|Light/ }).click();
     await expect(html).toHaveAttribute('data-theme', 'light');
   });
 });

@@ -1,5 +1,5 @@
 import { DesktopOutlined, ReloadOutlined } from '@ant-design/icons';
-import { t } from '@lingui/core/macro';
+import { plural, t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import type { SystemInfo } from '@shared/types/system';
 import { Button, Skeleton } from 'antd';
@@ -16,7 +16,9 @@ function InfoCell({ label, value }: { label: string; value: string }) {
   return (
     <div className={INFO_CELL_CLASS}>
       <span className="text-foreground-secondary block text-xs">{label}</span>
-      <span className="font-semibold text-foreground mt-0.5 block font-mono">{value}</span>
+      <span className="font-semibold text-foreground mt-0.5 block font-mono break-words">
+        {value}
+      </span>
     </div>
   );
 }
@@ -65,7 +67,10 @@ const _SystemInfoCard = (props: ISystemInfoCardProps) => {
           <InfoCell label={t`Electron 版本`} value={`v${systemInfo.electronVersion}`} />
           <InfoCell label={t`Node.js 版本`} value={`v${systemInfo.nodeVersion}`} />
           <InfoCell label={t`Chromium 版本`} value={`v${systemInfo.chromeVersion}`} />
-          <InfoCell label={t`CPU 核心 / 架构`} value={t`${cpuCores} 核 (${cpuModel})`} />
+          <InfoCell
+            label={t`CPU 核心 / 架构`}
+            value={t`${plural(cpuCores, { one: '# 核', other: '# 核' })} (${cpuModel})`}
+          />
           <InfoCell
             label={t`可用内存 / 总内存`}
             value={`${systemInfo.freeMemoryMB} MB / ${systemInfo.totalMemoryMB} MB`}
@@ -76,7 +81,7 @@ const _SystemInfoCard = (props: ISystemInfoCardProps) => {
           />
           <InfoCell
             label={t`系统运行时间`}
-            value={t`${uptimeMinutes} 分钟 (${uptimeSeconds} 秒)`}
+            value={t`${plural(uptimeMinutes, { one: '# 分钟', other: '# 分钟' })} (${plural(uptimeSeconds, { one: '# 秒', other: '# 秒' })})`}
           />
           <InfoCell label={t`V8 引擎版本`} value={`v${systemInfo.v8Version}`} />
         </div>

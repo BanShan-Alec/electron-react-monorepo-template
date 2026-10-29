@@ -115,11 +115,11 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     await expect(page.locator('.ant-tabs-tab', { hasText: 'Dashboard' })).toBeVisible();
 
     // 断言 Settings 卡片标题与设置项标签变为英文
-    await expect(page.getByText('Preferences (ConfigStore)')).toBeVisible();
-    await expect(page.getByText('Appearance Theme')).toBeVisible();
+    await expect(page.getByText('Preferences', { exact: true })).toBeVisible();
+    await expect(page.getByText('Theme', { exact: true })).toBeVisible();
 
     // 断言跨域典型业务卡片 (Counter) 变为英文
-    await expect(page.getByText('IPC Counter')).toBeVisible();
+    await expect(page.getByText('IPC counter')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Increment' })).toBeVisible();
 
     // 断言主进程系统托盘菜单动态更新为英文
@@ -132,7 +132,7 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
       const tray = trayManager?.getContextMenu?.();
       return tray?.items?.[0]?.label;
     });
-    expect(updatedTrayLabel).toBe('Show Main Window');
+    expect(updatedTrayLabel).toBe('Show main window');
 
     // 3. 切回简体中文 (zh-CN)
     await langSelect.click();

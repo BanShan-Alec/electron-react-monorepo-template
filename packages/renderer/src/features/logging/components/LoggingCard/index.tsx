@@ -108,7 +108,7 @@ const _LoggingCard = (props: ILoggingCardProps) => {
           </Button>
         </div>
 
-        {logStatus && <div className={statusBoxClass()}>{logStatus}</div>}
+        {logStatus && <div className={statusBoxClass({ breakAll: true })}>{logStatus}</div>}
       </div>
     </AppCard>
   );

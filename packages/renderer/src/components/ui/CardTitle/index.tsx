@@ -28,11 +28,17 @@ const _CardTitle = (props: ICardTitleProps) => {
         </div>
       )}
       <div className="flex flex-col min-w-0">
-        <span className="text-base font-semibold text-foreground tracking-tight truncate leading-tight">
+        <span
+          className="text-base font-semibold text-foreground tracking-tight truncate leading-tight"
+          title={typeof title === 'string' ? title : undefined}
+        >
           {title}
         </span>
         {subtitle && (
-          <span className="text-xs text-foreground-secondary mt-0.5 font-normal truncate">
+          <span
+            className="text-xs text-foreground-secondary mt-0.5 font-normal line-clamp-2"
+            title={typeof subtitle === 'string' ? subtitle : undefined}
+          >
             {subtitle}
           </span>
         )}

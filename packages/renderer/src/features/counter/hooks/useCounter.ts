@@ -42,9 +42,8 @@ export function useCounter() {
     },
     {
       onError: (err, [action]) => {
-        message.error(
-          action ? t`计数器操作失败: ${err.message}` : t`读取计数器失败: ${err.message}`,
-        );
+        const detail = err.message;
+        message.error(action ? t`计数器操作失败: ${detail}` : t`读取计数器失败: ${detail}`);
       },
     },
   );

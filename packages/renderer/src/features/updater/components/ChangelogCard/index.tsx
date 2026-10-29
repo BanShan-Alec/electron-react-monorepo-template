@@ -71,10 +71,12 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
   releaseDate,
   releaseNotes,
 }) => {
-  useLingui();
+  const { i18n } = useLingui();
   const [expanded, setExpanded] = useState(false);
 
-  const formattedDate = releaseDate ? new Date(releaseDate).toLocaleDateString() : undefined;
+  const formattedDate = releaseDate
+    ? new Date(releaseDate).toLocaleDateString(i18n.locale)
+    : undefined;
   const hasNotes = Boolean(releaseNotes && releaseNotes.length > 0);
   const isLongNotes = Boolean(releaseNotes && releaseNotes.length > 4);
 
@@ -116,7 +118,7 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
           {hasNotes ? (
             <ul className="list-disc pl-4 space-y-1">
               {normalizedNotes.map((item) => (
-                <li key={item.id} className="leading-relaxed">
+                <li key={item.id} className="leading-relaxed break-words">
                   {formatInlineMarkdown(item.text)}
                 </li>
               ))}

@@ -6,6 +6,7 @@ import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
 import { CodeHighlight } from '@/components/ui/CodeHighlight';
 import { StatusTag } from '@/components/ui/StatusTag';
+import type { SupportedLocale } from '@/locales/i18n';
 
 // 私有常量
 const STEP_CARD_CLASS =
@@ -53,6 +54,12 @@ if (res.success) {
   console.log(res.data.cpuModel);
 }`;
 
+// 代码示例是「教学内容」而非界面文案：按语种穷尽映射，新增语种必须同时补一份
+const CODE_SAMPLES: Record<SupportedLocale, { legacy: string; standard: string }> = {
+  'zh-CN': { legacy: LEGACY_CODE_ZH, standard: STANDARD_CODE_ZH },
+  'en-US': { legacy: LEGACY_CODE_EN, standard: STANDARD_CODE_EN },
+};
+
 // 可抽离的逻辑处理函数/组件
 function StepItem({
   step,
@@ -78,9 +85,9 @@ function StepItem({
 
 const _ArchitectureView = (_props: IProps) => {
   const { i18n } = useLingui();
-  const isZh = i18n.locale === 'zh-CN';
-  const legacyCode = isZh ? LEGACY_CODE_ZH : LEGACY_CODE_EN;
-  const standardCode = isZh ? STANDARD_CODE_ZH : STANDARD_CODE_EN;
+  const samples = CODE_SAMPLES[i18n.locale as SupportedLocale] ?? CODE_SAMPLES['zh-CN'];
+  const legacyCode = samples.legacy;
+  const standardCode = samples.standard;
 
   // 组件渲染
   return (
@@ -123,7 +130,7 @@ const _ArchitectureView = (_props: IProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Legacy / Coupled */}
         <div className="app-card rounded-lg p-4 border border-danger/30 flex flex-col">
-          <div className="flex items-center justify-between pb-2 mb-3 border-b border-danger/20">
+          <div className="flex flex-wrap items-center justify-between gap-y-1 pb-2 mb-3 border-b border-danger/20">
             <span className="text-xs font-semibold text-foreground flex items-center">
               <CloseCircleOutlined className="text-danger mr-1.5" />
               {t`传统散装 / 进程穿透方式`}
@@ -135,7 +142,7 @@ const _ArchitectureView = (_props: IProps) => {
 
         {/* Fullstack Standard */}
         <div className="app-card rounded-lg p-4 border border-success/30 flex flex-col">
-          <div className="flex items-center justify-between pb-2 mb-3 border-b border-success/20">
+          <div className="flex flex-wrap items-center justify-between gap-y-1 pb-2 mb-3 border-b border-success/20">
             <span className="text-xs font-semibold text-foreground flex items-center">
               <CheckCircleOutlined className="text-success mr-1.5" />
               {t`Fullstack 规范分层方式`}

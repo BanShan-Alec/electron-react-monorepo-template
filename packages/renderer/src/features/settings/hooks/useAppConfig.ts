@@ -27,7 +27,8 @@ export function useAppConfig() {
       setLanguage(data.language as SupportedLocale);
     },
     onError: (err) => {
-      message.error(t`读取偏好设置失败: ${err.message}`);
+      const detail = err.message;
+      message.error(t`读取偏好设置失败: ${detail}`);
     },
   });
 
@@ -39,7 +40,8 @@ export function useAppConfig() {
   // 网络IO（显式触发）—— 局部更新后回填
   const { runAsync: updateConfigAsync } = useIpc('config.update', window.api.config.update, {
     onError: (err) => {
-      message.error(t`更新偏好设置失败: ${err.message}`);
+      const detail = err.message;
+      message.error(t`更新偏好设置失败: ${detail}`);
     },
   });
 
@@ -53,7 +55,8 @@ export function useAppConfig() {
         setLanguage(data.language as SupportedLocale);
       },
       onError: (err) => {
-        message.error(t`恢复默认配置失败: ${err.message}`);
+        const detail = err.message;
+        message.error(t`恢复默认配置失败: ${detail}`);
       },
     },
   );

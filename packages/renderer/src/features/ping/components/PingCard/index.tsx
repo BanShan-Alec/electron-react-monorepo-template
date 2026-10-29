@@ -12,7 +12,9 @@ const FAST_LATENCY_MS = 5;
 const NORMAL_LATENCY_MS = 15;
 
 // 可抽离的逻辑处理函数/组件
-function renderLatencyTag(latency: number) {
+function LatencyTag({ latency }: { latency: number }) {
+  // 订阅语言上下文：渲染在组件内完成，避免模块级函数被 React Compiler 按 latency 缓存
+  useLingui();
   if (latency < FAST_LATENCY_MS) {
     return <StatusTag tone="success">{t`极速`}</StatusTag>;
   }
@@ -59,12 +61,12 @@ const _PingCard = (props: IPingCardProps) => {
                 {latency !== null ? `${latency}` : '--'}
               </span>
               <span className="text-xs text-foreground-secondary font-mono">ms</span>
-              {latency !== null && renderLatencyTag(latency)}
+              {latency !== null && <LatencyTag latency={latency} />}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+        <div className="flex flex-wrap items-center gap-3 gap-y-2 w-full sm:w-auto justify-between sm:justify-end">
           {serverTime && (
             <span className="text-xs text-foreground-secondary font-mono">
               {t`主进程时间`}: {serverTime}

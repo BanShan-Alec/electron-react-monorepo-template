@@ -28,7 +28,7 @@ test.describe
       }
       const [win] = await Promise.all([
         electronApp.waitForEvent('window'),
-        mainPage.getByRole('button', { name: /检查更新|Check for Updates/ }).click(),
+        mainPage.getByRole('button', { name: /检查更新|Check for updates/ }).click(),
       ]);
       await win.waitForLoadState('domcontentloaded');
       return win;
@@ -269,7 +269,7 @@ test.describe
       // 主窗口再次点击「检查更新」，重新创建并拉起更新窗口
       const [newUpdaterPage] = await Promise.all([
         electronApp.waitForEvent('window'),
-        page.getByRole('button', { name: /检查更新|Check for Updates/ }).click(),
+        page.getByRole('button', { name: /检查更新|Check for updates/ }).click(),
       ]);
       await newUpdaterPage.waitForLoadState('domcontentloaded');
 
@@ -301,5 +301,25 @@ test.describe
       await expect(newUpdaterPage.getByText('85%')).toBeVisible();
       await expect(newUpdaterPage.getByText('3.50 MB/s')).toBeVisible();
       await stepDelay(2000);
+    });
+
+    test('用例 7：更新窗口随语言切换为英文', async ({ page, electronApp }) => {
+      // 切到 en-US：两个窗口经 config.onChanged 同步重渲染
+      await page.evaluate(async () => {
+        // biome-ignore lint/suspicious/noExplicitAny: window.api access
+        await (window as any).api?.config?.update?.({ language: 'en-US' });
+      });
+      await page.waitForTimeout(300);
+
+      updaterPage = await ensureUpdaterWindow(electronApp, page);
+      // 关闭按钮的 aria-label 走 t 宏，是与更新状态无关的稳定断言点
+      await expect(updaterPage.getByRole('button', { name: 'Close' })).toBeVisible();
+
+      // 恢复中文，避免影响后续 spec 与托盘断言
+      await page.evaluate(async () => {
+        // biome-ignore lint/suspicious/noExplicitAny: window.api access
+        await (window as any).api?.config?.update?.({ language: 'zh-CN' });
+      });
+      await page.waitForTimeout(300);
     });
   });

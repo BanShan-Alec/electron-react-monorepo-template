@@ -58,7 +58,7 @@ const _Header = (props: IHeaderProps) => {
       {/* Layer 2: 业务导航栏（非拖拽区，左侧 Tabs 标签页，右侧副标题描述） */}
       <div className="px-6 flex items-center justify-between gap-4 -mb-px">
         {/* 左侧：Tabs 页面切换 */}
-        <div className="flex items-center min-w-0">
+        <div className="flex items-center min-w-0 flex-1">
           <Tabs
             activeKey={activeTab}
             items={tabItems}
@@ -68,8 +68,8 @@ const _Header = (props: IHeaderProps) => {
           />
         </div>
 
-        {/* 右侧：副标题描述 */}
-        <p className="text-xs text-foreground-secondary leading-snug line-clamp-2 text-right">
+        {/* 右侧：副标题描述（窄窗隐藏，优先保证导航可用） */}
+        <p className="hidden lg:block min-w-0 text-xs text-foreground-secondary leading-snug line-clamp-2 text-right">
           {t`企业级端到端类型安全桌面客户端脚手架`}
         </p>
       </div>

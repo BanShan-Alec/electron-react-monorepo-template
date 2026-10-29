@@ -3,6 +3,7 @@ import { app, BrowserWindow, Notification, screen } from 'electron';
 import type { AppInitConfig } from '../../AppInitConfig';
 import type { AppModule } from '../../AppModule';
 import { getPackedEnvArgument } from '../../env';
+import { mainMessage } from '../../i18n';
 import { appLifecycle } from '../../lifecycle';
 import type { ModuleContext } from '../../ModuleContext';
 import { updaterService } from '../../services/updater.service';
@@ -168,12 +169,9 @@ export class WindowManager implements AppModule {
             getUpdaterWindowModule().close();
           } catch {}
           if (Notification.isSupported()) {
-            const isZh = configStore.get('language') === 'zh-CN';
             new Notification({
               title: app.getName(),
-              body: isZh
-                ? '应用已关闭，正在后台下载更新...'
-                : 'Application closed. Downloading update in background...',
+              body: mainMessage(configStore.get('language'), 'notifBackgroundDownload'),
             }).show();
           }
           updaterService.startOrphanWatchdog();

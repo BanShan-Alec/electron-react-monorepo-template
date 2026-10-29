@@ -10,6 +10,8 @@ interface VerificationResult {
 // 设计系统门禁：字号不进任意值；hex 颜色只允许出现在品牌种子里
 const RENDERER_SRC_DIR = 'packages/renderer/src';
 const HEX_ALLOWLIST = new Set([`${RENDERER_SRC_DIR}/styles/design-tokens.ts`]);
+// i18n 门禁：非源语种词条不允许空译文或残留中文
+const EN_CATALOG_PATH = `${RENDERER_SRC_DIR}/locales/en-US/messages.po`;
 
 function lineOf(content: string, index = 0): number {
   return content.slice(0, index).split('\n').length;
@@ -62,12 +64,60 @@ function verifyDesignSystem(rootDir: string): string[] {
 }
 
 /**
+ * en-US 词条门禁：`lingui check missing` 负责「有没有漏译」，
+ * 这里补两条它查不出的失真：空译文（运行时会回落中文）与译文里残留中文。
+ */
+function verifyI18nCatalog(rootDir: string): string[] {
+  const problems: string[] = [];
+  const filePath = join(rootDir, EN_CATALOG_PATH);
+  if (!fs.existsSync(filePath)) {
+    return [`[i18n 词条缺失] 找不到 ${EN_CATALOG_PATH}`];
+  }
+
+  const lines = fs.readFileSync(filePath, 'utf8').split(/\r?\n/);
+  let currentId = '';
+  let currentIdLine = 0;
+
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+    const msgidMatch = line.match(/^msgid "((?:[^"\\]|\\.)*)"$/);
+    if (msgidMatch) {
+      currentId = msgidMatch[1];
+      currentIdLine = index + 1;
+      continue;
+    }
+    if (!line.startsWith('msgstr')) {
+      continue;
+    }
+    // 文件头条目：msgid "" + msgstr "" + 续行 header
+    if (currentId === '') {
+      continue;
+    }
+    const msgstr = line.slice('msgstr "'.length, -1);
+    if (!msgstr) {
+      problems.push(
+        `[i18n 空译文] ${EN_CATALOG_PATH}:${currentIdLine} msgid "${currentId}" 未翻译，运行时将回落中文`,
+      );
+      continue;
+    }
+    if (/[\u4e00-\u9fa5]/.test(msgstr)) {
+      problems.push(
+        `[i18n 中文残留] ${EN_CATALOG_PATH}:${index + 1} "${msgstr}" 含中文，请翻译为英文`,
+      );
+    }
+  }
+
+  return problems;
+}
+
+/**
  * 打包构建前置门禁（Pre-build Verification）
  *
  * 核心职责：在打包开始前（0 毫秒）执行静态拦截，防止配置违规导致的构建失败、体积膨胀或生产崩溃。
  * 1. 根目录 package.json name 规范校验（全小写无空格，杜绝 OTA 404 隐患）
  * 2. 根目录 package.json dependencies 边界校验（仅限 @app/main，防止 node_modules 卷入 asar 体积膨胀）
- * 3. renderer 样式门禁：禁止 text-[Npx] 离阶字号与种子之外的 hex 颜色
+ * 3. renderer 样式门禁：禁止 text-[Npx] 离阶字号、--ant-* 越界与种子之外的 hex 颜色
+ * 4. en-US 词条门禁：禁止空译文与译文中的中文残留
  *
  * 主进程 external 为 packages/main/vite.config.ts 中的显式清单（electron / usb / electron-updater），
  * 新增运行时依赖需人工确认是否外置；原「dependencies 与 external 双向对齐」门禁已删除。
@@ -118,6 +168,14 @@ export async function verifyPrebuild(): Promise<VerificationResult> {
     errors.push(...designProblems);
   } else {
     console.log('  ✅ renderer 样式规范校验通过 (字号阶 / 颜色令牌)');
+  }
+
+  // 4. i18n 词条门禁（详见 docs/ui/i18n.md 文案与翻译规范）
+  const i18nProblems = verifyI18nCatalog(rootDir);
+  if (i18nProblems.length > 0) {
+    errors.push(...i18nProblems);
+  } else {
+    console.log('  ✅ en-US 词条校验通过 (无空译文 / 无中文残留)');
   }
 
   const valid = errors.length === 0;

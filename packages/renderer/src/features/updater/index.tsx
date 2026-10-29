@@ -102,17 +102,23 @@ export const UpdaterFeature: React.FC = () => {
             <CloudDownloadOutlined />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-semibold text-foreground tracking-tight m-0 leading-5 truncate">
+            <h2
+              className="text-sm font-semibold text-foreground tracking-tight m-0 leading-5 truncate"
+              title={header.title}
+            >
               {header.title}
             </h2>
-            <p className="text-xs text-foreground-secondary m-0 mt-0.5 leading-4 truncate">
+            <p
+              className="text-xs text-foreground-secondary m-0 mt-0.5 leading-4 truncate"
+              title={header.subtitle}
+            >
               {header.subtitle}
             </p>
           </div>
         </div>
         <button
           type="button"
-          aria-label="Close"
+          aria-label={t`关闭`}
           className="no-drag text-foreground-muted hover:text-foreground hover:bg-foreground/10 active:bg-foreground/20 rounded-md w-8 h-8 transition-colors duration-150 inline-flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 shrink-0"
           onClick={handleClose}
         >

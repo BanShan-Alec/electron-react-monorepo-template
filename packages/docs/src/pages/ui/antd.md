@@ -31,7 +31,7 @@ description: 五层 Provider 装配与主题算法，颜色令牌交给 antd 官
   );
 ```
 
-五层 Provider 各司其职：`I18nProvider` 挂 Lingui 的 i18n 实例（见[国际化（Lingui）](/ui/lingui)）；`StyleProvider layer` 把 cssinjs 注入的 antd 样式收进 `@layer antd`（让 Tailwind 工具类能直接覆盖组件样式，见[样式与令牌（Tailwind-CSS）](/ui/tailwind)）；`ConfigProvider` 挂主题算法与语言包；`AntdApp` 提供消息/弹窗上下文；`ErrorBoundary` 兜住渲染异常。
+五层 Provider 各司其职：`I18nProvider` 挂 Lingui 的 i18n 实例（见[国际化（i18n）](/ui/i18n)）；`StyleProvider layer` 把 cssinjs 注入的 antd 样式收进 `@layer antd`（让 Tailwind 工具类能直接覆盖组件样式，见[样式与令牌（Tailwind-CSS）](/ui/tailwind)）；`ConfigProvider` 挂主题算法与语言包；`AntdApp` 提供消息/弹窗上下文；`ErrorBoundary` 兜住渲染异常。
 
 主题配置只给一个品牌种子、一个尺寸令牌与 cssVar 作用域 key：颜色不逐个覆盖，浅/深两套由官方算法派生。
 
