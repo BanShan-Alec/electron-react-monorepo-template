@@ -1,4 +1,6 @@
+import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import { WINDOW_IDS } from '@app/shared/constants/windows';
+import type { CloseBehaviorChoice } from '@app/shared/schemas/close-behavior';
 import { app, BrowserWindow, Notification, screen } from 'electron';
 import type { AppInitConfig } from '../../AppInitConfig';
 import type { AppModule } from '../../AppModule';
@@ -11,7 +13,13 @@ import { getAppConfigStore } from '../config.module';
 import { getLogManager } from '../log.module';
 import { getTitleBarOverlayOptions, getWindowBackgroundColor } from './titlebar-overlay';
 import { getUpdaterWindowModule } from './updater-window.module';
-import { forgetWindow, getWindow, registerWindow } from './window-registry';
+import {
+  broadcast,
+  forgetWindow,
+  getWindow,
+  registerWindow,
+  sendToWindow,
+} from './window-registry';
 import { attachWindowsWindowRepaint } from './window-repaint';
 import { MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, resolveWindowBounds } from './window-size';
 
@@ -26,6 +34,10 @@ export class WindowManager implements AppModule {
   private readonly renderer: { path: string } | URL;
   private readonly openDevTools: boolean;
   private readonly keepState: boolean;
+  private closeFallbackTimer: ReturnType<typeof setTimeout> | null = null;
+  private closeGuardBypass = false;
+  private closeRequestPending = false;
+  private rendererReady = false;
 
   constructor({ initConfig, openDevTools = false, keepState = true }: WindowManagerOptions) {
     this.preload = initConfig.preload;
@@ -56,6 +68,7 @@ export class WindowManager implements AppModule {
   }
 
   async createWindow(): Promise<BrowserWindow> {
+    this.rendererReady = false;
     // 首次启动的尺寸与居中由纯函数计算；若存在官方持久化状态，
     // Electron 会在构造期用保存的 bounds/displayMode 覆盖这些构造参数
     const initialBounds = resolveWindowBounds(null, screen.getPrimaryDisplay());
@@ -142,11 +155,35 @@ export class WindowManager implements AppModule {
     });
 
     // 支持点击关闭按钮销毁主窗口并退守系统托盘及防僵尸退出闭环
-    browserWindow.on('close', () => {
+    browserWindow.on('close', (event) => {
       if (appLifecycle.isQuitting) {
+        this.clearCloseFallback();
+        this.closeRequestPending = false;
         try {
           getUpdaterWindowModule().destroy();
         } catch {}
+        return;
+      }
+
+      if (this.closeGuardBypass) {
+        this.closeGuardBypass = false;
+      } else if (!getAppConfigStore().get('closeBehaviorConfirmed')) {
+        event.preventDefault();
+        if (!this.closeRequestPending) {
+          this.closeRequestPending = true;
+          this.closeFallbackTimer = setTimeout(() => {
+            this.closeFallbackTimer = null;
+            this.closeRequestPending = false;
+            if (browserWindow.isDestroyed()) return;
+            logger.warn('Close prompt timed out; falling back to configured behavior');
+            this.closeGuardBypass = true;
+            browserWindow.close();
+          }, 10_000);
+          if (this.rendererReady) {
+            sendToWindow(WINDOW_IDS.HOME, IPC_CHANNELS.WINDOW_CLOSE_REQUESTED, null);
+          }
+          getLogManager().scoped(this).info('First close intercepted; asking renderer');
+        }
         return;
       }
 
@@ -197,6 +234,39 @@ export class WindowManager implements AppModule {
     }
 
     return browserWindow;
+  }
+
+  markRendererReady(): void {
+    this.rendererReady = true;
+    if (this.closeRequestPending) {
+      sendToWindow(WINDOW_IDS.HOME, IPC_CHANNELS.WINDOW_CLOSE_REQUESTED, null);
+    }
+  }
+
+  async respondCloseRequest(choice: CloseBehaviorChoice): Promise<void> {
+    const window = getWindow(WINDOW_IDS.HOME);
+    if (!window || !this.closeRequestPending) return;
+
+    this.clearCloseFallback();
+    this.closeRequestPending = false;
+    getLogManager().scoped(this).info(`Close prompt answered: ${choice}`);
+
+    if (choice === 'cancel') return;
+
+    const updated = getAppConfigStore().set({
+      minimizeToTray: choice === 'window',
+      closeBehaviorConfirmed: true,
+    });
+    broadcast(IPC_CHANNELS.CONFIG_EVENT_CHANGED, updated);
+    this.closeGuardBypass = true;
+    window.close();
+  }
+
+  private clearCloseFallback(): void {
+    if (this.closeFallbackTimer) {
+      clearTimeout(this.closeFallbackTimer);
+      this.closeFallbackTimer = null;
+    }
   }
 
   async restoreOrCreateWindow(show = false) {

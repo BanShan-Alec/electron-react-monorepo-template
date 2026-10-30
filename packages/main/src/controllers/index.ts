@@ -6,6 +6,7 @@ import { registerDialogControllers } from './dialog.controller';
 import { registerSystemControllers } from './system.controller';
 import { registerUpdaterControllers } from './updater.controller';
 import { registerUsbControllers } from './usb.controller';
+import { registerWindowControllers } from './window.controller';
 
 /**
  * 显式挂载注册所有 IPC Controllers
@@ -20,4 +21,5 @@ export function registerAllControllers(): void {
   registerDiagnosticsControllers();
   registerDialogControllers();
   registerUpdaterControllers();
+  registerWindowControllers();
 }
