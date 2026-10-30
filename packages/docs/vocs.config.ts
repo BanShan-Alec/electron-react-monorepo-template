@@ -20,7 +20,7 @@ export default defineConfig({
       link: 'https://github.com/BanShan-Alec/electron-react-monorepo-template',
     },
   ],
-  // 注意：不配 redirects——它是 waku 运行时中间件，full-static 部署（GitHub Pages）执行不到；
-  // 旧 URL 跳转必须用 public/<path>/index.html 物理跳转页（见 public/*/index.html）。
+  // 注意：不配 redirects——它是 waku 运行时中间件，full-static 部署（GitHub Pages）执行不到。
+  // 所以站点不做旧 URL 跳转：README、侧栏、首页目录的入口一律直指具体页面。
   sidebar: SIDEBAR,
 });

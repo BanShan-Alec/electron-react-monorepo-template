@@ -1,3 +1,14 @@
+/* Tailwind v4：插件由 vocs 内置注册（vocs 的 dependencies 里有 @tailwindcss/vite），
+   这里只提供入口。source(none)+@source 把扫描圈定在 src/（与 renderer 同一约定），
+   避免自动探测把 monorepo 其它包的类名扫进来。 */
+@import "tailwindcss" source(none);
+/* Vocs 设计令牌（surface / 文字 / 边框 / accent 等），使 text-heading、bg-surface、
+   border-primary 这类语义色可直接用。必须排在 tailwindcss 之后，且依赖 vocs ≥ 2.12：
+   旧版把 ./styles/* 导出映射到不存在的 .js，且 theme.css 会清空引入方的调色板与行高。 */
+@import "vocs/styles/theme.css";
+
+@source "../";
+
 /* Vocs 会在侧栏列顶部（data-v-gutter-logo）渲染默认品牌区：未配 logoUrl 时按
    title 渲染大号站名文本，与 _slots.tsx 的 SidebarHeader 品牌行重复。Vocs 对
    该区块无官方开关（showLogo 只管顶部导航），故按官方自定义出口 _root.css 隐藏；
