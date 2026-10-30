@@ -22,6 +22,7 @@ const _EllipsisText = (props: IEllipsisTextProps) => {
 
   // 组件Effect
   useEffect(() => {
+    if (!tooltip) return;
     const element = textRef.current;
     if (!element) return;
     const check = () => setTruncated(element.scrollWidth > element.clientWidth + 1);
@@ -29,7 +30,7 @@ const _EllipsisText = (props: IEllipsisTextProps) => {
     const observer = new ResizeObserver(check);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [children]);
+  }, [children, tooltip]);
 
   // 组件渲染
   return (

@@ -42,7 +42,7 @@ function verifyDesignSystem(rootDir: string): string[] {
       );
     }
 
-    for (const match of content.matchAll(/var\(--ant-[a-z-]+\)/g)) {
+    for (const match of content.matchAll(/var\(\s*--ant-[a-z0-9-]+(?:\s*,[^)]*)?\)/g)) {
       problems.push(
         `[antd 变量越界] ${relativePath}:${lineOf(content, match.index)} "${match[0]}"，请走项目语义别名（--color-*）或 Tailwind 类`,
       );
