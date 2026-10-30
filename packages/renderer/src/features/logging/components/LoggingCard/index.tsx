@@ -9,8 +9,9 @@ import {
 } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Button, Card } from 'antd';
+import { Button } from 'antd';
 import { memo } from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
 import { statusBoxClass } from '@/lib/classNames';
 
@@ -44,8 +45,7 @@ const _LoggingCard = (props: ILoggingCardProps) => {
 
   // 组件渲染
   return (
-    <Card
-      className="glass-card transition-all duration-200 hover:border-border/80"
+    <AppCard
       title={
         <CardTitle
           icon={<FileTextOutlined />}
@@ -108,9 +108,9 @@ const _LoggingCard = (props: ILoggingCardProps) => {
           </Button>
         </div>
 
-        {logStatus && <div className={statusBoxClass()}>{logStatus}</div>}
+        {logStatus && <div className={statusBoxClass({ breakAll: true })}>{logStatus}</div>}
       </div>
-    </Card>
+    </AppCard>
   );
 };
 

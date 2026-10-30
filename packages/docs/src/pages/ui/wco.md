@@ -47,7 +47,7 @@ export function getWindowBackgroundColor(): string {
   return nativeTheme.shouldUseDarkColors ? '#141414' : '#ffffff';
 }
 
-/** overlay 颜色与 tokens.css 主题变量对齐（浅色 #ffffff/#141414 容器底色 + 主文字色） */
+/** overlay 颜色与 antd colorBgContainer / colorText 同值（浅 #ffffff / 深 #141414 + 主文字色） */
 export function getTitleBarOverlayOptions(): { color: string; symbolColor: string } {
   const shouldUseDarkColors = nativeTheme.shouldUseDarkColors;
   return {
@@ -57,8 +57,8 @@ export function getTitleBarOverlayOptions(): { color: string; symbolColor: strin
 }
 ```
 
-`backgroundColor` 在渲染进程起来之前就生效，首帧看到的就是主题底色而非白屏。这对色值与 tokens.css 的容器底色变量同值对齐（`--color-bg-container`：浅 #ffffff / 暗 #141414）——源码注释自己写明「overlay 颜色与 tokens.css 主题变量对齐」；「严禁在别处硬编码」约束的是主进程 JS 侧：这对色值只在 titlebar-overlay.ts 一处计算，别处不得再写死。窗口位置与尺寸的记忆与首启计算见[窗口位置与尺寸（Window-state）](/ui/window-state)。
+`backgroundColor` 在渲染进程起来之前就生效，首帧看到的就是主题底色而非白屏。这对色值与 antd `colorBgContainer` 同值（浅 #ffffff / 深 #141414）——源码注释自己写明「overlay 颜色与 antd colorBgContainer / colorText 同值」；「严禁在别处硬编码」约束的是主进程 JS 侧：这对色值只在 titlebar-overlay.ts 一处计算，别处不得再写死。窗口位置与尺寸的记忆与首启计算见[窗口位置与尺寸（Window-state）](/ui/window-state)。
 
 ## 注意点
 
-- WCO 与窗口底色的色值只在 `titlebar-overlay.ts` 一处计算；tokens.css 的容器底色变量与之同值属正常对齐，主进程 JS 里再硬编码同色值才算违规
+- WCO 与窗口底色的色值只在 `titlebar-overlay.ts` 一处计算；antd `colorBgContainer` 与之同值属正常对齐，主进程 JS 里再硬编码同色值才算违规

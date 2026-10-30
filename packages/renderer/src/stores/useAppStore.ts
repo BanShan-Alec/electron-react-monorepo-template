@@ -1,8 +1,8 @@
 import {
-  DEFAULT_LOCALE,
+  DEFAULT_LANGUAGE,
   DEFAULT_THEME_MODE,
+  type LanguageMode,
   LIGHT_COLOR_SCHEME_QUERY,
-  type SupportedLocale,
   type ThemeMode,
 } from '@app/shared/constants/preferences';
 import { create } from 'zustand';
@@ -31,14 +31,14 @@ interface AppState {
   themeMode: ThemeMode;
   resolvedTheme: ResolvedTheme;
   setThemeMode: (mode: ThemeMode) => void;
-  language: SupportedLocale;
-  setLanguage: (language: SupportedLocale) => void;
+  language: LanguageMode;
+  setLanguage: (language: LanguageMode) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
   themeMode: DEFAULT_THEME_MODE,
   resolvedTheme: resolveTheme(DEFAULT_THEME_MODE),
   setThemeMode: (themeMode) => set({ themeMode, resolvedTheme: resolveTheme(themeMode) }),
-  language: DEFAULT_LOCALE,
+  language: DEFAULT_LANGUAGE,
   setLanguage: (language) => set({ language }),
 }));

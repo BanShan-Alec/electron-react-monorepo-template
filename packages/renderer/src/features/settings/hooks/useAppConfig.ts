@@ -3,7 +3,6 @@ import type { AppConfig } from '@shared/schemas/config';
 import { App } from 'antd';
 import { useEffect } from 'react';
 import { useIpc } from '@/hooks/useIpc';
-import type { SupportedLocale } from '@/locales/i18n';
 import { useAppStore } from '@/stores/useAppStore';
 
 // 私有常量
@@ -24,10 +23,11 @@ export function useAppConfig() {
   } = useIpc('config.get', window.api.config.get, {
     onSuccess: (data) => {
       setThemeMode(data.theme);
-      setLanguage(data.language as SupportedLocale);
+      setLanguage(data.language);
     },
     onError: (err) => {
-      message.error(t`读取偏好设置失败: ${err.message}`);
+      const detail = err.message;
+      message.error(t`读取偏好设置失败: ${detail}`);
     },
   });
 
@@ -39,7 +39,8 @@ export function useAppConfig() {
   // 网络IO（显式触发）—— 局部更新后回填
   const { runAsync: updateConfigAsync } = useIpc('config.update', window.api.config.update, {
     onError: (err) => {
-      message.error(t`更新偏好设置失败: ${err.message}`);
+      const detail = err.message;
+      message.error(t`更新偏好设置失败: ${detail}`);
     },
   });
 
@@ -50,10 +51,11 @@ export function useAppConfig() {
     {
       onSuccess: (data) => {
         setThemeMode(data.theme);
-        setLanguage(data.language as SupportedLocale);
+        setLanguage(data.language);
       },
       onError: (err) => {
-        message.error(t`恢复默认配置失败: ${err.message}`);
+        const detail = err.message;
+        message.error(t`恢复默认配置失败: ${detail}`);
       },
     },
   );
@@ -66,7 +68,7 @@ export function useAppConfig() {
         setThemeMode(partial.theme);
       }
       if (partial.language !== undefined) {
-        setLanguage(partial.language as SupportedLocale);
+        setLanguage(partial.language);
       }
       await fetchConfig();
     } catch {

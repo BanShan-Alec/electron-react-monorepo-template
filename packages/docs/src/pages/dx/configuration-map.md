@@ -33,6 +33,8 @@ description: 一个值该改哪、改完何时生效、有什么副作用——�
 | 想改什么 | 改哪里 | 怎么生效 |
 | :--- | :--- | :--- |
 | 应用显示名 | 根 `package.json` `productName` | 重新构建 |
+| 品牌主色 | `packages/renderer/src/styles/design-tokens.ts` 的 `BRAND_PRIMARY` | 重新构建；浅/深、hover、浅色底由 antd 算法派生 |
+| CSS 变量作用域 | `packages/renderer/src/styles/design-tokens.ts` 的 `CSS_VAR_KEY` | `applyColorScheme()` 自动挂到 `<html>`，改 key 需同步 antd `cssVar.key` |
 | App ID / 仓库 | `appId` / `repository.url` | 重新打包 |
 | API 地址 | `.env` `API_BASE_URL` 或运行时 `APP_API_BASE_URL` | 构建 / 重启 |
 | Sentry | `.env` DSN，CI 配 `SENTRY_AUTH_TOKEN` | 打包生效 |

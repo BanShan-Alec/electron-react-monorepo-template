@@ -1,8 +1,9 @@
 import { FileOutlined, FolderOpenOutlined, SaveOutlined, SearchOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Button, Card } from 'antd';
+import { Button } from 'antd';
 import { memo } from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
 import { statusBoxClass } from '@/lib/classNames';
 import type { DialogAction } from '../../hooks/useNativeDialogs';
@@ -40,8 +41,7 @@ const _DialogCard = (props: IDialogCardProps) => {
 
   // 组件渲染
   return (
-    <Card
-      className="glass-card transition-all duration-200 hover:border-border/80"
+    <AppCard
       title={
         <CardTitle
           icon={<FolderOpenOutlined />}
@@ -93,7 +93,7 @@ const _DialogCard = (props: IDialogCardProps) => {
 
         {statusMessage && <div className={statusBoxClass({ breakAll: true })}>{statusMessage}</div>}
       </div>
-    </Card>
+    </AppCard>
   );
 };
 

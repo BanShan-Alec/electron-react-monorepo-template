@@ -19,6 +19,7 @@ import {
 } from '../constants/updater';
 import { bundledRepository, getEnv, isDev, isPackaged, isTest } from '../env';
 import { AppError } from '../errors/AppError';
+import { mainMessage } from '../i18n';
 import { getAppConfigStore } from '../modules/config.module';
 import { getLogManager } from '../modules/log.module';
 import { getWindow, sendToWindow } from '../modules/window/window-registry';
@@ -401,7 +402,8 @@ export class UpdaterService {
           'Auto-updater check aborted: repository.url missing in package.json (unpackaged mode).',
         );
         this.snapshot.state = 'error';
-        this.snapshot.error = '自动更新未配置仓库信息 (package.json 缺少 repository.url)';
+        this.snapshot.error =
+          'Auto-update is not configured (repository.url missing in package.json)';
         this.emitState();
         throw new AppError(this.snapshot.error, ErrorCode.UPDATER_NOT_CONFIGURED);
       }
@@ -415,7 +417,7 @@ export class UpdaterService {
           () =>
             reject(
               new AppError(
-                `检查更新请求超时（${UPDATE_CHECK_TIMEOUT_MS / 1000} 秒），请检查网络连接后重试`,
+                `Update check timed out after ${UPDATE_CHECK_TIMEOUT_MS / 1000}s. Check your network and retry.`,
                 ErrorCode.UPDATER_NETWORK_ERROR,
               ),
             ),
@@ -630,12 +632,9 @@ export class UpdaterService {
         this.cancellationToken = null;
       }
       if (Notification.isSupported()) {
-        const isZh = getAppConfigStore().get('language') === 'zh-CN';
         new Notification({
           title: app.getName(),
-          body: isZh
-            ? '后台更新下载超时，已中止任务。'
-            : 'Background update download timed out. Task aborted.',
+          body: mainMessage(getAppConfigStore().get('language'), 'notifDownloadTimeout'),
         }).show();
       }
       app.quit();
@@ -661,10 +660,9 @@ export class UpdaterService {
   private showDownloadedNotification(): void {
     if (!Notification.isSupported()) return;
 
-    const isZh = getAppConfigStore().get('language') === 'zh-CN';
     const notif = new Notification({
       title: app.getName(),
-      body: isZh ? '新版本已下载完毕，点击立即安装。' : 'New version downloaded. Click to install.',
+      body: mainMessage(getAppConfigStore().get('language'), 'notifDownloadReady'),
     });
     notif.on('click', () => {
       this.windowDelegate?.show().catch((err) => {

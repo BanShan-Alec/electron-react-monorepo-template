@@ -1,16 +1,18 @@
 import { BulbOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Card, Tag } from 'antd';
 import { memo } from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
 import { CodeHighlight } from '@/components/ui/CodeHighlight';
+import { StatusTag } from '@/components/ui/StatusTag';
+import type { SupportedLocale } from '@/locales/i18n';
 
 // 私有常量
 const STEP_CARD_CLASS =
-  'flex items-start gap-3 p-3.5 bg-background-secondary rounded-lg border border-border';
+  'flex items-start gap-3 p-3.5 bg-background-sunken rounded-lg border border-border';
 const CODE_BLOCK_CLASS =
-  'text-[11px] font-mono text-foreground-secondary bg-background/80 p-3 rounded-lg overflow-x-auto stable-scrollbar leading-relaxed flex-1';
+  'text-xs font-mono text-foreground-secondary bg-background/80 p-3 rounded-lg overflow-x-auto stable-scrollbar leading-relaxed flex-1';
 
 const LEGACY_CODE_ZH = `// 1. 渲染端强行引用主进程类型 (打破物理隔离)
 import type { AppRouter } from '@app/main/router';
@@ -52,6 +54,12 @@ if (res.success) {
   console.log(res.data.cpuModel);
 }`;
 
+// 代码示例是「教学内容」而非界面文案：按语种穷尽映射，新增语种必须同时补一份
+const CODE_SAMPLES: Record<SupportedLocale, { legacy: string; standard: string }> = {
+  'zh-CN': { legacy: LEGACY_CODE_ZH, standard: STANDARD_CODE_ZH },
+  'en-US': { legacy: LEGACY_CODE_EN, standard: STANDARD_CODE_EN },
+};
+
 // 可抽离的逻辑处理函数/组件
 function StepItem({
   step,
@@ -64,7 +72,7 @@ function StepItem({
 }) {
   return (
     <div className={STEP_CARD_CLASS}>
-      <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs shrink-0">
+      <div className="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center font-semibold text-xs shrink-0">
         {step}
       </div>
       <div>
@@ -77,16 +85,15 @@ function StepItem({
 
 const _ArchitectureView = (_props: IProps) => {
   const { i18n } = useLingui();
-  const isZh = i18n.locale === 'zh-CN';
-  const legacyCode = isZh ? LEGACY_CODE_ZH : LEGACY_CODE_EN;
-  const standardCode = isZh ? STANDARD_CODE_ZH : STANDARD_CODE_EN;
+  const samples = CODE_SAMPLES[i18n.locale as SupportedLocale] ?? CODE_SAMPLES['zh-CN'];
+  const legacyCode = samples.legacy;
+  const standardCode = samples.standard;
 
   // 组件渲染
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto w-full">
       {/* Flow Diagram Card */}
-      <Card
-        className="glass-card"
+      <AppCard
         title={
           <CardTitle
             icon={<BulbOutlined />}
@@ -117,30 +124,30 @@ const _ArchitectureView = (_props: IProps) => {
             description={t`统一通过 window.api 消费 Result 契约，享受完备 IDE 智能提示，与主进程实现 100% 物理代码隔离。`}
           />
         </div>
-      </Card>
+      </AppCard>
 
       {/* Code Comparison Card */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Legacy / Coupled */}
-        <div className="glass-card rounded-lg p-4 border border-danger/30 flex flex-col">
-          <div className="flex items-center justify-between pb-2 mb-3 border-b border-danger/20">
+        <div className="app-card rounded-lg p-4 border border-danger/30 flex flex-col">
+          <div className="flex flex-wrap items-center justify-between gap-y-1 pb-2 mb-3 border-b border-danger/20">
             <span className="text-xs font-semibold text-foreground flex items-center">
               <CloseCircleOutlined className="text-danger mr-1.5" />
               {t`传统散装 / 进程穿透方式`}
             </span>
-            <Tag color="error">{t`代码耦合 & 契约混乱`}</Tag>
+            <StatusTag tone="danger">{t`代码耦合 & 契约混乱`}</StatusTag>
           </div>
           <CodeHighlight code={legacyCode} className={CODE_BLOCK_CLASS} />
         </div>
 
         {/* Fullstack Standard */}
-        <div className="glass-card rounded-lg p-4 border border-success/30 flex flex-col">
-          <div className="flex items-center justify-between pb-2 mb-3 border-b border-success/20">
+        <div className="app-card rounded-lg p-4 border border-success/30 flex flex-col">
+          <div className="flex flex-wrap items-center justify-between gap-y-1 pb-2 mb-3 border-b border-success/20">
             <span className="text-xs font-semibold text-foreground flex items-center">
               <CheckCircleOutlined className="text-success mr-1.5" />
               {t`Fullstack 规范分层方式`}
             </span>
-            <Tag color="success">{t`物理隔离 & Result 契约`}</Tag>
+            <StatusTag tone="success">{t`物理隔离 & Result 契约`}</StatusTag>
           </div>
           <CodeHighlight code={standardCode} className={CODE_BLOCK_CLASS} />
         </div>

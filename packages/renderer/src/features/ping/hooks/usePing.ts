@@ -33,7 +33,8 @@ export function usePing() {
     run: pingRun,
   } = useManualRequest(pingWithLatency, {
     onError: (err) => {
-      message.error(t`Ping 失败: ${err.message}`);
+      const detail = err.message;
+      message.error(t`Ping 失败: ${detail}`);
     },
   });
 

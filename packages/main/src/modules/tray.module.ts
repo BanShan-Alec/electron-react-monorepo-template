@@ -1,11 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import type { LanguageMode } from '@app/shared/constants/preferences';
 import { WINDOW_IDS } from '@app/shared/constants/windows';
 import { app, Menu, nativeImage, Tray } from 'electron';
 import type { AppModule } from '../AppModule';
+import { mainMessage } from '../i18n';
 import { appLifecycle } from '../lifecycle';
 import type { ModuleContext } from '../ModuleContext';
 import { updaterService } from '../services/updater.service';
+import { getAppConfigStore } from './config.module';
 import { getLogManager } from './log.module';
 import { getWindowManager } from './window/index.module';
 import { getUpdaterWindowModule } from './window/updater-window.module';
@@ -26,21 +29,18 @@ export class TrayManager implements AppModule {
     return this.contextMenu;
   }
 
-  public updateLanguage(lang: string): void {
+  public updateLanguage(lang: LanguageMode): void {
     if (!this.tray) return;
 
-    const isZh = lang === 'zh-CN';
-    this.tray.setToolTip(
-      isZh ? `${app.getName()} - 桌面客户端` : `${app.getName()} - Desktop Client`,
-    );
+    this.tray.setToolTip(`${app.getName()} - ${mainMessage(lang, 'trayTooltipSuffix')}`);
 
     this.contextMenu = Menu.buildFromTemplate([
       {
-        label: isZh ? '显示主窗口' : 'Show Main Window',
+        label: mainMessage(lang, 'trayShowMainWindow'),
         click: () => this.restoreMainWindow(),
       },
       {
-        label: isZh ? '检查更新' : 'Check for Updates',
+        label: mainMessage(lang, 'trayCheckUpdates'),
         click: () => {
           this.logger.info('User requested update check');
           updaterService.check().catch((err) => {
@@ -55,7 +55,7 @@ export class TrayManager implements AppModule {
       },
       { type: 'separator' },
       {
-        label: isZh ? '退出应用' : 'Quit Application',
+        label: mainMessage(lang, 'trayQuit'),
         click: () => {
           appLifecycle.isQuitting = true;
           app.quit();
@@ -94,7 +94,7 @@ export class TrayManager implements AppModule {
         }
         this.tray = new Tray(icon);
       }
-      this.updateLanguage('zh-CN');
+      this.updateLanguage(getAppConfigStore().get('language'));
 
       // 单击/双击托盘图标激活并唤起主窗口（若已销毁则重建）
       this.tray.on('click', () => {

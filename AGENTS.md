@@ -42,8 +42,8 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 | 路径管理 / 跨平台资源 / ASAR 避坑 | main/AGENTS.md | packages/docs/src/pages/security/path-robustness.md |
 | 打包产物 / 安装包 / OTA 升级 | main/AGENTS.md | packages/docs/src/pages/delivery/packaging.md · packages/docs/src/pages/delivery/auto-update.md |
 | renderer 页面 / 卡片 / 请求层 | renderer/AGENTS.md | — |
-| 视觉 / token / 品牌定制 | renderer/docs/DESIGN.md | — |
-| 多语言词条与架构 | renderer/AGENTS.md | packages/docs/src/pages/ui/lingui.md |
+| 视觉 / token / 品牌定制 | renderer/docs/DESIGN.md | packages/docs/src/pages/ui/design-tokens.md |
+| 多语言词条与架构 | renderer/AGENTS.md | packages/docs/src/pages/ui/i18n.md |
 | 日志 / 异常 / 链路追踪 | .agents/rules/logging-specification.md | packages/docs/src/pages/main/logging.md · packages/docs/src/pages/main/tracing.md |
 | 首屏 / 启动壳 / WCO 标题栏 | main/AGENTS.md | packages/docs/src/pages/ui/first-screen.md · packages/docs/src/pages/ui/wco.md · packages/docs/src/pages/ui/window-state.md |
 | 测试 / 排错 / 提 PR / 触发 review | 全局红线 | packages/docs/src/pages/ai/review-loop.md · CONTRIBUTING §二 |
@@ -52,7 +52,7 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 ## 5. 常用命令（根目录执行）
 
 `pnpm start` / `start:dist` · `pnpm test` · `pnpm test:e2e` · `pnpm lint` / `lint:fix` ·
-`pnpm typecheck` · `pnpm i18n:extract` · `pnpm build:dir` / `build:win` / `build:mac` /
+`pnpm typecheck` · `pnpm i18n:extract` / `i18n:check` · `pnpm build:dir` / `build:win` / `build:mac` /
 `build:linux` · `pnpm verify:prebuild` · `pnpm pr-review <pull|trigger|create|status|merge>`
 
 ## 6. 指针

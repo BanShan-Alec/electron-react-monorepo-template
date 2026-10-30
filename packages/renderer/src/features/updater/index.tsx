@@ -2,8 +2,10 @@ import { CheckCircleOutlined, CloseOutlined, CloudDownloadOutlined } from '@ant-
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { ErrorCode } from '@shared/constants/error-codes';
-import { Alert, Button, Card, Spin } from 'antd';
+import { Alert, Button, Spin } from 'antd';
 import type React from 'react';
+import { AppCard } from '@/components/ui/AppCard';
+import { EllipsisText } from '@/components/ui/EllipsisText';
 import { ChangelogCard } from './components/ChangelogCard';
 import { ProgressCard } from './components/ProgressCard';
 import { useUpdater } from './hooks/useUpdater';
@@ -80,7 +82,9 @@ export const UpdaterFeature: React.FC = () => {
       <>
         <Alert type="error" showIcon message={t`更新发生错误`} description={errorText} />
         {snapshot.error && (
-          <p className="text-xs text-foreground-muted m-0 break-all">{snapshot.error}</p>
+          <p className="text-xs text-foreground-secondary m-0 break-all select-text">
+            {snapshot.error}
+          </p>
         )}
         <div className="flex items-center justify-end gap-2 pt-2">
           <Button onClick={handleClose}>{t`关闭`}</Button>
@@ -99,18 +103,22 @@ export const UpdaterFeature: React.FC = () => {
             <CloudDownloadOutlined />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-semibold text-foreground tracking-tight m-0 leading-5 truncate">
-              {header.title}
+            <h2 className="text-sm font-semibold text-foreground tracking-tight m-0 leading-5">
+              <EllipsisText className="block truncate" tooltip={header.title}>
+                {header.title}
+              </EllipsisText>
             </h2>
-            <p className="text-xs text-foreground-muted m-0 mt-0.5 leading-4 truncate">
-              {header.subtitle}
+            <p className="text-xs text-foreground-secondary m-0 mt-0.5 leading-4">
+              <EllipsisText className="block truncate" tooltip={header.subtitle}>
+                {header.subtitle}
+              </EllipsisText>
             </p>
           </div>
         </div>
         <button
           type="button"
-          aria-label="Close"
-          className="no-drag text-foreground-muted hover:text-foreground hover:bg-foreground/10 active:bg-foreground/15 rounded-md w-8 h-8 transition-colors duration-150 inline-flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 shrink-0"
+          aria-label={t`关闭`}
+          className="no-drag text-foreground-muted hover:text-foreground hover:bg-foreground/10 active:bg-foreground/20 rounded-md w-8 h-8 transition-colors duration-150 inline-flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 shrink-0"
           onClick={handleClose}
         >
           <CloseOutlined className="text-sm" />
@@ -130,7 +138,7 @@ export const UpdaterFeature: React.FC = () => {
           <div className="flex-1 flex flex-col items-center justify-center gap-2.5 p-6 text-center">
             <CheckCircleOutlined className="text-success text-3xl mb-1" />
             <span className="text-sm font-medium text-foreground">{t`已是最新版本`}</span>
-            <span className="text-xs text-foreground-muted">{t`您的应用已保持在最新版本，无需更新。`}</span>
+            <span className="text-xs text-foreground-secondary">{t`您的应用已保持在最新版本，无需更新。`}</span>
           </div>
         )}
 
@@ -174,14 +182,14 @@ export const UpdaterFeature: React.FC = () => {
 
         {!showChangelog && snapshot.state === 'downloaded' && (
           <div className="flex flex-col gap-2">
-            <Card size="small" className="bg-background-secondary border border-border rounded-lg">
+            <AppCard size="small" className="bg-background-elevated">
               <div className="flex items-center gap-3">
                 <CheckCircleOutlined className="text-success text-2xl shrink-0" />
-                <div className="text-xs text-foreground-muted">
+                <div className="text-xs text-foreground-secondary">
                   {t`新版本已完成下载，重启应用后即可完成升级。`}
                 </div>
               </div>
-            </Card>
+            </AppCard>
             <div className="flex items-center justify-end gap-2 pt-2">
               <Button onClick={handleClose}>{t`稍后安装`}</Button>
               <Button type="primary" onClick={handleInstall}>{t`重启并安装`}</Button>

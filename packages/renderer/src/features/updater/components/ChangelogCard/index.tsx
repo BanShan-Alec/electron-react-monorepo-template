@@ -1,8 +1,9 @@
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Card, Tag } from 'antd';
+import { Tag } from 'antd';
 import type React from 'react';
 import { useMemo, useState } from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 import { callIpc } from '@/lib/ipc';
 
 // 链接打开失败不打扰用户（含白名单拦截拒绝）：失败行已由 callIpc 统一落盘
@@ -70,10 +71,12 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
   releaseDate,
   releaseNotes,
 }) => {
-  useLingui();
+  const { i18n } = useLingui();
   const [expanded, setExpanded] = useState(false);
 
-  const formattedDate = releaseDate ? new Date(releaseDate).toLocaleDateString() : undefined;
+  const formattedDate = releaseDate
+    ? new Date(releaseDate).toLocaleDateString(i18n.locale)
+    : undefined;
   const hasNotes = Boolean(releaseNotes && releaseNotes.length > 0);
   const isLongNotes = Boolean(releaseNotes && releaseNotes.length > 4);
 
@@ -85,9 +88,9 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
   }, [releaseNotes]);
 
   return (
-    <Card
+    <AppCard
       size="small"
-      className="bg-background-secondary border border-border rounded-lg"
+      className="bg-background-elevated"
       title={
         <div className="flex items-center justify-between py-1">
           <div className="flex items-center gap-2">
@@ -99,7 +102,7 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
             )}
           </div>
           {formattedDate && (
-            <span className="text-xs text-foreground-muted font-normal">{formattedDate}</span>
+            <span className="text-xs text-foreground-secondary font-normal">{formattedDate}</span>
           )}
         </div>
       }
@@ -115,13 +118,13 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
           {hasNotes ? (
             <ul className="list-disc pl-4 space-y-1">
               {normalizedNotes.map((item) => (
-                <li key={item.id} className="leading-relaxed">
+                <li key={item.id} className="leading-relaxed break-words">
                   {formatInlineMarkdown(item.text)}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-foreground-muted italic">{t`包含常规稳定性改进与性能优化。`}</p>
+            <p className="text-foreground-secondary italic">{t`包含常规稳定性改进与性能优化。`}</p>
           )}
         </div>
         {isLongNotes && (
@@ -129,13 +132,13 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
             <button
               type="button"
               onClick={() => setExpanded(!expanded)}
-              className="text-primary hover:text-primary-hover text-xs font-normal cursor-pointer focus:outline-none transition-colors"
+              className="text-primary hover:text-primary-hover text-xs font-normal cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               {expanded ? t`收起` : t`展开全部`}
             </button>
           </div>
         )}
       </div>
-    </Card>
+    </AppCard>
   );
 };

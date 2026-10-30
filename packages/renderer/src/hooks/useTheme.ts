@@ -1,10 +1,11 @@
 import { LIGHT_COLOR_SCHEME_QUERY } from '@app/shared/constants/preferences';
 import { useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
+import { applyColorScheme } from '@/styles/design-tokens';
 
 /**
  * 应用级主题联动（跨 feature 的壳层职责，故置于 hooks/ 而非任一域）：
- * 1. resolvedTheme 写入 documentElement.dataset.theme，激活 tokens.css 变量并切换 antd 算法；
+ * 1. applyColorScheme 同步 data-theme / .dark / cssVar 作用域类；antd 算法由 ConfigProvider 随 resolvedTheme 切换；
  * 2. themeMode 为 'system' 时跟随 OS 偏好变化（监听必须配套清理，防止泄漏与重复触发）。
  */
 
@@ -16,8 +17,7 @@ export function useTheme() {
 
   // 组件Effect
   useEffect(() => {
-    document.documentElement.dataset.theme = resolvedTheme;
-    document.documentElement.classList.toggle('dark', resolvedTheme === 'dark');
+    applyColorScheme(resolvedTheme);
   }, [resolvedTheme]);
 
   useEffect(() => {

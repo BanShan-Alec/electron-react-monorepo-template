@@ -1,20 +1,21 @@
 import { t } from '@lingui/core/macro';
+import { ErrorCode } from '@shared/constants/error-codes';
 import { useState } from 'react';
 import { useManualRequest } from '@/hooks/useManualRequest';
-import { callIpc } from '@/lib/ipc';
+import { callIpc, IpcError } from '@/lib/ipc';
 
 // 私有常量
 export type DialogAction = 'openFile' | 'openDirectory' | 'saveFile' | 'showInFolder';
 
-function getFailurePrefix(action: DialogAction): string {
+function getFailureMessage(action: DialogAction, detail: string): string {
   switch (action) {
     case 'openFile':
     case 'openDirectory':
-      return t`打开失败`;
+      return t`打开失败: ${detail}`;
     case 'saveFile':
-      return t`保存失败`;
+      return t`保存失败: ${detail}`;
     case 'showInFolder':
-      return t`定位失败`;
+      return t`定位失败: ${detail}`;
   }
 }
 
@@ -82,7 +83,12 @@ async function runDialogAction(
       }
     }
   } catch (error) {
-    return { statusMessage: `${getFailurePrefix(action)}: ${(error as Error).message}` };
+    // 主进程只给英文诊断详情；语义结论在这里按错误码本地化
+    if (error instanceof IpcError && error.code === ErrorCode.NOT_FOUND) {
+      return { statusMessage: t`文件或目录不存在: ${selectedPath}` };
+    }
+    const detail = (error as Error).message;
+    return { statusMessage: getFailureMessage(action, detail) };
   }
 }
 

@@ -31,6 +31,7 @@
     "start:dist": "cross-env MODE=production tsx scripts/dev.ts",
     "pr-review": "pnpm --filter @app/pr-review run cli",
     "i18n:extract": "pnpm --filter @app/renderer exec lingui extract --clean",
+    "i18n:check": "pnpm --filter @app/renderer exec lingui check missing",
     "docs:dev": "pnpm --filter @app/docs run dev",
     "docs:build": "pnpm --filter @app/docs run build",
     "docs:preview": "pnpm --filter @app/docs run preview",

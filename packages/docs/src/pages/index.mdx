@@ -9,6 +9,7 @@ showBanner: false
 ---
 
 import { Link } from 'vocs';
+import { PageDirectory } from '../components/PageDirectory';
 
 <header className="vocs:mx-auto vocs:flex vocs:w-full vocs:max-w-[900px] vocs:items-center vocs:justify-between vocs:gap-6 vocs:px-8 vocs:pb-6 vocs:pt-8 max-[700px]:vocs:px-5 max-[700px]:vocs:pt-6">
   <div className="vocs:inline-flex vocs:items-center vocs:gap-3">
@@ -32,7 +33,7 @@ import { Link } from 'vocs';
   </h1>
 
   <p className="vocs:m-0 vocs:mb-8 vocs:max-w-[620px] vocs:text-xl vocs:leading-[1.6] vocs:text-secondary max-[700px]:vocs:text-[17px]">
-    每个解法都对应本仓库经过发版验证的真实实现——模板使用者按图索骥，踩坑的人按问题搜解法、照代码抄作业。
+    每个解法都对应本仓库经过发版验证的真实实现<br/>模板使用者按图索骥，踩坑的人按问题搜解法、照代码抄作业。
   </p>
 
   <div className="vocs:mb-10 vocs:flex vocs:flex-wrap vocs:gap-3">
@@ -72,38 +73,4 @@ import { Link } from 'vocs';
 
 </section>
 
-## 工程化基座
-
-[依赖管理（Monorepo）](/engineering/dependency-management) · [环境变量管理（Dotenv）](/engineering/env-vars) · [编译配置继承（Tsconfig）](/engineering/tsconfig-inheritance) · [代码规范与风格（Biome）](/engineering/code-style) · [提交信息规范（Commitlint）](/engineering/commit-convention)
-
-## 开发体验
-
-[开发编排（Vite + Electron）](/dx/dev-orchestration) · [启动预检（Single-instance + Port）](/dx/startup-preflight) · [远程调试端口（CDP）](/dx/debug-port) · [日志与链路排查（Usage）](/dx/log-troubleshooting) · [配置项归属（Configuration-map）](/dx/configuration-map)
-
-## 架构组织
-
-[多窗口入口（MPA）](/architecture/multi-window) · [功能域组织（Features）](/architecture/feature-domains) · [组件目录结构（Component-folder）](/architecture/component-structure) · [React 组件编写规范（Code-partition + Hooks）](/architecture/react-conventions) · [模块生命周期（ModuleRunner）](/architecture/module-lifecycle) · [分层架构（Controller / Service）](/architecture/layering)
-
-## 界面与交互
-
-[组件库（Antd）](/ui/antd) · [样式与令牌（Tailwind-CSS）](/ui/tailwind) · [国际化（Lingui）](/ui/lingui) · [路由（Wouter）](/ui/wouter) · [全局状态（Zustand）](/ui/zustand) · [错误边界（ErrorBoundary）](/ui/error-boundary) · [首屏体验（Startup-orchestration）](/ui/first-screen) · [原生窗口体验（WCO）](/ui/wco) · [窗口位置与尺寸（Window-state）](/ui/window-state)
-
-## 主进程运行时
-
-[全链路追踪（W3C-trace）](/main/tracing) · [本地日志（Electron-log）](/main/logging) · [崩溃上报（Sentry）](/main/crash-reporting) · [托盘常驻与单实例（Tray + Single-instance）](/main/tray-single-instance) · [配置持久化（Electron-store）](/main/config-persistence)
-
-## 安全与性能
-
-[渲染进程沙箱（Sandbox）](/security/sandbox) · [内容安全策略（CSP）](/security/csp) · [路径稳健性（Relative-path）](/security/path-robustness) · [分包与体积门禁（Chunk + Asar）](/security/bundle-budget) · [类型安全的 IPC 契约（Zod + ContextBridge）](/security/ipc-contract)
-
-## 测试矩阵
-
-[单元测试（Vitest）](/testing/unit-tests) · [主进程单元测试（EventEmitter）](/testing/main-process-tests) · [端到端测试（Playwright）](/testing/e2e-electron) · [端到端断言策略（Shell-stub + Tolerance）](/testing/e2e-assertions) · [性能基线（Benchmark）](/testing/performance-baseline) · [产物冒烟测试（Dist-smoke）](/testing/artifact-smoke)
-
-## 交付门禁
-
-[应用打包（Electron-builder）](/delivery/packaging) · [源码映射隔离（Source-map）](/delivery/sourcemap) · [CI 并行门禁（GitHub-Actions）](/delivery/ci-gates) · [应用更新（Electron-updater）](/delivery/auto-update) · [发版流水线（Changelogen）](/delivery/release-pipeline)
-
-## AI 协同
-
-[AI 评审闭环（Open-code-review）](/ai/review-loop) · [AI 协作者约定（Agents.md）](/ai/collaboration-convention) · [AI 友好代码约定（Reference-style）](/ai/friendly-conventions)
+<PageDirectory />

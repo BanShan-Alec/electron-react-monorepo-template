@@ -1,22 +1,19 @@
 import { theme } from 'antd';
+import { BRAND_PRIMARY, CSS_VAR_KEY, type ThemeMode } from './design-tokens';
 
 /**
- * Ant Design v6 官方默认主题配置
- * 仅切换官方算法（defaultAlgorithm / darkAlgorithm），不覆盖任何设计令牌——
- * 视觉基线完全对齐 antd 原版，深浅双色 Token 均由官方算法输出。
+ * antd 主题配置：官方算法 + 一个品牌种子 + cssVar 作用域。
+ * cssVar.key 会被 antd 原样用作类名；applyColorScheme 负责把它挂到 <html>。
+ * controlHeightSM=28 是刻意的密度选择（antd 默认 24）。
  */
-
-// 私有常量
-
-// 可抽离的逻辑处理函数/组件
-export type ThemeMode = 'dark' | 'light';
 
 export function getAntdThemeConfig(mode: ThemeMode) {
   return {
     algorithm: mode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
+    cssVar: { key: CSS_VAR_KEY },
     token: {
+      colorPrimary: BRAND_PRIMARY,
       controlHeightSM: 28,
-      paddingInlineSM: 10,
     },
   };
 }

@@ -4,12 +4,16 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 
 #: src/features/system-info/components/SystemInfoCard/index.tsx
-msgid "{cpuCores} 核 ({cpuModel})"
-msgstr "{cpuCores} 核 ({cpuModel})"
+msgid "{cpuCores, plural, one {# 核} other {# 核}} ({cpuModel})"
+msgstr "{cpuCores, plural, one {# 核} other {# 核}} ({cpuModel})"
+
+#: src/features/usb/components/UsbCard/index.tsx
+msgid "{manufacturerName} 设备"
+msgstr "{manufacturerName} 设备"
 
 #: src/features/system-info/components/SystemInfoCard/index.tsx
-msgid "{uptimeMinutes} 分钟 ({uptimeSeconds} 秒)"
-msgstr "{uptimeMinutes} 分钟 ({uptimeSeconds} 秒)"
+msgid "{uptimeMinutes, plural, one {# 分钟} other {# 分钟}} ({uptimeSeconds, plural, one {# 秒} other {# 秒}})"
+msgstr "{uptimeMinutes, plural, one {# 分钟} other {# 分钟}} ({uptimeSeconds, plural, one {# 秒} other {# 秒}})"
 
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "@app/shared 共享契约单一事实源"
@@ -23,10 +27,9 @@ msgstr "✅ 已发送 {levelUpper} 日志到 renderer-home.log"
 msgid "❌ 已触发测试异常并写入 renderer-home.log (生产打包模式下将由全局监听器自动上报 Sentry)"
 msgstr "❌ 已触发测试异常并写入 renderer-home.log (生产打包模式下将由全局监听器自动上报 Sentry)"
 
-#. placeholder {0}: data.path
 #: src/features/logging/hooks/useLogging.ts
-msgid "📂 已打开日志目录: {0}"
-msgstr "📂 已打开日志目录: {0}"
+msgid "📂 已打开日志目录: {path}"
+msgstr "📂 已打开日志目录: {path}"
 
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "Chromium 版本"
@@ -76,10 +79,9 @@ msgstr "Main 进程 Controller -> Service 分层"
 msgid "Node.js 版本"
 msgstr "Node.js 版本"
 
-#. placeholder {0}: err.message
 #: src/features/ping/hooks/usePing.ts
-msgid "Ping 失败: {0}"
-msgstr "Ping 失败: {0}"
+msgid "Ping 失败: {detail}"
+msgstr "Ping 失败: {detail}"
 
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "Preload 精准白名单桥接"
@@ -146,8 +148,8 @@ msgid "使用 Zod Schema 定义入参校验规则，派生跨端统一 TypeScrip
 msgstr "使用 Zod Schema 定义入参校验规则，派生跨端统一 TypeScript 类型与标准 Result<T> 响应契约。"
 
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
-msgid "保存失败"
-msgstr "保存失败"
+msgid "保存失败: {detail}"
+msgstr "保存失败: {detail}"
 
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "保存路径已选定: {filePath}"
@@ -226,10 +228,9 @@ msgstr "基于主进程状态原子操作与响应式更新"
 msgid "外观主题 (Theme)"
 msgstr "外观主题 (Theme)"
 
-#. placeholder {0}: err.message
 #: src/features/devtools/hooks/useDevTools.ts
-msgid "安全拦截: {0}"
-msgstr "安全拦截: {0}"
+msgid "安全拦截: {detail}"
+msgstr "安全拦截: {detail}"
 
 #: src/features/calculator/components/CalculatorCard/index.tsx
 msgid "安全计算器 (IPC 错误处理)"
@@ -240,8 +241,8 @@ msgid "安装包下载中，完成后即可进行安装升级。"
 msgstr "安装包下载中，完成后即可进行安装升级。"
 
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
-msgid "定位失败"
-msgstr "定位失败"
+msgid "定位失败: {detail}"
+msgstr "定位失败: {detail}"
 
 #: src/features/updater/components/ChangelogCard/index.tsx
 msgid "展开全部"
@@ -311,10 +312,9 @@ msgstr "总览看板"
 msgid "恢复默认值"
 msgstr "恢复默认值"
 
-#. placeholder {0}: err.message
 #: src/features/settings/hooks/useAppConfig.ts
-msgid "恢复默认配置失败: {0}"
-msgstr "恢复默认配置失败: {0}"
+msgid "恢复默认配置失败: {detail}"
+msgstr "恢复默认配置失败: {detail}"
 
 #: src/features/updater/index.tsx
 msgid "您的应用已保持在最新版本，无需更新。"
@@ -325,8 +325,8 @@ msgid "打开 GitHub 页面"
 msgstr "打开 GitHub 页面"
 
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
-msgid "打开失败"
-msgstr "打开失败"
+msgid "打开失败: {detail}"
+msgstr "打开失败: {detail}"
 
 #: src/features/logging/components/LoggingCard/index.tsx
 msgid "打开日志目录"
@@ -340,10 +340,9 @@ msgstr "打开更新窗口失败"
 msgid "提示：尝试输入 B = 0 并选择除法 (÷) 触发服务端异常拦截"
 msgstr "提示：尝试输入 B = 0 并选择除法 (÷) 触发服务端异常拦截"
 
-#. placeholder {0}: err.message
 #: src/features/devtools/hooks/useDevTools.ts
-msgid "操作失败: {0}"
-msgstr "操作失败: {0}"
+msgid "操作失败: {detail}"
+msgstr "操作失败: {detail}"
 
 #: src/features/calculator/components/CalculatorCard/index.tsx
 msgid "操作数 A"
@@ -357,6 +356,10 @@ msgstr "操作数 B"
 msgid "收起"
 msgstr "收起"
 
+#: src/features/native-dialogs/hooks/useNativeDialogs.ts
+msgid "文件或目录不存在: {selectedPath}"
+msgstr "文件或目录不存在: {selectedPath}"
+
 #: src/features/updater/index.tsx
 msgid "新版本已完成下载，重启应用后即可完成升级。"
 msgstr "新版本已完成下载，重启应用后即可完成升级。"
@@ -369,19 +372,17 @@ msgstr "新版本已经准备就绪，包含最新的功能与改进。"
 msgid "无法读取部分 USB 设备描述符，请检查设备连接或系统权限"
 msgstr "无法读取部分 USB 设备描述符，请检查设备连接或系统权限"
 
-#. placeholder {0}: err.message
 #: src/features/logging/hooks/useLogging.ts
-msgid "日志操作失败: {0}"
-msgstr "日志操作失败: {0}"
+msgid "日志操作失败: {detail}"
+msgstr "日志操作失败: {detail}"
 
 #: src/features/updater/index.tsx
 msgid "暂无可用更新信息。"
 msgstr "暂无可用更新信息。"
 
-#. placeholder {0}: err.message
 #: src/features/settings/hooks/useAppConfig.ts
-msgid "更新偏好设置失败: {0}"
-msgstr "更新偏好设置失败: {0}"
+msgid "更新偏好设置失败: {detail}"
+msgstr "更新偏好设置失败: {detail}"
 
 #: src/features/updater/index.tsx
 msgid "更新发生错误"
@@ -539,15 +540,13 @@ msgstr "统一通过 window.api 消费 Result 契约，享受完备 IDE 智能�
 msgid "网络连接失败或超时，请检查网络后重试。"
 msgstr "网络连接失败或超时，请检查网络后重试。"
 
-#. placeholder {0}: err.message
 #: src/features/usb/hooks/useUsbDevices.ts
-msgid "获取 USB 设备列表失败: {0}"
-msgstr "获取 USB 设备列表失败: {0}"
+msgid "获取 USB 设备列表失败: {detail}"
+msgstr "获取 USB 设备列表失败: {detail}"
 
-#. placeholder {0}: err.message
 #: src/features/system-info/hooks/useSystemInfo.ts
-msgid "获取系统信息失败: {0}"
-msgstr "获取系统信息失败: {0}"
+msgid "获取系统信息失败: {detail}"
+msgstr "获取系统信息失败: {detail}"
 
 #: src/features/logging/components/LoggingCard/index.tsx
 msgid "触发 ErrorBoundary 崩溃"
@@ -557,29 +556,25 @@ msgstr "触发 ErrorBoundary 崩溃"
 msgid "触发 Sentry 异常"
 msgstr "触发 Sentry 异常"
 
-#. placeholder {0}: err.message
 #: src/features/counter/hooks/useCounter.ts
-msgid "计数器操作失败: {0}"
-msgstr "计数器操作失败: {0}"
+msgid "计数器操作失败: {detail}"
+msgstr "计数器操作失败: {detail}"
 
-#. placeholder {0}: err.message
 #: src/features/calculator/hooks/useCalculator.ts
-msgid "计算失败: {0}"
-msgstr "计算失败: {0}"
+msgid "计算失败: {detail}"
+msgstr "计算失败: {detail}"
 
 #: src/features/calculator/components/CalculatorCard/index.tsx
 msgid "计算结果:"
 msgstr "计算结果:"
 
-#. placeholder {0}: err.message
 #: src/features/settings/hooks/useAppConfig.ts
-msgid "读取偏好设置失败: {0}"
-msgstr "读取偏好设置失败: {0}"
+msgid "读取偏好设置失败: {detail}"
+msgstr "读取偏好设置失败: {detail}"
 
-#. placeholder {0}: err.message
 #: src/features/counter/hooks/useCounter.ts
-msgid "读取计数器失败: {0}"
-msgstr "读取计数器失败: {0}"
+msgid "读取计数器失败: {detail}"
+msgstr "读取计数器失败: {detail}"
 
 #: src/features/devtools/components/DevToolsCard/index.tsx
 msgid "调试与系统外链 (Security Filter)"

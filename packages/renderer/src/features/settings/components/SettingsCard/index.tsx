@@ -2,19 +2,15 @@ import { SettingOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import type { AppConfig } from '@shared/schemas/config';
-import { App, Button, Card, Select, Skeleton, Switch } from 'antd';
+import { App, Button, Select, Skeleton, Switch } from 'antd';
 import { memo } from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
 import { callIpc } from '@/lib/ipc';
 
 // 私有常量
-const LANGUAGE_OPTIONS = [
-  { label: '简体中文 (zh-CN)', value: 'zh-CN' },
-  { label: 'English (en-US)', value: 'en-US' },
-];
-
 const TOGGLE_ROW_CLASS =
-  'settings-toggle-row flex items-center justify-between bg-background-secondary p-3 rounded-lg border border-border';
+  'settings-toggle-row flex flex-wrap items-center justify-between gap-y-2 bg-background-sunken p-3 rounded-lg border border-border';
 
 // 可抽离的逻辑处理函数/组件
 
@@ -35,6 +31,11 @@ const _SettingsCard = (props: ISettingsCardProps) => {
     { label: t`浅色模式 (Light)`, value: 'light' },
     { label: t`深色模式 (Dark)`, value: 'dark' },
   ];
+  const languageOptions = [
+    { label: t`跟随系统 (System)`, value: 'system' },
+    { label: '简体中文 (zh-CN)', value: 'zh-CN' },
+    { label: 'English (en-US)', value: 'en-US' },
+  ];
 
   // 逻辑处理函数
 
@@ -42,8 +43,7 @@ const _SettingsCard = (props: ISettingsCardProps) => {
 
   // 组件渲染
   return (
-    <Card
-      className="glass-card transition-all duration-200 hover:border-border/80"
+    <AppCard
       title={
         <CardTitle
           icon={<SettingOutlined />}
@@ -62,7 +62,7 @@ const _SettingsCard = (props: ISettingsCardProps) => {
       ) : appConfig ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
           {/* 主题模式 */}
-          <div className="flex flex-col gap-1.5 bg-background-secondary p-3 rounded-lg border border-border">
+          <div className="flex flex-col gap-1.5 bg-background-sunken p-3 rounded-lg border border-border">
             <label htmlFor="theme-select" className="text-foreground-secondary font-medium">
               {t`外观主题 (Theme)`}
             </label>
@@ -75,14 +75,14 @@ const _SettingsCard = (props: ISettingsCardProps) => {
           </div>
 
           {/* 默认语言 */}
-          <div className="flex flex-col gap-1.5 bg-background-secondary p-3 rounded-lg border border-border">
+          <div className="flex flex-col gap-1.5 bg-background-sunken p-3 rounded-lg border border-border">
             <label htmlFor="lang-select" className="text-foreground-secondary font-medium">
               {t`界面语言 (Language)`}
             </label>
             <Select
               id="lang-select"
               value={appConfig.language}
-              options={LANGUAGE_OPTIONS}
+              options={languageOptions}
               onChange={(value) => onUpdate({ language: value as AppConfig['language'] })}
             />
           </div>
@@ -91,7 +91,7 @@ const _SettingsCard = (props: ISettingsCardProps) => {
           <div className={TOGGLE_ROW_CLASS}>
             <label htmlFor="tray-switch" className="cursor-pointer select-none flex-1 pr-3">
               <span className="text-foreground font-medium block">{t`点击关闭时最小化到托盘`}</span>
-              <span className="text-[11px] text-foreground-muted block mt-0.5">
+              <span className="text-xs text-foreground-secondary block mt-0.5">
                 {t`保持后台常驻与托盘图标交互`}
               </span>
             </label>
@@ -106,7 +106,7 @@ const _SettingsCard = (props: ISettingsCardProps) => {
           <div className={TOGGLE_ROW_CLASS}>
             <div className="flex-1 pr-3">
               <span className="text-foreground font-medium block">{t`软件更新 (Updater)`}</span>
-              <span className="text-[11px] text-foreground-muted block mt-0.5">
+              <span className="text-xs text-foreground-secondary block mt-0.5">
                 {t`检查最新版本与下载安装`}
               </span>
             </div>
@@ -133,11 +133,11 @@ const _SettingsCard = (props: ISettingsCardProps) => {
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center p-6 text-foreground-muted text-xs">
+        <div className="flex-1 flex items-center justify-center p-6 text-foreground-secondary text-xs">
           {t`正在读取偏好设置...`}
         </div>
       )}
-    </Card>
+    </AppCard>
   );
 };
 

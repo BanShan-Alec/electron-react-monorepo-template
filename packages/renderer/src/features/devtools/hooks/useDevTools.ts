@@ -52,8 +52,9 @@ export function useDevTools() {
         setActionMessage(msg);
       },
       onError: (err) => {
-        setActionMessage(t`安全拦截: ${err.message}`);
-        message.error(t`操作失败: ${err.message}`);
+        const detail = err.message;
+        setActionMessage(t`安全拦截: ${detail}`);
+        message.error(t`操作失败: ${detail}`);
       },
     },
   );

@@ -32,7 +32,7 @@ function FallbackView({ error, resetError }: IFallbackProps) {
     <div className="flex flex-col items-center gap-2">
       <span className="text-base font-medium text-foreground">{t`页面出错啦~`}</span>
       {isDev && errorMessage ? (
-        <span className="text-xs text-muted-foreground font-mono max-w-lg break-all text-center">
+        <span className="text-xs text-foreground-secondary font-mono max-w-lg break-all text-center">
           {errorMessage}
         </span>
       ) : null}

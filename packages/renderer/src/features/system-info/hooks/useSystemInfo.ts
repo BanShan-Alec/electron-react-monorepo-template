@@ -22,7 +22,8 @@ export function useSystemInfo() {
     run: fetchSystemInfoRun,
   } = useIpc('system.getSystemInfo', window.api.system.getSystemInfo, {
     onError: (err) => {
-      message.error(t`获取系统信息失败: ${err.message}`);
+      const detail = err.message;
+      message.error(t`获取系统信息失败: ${detail}`);
     },
   });
 

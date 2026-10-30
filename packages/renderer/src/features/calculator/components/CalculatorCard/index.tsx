@@ -2,8 +2,9 @@ import { FunctionOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import type { CalcOperator } from '@shared/types/calculator';
-import { Alert, Button, Card, Input, Select, Tag } from 'antd';
+import { Alert, Button, Input, Select, Tag } from 'antd';
 import { memo } from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
 
 // 私有常量
@@ -34,8 +35,7 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
 
   // 组件渲染
   return (
-    <Card
-      className="glass-card transition-all duration-200 hover:border-border/80"
+    <AppCard
       title={
         <CardTitle
           icon={<FunctionOutlined />}
@@ -44,7 +44,7 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
         />
       }
     >
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-1 flex-col justify-between gap-3">
         <div className="flex items-center gap-2">
           <Input
             type="number"
@@ -58,7 +58,7 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
             value={op}
             options={OPERATOR_OPTIONS}
             onChange={onOpChange}
-            className="font-mono font-bold"
+            className="font-mono font-semibold"
           />
 
           <Input
@@ -77,18 +77,18 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
         {result !== null && (
           <div className="p-3 bg-success/10 border border-success/30 rounded-lg flex items-center justify-between">
             <span className="text-xs text-foreground-secondary font-medium">{t`计算结果:`}</span>
-            <span className="text-base font-bold text-success font-mono">{result}</span>
+            <span className="text-base font-semibold text-foreground font-mono">{result}</span>
           </div>
         )}
 
         {error && <Alert type="error" showIcon title={error} />}
 
-        <div className="flex items-center justify-between text-[11px] text-foreground-muted mt-1 pt-2 border-t border-border/40">
+        <div className="flex flex-wrap items-center justify-between gap-y-2 text-xs text-foreground-secondary mt-1 pt-2 border-t border-border/40">
           <span>{t`提示：尝试输入 B = 0 并选择除法 (÷) 触发服务端异常拦截`}</span>
           <Tag>{t`Zod 校验`}</Tag>
         </div>
       </div>
-    </Card>
+    </AppCard>
   );
 };
 

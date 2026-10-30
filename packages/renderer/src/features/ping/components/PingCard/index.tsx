@@ -1,23 +1,27 @@
 import { ApiOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Button, Card, Tag } from 'antd';
+import { Button } from 'antd';
 import { memo } from 'react';
+import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
+import { StatusTag } from '@/components/ui/StatusTag';
 
 // 私有常量
 const FAST_LATENCY_MS = 5;
 const NORMAL_LATENCY_MS = 15;
 
 // 可抽离的逻辑处理函数/组件
-function renderLatencyTag(latency: number) {
+function LatencyTag({ latency }: { latency: number }) {
+  // 订阅语言上下文：渲染在组件内完成，避免模块级函数被 React Compiler 按 latency 缓存
+  useLingui();
   if (latency < FAST_LATENCY_MS) {
-    return <Tag color="success">{t`极速`}</Tag>;
+    return <StatusTag tone="success">{t`极速`}</StatusTag>;
   }
   if (latency < NORMAL_LATENCY_MS) {
-    return <Tag color="processing">{t`正常`}</Tag>;
+    return <StatusTag tone="info">{t`正常`}</StatusTag>;
   }
-  return <Tag color="warning">{t`延迟稍高`}</Tag>;
+  return <StatusTag tone="warning">{t`延迟稍高`}</StatusTag>;
 }
 
 const _PingCard = (props: IPingCardProps) => {
@@ -37,8 +41,7 @@ const _PingCard = (props: IPingCardProps) => {
 
   // 组件渲染
   return (
-    <Card
-      className="glass-card transition-all duration-200 hover:border-border/80"
+    <AppCard
       title={
         <CardTitle
           icon={<ApiOutlined />}
@@ -47,7 +50,7 @@ const _PingCard = (props: IPingCardProps) => {
         />
       }
     >
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-background-secondary rounded-lg border border-border">
+      <div className="flex flex-1 flex-col sm:flex-row items-stretch justify-between gap-4 p-4 bg-background-sunken rounded-lg border border-border">
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <div className="flex flex-col">
             <span className="text-xs text-foreground-secondary font-medium">
@@ -57,13 +60,13 @@ const _PingCard = (props: IPingCardProps) => {
               <span className="text-2xl font-semibold text-foreground font-mono">
                 {latency !== null ? `${latency}` : '--'}
               </span>
-              <span className="text-xs text-foreground-muted font-mono">ms</span>
-              {latency !== null && renderLatencyTag(latency)}
+              <span className="text-xs text-foreground-secondary font-mono">ms</span>
+              {latency !== null && <LatencyTag latency={latency} />}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+        <div className="flex flex-wrap items-center gap-3 gap-y-2 w-full sm:w-auto justify-between sm:justify-end">
           {serverTime && (
             <span className="text-xs text-foreground-secondary font-mono">
               {t`主进程时间`}: {serverTime}
@@ -80,7 +83,7 @@ const _PingCard = (props: IPingCardProps) => {
           </Button>
         </div>
       </div>
-    </Card>
+    </AppCard>
   );
 };
 

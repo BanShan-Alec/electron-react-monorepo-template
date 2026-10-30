@@ -122,7 +122,7 @@ test.describe
       // 断言后端返回 failure 状态与 NOT_FOUND 错误码
       expect(result.success).toBe(false);
       expect(result.code).toBe('NOT_FOUND');
-      expect(result.error).toContain('目标文件或目录不存在');
+      expect(result.error).toContain('Target path does not exist');
     });
 
     test('用例 5：独立 Loading 态与全局防并发互斥（被点击按钮独立转圈，其他按钮置灰禁用）', async ({

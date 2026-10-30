@@ -26,7 +26,8 @@ export function useCalculator() {
     runAsync: calculateAsync,
   } = useIpc('calculator.calculate', window.api.calculator.calculate, {
     onError: (err) => {
-      message.error(t`计算失败: ${err.message}`);
+      const detail = err.message;
+      message.error(t`计算失败: ${detail}`);
     },
     onSuccess: () => {
       // 用户动作只记结果：操作数与结果不入日志（payload 纪律）

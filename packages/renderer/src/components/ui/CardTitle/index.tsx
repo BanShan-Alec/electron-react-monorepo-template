@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
 import { memo } from 'react';
-
-// 私有常量
+import { EllipsisText } from '@/components/ui/EllipsisText';
 
 // 可抽离的逻辑处理函数/组件
+
+const TITLE_CLASS = 'text-base font-semibold text-foreground tracking-tight truncate leading-tight';
+const SUBTITLE_CLASS = 'text-xs text-foreground-secondary mt-0.5 font-normal truncate';
 
 const _CardTitle = (props: ICardTitleProps) => {
   // 变量声明、解构
@@ -28,13 +30,19 @@ const _CardTitle = (props: ICardTitleProps) => {
         </div>
       )}
       <div className="flex flex-col min-w-0">
-        <span className="text-base font-semibold text-foreground tracking-tight truncate leading-tight">
+        <EllipsisText
+          className={TITLE_CLASS}
+          tooltip={typeof title === 'string' ? title : undefined}
+        >
           {title}
-        </span>
+        </EllipsisText>
         {subtitle && (
-          <span className="text-xs text-foreground-secondary mt-0.5 font-normal truncate">
+          <EllipsisText
+            className={SUBTITLE_CLASS}
+            tooltip={typeof subtitle === 'string' ? subtitle : undefined}
+          >
             {subtitle}
-          </span>
+          </EllipsisText>
         )}
       </div>
     </div>

@@ -1,15 +1,15 @@
 import { z } from 'zod';
 import {
-  DEFAULT_LOCALE,
+  DEFAULT_LANGUAGE,
   DEFAULT_THEME_MODE,
-  SUPPORTED_LOCALES,
+  LANGUAGE_MODES,
   THEME_MODES,
 } from '../constants/preferences';
 
 export const configBaseSchema = z.object({
   theme: z.enum(THEME_MODES),
   minimizeToTray: z.boolean(),
-  language: z.enum(SUPPORTED_LOCALES),
+  language: z.enum(LANGUAGE_MODES),
   autoCheckUpdate: z.boolean(),
   serverCounter: z.number().int(),
 });
@@ -17,7 +17,7 @@ export const configBaseSchema = z.object({
 export const configSchema = z.object({
   theme: z.enum(THEME_MODES).default(DEFAULT_THEME_MODE),
   minimizeToTray: z.boolean().default(true),
-  language: z.enum(SUPPORTED_LOCALES).default(DEFAULT_LOCALE),
+  language: z.enum(LANGUAGE_MODES).default(DEFAULT_LANGUAGE),
   autoCheckUpdate: z.boolean().default(true),
   serverCounter: z.number().int().default(0),
 });
