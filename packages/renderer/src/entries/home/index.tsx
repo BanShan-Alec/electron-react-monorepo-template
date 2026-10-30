@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import '@/styles/index.css';
 import { Router } from 'wouter';
 import { useHashLocation } from 'wouter/use-hash-location';
+import { CloseBehaviorDialog } from '@/components/close-behavior/CloseBehaviorDialog';
 import { AppProviders } from '@/components/layout/AppProviders';
 import { StartupReadyNotifier } from '@/components/startup/StartupReadyNotifier';
 import { initSentry } from '@/lib/sentry';
@@ -22,6 +23,7 @@ createRoot(document.getElementById('root')!).render(
     <AppProviders>
       <Router hook={useHashLocation}>
         <StartupReadyNotifier />
+        <CloseBehaviorDialog />
         <App />
       </Router>
     </AppProviders>
