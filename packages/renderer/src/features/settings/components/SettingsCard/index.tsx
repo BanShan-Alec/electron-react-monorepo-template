@@ -98,7 +98,12 @@ const _SettingsCard = (props: ISettingsCardProps) => {
             <Switch
               id="tray-switch"
               checked={appConfig.minimizeToTray}
-              onChange={(checked) => onUpdate({ minimizeToTray: checked })}
+              onChange={(checked) =>
+                onUpdate({
+                  minimizeToTray: checked,
+                  closeBehaviorConfirmed: true,
+                })
+              }
             />
           </div>
 

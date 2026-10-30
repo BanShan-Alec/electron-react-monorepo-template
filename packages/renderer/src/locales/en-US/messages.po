@@ -163,6 +163,14 @@ msgstr "Keep running in the background"
 msgid "关闭"
 msgstr "Close"
 
+#: src/components/close-behavior/CloseBehaviorDialog/index.tsx
+msgid "关闭窗口"
+msgstr "Close window"
+
+#: src/components/close-behavior/CloseBehaviorDialog/index.tsx
+msgid "关闭窗口还是退出应用？"
+msgstr "Close the window or quit the app?"
+
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 #: src/features/usb/components/UsbCard/index.tsx
 msgid "刷新"
@@ -195,6 +203,10 @@ msgstr "Send INFO"
 #: src/features/logging/components/LoggingCard/index.tsx
 msgid "发送 WARN"
 msgstr "Send WARN"
+
+#: src/components/close-behavior/CloseBehaviorDialog/index.tsx
+msgid "取消"
+msgstr "Cancel"
 
 #: src/features/updater/index.tsx
 msgid "取消下载"
@@ -335,6 +347,10 @@ msgstr "Open log folder"
 #: src/features/settings/components/SettingsCard/index.tsx
 msgid "打开更新窗口失败"
 msgstr "Couldn't open the update window"
+
+#: src/components/close-behavior/CloseBehaviorDialog/index.tsx
+msgid "提交关闭选择失败"
+msgstr "Couldn't save the close choice"
 
 #: src/features/calculator/components/CalculatorCard/index.tsx
 msgid "提示：尝试输入 B = 0 并选择除法 (÷) 触发服务端异常拦截"
@@ -599,6 +615,14 @@ msgstr "IPC ping"
 #: src/features/logging/components/LoggingCard/index.tsx
 msgid "进程隔离落盘 (main.log / renderer-home.log) 与 5MB 自动轮转"
 msgstr "Process-isolated logging, 5MB rotation"
+
+#: src/components/close-behavior/CloseBehaviorDialog/index.tsx
+msgid "退出应用"
+msgstr "Quit app"
+
+#: src/components/close-behavior/CloseBehaviorDialog/index.tsx
+msgid "选择将被记住，可随时在设置中更改。"
+msgstr "Your choice will be saved; change it in Settings anytime."
 
 #: src/features/native-dialogs/components/DialogCard/index.tsx
 msgid "选择文件"
