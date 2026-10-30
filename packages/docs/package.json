@@ -5,8 +5,8 @@
   "type": "module",
   "description": "Electron React Template 解法文档站（Vocs）",
   "scripts": {
-    "dev": "node --import ./scripts/vocs-windows-fix.mjs ./node_modules/vite/bin/vite.js dev --port 5174 --host",
-    "build": "node --import ./scripts/vocs-windows-fix.mjs ./node_modules/vite/bin/vite.js build"
+    "dev": "node --import ./scripts/vocs-windows-fix.mjs ./node_modules/vocs/dist/cli.js dev --port 5174 --host",
+    "build": "node --import ./scripts/vocs-windows-fix.mjs ./node_modules/vocs/dist/cli.js build"
   },
   "dependencies": {
     "mermaid": "^11.0.0",
@@ -19,7 +19,6 @@
     "@app/tsconfig": "workspace:*",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.1.2",
     "tailwindcss": "^4.3.3",
     "vite": "catalog:"
   }

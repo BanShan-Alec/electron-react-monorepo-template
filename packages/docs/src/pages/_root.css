@@ -1,6 +1,4 @@
-/* Tailwind v4：插件由 vocs 内置注册（vocs 的 dependencies 里有 @tailwindcss/vite），
-   这里只提供入口。source(none)+@source 把扫描圈定在 src/（与 renderer 同一约定），
-   避免自动探测把 monorepo 其它包的类名扫进来。 */
+/* Tailwind v4：Vocs 已内置注册 Tailwind Vite 插件。限制扫描到 docs/src，避免扫到 monorepo 其它包。 */
 @import "tailwindcss" source(none);
 /* Vocs 设计令牌（surface / 文字 / 边框 / accent 等），使 text-heading、bg-surface、
    border-primary 这类语义色可直接用。必须排在 tailwindcss 之后，且依赖 vocs ≥ 2.12：
