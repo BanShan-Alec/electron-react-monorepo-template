@@ -35,10 +35,8 @@ export class WindowManager implements AppModule {
   private readonly renderer: { path: string } | URL;
   private readonly openDevTools: boolean;
   private readonly keepState: boolean;
-  private closePromptTimer: ReturnType<typeof setTimeout> | null = null;
   private closeGuardBypass = false;
   private closeRequestPending = false;
-  private rendererReady = false;
   private quitAfterCancelPending = false;
 
   constructor({ initConfig, openDevTools = false, keepState = true }: WindowManagerOptions) {
@@ -70,7 +68,6 @@ export class WindowManager implements AppModule {
   }
 
   async createWindow(): Promise<BrowserWindow> {
-    this.rendererReady = false;
     // 首次启动的尺寸与居中由纯函数计算；若存在官方持久化状态，
     // Electron 会在构造期用保存的 bounds/displayMode 覆盖这些构造参数
     const initialBounds = resolveWindowBounds(null, screen.getPrimaryDisplay());
@@ -130,6 +127,9 @@ export class WindowManager implements AppModule {
     // 注册到 window-registry 唯一事实源
     registerWindow(WINDOW_IDS.HOME, browserWindow);
     browserWindow.on('closed', () => {
+      this.closeRequestPending = false;
+      this.closeGuardBypass = false;
+      this.quitAfterCancelPending = false;
       forgetWindow(WINDOW_IDS.HOME, browserWindow);
     });
 
@@ -159,7 +159,6 @@ export class WindowManager implements AppModule {
     // 支持点击关闭按钮销毁主窗口并退守系统托盘及防僵尸退出闭环
     browserWindow.on('close', (event) => {
       if (appLifecycle.isQuitting) {
-        this.clearClosePromptTimer();
         this.closeRequestPending = false;
         try {
           getUpdaterWindowModule().destroy();
@@ -173,15 +172,9 @@ export class WindowManager implements AppModule {
         event.preventDefault();
         if (!this.closeRequestPending) {
           this.closeRequestPending = true;
-          this.closePromptTimer = setTimeout(() => {
-            this.closePromptTimer = null;
-            logger.info('Close prompt is still awaiting a user choice');
-          }, 10_000);
-          if (this.rendererReady) {
-            sendToWindow(WINDOW_IDS.HOME, IPC_CHANNELS.WINDOW_CLOSE_REQUESTED, null);
-          }
           getLogManager().scoped(this).info('First close intercepted; asking renderer');
         }
+        sendToWindow(WINDOW_IDS.HOME, IPC_CHANNELS.WINDOW_CLOSE_REQUESTED, null);
         return;
       }
 
@@ -216,7 +209,6 @@ export class WindowManager implements AppModule {
   }
 
   markRendererReady(): void {
-    this.rendererReady = true;
     if (this.closeRequestPending) {
       sendToWindow(WINDOW_IDS.HOME, IPC_CHANNELS.WINDOW_CLOSE_REQUESTED, null);
     }
@@ -226,7 +218,6 @@ export class WindowManager implements AppModule {
     const window = getWindow(WINDOW_IDS.HOME);
     if (!window || !this.closeRequestPending) return;
 
-    this.clearClosePromptTimer();
     this.closeRequestPending = false;
     getLogManager().scoped(this).info(`Close prompt answered: ${choice}`);
 
@@ -239,13 +230,6 @@ export class WindowManager implements AppModule {
     broadcast(IPC_CHANNELS.CONFIG_EVENT_CHANGED, updated);
     this.closeGuardBypass = true;
     window.close();
-  }
-
-  private clearClosePromptTimer(): void {
-    if (this.closePromptTimer) {
-      clearTimeout(this.closePromptTimer);
-      this.closePromptTimer = null;
-    }
   }
 
   private async quitAfterCancellingUpdate(): Promise<void> {

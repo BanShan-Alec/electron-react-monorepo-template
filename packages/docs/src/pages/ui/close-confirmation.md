@@ -1,11 +1,11 @@
 ---
 title: 首次关闭确认（Close-confirmation）
-description: 首次关闭窗口时询问关闭窗口留在系统托盘或退出应用，记住选择并保留设置页反悔入口；10 秒无响应时不自动关闭。
+description: 首次关闭窗口时询问关闭窗口留在系统托盘或退出应用，记住选择并保留设置页反悔入口；无人响应时保持等待，不自动关闭。
 ---
 
 # 首次关闭确认（Close-confirmation）
 
-> **TL;DR**：首次关闭窗口时询问关闭窗口留在系统托盘或退出应用，记住选择并保留设置页反悔入口；10 秒无响应时不自动关闭。
+> **TL;DR**：首次关闭窗口时询问关闭窗口留在系统托盘或退出应用，记住选择并保留设置页反悔入口；无人响应时保持等待，不自动关闭。
 
 ## 要解决的坑
 
@@ -28,26 +28,26 @@ description: 首次关闭窗口时询问关闭窗口留在系统托盘或退出�
 
 选择「退出应用」时，若更新正在下载，会先取消下载再退出；只有选择「留在托盘」时下载才继续。
 
-### 弹窗与超时兜底
+### 弹窗与重复关闭
 
 → 源码：[packages/renderer/src/components/close-behavior/CloseBehaviorDialog/index.tsx](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/components/close-behavior/CloseBehaviorDialog/index.tsx) · [packages/preload/src/index.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/src/index.ts)
 
-renderer 使用 antd 弹窗：一句标题、一句说明，底部右下角两枚按钮「退出应用」与「留在托盘」。右上角 X 是取消入口；Esc 和遮罩都不能关闭弹窗，只有点击 X 才撤销本次询问。弹窗垂直居中，初始焦点放在「留在托盘」上。renderer 注册就绪后，主进程才推送待处理的关闭请求，避免启动早期事件丢失。
+renderer 使用 antd 弹窗：一句标题、一句说明，底部右下角两枚按钮「退出应用」与「留在托盘」。右上角 X 是取消入口；Esc 和遮罩都不能关闭弹窗，只有点击 X 才撤销本次询问。弹窗垂直居中，初始焦点放在「留在托盘」上。renderer 注册就绪时会补发一次待处理请求，避免启动早期事件丢失。
 
-关闭请求等待 10 秒后会记录仍在等待用户选择，但不会关闭窗口、退出应用或替用户记住偏好；弹窗继续等待。
+关闭请求没有超时兜底：无人响应时窗口保持打开，弹窗继续等待；弹窗打开期间重复点击关闭只会重新推送请求，由渲染层的单例守卫保证不会叠加弹窗。
 
 ## 怎么验证
 
 → 源码：[e2e/close-behavior.spec.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/e2e/close-behavior.spec.ts)
 
-端到端用例以全新 `userData` 冷启动，覆盖：选择关闭窗口并核对配置落盘、取消后仍存活且再次关闭会重问、等待超过 10 秒后窗口和弹窗仍可用并能继续完成选择。退出应用的主进程分支沿用现有关闭逻辑；改动主进程后运行 `pnpm test:e2e:build`，确保测试使用最新构建产物。
+端到端用例以全新 `userData` 冷启动，覆盖：选择关闭窗口并核对配置落盘、取消后仍存活且再次关闭会重问、弹窗打开时重复点关闭不会叠加、下载中选择退出会结束进程。改动主进程后运行 `pnpm test:e2e:build`，确保测试使用最新构建产物。
 
 ## 怎么抄
 
 1. 将「是否已经确认」与实际关闭策略分开持久化；已有设置项继续作为用户之后修改策略的入口。
 2. 在主进程窗口 `close` 事件里拦截首次关闭，窗口生命周期决策留在主进程。
 3. 通过 preload 暴露单向关闭请求订阅和受校验的选择回传，不直接向 renderer 暴露 Electron 对象。
-4. 给 renderer 事件订阅加就绪握手；无响应时保留待处理请求，不自动关闭或退出。
+4. 给 renderer 事件订阅加就绪握手；无响应时保留待处理请求，重复点击关闭重发请求，由渲染层保证单弹窗。
 5. 分别验证三种选择、配置落盘和超时后弹窗仍可操作。
 
 关闭行为依赖系统标题栏的窗口关闭事件；原生标题栏定制见[原生窗口体验（WCO）](/ui/wco)，窗口恢复与尺寸管理见[窗口位置与尺寸（Window-state）](/ui/window-state)。

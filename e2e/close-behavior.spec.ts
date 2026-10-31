@@ -56,6 +56,8 @@ test.describe('首次关闭确认', () => {
       await expect(ctx.page.locator('.ant-modal-centered')).toHaveCount(1);
       const trayAction = ctx.page.getByRole('button', { name: /留在托盘/ });
       await expect(trayAction).toBeFocused();
+      await closeHomeWindow(ctx.electronApp);
+      await expect(ctx.page.locator('.ant-modal')).toHaveCount(1);
       await trayAction.click();
 
       await expect.poll(() => homeWindowExists(ctx.electronApp), { timeout: 5_000 }).toBe(false);
@@ -95,36 +97,6 @@ test.describe('首次关闭确认', () => {
 
       await closeHomeWindow(ctx.electronApp);
       await expect(ctx.page.getByRole('dialog')).toBeVisible();
-    } finally {
-      await ctx.cleanup();
-    }
-  });
-
-  test('十秒无响应不关闭窗口或退出应用，弹窗仍可选择', async () => {
-    test.setTimeout(45_000);
-    const ctx = await launchElectronApp();
-    try {
-      await expect(ctx.page.locator('body')).toHaveClass(/app-startup-ready/, {
-        timeout: 10_000,
-      });
-      await setChineseLanguage(ctx.page);
-      await closeHomeWindow(ctx.electronApp);
-      await expect(ctx.page.getByRole('dialog')).toBeVisible();
-
-      await new Promise((resolve) => setTimeout(resolve, 11_000));
-      expect(await homeWindowExists(ctx.electronApp)).toBe(true);
-      const dialog = ctx.page.getByRole('dialog');
-      await expect(dialog).toBeVisible();
-      await expect(dialog).toContainText('关闭后应用留在托盘');
-
-      await ctx.page.getByRole('button', { name: /留在托盘/ }).click();
-      await expect.poll(() => homeWindowExists(ctx.electronApp), { timeout: 5_000 }).toBe(false);
-      const savedConfig = JSON.parse(
-        fs.readFileSync(path.join(ctx.tempUserDataDir, 'config.json'), 'utf-8'),
-      );
-      expect(savedConfig.minimizeToTray).toBe(true);
-      expect(savedConfig.closeBehaviorConfirmed).toBe(true);
-      expect(await ctx.electronApp.evaluate(({ app }) => app.isReady())).toBe(true);
     } finally {
       await ctx.cleanup();
     }
