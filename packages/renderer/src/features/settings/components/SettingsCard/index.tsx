@@ -87,12 +87,14 @@ const _SettingsCard = (props: ISettingsCardProps) => {
             />
           </div>
 
-          {/* 最小化到托盘 */}
+          {/* 关闭窗口后保留在托盘 */}
           <div className={TOGGLE_ROW_CLASS}>
             <label htmlFor="tray-switch" className="cursor-pointer select-none flex-1 pr-3">
-              <span className="text-foreground font-medium block">{t`点击关闭时最小化到托盘`}</span>
+              <span className="text-foreground font-medium block">
+                {t`关闭窗口后在系统托盘中保留应用`}
+              </span>
               <span className="text-xs text-foreground-secondary block mt-0.5">
-                {t`保持后台常驻与托盘图标交互`}
+                {t`关闭主窗口不会退出应用，可点击托盘图标重新打开。`}
               </span>
             </label>
             <Switch

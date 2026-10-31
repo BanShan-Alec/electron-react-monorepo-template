@@ -34,7 +34,7 @@ export class WindowManager implements AppModule {
   private readonly renderer: { path: string } | URL;
   private readonly openDevTools: boolean;
   private readonly keepState: boolean;
-  private closeFallbackTimer: ReturnType<typeof setTimeout> | null = null;
+  private closePromptTimer: ReturnType<typeof setTimeout> | null = null;
   private closeGuardBypass = false;
   private closeRequestPending = false;
   private rendererReady = false;
@@ -157,7 +157,7 @@ export class WindowManager implements AppModule {
     // 支持点击关闭按钮销毁主窗口并退守系统托盘及防僵尸退出闭环
     browserWindow.on('close', (event) => {
       if (appLifecycle.isQuitting) {
-        this.clearCloseFallback();
+        this.clearClosePromptTimer();
         this.closeRequestPending = false;
         try {
           getUpdaterWindowModule().destroy();
@@ -171,13 +171,9 @@ export class WindowManager implements AppModule {
         event.preventDefault();
         if (!this.closeRequestPending) {
           this.closeRequestPending = true;
-          this.closeFallbackTimer = setTimeout(() => {
-            this.closeFallbackTimer = null;
-            this.closeRequestPending = false;
-            if (browserWindow.isDestroyed()) return;
-            logger.warn('Close prompt timed out; falling back to configured behavior');
-            this.closeGuardBypass = true;
-            browserWindow.close();
+          this.closePromptTimer = setTimeout(() => {
+            this.closePromptTimer = null;
+            logger.info('Close prompt is still awaiting a user choice');
           }, 10_000);
           if (this.rendererReady) {
             sendToWindow(WINDOW_IDS.HOME, IPC_CHANNELS.WINDOW_CLOSE_REQUESTED, null);
@@ -247,7 +243,7 @@ export class WindowManager implements AppModule {
     const window = getWindow(WINDOW_IDS.HOME);
     if (!window || !this.closeRequestPending) return;
 
-    this.clearCloseFallback();
+    this.clearClosePromptTimer();
     this.closeRequestPending = false;
     getLogManager().scoped(this).info(`Close prompt answered: ${choice}`);
 
@@ -262,10 +258,10 @@ export class WindowManager implements AppModule {
     window.close();
   }
 
-  private clearCloseFallback(): void {
-    if (this.closeFallbackTimer) {
-      clearTimeout(this.closeFallbackTimer);
-      this.closeFallbackTimer = null;
+  private clearClosePromptTimer(): void {
+    if (this.closePromptTimer) {
+      clearTimeout(this.closePromptTimer);
+      this.closePromptTimer = null;
     }
   }
 

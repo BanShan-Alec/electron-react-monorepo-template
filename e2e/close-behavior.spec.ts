@@ -50,8 +50,12 @@ test.describe('首次关闭确认', () => {
       });
       await setChineseLanguage(ctx.page);
       await closeHomeWindow(ctx.electronApp);
-      await expect(ctx.page.getByRole('dialog')).toBeVisible();
-      await ctx.page.getByRole('button', { name: '关闭窗口', exact: true }).click();
+      const dialog = ctx.page.getByRole('dialog');
+      await expect(dialog).toBeVisible();
+      await expect(dialog).toContainText('应用会继续在系统托盘中运行');
+      const trayAction = ctx.page.getByRole('button', { name: /留在托盘/ });
+      await expect(trayAction).toBeFocused();
+      await trayAction.click();
 
       await expect.poll(() => homeWindowExists(ctx.electronApp), { timeout: 5_000 }).toBe(false);
       const savedConfig = JSON.parse(
@@ -74,8 +78,13 @@ test.describe('首次关闭确认', () => {
       });
       await setChineseLanguage(ctx.page);
       await closeHomeWindow(ctx.electronApp);
-      await expect(ctx.page.getByRole('dialog')).toBeVisible();
-      await ctx.page.getByRole('button', { name: '取消', exact: true }).click();
+      const dialog = ctx.page.getByRole('dialog');
+      await expect(dialog).toBeVisible();
+      await ctx.page.keyboard.press('Escape');
+      await expect(dialog).toBeVisible();
+      await ctx.page.locator('.ant-modal-mask').dispatchEvent('click');
+      await expect(dialog).toBeVisible();
+      await ctx.page.locator('.ant-modal-close').click();
       await expect(ctx.page.getByRole('dialog')).toBeHidden();
       expect(await homeWindowExists(ctx.electronApp)).toBe(true);
 
@@ -90,8 +99,8 @@ test.describe('首次关闭确认', () => {
     }
   });
 
-  test('弹窗无人响应时十秒后按既有配置放行', async () => {
-    test.setTimeout(20_000);
+  test('十秒无响应不关闭窗口或退出应用，弹窗仍可选择', async () => {
+    test.setTimeout(45_000);
     const ctx = await launchElectronApp();
     try {
       await expect(ctx.page.locator('body')).toHaveClass(/app-startup-ready/, {
@@ -101,12 +110,20 @@ test.describe('首次关闭确认', () => {
       await closeHomeWindow(ctx.electronApp);
       await expect(ctx.page.getByRole('dialog')).toBeVisible();
 
-      await expect.poll(() => homeWindowExists(ctx.electronApp), { timeout: 15_000 }).toBe(false);
+      await new Promise((resolve) => setTimeout(resolve, 11_000));
+      expect(await homeWindowExists(ctx.electronApp)).toBe(true);
+      const dialog = ctx.page.getByRole('dialog');
+      await expect(dialog).toBeVisible();
+      await expect(dialog).toContainText('应用会继续在系统托盘中运行');
+
+      await ctx.page.getByRole('button', { name: /留在托盘/ }).click();
+      await expect.poll(() => homeWindowExists(ctx.electronApp), { timeout: 5_000 }).toBe(false);
       const savedConfig = JSON.parse(
         fs.readFileSync(path.join(ctx.tempUserDataDir, 'config.json'), 'utf-8'),
       );
       expect(savedConfig.minimizeToTray).toBe(true);
-      expect(savedConfig.closeBehaviorConfirmed).toBe(false);
+      expect(savedConfig.closeBehaviorConfirmed).toBe(true);
+      expect(await ctx.electronApp.evaluate(({ app }) => app.isReady())).toBe(true);
     } finally {
       await ctx.cleanup();
     }
