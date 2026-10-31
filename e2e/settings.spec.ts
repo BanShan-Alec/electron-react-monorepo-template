@@ -160,7 +160,7 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
   test('用例 3：关闭窗口后保留托盘偏好与关闭行为', async ({ page, electronApp, electronCtx }) => {
     // 1. 验证整行/文本可点击性：点击托盘保留设置文案可触发开关
     const toggleRow = page.locator('.settings-toggle-row', {
-      hasText: '关闭窗口后在系统托盘中保留应用',
+      hasText: '关闭后保留在托盘',
     });
     const switchEl = toggleRow.locator('#tray-switch');
 
@@ -258,7 +258,7 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
 
     // 步骤 3: 修改 minimizeToTray 为 false
     const toggleRow = page.locator('.settings-toggle-row', {
-      hasText: 'Keep the app in the system tray after closing the window',
+      hasText: 'Keep in tray',
     });
     const switchEl = toggleRow.locator('#tray-switch');
     await toggleRow.locator('label[for="tray-switch"]').click();

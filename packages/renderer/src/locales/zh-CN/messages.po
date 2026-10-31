@@ -160,16 +160,12 @@ msgid "关闭"
 msgstr "关闭"
 
 #: src/features/settings/components/SettingsCard/index.tsx
-msgid "关闭主窗口不会退出应用，可点击托盘图标重新打开。"
-msgstr "关闭主窗口不会退出应用，可点击托盘图标重新打开。"
+msgid "关闭后保留在托盘"
+msgstr "关闭后保留在托盘"
 
 #: src/components/close-behavior/CloseBehaviorDialog/index.tsx
-msgid "关闭窗口后，应用会继续在系统托盘中运行。"
-msgstr "关闭窗口后，应用会继续在系统托盘中运行。"
-
-#: src/features/settings/components/SettingsCard/index.tsx
-msgid "关闭窗口后在系统托盘中保留应用"
-msgstr "关闭窗口后在系统托盘中保留应用"
+msgid "关闭后应用留在托盘，点击图标可重新打开。"
+msgstr "关闭后应用留在托盘，点击图标可重新打开。"
 
 #: src/components/close-behavior/CloseBehaviorDialog/index.tsx
 msgid "关闭窗口还是退出应用？"
@@ -495,6 +491,10 @@ msgstr "测速 Ping"
 #: src/features/settings/components/SettingsCard/index.tsx
 msgid "深色模式 (Dark)"
 msgstr "深色模式 (Dark)"
+
+#: src/features/settings/components/SettingsCard/index.tsx
+msgid "点击托盘图标可重新打开"
+msgstr "点击托盘图标可重新打开"
 
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "物理隔离 & Result 契约"

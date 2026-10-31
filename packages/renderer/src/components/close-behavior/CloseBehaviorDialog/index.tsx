@@ -27,7 +27,7 @@ const _CloseBehaviorDialog = (_props: IProps) => {
       if (currentModal) return;
       currentModal = modal.confirm({
         title: t`关闭窗口还是退出应用？`,
-        content: t`关闭窗口后，应用会继续在系统托盘中运行。`,
+        content: t`关闭后应用留在托盘，点击图标可重新打开。`,
         icon: null,
         centered: true,
         closable: true,

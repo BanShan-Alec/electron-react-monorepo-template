@@ -52,7 +52,7 @@ test.describe('首次关闭确认', () => {
       await closeHomeWindow(ctx.electronApp);
       const dialog = ctx.page.getByRole('dialog');
       await expect(dialog).toBeVisible();
-      await expect(dialog).toContainText('应用会继续在系统托盘中运行');
+      await expect(dialog).toContainText('关闭后应用留在托盘');
       await expect(ctx.page.locator('.ant-modal-centered')).toHaveCount(1);
       const trayAction = ctx.page.getByRole('button', { name: /留在托盘/ });
       await expect(trayAction).toBeFocused();
@@ -115,7 +115,7 @@ test.describe('首次关闭确认', () => {
       expect(await homeWindowExists(ctx.electronApp)).toBe(true);
       const dialog = ctx.page.getByRole('dialog');
       await expect(dialog).toBeVisible();
-      await expect(dialog).toContainText('应用会继续在系统托盘中运行');
+      await expect(dialog).toContainText('关闭后应用留在托盘');
 
       await ctx.page.getByRole('button', { name: /留在托盘/ }).click();
       await expect.poll(() => homeWindowExists(ctx.electronApp), { timeout: 5_000 }).toBe(false);
