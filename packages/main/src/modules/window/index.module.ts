@@ -1,11 +1,10 @@
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import { WINDOW_IDS } from '@app/shared/constants/windows';
 import type { CloseBehaviorChoice } from '@app/shared/schemas/close-behavior';
-import { app, BrowserWindow, Notification, screen } from 'electron';
+import { app, BrowserWindow, screen } from 'electron';
 import type { AppInitConfig } from '../../AppInitConfig';
 import type { AppModule } from '../../AppModule';
 import { getPackedEnvArgument } from '../../env';
-import { mainMessage } from '../../i18n';
 import { appLifecycle } from '../../lifecycle';
 import type { ModuleContext } from '../../ModuleContext';
 import { updaterService } from '../../services/updater.service';
@@ -23,6 +22,8 @@ import {
 import { attachWindowsWindowRepaint } from './window-repaint';
 import { MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, resolveWindowBounds } from './window-size';
 
+const QUIT_CANCEL_TIMEOUT_MS = 2000;
+
 export interface WindowManagerOptions {
   initConfig: AppInitConfig;
   openDevTools?: boolean;
@@ -38,6 +39,7 @@ export class WindowManager implements AppModule {
   private closeGuardBypass = false;
   private closeRequestPending = false;
   private rendererReady = false;
+  private quitAfterCancelPending = false;
 
   constructor({ initConfig, openDevTools = false, keepState = true }: WindowManagerOptions) {
     this.preload = initConfig.preload;
@@ -193,29 +195,10 @@ export class WindowManager implements AppModule {
         logger.info('Home window closed and destroyed -> running in tray');
       } else {
         logger.info('Home window is closing');
-        const updaterState = updaterService.getState();
-        if (updaterState === 'downloading') {
-          logger.info(
-            'Updater is downloading, keeping updater in background with watchdog (Strategy A)',
-          );
-          try {
-            getUpdaterWindowModule().close();
-          } catch {}
-          if (Notification.isSupported()) {
-            new Notification({
-              title: app.getName(),
-              body: mainMessage(configStore.get('language'), 'notifBackgroundDownload'),
-            }).show();
-          }
-          updaterService.startOrphanWatchdog();
-        } else {
-          logger.info(
-            'Home window closed and updater not downloading -> destroying updater and quitting',
-          );
-          try {
-            getUpdaterWindowModule().destroy();
-          } catch {}
-          app.quit();
+        event.preventDefault();
+        if (!this.quitAfterCancelPending) {
+          this.quitAfterCancelPending = true;
+          void this.quitAfterCancellingUpdate();
         }
       }
     });
@@ -263,6 +246,22 @@ export class WindowManager implements AppModule {
       clearTimeout(this.closePromptTimer);
       this.closePromptTimer = null;
     }
+  }
+
+  private async quitAfterCancellingUpdate(): Promise<void> {
+    const logger = getLogManager().scoped(this);
+    try {
+      await Promise.race([
+        updaterService.cancel(),
+        new Promise<void>((resolve) => setTimeout(resolve, QUIT_CANCEL_TIMEOUT_MS)),
+      ]);
+    } catch (err) {
+      logger.warn('Failed to cancel update download before quitting:', err);
+    }
+    try {
+      getUpdaterWindowModule().destroy();
+    } catch {}
+    app.quit();
   }
 
   async restoreOrCreateWindow(show = false) {

@@ -29,6 +29,7 @@ const _CloseBehaviorDialog = (_props: IProps) => {
         title: t`关闭窗口还是退出应用？`,
         content: t`关闭窗口后，应用会继续在系统托盘中运行。`,
         icon: null,
+        centered: true,
         closable: true,
         mask: { enabled: true, closable: false },
         keyboard: false,

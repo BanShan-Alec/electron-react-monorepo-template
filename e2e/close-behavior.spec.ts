@@ -53,6 +53,7 @@ test.describe('首次关闭确认', () => {
       const dialog = ctx.page.getByRole('dialog');
       await expect(dialog).toBeVisible();
       await expect(dialog).toContainText('应用会继续在系统托盘中运行');
+      await expect(ctx.page.locator('.ant-modal-centered')).toHaveCount(1);
       const trayAction = ctx.page.getByRole('button', { name: /留在托盘/ });
       await expect(trayAction).toBeFocused();
       await trayAction.click();
@@ -124,6 +125,33 @@ test.describe('首次关闭确认', () => {
       expect(savedConfig.minimizeToTray).toBe(true);
       expect(savedConfig.closeBehaviorConfirmed).toBe(true);
       expect(await ctx.electronApp.evaluate(({ app }) => app.isReady())).toBe(true);
+    } finally {
+      await ctx.cleanup();
+    }
+  });
+
+  test('下载中选择退出应用会取消下载并结束进程', async () => {
+    const ctx = await launchElectronApp();
+    try {
+      await expect(ctx.page.locator('body')).toHaveClass(/app-startup-ready/, {
+        timeout: 10_000,
+      });
+      await setChineseLanguage(ctx.page);
+      await ctx.electronApp.evaluate(() => {
+        // biome-ignore lint/suspicious/noExplicitAny: internal updater mock hook
+        (globalThis as any).__updaterMock?.emit({ type: 'progress', percent: 30 });
+      });
+      const state = await ctx.electronApp.evaluate(() => {
+        // biome-ignore lint/suspicious/noExplicitAny: internal updater service hook
+        return (globalThis as any).__updaterService?.getState();
+      });
+      expect(state).toBe('downloading');
+
+      await closeHomeWindow(ctx.electronApp);
+      await expect(ctx.page.getByRole('dialog')).toBeVisible();
+      await ctx.page.getByRole('button', { name: '退出应用', exact: true }).click();
+
+      await ctx.electronApp.waitForEvent('close', { timeout: 10_000 });
     } finally {
       await ctx.cleanup();
     }

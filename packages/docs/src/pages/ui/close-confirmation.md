@@ -19,18 +19,20 @@ description: 首次关闭窗口时询问关闭窗口留在系统托盘或退出�
 
 主进程在窗口 `close` 事件中检查 `closeBehaviorConfirmed`。首次关闭时调用 `preventDefault()`，再通过受限 preload API 通知渲染层展示选择框。关闭前的偏好保存在现有本地配置中：
 
-- 选择「关闭窗口并留在托盘」会保存 `minimizeToTray: true`。
+- 选择「留在托盘」会保存 `minimizeToTray: true`。
 - 选择「退出应用」会保存 `minimizeToTray: false`。
 - 两个选择都会保存 `closeBehaviorConfirmed: true`，之后继续复用既有关闭逻辑。
 - 取消不会写入偏好，再次关闭时会重新询问。
 
 主窗口关闭后会销毁窗口实例，应用继续驻留系统托盘；点击托盘图标会重建并打开主窗口。设置页的「关闭窗口后在系统托盘中保留应用」开关仍可随时修改该偏好；用户操作开关也会标记关闭行为已确认。
 
+选择「退出应用」时，若更新正在下载，会先取消下载再退出；只有选择「留在托盘」时下载才继续。
+
 ### 弹窗与超时兜底
 
 → 源码：[packages/renderer/src/components/close-behavior/CloseBehaviorDialog/index.tsx](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/components/close-behavior/CloseBehaviorDialog/index.tsx) · [packages/preload/src/index.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/src/index.ts)
 
-renderer 使用 antd 弹窗：一句标题、一句说明，底部右下角两枚按钮「退出应用」与「留在托盘」。右上角 X 是取消入口；Esc 和遮罩都不能关闭弹窗，只有点击 X 才撤销本次询问。初始焦点放在“留在托盘”上。renderer 注册就绪后，主进程才推送待处理的关闭请求，避免启动早期事件丢失。
+renderer 使用 antd 弹窗：一句标题、一句说明，底部右下角两枚按钮「退出应用」与「留在托盘」。右上角 X 是取消入口；Esc 和遮罩都不能关闭弹窗，只有点击 X 才撤销本次询问。弹窗垂直居中，初始焦点放在「留在托盘」上。renderer 注册就绪后，主进程才推送待处理的关闭请求，避免启动早期事件丢失。
 
 关闭请求等待 10 秒后会记录仍在等待用户选择，但不会关闭窗口、退出应用或替用户记住偏好；弹窗继续等待。
 
