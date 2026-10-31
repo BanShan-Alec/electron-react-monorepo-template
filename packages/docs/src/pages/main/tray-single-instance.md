@@ -51,17 +51,17 @@ browserWindow.on('close', () => {
   const shouldMinimizeToTray = configStore.get('minimizeToTray');
 
   if (shouldMinimizeToTray) {
-    // 用户开启了关闭时最小化到托盘：允许窗口自然销毁以彻底释放内存，
+    // 用户开启了关闭后保留在托盘：允许窗口自然销毁以彻底释放内存，
     // 不拦截 close 事件（不 event.preventDefault()），亦不触发 app.quit()，
     // 应用进程继续保留系统托盘常驻。
     logger.info('Home window closed and destroyed -> running in tray');
   } else {
-    // ...更新下载中退守后台 / 无后台任务则 app.quit()
+    // 退出应用：先取消正在下载的更新，再 app.quit()
   }
 });
 ```
 
-`minimizeToTray` 默认 `true`（→ 源码：[packages/shared/src/schemas/config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/schemas/config.ts)）；不拦截 close 事件而是让窗口自然销毁，内存彻底释放，比 `hide()` 常驻更干净。即便不开托盘常驻，更新正在下载时也会退守后台并弹系统通知，孤儿进程有 watchdog 收尾。
+`minimizeToTray` 默认 `true`（→ 源码：[packages/shared/src/schemas/config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/schemas/config.ts)）；不拦截 close 事件而是让窗口自然销毁，内存彻底释放，比 `hide()` 常驻更干净。未开启托盘常驻时，关闭最后一个窗口会先取消正在下载的更新再退出，不会留下后台进程；下次启动重新检查并下载。
 
 这项偏好的加载、校验与落盘见 [配置持久化（Electron-store）](/main/config-persistence)。
 

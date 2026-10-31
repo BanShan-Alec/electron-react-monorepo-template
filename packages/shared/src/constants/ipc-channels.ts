@@ -41,6 +41,11 @@ export const IPC_CHANNELS = {
   // 跨窗口配置广播 (Config broadcast)
   CONFIG_EVENT_CHANGED: 'config:event:changed',
 
+  // 关闭行为询问 (Close behavior prompt)
+  WINDOW_CLOSE_REQUESTED: 'window:event:close-requested',
+  WINDOW_CLOSE_READY: 'window:close-ready',
+  WINDOW_CLOSE_RESPOND: 'window:close-respond',
+
   // 启动就绪契约 (Startup readiness)：引导期快照拉取 + 主进程就绪单向推送
   STARTUP_GET_SNAPSHOT: 'startup:get-snapshot',
   STARTUP_EVENT_MAIN_READY: 'startup:event:main-ready',

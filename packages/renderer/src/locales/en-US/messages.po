@@ -155,13 +155,21 @@ msgstr "Save failed: {detail}"
 msgid "保存路径已选定: {filePath}"
 msgstr "Save path selected: {filePath}"
 
-#: src/features/settings/components/SettingsCard/index.tsx
-msgid "保持后台常驻与托盘图标交互"
-msgstr "Keep running in the background"
-
 #: src/features/updater/index.tsx
 msgid "关闭"
 msgstr "Close"
+
+#: src/features/settings/components/SettingsCard/index.tsx
+msgid "关闭后保留在托盘"
+msgstr "Keep in tray"
+
+#: src/components/close-behavior/CloseBehaviorDialog/index.tsx
+msgid "关闭后应用留在托盘，点击图标可重新打开。"
+msgstr "The app stays in the tray; click its icon to reopen."
+
+#: src/components/close-behavior/CloseBehaviorDialog/index.tsx
+msgid "关闭窗口还是退出应用？"
+msgstr "Close the window or quit the app?"
 
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 #: src/features/usb/components/UsbCard/index.tsx
@@ -336,6 +344,10 @@ msgstr "Open log folder"
 msgid "打开更新窗口失败"
 msgstr "Couldn't open the update window"
 
+#: src/components/close-behavior/CloseBehaviorDialog/index.tsx
+msgid "提交关闭选择失败"
+msgstr "Couldn't save the close choice"
+
 #: src/features/calculator/components/CalculatorCard/index.tsx
 msgid "提示：尝试输入 B = 0 并选择除法 (÷) 触发服务端异常拦截"
 msgstr "Tip: set B = 0 and divide to trigger a main process error"
@@ -481,8 +493,8 @@ msgid "深色模式 (Dark)"
 msgstr "Dark"
 
 #: src/features/settings/components/SettingsCard/index.tsx
-msgid "点击关闭时最小化到托盘"
-msgstr "Minimize to tray on close"
+msgid "点击托盘图标可重新打开"
+msgstr "Click the tray icon to reopen."
 
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "物理隔离 & Result 契约"
@@ -503,6 +515,10 @@ msgstr "Selection cancelled"
 #: src/features/settings/components/SettingsCard/index.tsx
 msgid "界面语言 (Language)"
 msgstr "Language"
+
+#: src/components/close-behavior/CloseBehaviorDialog/index.tsx
+msgid "留在托盘"
+msgstr "Keep in tray"
 
 #: src/features/updater/index.tsx
 msgid "稍后安装"
@@ -599,6 +615,10 @@ msgstr "IPC ping"
 #: src/features/logging/components/LoggingCard/index.tsx
 msgid "进程隔离落盘 (main.log / renderer-home.log) 与 5MB 自动轮转"
 msgstr "Process-isolated logging, 5MB rotation"
+
+#: src/components/close-behavior/CloseBehaviorDialog/index.tsx
+msgid "退出应用"
+msgstr "Quit app"
 
 #: src/features/native-dialogs/components/DialogCard/index.tsx
 msgid "选择文件"

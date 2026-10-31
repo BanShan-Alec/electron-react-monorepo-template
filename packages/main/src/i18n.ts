@@ -16,9 +16,7 @@ interface MainMessages {
   trayCheckUpdates: string;
   trayQuit: string;
   trayTooltipSuffix: string;
-  notifDownloadTimeout: string;
   notifDownloadReady: string;
-  notifBackgroundDownload: string;
 }
 
 const MAIN_MESSAGES: Record<SupportedLocale, MainMessages> = {
@@ -27,18 +25,14 @@ const MAIN_MESSAGES: Record<SupportedLocale, MainMessages> = {
     trayCheckUpdates: '检查更新',
     trayQuit: '退出应用',
     trayTooltipSuffix: '桌面客户端',
-    notifDownloadTimeout: '后台更新下载超时，已中止任务。',
     notifDownloadReady: '新版本已下载完毕，点击立即安装。',
-    notifBackgroundDownload: '应用已关闭，正在后台下载更新...',
   },
   'en-US': {
     trayShowMainWindow: 'Show main window',
     trayCheckUpdates: 'Check for updates',
     trayQuit: 'Quit',
     trayTooltipSuffix: 'Desktop client',
-    notifDownloadTimeout: 'Background update timed out. Task aborted.',
     notifDownloadReady: 'Update downloaded. Click to install.',
-    notifBackgroundDownload: 'App closed. Downloading the update in the background…',
   },
 };
 
