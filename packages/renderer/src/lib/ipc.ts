@@ -1,4 +1,5 @@
 import { APP_ENV } from '@app/shared/constants/env';
+import type { IpcCallOptions } from '@app/shared/types/telemetry';
 import type { Result } from '@shared/types/result';
 
 /**
@@ -34,11 +35,12 @@ function logIpc(
   durationMs: number,
   error?: unknown,
   traceId?: string,
+  recordSuccess = true,
 ) {
   const isDev = window.__APP_ENV__?.mode === APP_ENV.DEVELOPMENT;
   const cost = `${durationMs.toFixed(1)}ms`;
   if (ok) {
-    if (isDev) {
+    if (isDev && recordSuccess) {
       console.info(`${IPC_LOG_PREFIX} ${channel} ok ${cost}`);
     }
     return;
@@ -75,16 +77,22 @@ export async function callIpc<TData, TParams extends unknown[]>(
   channel: string,
   service: IpcService<TData, TParams>,
   args: TParams,
+  options: IpcCallOptions = {},
 ): Promise<TData> {
   const startedAt = performance.now();
   let traceId: string | undefined;
   try {
-    const res = await service(...args);
+    const callArgs: unknown[] = [...args];
+    if (options.recordSuccess === false) {
+      while (callArgs.length < Math.max(0, service.length - 1)) callArgs.push(undefined);
+      callArgs.push({ recordSuccess: false });
+    }
+    const res = await service(...(callArgs as TParams));
     traceId = res.traceId;
     if (!res.success) {
       throw new IpcError(res.error, res.code, res.traceId);
     }
-    logIpc(channel, true, performance.now() - startedAt, undefined, traceId);
+    logIpc(channel, true, performance.now() - startedAt, undefined, traceId, options.recordSuccess);
     return res.data;
   } catch (error) {
     const effectiveTraceId = error instanceof IpcError ? (error.traceId ?? traceId) : traceId;

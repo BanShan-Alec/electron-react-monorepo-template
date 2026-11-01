@@ -81,6 +81,51 @@ describe('Tracer Core', () => {
     expect(records[0]).toBe(record);
   });
 
+  it('omits successful spans when success recording is disabled', async () => {
+    const tracer = new Tracer();
+    const records: string[] = [];
+    tracer.onSpanEnd((record) => records.push(record.name));
+
+    await tracer.startActiveSpan(
+      'ipc.receive:system:get-info',
+      { recordSuccess: false },
+      () => 'ok',
+    );
+
+    expect(records).toEqual([]);
+  });
+
+  it('still records errors when success recording is disabled', async () => {
+    const tracer = new Tracer();
+    const records: string[] = [];
+    tracer.onSpanEnd((record) => records.push(`${record.name}:${record.status}`));
+
+    await expect(
+      tracer.startActiveSpan('ipc.receive:system:get-info', { recordSuccess: false }, () => {
+        throw new Error('failed');
+      }),
+    ).rejects.toThrow('failed');
+
+    expect(records).toEqual(['ipc.receive:system:get-info:ERROR']);
+  });
+
+  it('still records a Result failure when success recording is disabled', async () => {
+    const tracer = new Tracer();
+    const statuses: string[] = [];
+    tracer.onSpanEnd((record) => statuses.push(record.status));
+
+    await tracer.startActiveSpan(
+      'ipc.receive:system:get-info',
+      { recordSuccess: false },
+      (span) => {
+        span.setStatus('ERROR');
+        return { success: false };
+      },
+    );
+
+    expect(statuses).toEqual(['ERROR']);
+  });
+
   it('extracts and injects W3C traceparent correctly', () => {
     const tracer = new Tracer();
     const carrier = {

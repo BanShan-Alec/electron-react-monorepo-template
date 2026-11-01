@@ -11,6 +11,7 @@ import type { FileDialogResult, SaveFileDialogResult } from './dialog';
 import type { Result } from './result';
 import type { StartupGateSnapshot, StartupMainReadyPayload } from './startup';
 import type { PingResult, SystemInfo } from './system';
+import type { IpcCallOptions } from './telemetry';
 import type { UpdaterProgress, UpdaterSnapshot } from './updater';
 import type { UsbDeviceItem } from './usb';
 
@@ -19,50 +20,68 @@ import type { UsbDeviceItem } from './usb';
  */
 export interface ElectronApi {
   usb: {
-    getDeviceList: () => Promise<Result<UsbDeviceItem[]>>;
+    getDeviceList: (options?: IpcCallOptions) => Promise<Result<UsbDeviceItem[]>>;
   };
   system: {
-    ping: () => Promise<Result<PingResult>>;
-    getSystemInfo: () => Promise<Result<SystemInfo>>;
+    ping: (options?: IpcCallOptions) => Promise<Result<PingResult>>;
+    getSystemInfo: (options?: IpcCallOptions) => Promise<Result<SystemInfo>>;
     getPlatform: () => string;
   };
   counter: {
-    get: () => Promise<Result<CounterResult>>;
-    increment: (input?: StepInput) => Promise<Result<CounterResult>>;
-    decrement: (input?: StepInput) => Promise<Result<CounterResult>>;
-    reset: () => Promise<Result<CounterResult>>;
+    get: (options?: IpcCallOptions) => Promise<Result<CounterResult>>;
+    increment: (input?: StepInput, options?: IpcCallOptions) => Promise<Result<CounterResult>>;
+    decrement: (input?: StepInput, options?: IpcCallOptions) => Promise<Result<CounterResult>>;
+    reset: (options?: IpcCallOptions) => Promise<Result<CounterResult>>;
   };
   calculator: {
-    calculate: (input: CalculateInput) => Promise<Result<CalculateResult>>;
+    calculate: (
+      input: CalculateInput,
+      options?: IpcCallOptions,
+    ) => Promise<Result<CalculateResult>>;
   };
   config: {
-    get: () => Promise<Result<AppConfig>>;
-    update: (input: UpdateConfigInput) => Promise<Result<AppConfig>>;
-    reset: () => Promise<Result<AppConfig>>;
+    get: (options?: IpcCallOptions) => Promise<Result<AppConfig>>;
+    update: (input: UpdateConfigInput, options?: IpcCallOptions) => Promise<Result<AppConfig>>;
+    reset: (options?: IpcCallOptions) => Promise<Result<AppConfig>>;
     onChanged?: (cb: (config: AppConfig) => void) => () => void;
   };
   diagnostics: {
-    log: (input: LogInput) => Promise<Result<{ success: boolean }>>;
-    openLogFolder: () => Promise<Result<OpenLogFolderResult>>;
-    performAction: (input: PerformActionInput) => Promise<Result<ActionResult>>;
+    log: (input: LogInput, options?: IpcCallOptions) => Promise<Result<{ success: boolean }>>;
+    openLogFolder: (options?: IpcCallOptions) => Promise<Result<OpenLogFolderResult>>;
+    performAction: (
+      input: PerformActionInput,
+      options?: IpcCallOptions,
+    ) => Promise<Result<ActionResult>>;
   };
   dialog: {
-    openFile: (input?: OpenFileInput) => Promise<Result<FileDialogResult>>;
-    openDirectory: (input?: OpenDirectoryInput) => Promise<Result<FileDialogResult>>;
-    saveFile: (input?: SaveFileInput) => Promise<Result<SaveFileDialogResult>>;
+    openFile: (
+      input?: OpenFileInput,
+      options?: IpcCallOptions,
+    ) => Promise<Result<FileDialogResult>>;
+    openDirectory: (
+      input?: OpenDirectoryInput,
+      options?: IpcCallOptions,
+    ) => Promise<Result<FileDialogResult>>;
+    saveFile: (
+      input?: SaveFileInput,
+      options?: IpcCallOptions,
+    ) => Promise<Result<SaveFileDialogResult>>;
   };
   shell: {
-    showItemInFolder: (input: ShowItemInFolderInput) => Promise<Result<{ success: boolean }>>;
-    openExternal: (url: string) => Promise<Result<{ success: boolean }>>;
+    showItemInFolder: (
+      input: ShowItemInFolderInput,
+      options?: IpcCallOptions,
+    ) => Promise<Result<{ success: boolean }>>;
+    openExternal: (url: string, options?: IpcCallOptions) => Promise<Result<{ success: boolean }>>;
   };
   updater: {
-    getState: () => Promise<Result<UpdaterSnapshot>>;
-    check: () => Promise<Result<UpdaterSnapshot>>;
-    download: () => Promise<Result<UpdaterSnapshot>>;
-    cancel: () => Promise<Result<UpdaterSnapshot>>;
-    install: () => Promise<Result<{ success: boolean }>>;
-    openWindow: () => Promise<Result<{ success: boolean }>>;
-    closeWindow: () => Promise<Result<{ success: boolean }>>;
+    getState: (options?: IpcCallOptions) => Promise<Result<UpdaterSnapshot>>;
+    check: (options?: IpcCallOptions) => Promise<Result<UpdaterSnapshot>>;
+    download: (options?: IpcCallOptions) => Promise<Result<UpdaterSnapshot>>;
+    cancel: (options?: IpcCallOptions) => Promise<Result<UpdaterSnapshot>>;
+    install: (options?: IpcCallOptions) => Promise<Result<{ success: boolean }>>;
+    openWindow: (options?: IpcCallOptions) => Promise<Result<{ success: boolean }>>;
+    closeWindow: (options?: IpcCallOptions) => Promise<Result<{ success: boolean }>>;
     /** 返回取消订阅函数，渲染层必须在 useEffect cleanup 中调用 */
     onStateChanged: (cb: (s: UpdaterSnapshot) => void) => () => void;
     onProgressChanged: (cb: (p: UpdaterProgress) => void) => () => void;
@@ -75,5 +94,9 @@ export interface ElectronApi {
   };
   // 遵循 specs-electron-fullstack / renderer/ipc-consumption.md 安全规范
   getPathForFile: (file: File) => string;
-  invokeTraced?: <R = unknown, T = unknown>(channel: string, data?: T) => Promise<R>;
+  invokeTraced?: <R = unknown, T = unknown>(
+    channel: string,
+    data?: T,
+    options?: IpcCallOptions,
+  ) => Promise<R>;
 }
