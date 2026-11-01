@@ -82,4 +82,22 @@
       box-shadow 200ms ease,
       border-color 200ms ease;
   }
+
+  .usb-scroll-fade {
+    position: absolute;
+    inset-inline: 0;
+    height: 1.25rem;
+    pointer-events: none;
+    transition: opacity 120ms linear;
+  }
+
+  .usb-scroll-fade-top {
+    top: 0;
+    background: linear-gradient(to bottom, var(--color-bg-container), transparent);
+  }
+
+  .usb-scroll-fade-bottom {
+    bottom: 0;
+    background: linear-gradient(to top, var(--color-bg-container), transparent);
+  }
 }
