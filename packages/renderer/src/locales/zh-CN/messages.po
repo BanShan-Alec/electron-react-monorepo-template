@@ -123,6 +123,10 @@ msgstr "主进程堆内存占用"
 msgid "主进程时间"
 msgstr "主进程时间"
 
+#: src/features/architecture/hooks/useArchitecture.ts
+msgid "代码已复制"
+msgstr "代码已复制"
+
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "代码耦合 & 契约混乱"
 msgstr "代码耦合 & 契约混乱"
@@ -222,6 +226,14 @@ msgstr "基于 C++ 原生库 node-usb 探针"
 #: src/features/counter/components/CounterCard/index.tsx
 msgid "基于主进程状态原子操作与响应式更新"
 msgstr "基于主进程状态原子操作与响应式更新"
+
+#: src/features/architecture/components/ArchitectureView/index.tsx
+msgid "复制代码"
+msgstr "复制代码"
+
+#: src/features/architecture/hooks/useArchitecture.ts
+msgid "复制代码失败"
+msgstr "复制代码失败"
 
 #: src/features/settings/components/SettingsCard/index.tsx
 msgid "外观主题 (Theme)"

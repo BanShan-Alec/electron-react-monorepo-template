@@ -123,6 +123,10 @@ msgstr "Heap usage"
 msgid "主进程时间"
 msgstr "Main process time"
 
+#: src/features/architecture/hooks/useArchitecture.ts
+msgid "代码已复制"
+msgstr "Code copied"
+
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "代码耦合 & 契约混乱"
 msgstr "Coupled and messy"
@@ -222,6 +226,14 @@ msgstr "Native node-usb probe"
 #: src/features/counter/components/CounterCard/index.tsx
 msgid "基于主进程状态原子操作与响应式更新"
 msgstr "Atomic state in the main process"
+
+#: src/features/architecture/components/ArchitectureView/index.tsx
+msgid "复制代码"
+msgstr "Copy code"
+
+#: src/features/architecture/hooks/useArchitecture.ts
+msgid "复制代码失败"
+msgstr "Couldn't copy code"
 
 #: src/features/settings/components/SettingsCard/index.tsx
 msgid "外观主题 (Theme)"
