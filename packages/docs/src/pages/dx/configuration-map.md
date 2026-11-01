@@ -22,7 +22,7 @@ description: 一个值该改哪、改完何时生效、有什么副作用——�
 | 应用身份 / OTA 坐标 | 根 `package.json` | 应用名、appId、版本、GitHub 仓库 | 构建期 + 打包期 |
 | 构建期基础设施 | `build/*.ts` | 环境加载、路径、external、Sentry、打包 | 构建期 |
 | 环境差异 | `.env` / shell / CI | DSN、发布通道、API 地址、阈值 | 构建期内联 + 运行时覆盖 |
-| 开发态编排 | `scripts/dev.ts` 的 `config` | dev server 端口、CDP/inspect 开关、watch 与重启 | `pnpm start` / `start:dist` |
+| 开发态编排 | `scripts/dev.ts` 的 `config` | dev server 端口、CDP/inspect 开关、watch 与重启 | `pnpm dev` / `preview` |
 | 运行时常量 | `packages/shared/src/constants`、`packages/main/src/constants` | 窗口几何、启动时值、超时、日志策略 | 编译进产物 |
 | 用户偏好 | `userData/config.json` | 主题、语言、托盘、自动更新 | 运行时持久化 |
 
@@ -42,7 +42,7 @@ description: 一个值该改哪、改完何时生效、有什么副作用——�
 | 主进程新依赖 | `pnpm --filter @app/main add [-D]`（详见[依赖管理（Monorepo）](/engineering/dependency-management) FAQ） | 默认内联；需运行时 `require` 的加入 `external` |
 | 外链白名单 | `packages/shared/src/constants/security.ts` | 重建 main |
 | 打包平台 / 图标 | `build/electron-builder.ts`、`build/resources/` | 重新打包 |
-| Vite dev server 端口 | `scripts/dev.ts` 的 `config.rendererPort` | 重启 `pnpm start` |
+| Vite dev server 端口 | `scripts/dev.ts` 的 `config.rendererPort` | 重启 `pnpm dev` |
 | CDP 端口 | `scripts/dev.ts` 的 `config.rendererCdpPort`（注释即关闭） | 重启 |
 | 主进程 inspect 端口 | `scripts/dev.ts` 的 `config.mainInspectPort`（默认注释） | 重启 |
 | 开发 / 生产构建模式 | `package.json` scripts 的 `MODE` | 重启 / 重新构建 |
@@ -61,7 +61,7 @@ description: 一个值该改哪、改完何时生效、有什么副作用——�
 | `version` | 安装包版本、Sentry release | 走 `changelogen` 发版流程（见[发版流水线（Changelogen）](/delivery/release-pipeline)） |
 | `repository.url` | OTA 发布源（owner/repo） | 自动解析，不再支持 `.env` 覆盖 |
 
-怎么配：直接改根 `package.json`，然后 `pnpm build:app`。开发态窗口标题也会跟着变——标题由 renderer 在构建期注入 `productName`。
+怎么配：直接改根 `package.json`，然后 `pnpm build:win`（macOS / Linux 换成 `build:mac` / `build:linux`）。开发态窗口标题也会跟着变——标题由 renderer 在构建期注入 `productName`。
 
 ### 开发态配置
 
@@ -73,13 +73,13 @@ description: 一个值该改哪、改完何时生效、有什么副作用——�
 | `rendererCdpPort` | `9222` | 传给 Electron 的 `--remote-debugging-port`，供外部 CDP 客户端连接 |
 | `mainInspectPort` | 默认注释关闭（示例 `9229`） | 主进程 `--inspect-brk` 断点端口；注释掉即关闭 |
 
-- **MODE**：`pnpm start` 注入 `development`，`pnpm start:dist` 注入 `production`；Vite build mode 跟随 `MODE`（机制见[开发编排（Vite + Electron）](/dx/dev-orchestration)）。
-- **端口占用**：启动前逐个探测；交互环境提示是否结束占用进程，非交互环境直接失败，不会静默复用旧实例（见[启动预检（Single-instance + Port）](/dx/startup-preflight)）。
+- **MODE**：`pnpm dev` 注入 `development`，`pnpm preview` 注入 `production`；Vite build mode 跟随 `MODE`（机制见[开发编排（Vite + Electron）](/dx/dev-orchestration)）。`rendererPort` 只在开发态使用——preview 一次性构建后直接启动，不起 dev server。
+- **端口占用**：开发态启动前逐个探测；交互环境提示是否结束占用进程，非交互环境直接失败，不会静默复用旧实例（见[启动预检（Single-instance + Port）](/dx/startup-preflight)）。
 - **调试开关**：`mainInspectPort`、`rendererCdpPort` 注释掉即关闭对应能力，启动日志与命令行参数会一起跳过（见[远程调试端口（CDP）](/dx/debug-port)）。
 
 ### 运行时常量 vs 用户偏好
 
-- **运行时常量**（`packages/shared/src/constants`、`packages/main/src/constants`）直接编译进产物：改完必须重建对应包，`pnpm start` 下的 HMR 不会自动带上主进程常量。shared 变更会经依赖传递，建议 `pnpm build` 或至少重建 main / renderer。
+- **运行时常量**（`packages/shared/src/constants`、`packages/main/src/constants`）直接编译进产物：改完必须重建对应包，`pnpm dev` 下的 HMR 不会自动带上主进程常量。shared 变更会经依赖传递，建议 `pnpm build` 或至少重建 main / renderer。
 - **用户偏好**（`ConfigStore`，引擎 electron-store）通过设置页 / IPC 修改，持久化在 `userData/config.json`，运行时生效、无需重建；读盘由 shared 的 zod schema 整体校验，损坏即重置默认值（见[配置持久化（Electron-store）](/main/config-persistence)）。
 - `userData` 目录名由 `productName` 派生——这也是改显示名会「搬家」的原因。
 
@@ -87,7 +87,7 @@ description: 一个值该改哪、改完何时生效、有什么副作用——�
 
 以「改三类配置」为例，三步：
 
-1. **改身份**：直接改根 `package.json` 的 `name` / `productName` / `appId` / `version` / `repository.url`，然后 `pnpm build:app`；`name` 必须全小写中划线，`verify:prebuild` 会拦。
+1. **改身份**：直接改根 `package.json` 的 `name` / `productName` / `appId` / `version` / `repository.url`，然后 `pnpm build:win`（macOS / Linux 换成对应平台命令）；`name` 必须全小写中划线，`verify:prebuild` 会拦。
 2. **改环境差异**：构建期默认值写 `.env`；运行时覆盖用 `APP_<KEY>`（如 `APP_API_BASE_URL`）；渲染层统一读 `window.__APP_ENV__`（注入链路见[环境变量管理（Dotenv）](/engineering/env-vars)）。
 3. **改开发编排**：端口与调试开关改 `scripts/dev.ts` 的 `config`；`MODE` 由 `package.json` scripts 注入，不要写进 `.env`。
 
@@ -95,6 +95,6 @@ description: 一个值该改哪、改完何时生效、有什么副作用——�
 
 - `.env` 是构建期默认值，不是运行时读取文件；运行时想覆盖必须用 `APP_<KEY>`。
 - 渲染进程不读 `.env`（Vite 只暴露 `VITE_` 前缀），本项目统一走 `window.__APP_ENV__`。
-- `MODE` ≠ `app.isPackaged`：前者是开发/生产行为语义，后者是物理打包态；`start:dist` 是「未打包但生产行为」。
+- `MODE` ≠ `app.isPackaged`：前者是开发/生产行为语义，后者是物理打包态；`preview` 是「未打包但生产行为」。
 - 改 `productName` 会迁移用户数据目录（`userData`、日志、`config.json`、`Local State`），发版前要想清楚。
 - 窗口位置与尺寸的持久化不在这里配，见[窗口位置与尺寸（Window-state）](/ui/window-state)。

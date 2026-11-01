@@ -51,8 +51,8 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 
 ## 5. 常用命令（根目录执行）
 
-`pnpm start` / `start:dist` · `pnpm test` · `pnpm test:e2e` · `pnpm lint` / `lint:fix` ·
-`pnpm typecheck` · `pnpm i18n:extract` / `i18n:check` · `pnpm build:dir` / `build:win` / `build:mac` /
+`pnpm dev` / `preview`（`start` 为 `preview` 别名） · `pnpm test` · `pnpm test:e2e` · `pnpm lint` / `lint:fix` ·
+`pnpm typecheck` · `pnpm i18n:extract` / `i18n:check` · `pnpm build:unpack` / `build:win` / `build:mac` /
 `build:linux` · `pnpm verify:prebuild` · `pnpm pr-review <pull|trigger|create|status|merge>`
 
 ## 6. 指针

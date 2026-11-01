@@ -90,12 +90,13 @@ electron-react-monorepo-template/
 
 ```bash
 pnpm install   # 安装工作区依赖（.npmrc 已内置 npmmirror 镜像加速）
-pnpm start     # 开发模式：Vite DevServer + Electron 双进程热重载
+pnpm dev       # 开发模式：Vite DevServer + Electron 双进程热重载
 ```
 
 | 命令 | 用途 |
 | :--- | :--- |
-| `pnpm start` | 开发模式（Vite + Electron 热重载） |
+| `pnpm dev` | 开发模式（Vite + Electron 热重载） |
+| `pnpm preview` | 生产预览（构建三包后以生产形态启动；`pnpm start` 为等价别名） |
 | `pnpm build:win` / `:mac` / `:linux` | 分平台打包安装包 |
 | `pnpm test` / `pnpm test:e2e` | Vitest 单元测试 / Playwright 桌面端 E2E |
 

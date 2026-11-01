@@ -44,16 +44,16 @@ function buildElectronArgs(): string[] {
 
   if (config.mainInspectPort) {
     args.push(`--inspect-brk=${config.mainInspectPort}`);
-    console.log(`[dev] main break inspect endpoint: http://127.0.0.1:${config.mainInspectPort}`);
+    console.log(`${LOG_PREFIX} main break inspect endpoint: http://127.0.0.1:${config.mainInspectPort}`);
   }
 
   if (config.rendererCdpPort) {
     args.push(`--remote-debugging-port=${config.rendererCdpPort}`);
-    console.log(`[dev] renderer CDP endpoint: http://127.0.0.1:${config.rendererCdpPort}`);
+    console.log(`${LOG_PREFIX} renderer CDP endpoint: http://127.0.0.1:${config.rendererCdpPort}`);
   }
 
   return args;
 }
 ```
 
-效果：`pnpm start` 起来后终端直接打印 CDP endpoint，Chrome 打开 `chrome://inspect` 即可连接渲染进程断点、看 Performance 面板；要调主进程，取消 `mainInspectPort` 的注释即以 `--inspect-brk` 启动。注释掉一个属性，命令行参数、启动日志、启动前的端口预检（[启动预检（Single-instance + Port）](/dx/startup-preflight) 里 `ensurePortsAvailable` 会自动过滤未配置端口）三处一起联动，不存在第二处要同步的开关。
+效果：`pnpm dev` 或 `pnpm preview` 起来后终端直接打印 CDP endpoint（日志前缀分别是 `[dev]` / `[preview]`），Chrome 打开 `chrome://inspect` 即可连接渲染进程断点、看 Performance 面板；要调主进程，取消 `mainInspectPort` 的注释即以 `--inspect-brk` 启动。注释掉一个属性，命令行参数、启动日志、开发态启动前的端口预检（[启动预检（Single-instance + Port）](/dx/startup-preflight) 里 `ensurePortsAvailable` 会自动过滤未配置端口）会一起联动，不存在第二处要同步的开关。

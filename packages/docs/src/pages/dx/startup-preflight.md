@@ -85,6 +85,7 @@ if (!process.stdin.isTTY) {
 注意点：
 
 - 预检顺序固定「单实例 → 端口」：dev-vs-dev 场景下杀掉对端 electron 会连带其 dev 会话退出并释放端口，一次确认解决两件事
+- 端口预检只在开发态执行：`pnpm preview` 一次性构建后直接启动 Electron、不监听 dev server，因此只做单实例排查
 - 非 TTY 环境（CI）等不了交互确认，探测到冲突直接抛错并给出人工处理指引
 - Windows 下启动先 `chcp 65001` 切 UTF-8，避免 Git Bash 等终端中文日志乱码；探测脚本向 PowerShell 传参走环境变量，绕开路径与产品名的引号转义
 - 脚本一律经 `findRepoRoot` 向上锁定仓库根，不依赖 `process.cwd()`——桌面快捷方式 / CI 的工作目录偏移带不偏路径
