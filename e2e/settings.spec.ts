@@ -157,14 +157,10 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     await expect(html).toHaveAttribute('lang', 'zh-CN');
   });
 
-  test('用例 3：点击关闭时最小化到托盘交互与关闭拦截', async ({
-    page,
-    electronApp,
-    electronCtx,
-  }) => {
-    // 1. 验证整行/文本可点击性：点击“点击关闭时最小化到托盘”文案或整行可触发开关
+  test('用例 3：关闭窗口后保留托盘偏好与关闭行为', async ({ page, electronApp, electronCtx }) => {
+    // 1. 验证整行/文本可点击性：点击托盘保留设置文案可触发开关
     const toggleRow = page.locator('.settings-toggle-row', {
-      hasText: '点击关闭时最小化到托盘',
+      hasText: '关闭后保留在托盘',
     });
     const switchEl = toggleRow.locator('#tray-switch');
 
@@ -225,9 +221,9 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     // 模拟从系统托盘唤醒恢复主窗口（重新创建窗口）
     const [restoredPage] = await Promise.all([
       electronApp.waitForEvent('window'),
-      electronApp.evaluate(() => {
+      electronApp.evaluate(async () => {
         // biome-ignore lint/suspicious/noExplicitAny: internal windowManager hook
-        (globalThis as any).__windowManager?.restoreOrCreateWindow(true);
+        await (globalThis as any).__windowManager?.restoreOrCreateWindow(true);
       }),
     ]);
     await restoredPage.waitForLoadState('domcontentloaded');
@@ -264,7 +260,7 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
 
       // 步骤 3: 修改 minimizeToTray 为 false
       const toggleRow = page.locator('.settings-toggle-row', {
-        hasText: 'Minimize to tray on close',
+        hasText: 'Keep in tray',
       });
       const switchEl = toggleRow.locator('#tray-switch');
       await toggleRow.locator('label[for="tray-switch"]').click();
@@ -298,7 +294,7 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
       await expect(html).toHaveAttribute('lang', 'zh-CN');
       await expect(
         page
-          .locator('.settings-toggle-row', { hasText: '点击关闭时最小化到托盘' })
+          .locator('.settings-toggle-row', { hasText: '关闭后保留在托盘' })
           .locator('#tray-switch'),
       ).toHaveAttribute('aria-checked', 'true');
     }

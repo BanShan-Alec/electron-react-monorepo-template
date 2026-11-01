@@ -48,6 +48,7 @@ describe('ConfigStore', () => {
     expect(store.get('theme')).toBe('dark');
     expect(store.get('language')).toBe(DEFAULT_CONFIG.language);
     expect(store.get('minimizeToTray')).toBe(true);
+    expect(store.get('closeBehaviorConfirmed')).toBe(false);
   });
 
   it('falls back to defaults entirely when any field is invalid', () => {
@@ -69,7 +70,10 @@ describe('ConfigStore', () => {
     expect(scopedError.mock.calls[0][0]).toContain('not valid JSON');
     expect(JSON.parse(readConfigFile())).toEqual(DEFAULT_CONFIG);
     store.set({ theme: 'dark' });
-    expect(JSON.parse(readConfigFile())).toEqual({ ...DEFAULT_CONFIG, theme: 'dark' });
+    expect(JSON.parse(readConfigFile())).toEqual({
+      ...DEFAULT_CONFIG,
+      theme: 'dark',
+    });
   });
 
   it('rejects invalid set() input without mutating state or disk', () => {
@@ -79,7 +83,10 @@ describe('ConfigStore', () => {
     expect(rejected).toEqual({ ...DEFAULT_CONFIG, theme: 'dark' });
     expect(store.get('theme')).toBe('dark');
     expect(scopedWarn).toHaveBeenCalled();
-    expect(JSON.parse(readConfigFile())).toEqual({ ...DEFAULT_CONFIG, theme: 'dark' });
+    expect(JSON.parse(readConfigFile())).toEqual({
+      ...DEFAULT_CONFIG,
+      theme: 'dark',
+    });
   });
 
   it('persists set() to disk and survives reload', () => {
@@ -103,7 +110,11 @@ describe('ConfigStore', () => {
     const store = new ConfigStore(dataDir);
     store.set({ minimizeToTray: false });
     const onDisk = JSON.parse(readConfigFile());
-    expect(onDisk).toEqual({ ...DEFAULT_CONFIG, theme: 'dark', minimizeToTray: false });
+    expect(onDisk).toEqual({
+      ...DEFAULT_CONFIG,
+      theme: 'dark',
+      minimizeToTray: false,
+    });
     expect('legacyKey' in onDisk).toBe(false);
   });
 

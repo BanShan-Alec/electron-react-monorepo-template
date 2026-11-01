@@ -1,7 +1,6 @@
 import type { AppModule } from '../AppModule';
 import { appLifecycle } from '../lifecycle';
 import type { ModuleContext } from '../ModuleContext';
-import { updaterService } from '../services/updater.service';
 import { getAppConfigStore } from './config.module';
 
 export class ApplicationTerminatorOnLastWindowClose implements AppModule {
@@ -15,11 +14,8 @@ export class ApplicationTerminatorOnLastWindowClose implements AppModule {
         return;
       }
 
-      // 结合 updater 运行态判定退出策略（防僵尸进程）
-      const updaterState = updaterService.getState();
-      if (updaterState !== 'downloading') {
-        app.quit();
-      }
+      // 未开启托盘常驻时，最后一个窗口关闭即退出；下载中的更新随进程结束放弃
+      app.quit();
     });
   }
 }

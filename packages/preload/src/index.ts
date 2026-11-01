@@ -4,6 +4,7 @@ import '@sentry/electron/preload';
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import { APP_STARTUP_MAIN_READY_EVENT } from '@app/shared/constants/startup';
 import type { CalculateInput } from '@app/shared/schemas/calculator';
+import type { CloseBehaviorChoice } from '@app/shared/schemas/close-behavior';
 import type { AppConfig, UpdateConfigInput } from '@app/shared/schemas/config';
 import type { StepInput } from '@app/shared/schemas/counter';
 import type { LogInput, PerformActionInput } from '@app/shared/schemas/diagnostics';
@@ -64,6 +65,18 @@ export const apiBridge: ElectronApi = {
   calculator: {
     calculate: (input: CalculateInput, options) =>
       invokeTraced(IPC_CHANNELS.CALCULATOR_CALCULATE, input, options),
+  },
+  window: {
+    onCloseRequested: (cb: () => void) => {
+      const listener = () => cb();
+      ipcRenderer.on(IPC_CHANNELS.WINDOW_CLOSE_REQUESTED, listener);
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.WINDOW_CLOSE_REQUESTED, listener);
+      };
+    },
+    closeReady: () => invokeTraced(IPC_CHANNELS.WINDOW_CLOSE_READY),
+    closeRespond: (choice: CloseBehaviorChoice) =>
+      invokeTraced(IPC_CHANNELS.WINDOW_CLOSE_RESPOND, choice),
   },
   config: {
     get: (options) => invokeTraced(IPC_CHANNELS.CONFIG_GET, undefined, options),

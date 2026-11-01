@@ -1,4 +1,5 @@
 import type { CalculateInput } from '../schemas/calculator';
+import type { CloseBehaviorChoice } from '../schemas/close-behavior';
 import type { AppConfig, UpdateConfigInput } from '../schemas/config';
 import type { StepInput } from '../schemas/counter';
 import type { LogInput, PerformActionInput } from '../schemas/diagnostics';
@@ -38,6 +39,11 @@ export interface ElectronApi {
       input: CalculateInput,
       options?: IpcCallOptions,
     ) => Promise<Result<CalculateResult>>;
+  };
+  window: {
+    onCloseRequested: (cb: () => void) => () => void;
+    closeReady: () => Promise<Result<{ success: boolean }>>;
+    closeRespond: (choice: CloseBehaviorChoice) => Promise<Result<{ success: boolean }>>;
   };
   config: {
     get: (options?: IpcCallOptions) => Promise<Result<AppConfig>>;

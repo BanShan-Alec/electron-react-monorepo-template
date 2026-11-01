@@ -9,6 +9,7 @@ import {
 export const configBaseSchema = z.object({
   theme: z.enum(THEME_MODES),
   minimizeToTray: z.boolean(),
+  closeBehaviorConfirmed: z.boolean(),
   language: z.enum(LANGUAGE_MODES),
   autoCheckUpdate: z.boolean(),
   serverCounter: z.number().int(),
@@ -17,6 +18,7 @@ export const configBaseSchema = z.object({
 export const configSchema = z.object({
   theme: z.enum(THEME_MODES).default(DEFAULT_THEME_MODE),
   minimizeToTray: z.boolean().default(true),
+  closeBehaviorConfirmed: z.boolean().default(false),
   language: z.enum(LANGUAGE_MODES).default(DEFAULT_LANGUAGE),
   autoCheckUpdate: z.boolean().default(true),
   serverCounter: z.number().int().default(0),

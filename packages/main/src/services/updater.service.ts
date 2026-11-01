@@ -11,10 +11,8 @@ import type {
 import { app, Notification } from 'electron';
 import electronUpdater, { type AppUpdater, CancellationToken } from 'electron-updater';
 import {
-  ORPHAN_WATCHDOG_TIMEOUT_MS,
   OTA_ERROR_DEBOUNCE_MS,
   PROGRESS_EMIT_THROTTLE_MS,
-  SENTRY_FLUSH_TIMEOUT_MS,
   UPDATE_CHECK_TIMEOUT_MS,
 } from '../constants/updater';
 import { bundledRepository, getEnv, isDev, isPackaged, isTest } from '../env';
@@ -78,9 +76,7 @@ function normalizeReleaseNotes(raw: unknown): string[] {
 export class UpdaterService {
   private readonly logger = getLogManager().scoped(this);
   private cancellationToken: CancellationToken | null = null;
-  private orphanWatchdogTimer: NodeJS.Timeout | null = null;
   private devSimulationTimer: NodeJS.Timeout | null = null;
-  private isOrphan = false;
   private lastProgressEmitTime = 0;
   private lastReportedErrorTime = 0;
   private lastReportedErrorKey = '';
@@ -279,29 +275,7 @@ export class UpdaterService {
           info?.version,
         );
 
-        // 判定孤儿态（在退出流程中后台下载完成）
-        if (this.isOrphan) {
-          this.stopOrphanWatchdog();
-          this.logger.info(
-            'App closing orphan mode: Executing Strategy A: quitAndInstall(true, false)',
-          );
-          const executeInstall = () => {
-            try {
-              updater.quitAndInstall(true, false);
-            } catch (err) {
-              this.logger.error('Failed to quitAndInstall in orphan mode:', err);
-              app.quit();
-            }
-          };
-
-          if (isOtaSentryEnabled()) {
-            void this.withSentry((Sentry) => Sentry.flush(SENTRY_FLUSH_TIMEOUT_MS)).finally(
-              executeInstall,
-            );
-          } else {
-            executeInstall();
-          }
-        } else if (this.userDismissedWindow) {
+        if (this.userDismissedWindow) {
           this.logger.info(
             'User dismissed window previously, sending system notification instead of popup',
           );
@@ -327,18 +301,6 @@ export class UpdaterService {
         this.cancellationToken = null;
         this.emitState();
         this.reportSentryOtaError(err, OTA_STAGES.ELECTRON_UPDATER);
-
-        if (this.isOrphan) {
-          this.stopOrphanWatchdog();
-          this.logger.error('Orphan download failed with error, quitting app');
-          if (isOtaSentryEnabled()) {
-            void this.withSentry((Sentry) => Sentry.flush(SENTRY_FLUSH_TIMEOUT_MS)).finally(() => {
-              app.quit();
-            });
-          } else {
-            app.quit();
-          }
-        }
       });
     } catch (err) {
       this.logger.warn('Failed to configure electron-updater:', err);
@@ -577,11 +539,11 @@ export class UpdaterService {
       this.snapshot.code = null;
       this.emitState();
 
-      // 如果当前处于孤儿态（主窗口已关闭），取消后退出应用杜绝无界面僵尸进程
+      // 主窗口已不存在且未开启托盘常驻时，取消下载后退出，避免无界面进程残留
       const homeWin = getWindow(WINDOW_IDS.HOME);
-      if (this.isOrphan || !homeWin || homeWin.isDestroyed()) {
-        this.stopOrphanWatchdog();
-        this.logger.info('Orphan download cancelled by user, quitting app');
+      const shouldMinimizeToTray = getAppConfigStore().get('minimizeToTray');
+      if (!shouldMinimizeToTray && (!homeWin || homeWin.isDestroyed())) {
+        this.logger.info('Download cancelled with no window and tray disabled, quitting app');
         app.quit();
       }
     }
@@ -614,38 +576,6 @@ export class UpdaterService {
         err instanceof Error ? err.message : String(err),
         ErrorCode.UPDATER_INSTALL_FAILED,
       );
-    }
-  }
-
-  public startOrphanWatchdog(timeoutMs = ORPHAN_WATCHDOG_TIMEOUT_MS): void {
-    this.isOrphan = true;
-    if (this.orphanWatchdogTimer) {
-      clearTimeout(this.orphanWatchdogTimer);
-    }
-    this.logger.info(`Starting orphan download watchdog for ${timeoutMs}ms`);
-    this.orphanWatchdogTimer = setTimeout(() => {
-      this.logger.error('Orphan download watchdog timed out. Cancelling and quitting.');
-      if (this.cancellationToken) {
-        try {
-          this.cancellationToken.cancel();
-        } catch {}
-        this.cancellationToken = null;
-      }
-      if (Notification.isSupported()) {
-        new Notification({
-          title: app.getName(),
-          body: mainMessage(getAppConfigStore().get('language'), 'notifDownloadTimeout'),
-        }).show();
-      }
-      app.quit();
-    }, timeoutMs);
-  }
-
-  public stopOrphanWatchdog(): void {
-    this.isOrphan = false;
-    if (this.orphanWatchdogTimer) {
-      clearTimeout(this.orphanWatchdogTimer);
-      this.orphanWatchdogTimer = null;
     }
   }
 
@@ -732,16 +662,7 @@ export class UpdaterService {
         this.snapshot.error = null;
         this.snapshot.code = null;
         this.emitState();
-        if (this.isOrphan) {
-          this.stopOrphanWatchdog();
-          if (!isTest) {
-            try {
-              this.getAutoUpdater().quitAndInstall(true, false);
-            } catch {
-              app.quit();
-            }
-          }
-        } else if (this.userDismissedWindow) {
+        if (this.userDismissedWindow) {
           this.showDownloadedNotification();
         } else {
           this.windowDelegate?.show().catch(() => {});
@@ -758,10 +679,6 @@ export class UpdaterService {
         this.snapshot.code = action.code ?? null;
         this.snapshot.progress = null;
         this.emitState();
-        if (this.isOrphan) {
-          this.stopOrphanWatchdog();
-          app.quit();
-        }
         break;
     }
   }

@@ -70,6 +70,7 @@ export const SIDEBAR_GROUPS: NavigationGroup[] = [
       { text: '错误边界（ErrorBoundary）', link: '/ui/error-boundary' },
       { text: '首屏体验（Startup-orchestration）', link: '/ui/first-screen' },
       { text: '原生窗口体验（WCO）', link: '/ui/wco' },
+      { text: '首次关闭确认（Close-confirmation）', link: '/ui/close-confirmation' },
       { text: '窗口位置与尺寸（Window-state）', link: '/ui/window-state' },
     ],
   },

@@ -1,9 +1,10 @@
+import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import { WINDOW_IDS } from '@app/shared/constants/windows';
-import { app, BrowserWindow, Notification, screen } from 'electron';
+import type { CloseBehaviorChoice } from '@app/shared/schemas/close-behavior';
+import { app, BrowserWindow, screen } from 'electron';
 import type { AppInitConfig } from '../../AppInitConfig';
 import type { AppModule } from '../../AppModule';
 import { getPackedEnvArgument } from '../../env';
-import { mainMessage } from '../../i18n';
 import { appLifecycle } from '../../lifecycle';
 import type { ModuleContext } from '../../ModuleContext';
 import { updaterService } from '../../services/updater.service';
@@ -11,9 +12,17 @@ import { getAppConfigStore } from '../config.module';
 import { getLogManager } from '../log.module';
 import { getTitleBarOverlayOptions, getWindowBackgroundColor } from './titlebar-overlay';
 import { getUpdaterWindowModule } from './updater-window.module';
-import { forgetWindow, getWindow, registerWindow } from './window-registry';
+import {
+  broadcast,
+  forgetWindow,
+  getWindow,
+  registerWindow,
+  sendToWindow,
+} from './window-registry';
 import { attachWindowsWindowRepaint } from './window-repaint';
 import { MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, resolveWindowBounds } from './window-size';
+
+const QUIT_CANCEL_TIMEOUT_MS = 2000;
 
 export interface WindowManagerOptions {
   initConfig: AppInitConfig;
@@ -26,6 +35,9 @@ export class WindowManager implements AppModule {
   private readonly renderer: { path: string } | URL;
   private readonly openDevTools: boolean;
   private readonly keepState: boolean;
+  private closeGuardBypass = false;
+  private closeRequestPending = false;
+  private quitAfterCancelPending = false;
 
   constructor({ initConfig, openDevTools = false, keepState = true }: WindowManagerOptions) {
     this.preload = initConfig.preload;
@@ -115,6 +127,9 @@ export class WindowManager implements AppModule {
     // 注册到 window-registry 唯一事实源
     registerWindow(WINDOW_IDS.HOME, browserWindow);
     browserWindow.on('closed', () => {
+      this.closeRequestPending = false;
+      this.closeGuardBypass = false;
+      this.quitAfterCancelPending = false;
       forgetWindow(WINDOW_IDS.HOME, browserWindow);
     });
 
@@ -142,11 +157,24 @@ export class WindowManager implements AppModule {
     });
 
     // 支持点击关闭按钮销毁主窗口并退守系统托盘及防僵尸退出闭环
-    browserWindow.on('close', () => {
+    browserWindow.on('close', (event) => {
       if (appLifecycle.isQuitting) {
+        this.closeRequestPending = false;
         try {
           getUpdaterWindowModule().destroy();
         } catch {}
+        return;
+      }
+
+      if (this.closeGuardBypass) {
+        this.closeGuardBypass = false;
+      } else if (!getAppConfigStore().get('closeBehaviorConfirmed')) {
+        event.preventDefault();
+        if (!this.closeRequestPending) {
+          this.closeRequestPending = true;
+          getLogManager().scoped(this).info('First close intercepted; asking renderer');
+        }
+        sendToWindow(WINDOW_IDS.HOME, IPC_CHANNELS.WINDOW_CLOSE_REQUESTED, null);
         return;
       }
 
@@ -160,29 +188,10 @@ export class WindowManager implements AppModule {
         logger.info('Home window closed and destroyed -> running in tray');
       } else {
         logger.info('Home window is closing');
-        const updaterState = updaterService.getState();
-        if (updaterState === 'downloading') {
-          logger.info(
-            'Updater is downloading, keeping updater in background with watchdog (Strategy A)',
-          );
-          try {
-            getUpdaterWindowModule().close();
-          } catch {}
-          if (Notification.isSupported()) {
-            new Notification({
-              title: app.getName(),
-              body: mainMessage(configStore.get('language'), 'notifBackgroundDownload'),
-            }).show();
-          }
-          updaterService.startOrphanWatchdog();
-        } else {
-          logger.info(
-            'Home window closed and updater not downloading -> destroying updater and quitting',
-          );
-          try {
-            getUpdaterWindowModule().destroy();
-          } catch {}
-          app.quit();
+        event.preventDefault();
+        if (!this.quitAfterCancelPending) {
+          this.quitAfterCancelPending = true;
+          void this.quitAfterCancellingUpdate();
         }
       }
     });
@@ -197,6 +206,46 @@ export class WindowManager implements AppModule {
     }
 
     return browserWindow;
+  }
+
+  markRendererReady(): void {
+    if (this.closeRequestPending) {
+      sendToWindow(WINDOW_IDS.HOME, IPC_CHANNELS.WINDOW_CLOSE_REQUESTED, null);
+    }
+  }
+
+  async respondCloseRequest(choice: CloseBehaviorChoice): Promise<void> {
+    const window = getWindow(WINDOW_IDS.HOME);
+    if (!window || !this.closeRequestPending) return;
+
+    this.closeRequestPending = false;
+    getLogManager().scoped(this).info(`Close prompt answered: ${choice}`);
+
+    if (choice === 'cancel') return;
+
+    const updated = getAppConfigStore().set({
+      minimizeToTray: choice === 'window',
+      closeBehaviorConfirmed: true,
+    });
+    broadcast(IPC_CHANNELS.CONFIG_EVENT_CHANGED, updated);
+    this.closeGuardBypass = true;
+    window.close();
+  }
+
+  private async quitAfterCancellingUpdate(): Promise<void> {
+    const logger = getLogManager().scoped(this);
+    try {
+      await Promise.race([
+        updaterService.cancel(),
+        new Promise<void>((resolve) => setTimeout(resolve, QUIT_CANCEL_TIMEOUT_MS)),
+      ]);
+    } catch (err) {
+      logger.warn('Failed to cancel update download before quitting:', err);
+    }
+    try {
+      getUpdaterWindowModule().destroy();
+    } catch {}
+    app.quit();
   }
 
   async restoreOrCreateWindow(show = false) {
