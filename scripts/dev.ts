@@ -123,7 +123,11 @@ function createElectronLauncherPlugin(): Plugin {
       const args = buildElectronArgs();
 
       // --remote-debugging-port 暴露 renderer CDP，供外部 CDP 客户端连接驱动
-      electronApp = spawn(String(electronPath), [...args, '.'], { stdio: 'inherit' });
+      // cwd 固定仓库根:'.' 作为 app 路径按进程 cwd 解析,避免从其他目录调用时加载错应用
+      electronApp = spawn(String(electronPath), [...args, '.'], {
+        stdio: 'inherit',
+        cwd: ROOT_DIR,
+      });
 
       /** Stops the watch script when the application has been quit */
       electronApp?.addListener('exit', process.exit);
@@ -225,6 +229,7 @@ async function runPreview(): Promise<void> {
     // 只构建应用运行所需的三包:pnpm build 会连带构建 @app/docs,预览用不到
     execSync('pnpm -r --filter @app/main --filter @app/preload --filter @app/renderer run build', {
       stdio: 'inherit',
+      cwd: ROOT_DIR,
     });
   } else {
     console.warn(
@@ -238,6 +243,7 @@ async function runPreview(): Promise<void> {
 
   const electronApp = spawn(String(electronPath), [...buildElectronArgs(), '.'], {
     stdio: 'inherit',
+    cwd: ROOT_DIR,
   });
 
   attachExitCleanup(() => electronApp.pid);

@@ -132,6 +132,7 @@ async function runPreview(): Promise<void> {
 
   const electronApp = spawn(String(electronPath), [...buildElectronArgs(), '.'], {
     stdio: 'inherit',
+    cwd: ROOT_DIR,
   });
   electronApp.on('exit', (code) => process.exit(code ?? 0));
 }
