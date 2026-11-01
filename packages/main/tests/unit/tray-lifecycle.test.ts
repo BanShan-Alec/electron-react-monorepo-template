@@ -5,6 +5,7 @@ import * as configModule from '@app/main/modules/config.module';
 import { TrayManager } from '@app/main/modules/tray.module';
 import * as windowIndexModule from '@app/main/modules/window/index.module';
 import * as windowRegistry from '@app/main/modules/window/window-registry';
+import { updaterService } from '@app/main/services/updater.service';
 import { WINDOW_IDS } from '@app/shared/constants/windows';
 import type { BrowserWindow } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -15,6 +16,8 @@ describe('Tray & Window Destroy Lifecycle', () => {
   });
 
   afterEach(() => {
+    // 断言失败时也要复位退出态，避免把 isQuitting 泄漏给后续用例
+    appLifecycle.isQuitting = false;
     vi.restoreAllMocks();
   });
 
@@ -53,6 +56,25 @@ describe('Tray & Window Destroy Lifecycle', () => {
       mockApp.emit('window-all-closed');
 
       expect((mockApp as unknown as { quit: () => void }).quit).toHaveBeenCalled();
+    });
+
+    it('keeps the app alive on window-all-closed while the updater is downloading', () => {
+      const mockApp = new EventEmitter() as unknown as Electron.App;
+      (mockApp as unknown as { quit: () => void }).quit = vi.fn();
+
+      vi.spyOn(configModule, 'getAppConfigStore').mockReturnValue({
+        get: () => false,
+      } as unknown as ReturnType<typeof configModule.getAppConfigStore>);
+      vi.spyOn(updaterService, 'getState').mockReturnValue('downloading');
+
+      const terminator = new ApplicationTerminatorOnLastWindowClose();
+      terminator.enable({
+        app: mockApp,
+      } as unknown as import('@app/main/ModuleContext').ModuleContext);
+
+      mockApp.emit('window-all-closed');
+
+      expect((mockApp as unknown as { quit: () => void }).quit).not.toHaveBeenCalled();
     });
 
     it('quits on window-all-closed when appLifecycle.isQuitting is true', () => {

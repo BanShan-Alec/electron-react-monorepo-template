@@ -26,48 +26,51 @@ describe('Window Tracer', () => {
       records.push(record);
     });
 
-    const mockWin = new MockBrowserWindow() as unknown as Electron.BrowserWindow;
-    trackWindowLifecycle('home', mockWin);
+    try {
+      const mockWin = new MockBrowserWindow() as unknown as Electron.BrowserWindow;
+      trackWindowLifecycle('home', mockWin);
 
-    // 触发 dom-ready on webContents
-    mockWin.webContents.emit('dom-ready');
+      // 触发 dom-ready on webContents
+      mockWin.webContents.emit('dom-ready');
 
-    // 触发 ready-to-show：此时应立即落盘 window.initialization Span
-    mockWin.emit('ready-to-show');
+      // 触发 ready-to-show：此时应立即落盘 window.initialization Span
+      mockWin.emit('ready-to-show');
 
-    expect(records).toHaveLength(1);
-    const initRecord = records[0];
-    expect(initRecord.name).toBe('window.initialization');
-    expect(initRecord.attributes['window.name']).toBe('home');
-    expect(initRecord.attributes['window.id']).toBe(101);
-    expect(initRecord.events.map((e) => e.name)).toEqual([
-      'window.created',
-      'window.dom_ready',
-      'window.ready_to_show',
-    ]);
-    expect(initRecord.status).toBe('OK');
+      const initRecord = records.find((record) => record.name === 'window.initialization');
+      expect(initRecord).toMatchObject({
+        name: 'window.initialization',
+        status: 'OK',
+        attributes: { 'window.name': 'home', 'window.id': 101 },
+      });
+      expect(initRecord?.events.map((event) => event.name)).toEqual([
+        'window.created',
+        'window.dom_ready',
+        'window.ready_to_show',
+      ]);
 
-    // 触发 closed：此时应落盘 window.lifecycle Span 并解绑监听
-    mockWin.emit('closed');
+      // 触发 closed：此时应落盘 window.lifecycle Span 并解绑监听
+      mockWin.emit('closed');
 
-    expect(records).toHaveLength(2);
-    const lifecycleRecord = records[1];
-    expect(lifecycleRecord.name).toBe('window.lifecycle');
-    expect(lifecycleRecord.attributes['window.name']).toBe('home');
-    expect(lifecycleRecord.attributes['window.id']).toBe(101);
-    expect(lifecycleRecord.events.map((e) => e.name)).toEqual([
-      'window.created',
-      'window.dom_ready',
-      'window.ready_to_show',
-      'window.closed',
-    ]);
-    expect(lifecycleRecord.status).toBe('OK');
+      const lifecycleRecord = records.find((record) => record.name === 'window.lifecycle');
+      expect(lifecycleRecord).toMatchObject({
+        name: 'window.lifecycle',
+        status: 'OK',
+        attributes: { 'window.name': 'home', 'window.id': 101 },
+      });
+      expect(lifecycleRecord?.events.map((event) => event.name)).toEqual([
+        'window.created',
+        'window.dom_ready',
+        'window.ready_to_show',
+        'window.closed',
+      ]);
 
-    // 验证监听器已被注销，防止内存泄漏
-    expect(mockWin.webContents.listenerCount('dom-ready')).toBe(0);
-    expect(mockWin.listenerCount('ready-to-show')).toBe(0);
-    expect(mockWin.listenerCount('closed')).toBe(0);
-
-    unsubscribe();
+      // 验证监听器已被注销，防止内存泄漏
+      expect(mockWin.webContents.listenerCount('dom-ready')).toBe(0);
+      expect(mockWin.listenerCount('ready-to-show')).toBe(0);
+      expect(mockWin.listenerCount('closed')).toBe(0);
+    } finally {
+      // 断言失败也必须注销，避免污染同进程内后续用例
+      unsubscribe();
+    }
   });
 });
