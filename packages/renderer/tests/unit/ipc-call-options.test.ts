@@ -46,6 +46,21 @@ describe('callIpc success logging options', () => {
     expect(consoleInfo).not.toHaveBeenCalled();
   });
 
+  it('pads omitted optional business arguments so options stays in the options slot', async () => {
+    const received: unknown[][] = [];
+    const service = (input?: { step: number }, options?: { recordSuccess?: boolean }) => {
+      received.push([input, options]);
+      return Promise.resolve({ success: true as const, data: 7 });
+    };
+    // vi.fn 包装后 length 会变成 0，这里用真实函数才能覆盖 service.length 占位逻辑
+    expect(service.length).toBe(2);
+
+    await expect(callIpc('counter.increment', service, [], { recordSuccess: false })).resolves.toBe(
+      7,
+    );
+    expect(received).toEqual([[undefined, { recordSuccess: false }]]);
+  });
+
   it('keeps the service arguments unchanged when success logging is enabled', async () => {
     const windowState = window as Window & { __APP_ENV__: { mode: string } };
     windowState.__APP_ENV__.mode = 'development';

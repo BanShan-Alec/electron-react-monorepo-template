@@ -74,7 +74,8 @@ type IpcService<TData, TParams extends unknown[]> = (...args: TParams) => Promis
  * feature 内禁止手写 window.api.* + if (!res.success)，一律经由本函数或 hooks/useIpc.ts。
  *
  * 参数契约：`args` 只包含业务参数，options 由本函数统一追加在末尾；
- * 调用方不得把 options 混进 args，service 的 options 必须是最后一个可选参数。
+ * 调用方不得把 options 混进 args。业务参数本身可能声明为可选（如 counter.increment(input?)），
+ * 省略时先用 undefined 占位，保证 recordSuccess 永远落在 options 位置。
  */
 export async function callIpc<TData, TParams extends unknown[]>(
   channel: string,
@@ -85,8 +86,12 @@ export async function callIpc<TData, TParams extends unknown[]>(
   const startedAt = performance.now();
   let traceId: string | undefined;
   try {
-    const callArgs: unknown[] =
-      options.recordSuccess === false ? [...args, { recordSuccess: false }] : args;
+    const callArgs: unknown[] = [...args];
+    if (options.recordSuccess === false) {
+      // options 是最后一个可选参数（不得写成默认参数，否则 service.length 失真）
+      while (callArgs.length < Math.max(0, service.length - 1)) callArgs.push(undefined);
+      callArgs.push({ recordSuccess: false });
+    }
     const res = await service(...(callArgs as TParams));
     traceId = res.traceId;
     if (!res.success) {
