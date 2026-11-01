@@ -163,7 +163,6 @@ msgstr "Keep running in the background"
 msgid "关闭"
 msgstr "Close"
 
-#: src/features/system-info/components/SystemInfoCard/index.tsx
 #: src/features/usb/components/UsbCard/index.tsx
 msgid "刷新"
 msgstr "Refresh"

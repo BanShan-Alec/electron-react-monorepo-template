@@ -163,7 +163,6 @@ msgstr "保持后台常驻与托盘图标交互"
 msgid "关闭"
 msgstr "关闭"
 
-#: src/features/system-info/components/SystemInfoCard/index.tsx
 #: src/features/usb/components/UsbCard/index.tsx
 msgid "刷新"
 msgstr "刷新"

@@ -9,16 +9,10 @@ import { useSystemInfo } from './hooks/useSystemInfo';
  */
 function SystemInfoFeature() {
   // 变量声明、解构
-  const { systemInfo, isFetchingInfo, fetchSystemInfo } = useSystemInfo();
+  const { systemInfo, isFetchingInfo } = useSystemInfo();
 
   // 组件渲染
-  return (
-    <SystemInfoCard
-      systemInfo={systemInfo}
-      isLoading={isFetchingInfo}
-      onRefresh={fetchSystemInfo}
-    />
-  );
+  return <SystemInfoCard systemInfo={systemInfo} isLoading={isFetchingInfo} />;
 }
 
 export { SystemInfoFeature };
