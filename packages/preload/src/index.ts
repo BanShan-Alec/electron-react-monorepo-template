@@ -13,6 +13,7 @@ import type { ShowItemInFolderInput } from '@app/shared/schemas/shell';
 import type { ElectronApi } from '@app/shared/types/api';
 import type { AppRuntimeEnv } from '@app/shared/types/env';
 import type { StartupGateSnapshot, StartupMainReadyPayload } from '@app/shared/types/startup';
+import type { IpcCallOptions } from '@app/shared/types/telemetry';
 import type { UpdaterProgress, UpdaterSnapshot } from '@app/shared/types/updater';
 import { APP_ENV_ARG_PREFIX, unpackRuntimeEnv } from '@app/shared/utils/env-packer';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
@@ -46,21 +47,24 @@ ipcRenderer.on(
 
 export const apiBridge: ElectronApi = {
   usb: {
-    getDeviceList: () => invokeTraced(IPC_CHANNELS.USB_GET_DEVICE_LIST),
+    getDeviceList: (options) => invokeTraced(IPC_CHANNELS.USB_GET_DEVICE_LIST, undefined, options),
   },
   system: {
-    ping: () => invokeTraced(IPC_CHANNELS.SYSTEM_PING),
-    getSystemInfo: () => invokeTraced(IPC_CHANNELS.SYSTEM_GET_INFO),
+    ping: (options) => invokeTraced(IPC_CHANNELS.SYSTEM_PING, undefined, options),
+    getSystemInfo: (options) => invokeTraced(IPC_CHANNELS.SYSTEM_GET_INFO, undefined, options),
     getPlatform: () => process.platform,
   },
   counter: {
-    get: () => invokeTraced(IPC_CHANNELS.COUNTER_GET),
-    increment: (input?: StepInput) => invokeTraced(IPC_CHANNELS.COUNTER_INCREMENT, input),
-    decrement: (input?: StepInput) => invokeTraced(IPC_CHANNELS.COUNTER_DECREMENT, input),
-    reset: () => invokeTraced(IPC_CHANNELS.COUNTER_RESET),
+    get: (options) => invokeTraced(IPC_CHANNELS.COUNTER_GET, undefined, options),
+    increment: (input: StepInput | undefined, options?: IpcCallOptions) =>
+      invokeTraced(IPC_CHANNELS.COUNTER_INCREMENT, input, options),
+    decrement: (input: StepInput | undefined, options?: IpcCallOptions) =>
+      invokeTraced(IPC_CHANNELS.COUNTER_DECREMENT, input, options),
+    reset: (options) => invokeTraced(IPC_CHANNELS.COUNTER_RESET, undefined, options),
   },
   calculator: {
-    calculate: (input: CalculateInput) => invokeTraced(IPC_CHANNELS.CALCULATOR_CALCULATE, input),
+    calculate: (input: CalculateInput, options) =>
+      invokeTraced(IPC_CHANNELS.CALCULATOR_CALCULATE, input, options),
   },
   window: {
     onCloseRequested: (cb: () => void) => {
@@ -75,9 +79,10 @@ export const apiBridge: ElectronApi = {
       invokeTraced(IPC_CHANNELS.WINDOW_CLOSE_RESPOND, choice),
   },
   config: {
-    get: () => invokeTraced(IPC_CHANNELS.CONFIG_GET),
-    update: (input: UpdateConfigInput) => invokeTraced(IPC_CHANNELS.CONFIG_UPDATE, input),
-    reset: () => invokeTraced(IPC_CHANNELS.CONFIG_RESET),
+    get: (options) => invokeTraced(IPC_CHANNELS.CONFIG_GET, undefined, options),
+    update: (input: UpdateConfigInput, options) =>
+      invokeTraced(IPC_CHANNELS.CONFIG_UPDATE, input, options),
+    reset: (options) => invokeTraced(IPC_CHANNELS.CONFIG_RESET, undefined, options),
     onChanged: (cb: (config: AppConfig) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, config: AppConfig) => cb(config);
       ipcRenderer.on(IPC_CHANNELS.CONFIG_EVENT_CHANGED, listener);
@@ -87,30 +92,34 @@ export const apiBridge: ElectronApi = {
     },
   },
   diagnostics: {
-    log: (input: LogInput) => invokeTraced(IPC_CHANNELS.DIAGNOSTICS_LOG, input),
-    openLogFolder: () => invokeTraced(IPC_CHANNELS.DIAGNOSTICS_OPEN_LOG_FOLDER),
-    performAction: (input: PerformActionInput) =>
-      invokeTraced(IPC_CHANNELS.DIAGNOSTICS_PERFORM_ACTION, input),
+    log: (input: LogInput, options) => invokeTraced(IPC_CHANNELS.DIAGNOSTICS_LOG, input, options),
+    openLogFolder: (options) =>
+      invokeTraced(IPC_CHANNELS.DIAGNOSTICS_OPEN_LOG_FOLDER, undefined, options),
+    performAction: (input: PerformActionInput, options) =>
+      invokeTraced(IPC_CHANNELS.DIAGNOSTICS_PERFORM_ACTION, input, options),
   },
   dialog: {
-    openFile: (input?: OpenFileInput) => invokeTraced(IPC_CHANNELS.DIALOG_OPEN_FILE, input),
-    openDirectory: (input?: OpenDirectoryInput) =>
-      invokeTraced(IPC_CHANNELS.DIALOG_OPEN_DIRECTORY, input),
-    saveFile: (input?: SaveFileInput) => invokeTraced(IPC_CHANNELS.DIALOG_SAVE_FILE, input),
+    openFile: (input?: OpenFileInput, options?: IpcCallOptions) =>
+      invokeTraced(IPC_CHANNELS.DIALOG_OPEN_FILE, input, options),
+    openDirectory: (input?: OpenDirectoryInput, options?: IpcCallOptions) =>
+      invokeTraced(IPC_CHANNELS.DIALOG_OPEN_DIRECTORY, input, options),
+    saveFile: (input?: SaveFileInput, options?: IpcCallOptions) =>
+      invokeTraced(IPC_CHANNELS.DIALOG_SAVE_FILE, input, options),
   },
   shell: {
-    showItemInFolder: (input: ShowItemInFolderInput) =>
-      invokeTraced(IPC_CHANNELS.SHELL_SHOW_ITEM_IN_FOLDER, input),
-    openExternal: (url: string) => invokeTraced(IPC_CHANNELS.SHELL_OPEN_EXTERNAL, url),
+    showItemInFolder: (input: ShowItemInFolderInput, options) =>
+      invokeTraced(IPC_CHANNELS.SHELL_SHOW_ITEM_IN_FOLDER, input, options),
+    openExternal: (url: string, options) =>
+      invokeTraced(IPC_CHANNELS.SHELL_OPEN_EXTERNAL, url, options),
   },
   updater: {
-    getState: () => invokeTraced(IPC_CHANNELS.UPDATER_GET_STATE),
-    check: () => invokeTraced(IPC_CHANNELS.UPDATER_CHECK),
-    download: () => invokeTraced(IPC_CHANNELS.UPDATER_DOWNLOAD),
-    cancel: () => invokeTraced(IPC_CHANNELS.UPDATER_CANCEL),
-    install: () => invokeTraced(IPC_CHANNELS.UPDATER_INSTALL),
-    openWindow: () => invokeTraced(IPC_CHANNELS.UPDATER_OPEN_WINDOW),
-    closeWindow: () => invokeTraced(IPC_CHANNELS.UPDATER_CLOSE_WINDOW),
+    getState: (options) => invokeTraced(IPC_CHANNELS.UPDATER_GET_STATE, undefined, options),
+    check: (options) => invokeTraced(IPC_CHANNELS.UPDATER_CHECK, undefined, options),
+    download: (options) => invokeTraced(IPC_CHANNELS.UPDATER_DOWNLOAD, undefined, options),
+    cancel: (options) => invokeTraced(IPC_CHANNELS.UPDATER_CANCEL, undefined, options),
+    install: (options) => invokeTraced(IPC_CHANNELS.UPDATER_INSTALL, undefined, options),
+    openWindow: (options) => invokeTraced(IPC_CHANNELS.UPDATER_OPEN_WINDOW, undefined, options),
+    closeWindow: (options) => invokeTraced(IPC_CHANNELS.UPDATER_CLOSE_WINDOW, undefined, options),
     onStateChanged: (cb: (s: UpdaterSnapshot) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, s: UpdaterSnapshot) => cb(s);
       ipcRenderer.on(IPC_CHANNELS.UPDATER_EVENT_STATE, listener);

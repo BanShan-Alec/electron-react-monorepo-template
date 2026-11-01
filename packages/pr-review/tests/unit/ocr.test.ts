@@ -190,17 +190,14 @@ describe('getLatestRunInfo', () => {
     expect(runInfo.totalRuns).toBe(3);
   });
 
-  it('requests artifacts with correct jq filter ensuring non-null workflow_run', () => {
+  it('selects the latest artifact run id reported by the artifacts API', () => {
     const prNumber = 38;
     const ownerRepo = 'owner/repo';
     const branch = 'feat/unified-telemetry';
 
     mockedProbe.mockImplementation((cmd, args) => {
       if (cmd === 'gh' && args[0] === 'api') {
-        const jqArg = args[args.indexOf('--jq') + 1];
-        expect(jqArg).toContain('ocr-review-result-38-');
-        expect(jqArg).toContain('.workflow_run != null');
-        expect(jqArg).toContain('map(select(. != null))');
+        // 断言最终选中的 run，而不是 gh api 的 jq 过滤字符串写法
         return JSON.stringify([999]);
       }
       return null;
@@ -208,6 +205,8 @@ describe('getLatestRunInfo', () => {
 
     const runInfo = getLatestRunInfo(branch, prNumber, ownerRepo);
     expect(runInfo.id).toBe('999');
+    expect(runInfo.round).toBe(1);
+    expect(runInfo.totalRuns).toBe(1);
   });
 
   it('correctly calculates round when historical artifacts expired but PR has /review comments', () => {
@@ -295,7 +294,6 @@ describe('getLatestRunInfo', () => {
     expect(runInfo.id).toBe('99999');
     expect(runInfo.round).toBe(4);
     expect(runInfo.totalRuns).toBe(4);
-    expect(runInfo.round).toBeLessThanOrEqual(runInfo.totalRuns);
   });
 
   it('handles branch-only mode when prNumber is null, filtering by status === completed', () => {
@@ -320,6 +318,8 @@ describe('getLatestRunInfo', () => {
     const runInfo = getLatestRunInfo(branch, null);
     expect(runInfo.id).toBe('88888');
     expect(runInfo.round).toBe(1);
+    // 分支模式下 totalRuns 统计的是该分支的全部 run（含未完成），而不是仅 completed
+    expect(runInfo.totalRuns).toBe(2);
     expect(runInfo.status).toBe('success');
   });
 
@@ -345,25 +345,10 @@ describe('fetchOcrResult', () => {
     vi.restoreAllMocks();
   });
 
-  it('isolates cache by runId so multiple runs do not overwrite or cross-read data', () => {
-    const runId1 = '1001';
-    const runId2 = '1002';
-
-    // 模拟 gh run download，在各自专属 runId 目录下生成 ocr-result.json
+  const mockDownload = (onDownload?: (targetDir: string) => void) => {
     mockSpawnSync.mockImplementation((_cmd: string, args: string[]) => {
       const targetDir = args[args.indexOf('-D') + 1];
-      const resultDir = path.join(targetDir, 'result-folder');
-      fs.mkdirSync(resultDir, { recursive: true });
-
-      const isRun1 = targetDir.includes(runId1);
-      const content = {
-        summary: { comments: isRun1 ? 1 : 2 },
-        comments: isRun1
-          ? [{ path: 'a.ts', severity: 'low', content: 'run 1 finding' }]
-          : [{ path: 'b.ts', severity: 'high', content: 'run 2 finding' }],
-      };
-      fs.writeFileSync(path.join(resultDir, 'ocr-result.json'), JSON.stringify(content));
-
+      onDownload?.(targetDir);
       return {
         status: 0,
         stdout: '',
@@ -372,6 +357,33 @@ describe('fetchOcrResult', () => {
         output: [],
         signal: null,
       } as unknown as childProcess.SpawnSyncReturns<string>;
+    });
+  };
+
+  const writeResult = (targetDir: string, relativePath: string, content: string) => {
+    const filePath = path.join(targetDir, relativePath);
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, content);
+  };
+
+  it('isolates cache by runId so multiple runs do not overwrite or cross-read data', () => {
+    const runId1 = '1001';
+    const runId2 = '1002';
+
+    // 模拟 gh run download，在各自专属 runId 目录下生成 ocr-result.json
+    mockDownload((targetDir) => {
+      const isRun1 = targetDir.includes(runId1);
+      const content = {
+        summary: { comments: isRun1 ? 1 : 2 },
+        comments: isRun1
+          ? [{ path: 'a.ts', severity: 'low', content: 'run 1 finding' }]
+          : [{ path: 'b.ts', severity: 'high', content: 'run 2 finding' }],
+      };
+      writeResult(
+        targetDir,
+        path.join('result-folder', 'ocr-result.json'),
+        JSON.stringify(content),
+      );
     });
 
     const res1 = fetchOcrResult(runId1, tempDir);
@@ -385,7 +397,7 @@ describe('fetchOcrResult', () => {
     expect(fs.existsSync(path.join(tempDir, runId2))).toBe(true);
   });
 
-  it('throws fail when download fails or ocr-result.json is missing', () => {
+  it('throws fail when the download command fails', () => {
     mockSpawnSync.mockReturnValue({
       status: 1,
       stdout: '',
@@ -396,6 +408,31 @@ describe('fetchOcrResult', () => {
     } as unknown as childProcess.SpawnSyncReturns<string>);
 
     expect(() => fetchOcrResult('999', tempDir)).toThrow(/下载 Review 产物失败/);
+  });
+
+  it('throws fail when the download succeeds but ocr-result.json is missing', () => {
+    mockDownload((targetDir) => {
+      // 下载成功但产物里只有无关文件
+      writeResult(targetDir, 'logs/output.txt', 'no result here');
+    });
+
+    expect(() => fetchOcrResult('999', tempDir)).toThrow(/产物中未找到 ocr-result\.json 文件/);
+  });
+
+  it('throws fail when ocr-result.json is empty', () => {
+    mockDownload((targetDir) => {
+      writeResult(targetDir, 'ocr-result.json', '   \n');
+    });
+
+    expect(() => fetchOcrResult('999', tempDir)).toThrow(/ocr-result\.json 内容为空/);
+  });
+
+  it('throws fail when ocr-result.json is corrupted', () => {
+    mockDownload((targetDir) => {
+      writeResult(targetDir, 'ocr-result.json', '{ "comments": [');
+    });
+
+    expect(() => fetchOcrResult('999', tempDir)).toThrow(/解析 ocr-result\.json 失败/);
   });
 });
 

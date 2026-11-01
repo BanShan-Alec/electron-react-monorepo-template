@@ -15,7 +15,7 @@ const _AppCard = (props: IAppCardProps) => {
   return (
     <Card
       {...rest}
-      className={clsx('app-card flex flex-col hover:border-primary/40', className)}
+      className={clsx('app-card app-card-hover flex flex-col', className)}
       classNames={{ body: 'flex flex-1 flex-col', extra: 'ps-3' }}
     />
   );

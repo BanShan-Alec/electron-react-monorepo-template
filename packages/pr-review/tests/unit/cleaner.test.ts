@@ -22,15 +22,15 @@ describe('cleanOldReviewFiles', () => {
     expect(() => cleanOldReviewFiles(nonExistent)).not.toThrow();
   });
 
-  it('keeps all files when count is <= 10', () => {
-    for (let i = 1; i <= 5; i++) {
+  it('keeps all files when count equals the retention limit', () => {
+    for (let i = 1; i <= 10; i++) {
       const file = path.join(tempDir, `pr-1-round-${i}.md`);
       fs.writeFileSync(file, `Round ${i}`);
     }
 
     cleanOldReviewFiles(tempDir);
     const files = fs.readdirSync(tempDir).filter((f) => f.endsWith('.md'));
-    expect(files.length).toBe(5);
+    expect(files.length).toBe(10);
   });
 
   it('deletes oldest files when count > 10, keeping the 10 newest', () => {
@@ -59,15 +59,29 @@ describe('cleanOldReviewFiles', () => {
     expect(fs.existsSync(path.join(tempDir, 'pr-1-round-13.md'))).toBe(true);
   });
 
-  it('ignores non-md files and directories', () => {
+  it('only cleans markdown review files in a mixed directory over the limit', () => {
+    const now = Date.now();
+    for (let i = 1; i <= 12; i++) {
+      const file = path.join(tempDir, `pr-1-round-${i}.md`);
+      fs.writeFileSync(file, `Round ${i}`);
+      const mtime = new Date(now + i * 1000);
+      fs.utimesSync(file, mtime, mtime);
+    }
     fs.writeFileSync(path.join(tempDir, '.gitignore'), '*.md');
-    fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
+    fs.writeFileSync(path.join(tempDir, 'notes.txt'), 'keep me');
     fs.mkdirSync(path.join(tempDir, 'subfolder'));
 
     cleanOldReviewFiles(tempDir);
 
+    const remainingMd = fs.readdirSync(tempDir).filter((f) => f.endsWith('.md'));
+    expect(remainingMd.length).toBe(10);
+    // 仅最旧的 2 个 Markdown 被删除
+    expect(fs.existsSync(path.join(tempDir, 'pr-1-round-1.md'))).toBe(false);
+    expect(fs.existsSync(path.join(tempDir, 'pr-1-round-2.md'))).toBe(false);
+    expect(fs.existsSync(path.join(tempDir, 'pr-1-round-3.md'))).toBe(true);
+    // 非 Markdown 文件与目录一律不动
     expect(fs.existsSync(path.join(tempDir, '.gitignore'))).toBe(true);
-    expect(fs.existsSync(path.join(tempDir, '.gitkeep'))).toBe(true);
+    expect(fs.existsSync(path.join(tempDir, 'notes.txt'))).toBe(true);
     expect(fs.existsSync(path.join(tempDir, 'subfolder'))).toBe(true);
   });
 });

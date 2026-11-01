@@ -22,6 +22,7 @@ export interface IManualSpan extends ISpanScope {
 export interface SpanOptions {
   attributes?: Record<string, string | number | boolean>;
   parentContext?: SpanContext;
+  recordSuccess?: boolean;
 }
 
 export type SpanEndListener = (record: SpanRecord) => void;
@@ -195,9 +196,26 @@ export class Tracer implements ITracer {
     const manualSpan = this.startManualSpan(name, options);
 
     return this.storage.run(manualSpan.context, async () => {
+      const state: { status: 'OK' | 'ERROR' } = { status: 'OK' };
+      const span: ISpanScope = {
+        context: manualSpan.context,
+        setStatus: (status) => {
+          state.status = status;
+          manualSpan.setStatus(status);
+        },
+        setAttributes: (attributes) => manualSpan.setAttributes(attributes),
+        addEvent: (name, attributes) => manualSpan.addEvent(name, attributes),
+        recordException: (error) => {
+          state.status = 'ERROR';
+          manualSpan.recordException(error);
+        },
+      };
+
       try {
-        const result = await fn(manualSpan);
-        manualSpan.end('OK');
+        const result = await fn(span);
+        if (options?.recordSuccess !== false || state.status === 'ERROR') {
+          manualSpan.end(state.status);
+        }
         return result;
       } catch (err) {
         manualSpan.recordException(err);

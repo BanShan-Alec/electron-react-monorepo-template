@@ -60,6 +60,30 @@ describe('formatDashboard', () => {
     expect(md).toContain('**typecheck** | ❌ Fail');
   });
 
+  it.each([
+    ['CANCELLED', '', '⚪ Cancelled'],
+    ['SKIPPED', '', '⏭️ Skipped'],
+    ['TIMED_OUT', '', '⏰ Timed out'],
+    ['', 'IN_PROGRESS', '🟡 Running'],
+    ['', 'QUEUED', '⚪ Queued'],
+  ])('maps CI conclusion %s / status %s to its badge', (conclusion, status, badge) => {
+    const ciChecks: CiCheckItem[] = [{ name: 'test', conclusion, status, detailsUrl: '' }];
+
+    const md = formatDashboard(
+      'feat/test',
+      38,
+      'owner/repo',
+      'sha123',
+      baseRunInfo,
+      { comments: [] },
+      new Map(),
+      new Map(),
+      ciChecks,
+    );
+
+    expect(md).toContain(`| **test** | ${badge} |`);
+  });
+
   it('renders resolved items with strikethrough when historical issue is absent in current run', () => {
     const historicalMap = new Map<string, HistoricalIssueState>();
     const resolvedFp = computeFingerprint('packages/main/old.ts', '这是上一轮报出的旧问题');

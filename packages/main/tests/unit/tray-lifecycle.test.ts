@@ -15,6 +15,8 @@ describe('Tray & Window Destroy Lifecycle', () => {
   });
 
   afterEach(() => {
+    // 断言失败时也要复位退出态，避免把 isQuitting 泄漏给后续用例
+    appLifecycle.isQuitting = false;
     vi.restoreAllMocks();
   });
 

@@ -1,6 +1,12 @@
-import { BulbOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import {
+  BulbOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  CopyOutlined,
+} from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
+import { Button, Tooltip } from 'antd';
 import { memo } from 'react';
 import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
@@ -12,7 +18,7 @@ import type { SupportedLocale } from '@/locales/i18n';
 const STEP_CARD_CLASS =
   'flex items-start gap-3 p-3.5 bg-background-sunken rounded-lg border border-border';
 const CODE_BLOCK_CLASS =
-  'text-xs font-mono text-foreground-secondary bg-background/80 p-3 rounded-lg overflow-x-auto stable-scrollbar leading-relaxed flex-1';
+  'text-xs font-mono text-foreground-secondary bg-background/80 p-3 rounded-lg overflow-x-auto stable-scrollbar leading-relaxed flex-1 select-text';
 
 const LEGACY_CODE_ZH = `// 1. 渲染端强行引用主进程类型 (打破物理隔离)
 import type { AppRouter } from '@app/main/router';
@@ -83,8 +89,9 @@ function StepItem({
   );
 }
 
-const _ArchitectureView = (_props: IProps) => {
+const _ArchitectureView = (props: IProps) => {
   const { i18n } = useLingui();
+  const { onCopyCode } = props;
   const samples = CODE_SAMPLES[i18n.locale as SupportedLocale] ?? CODE_SAMPLES['zh-CN'];
   const legacyCode = samples.legacy;
   const standardCode = samples.standard;
@@ -135,7 +142,18 @@ const _ArchitectureView = (_props: IProps) => {
               <CloseCircleOutlined className="text-danger mr-1.5" />
               {t`传统散装 / 进程穿透方式`}
             </span>
-            <StatusTag tone="danger">{t`代码耦合 & 契约混乱`}</StatusTag>
+            <div className="flex items-center gap-2">
+              <StatusTag tone="danger">{t`代码耦合 & 契约混乱`}</StatusTag>
+              <Tooltip title={t`复制代码`}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<CopyOutlined />}
+                  aria-label={t`复制代码`}
+                  onClick={() => void onCopyCode(legacyCode)}
+                />
+              </Tooltip>
+            </div>
           </div>
           <CodeHighlight code={legacyCode} className={CODE_BLOCK_CLASS} />
         </div>
@@ -147,7 +165,18 @@ const _ArchitectureView = (_props: IProps) => {
               <CheckCircleOutlined className="text-success mr-1.5" />
               {t`Fullstack 规范分层方式`}
             </span>
-            <StatusTag tone="success">{t`物理隔离 & Result 契约`}</StatusTag>
+            <div className="flex items-center gap-2">
+              <StatusTag tone="success">{t`物理隔离 & Result 契约`}</StatusTag>
+              <Tooltip title={t`复制代码`}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<CopyOutlined />}
+                  aria-label={t`复制代码`}
+                  onClick={() => void onCopyCode(standardCode)}
+                />
+              </Tooltip>
+            </div>
           </div>
           <CodeHighlight code={standardCode} className={CODE_BLOCK_CLASS} />
         </div>
@@ -157,7 +186,9 @@ const _ArchitectureView = (_props: IProps) => {
 };
 
 // props 类型定义
-type IProps = Record<string, never>;
+interface IProps {
+  onCopyCode: (code: string) => Promise<void>;
+}
 
 const ArchitectureView = memo(_ArchitectureView);
 

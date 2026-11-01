@@ -5,19 +5,19 @@ import { Link } from 'vocs';
 // 故 vocs.config.ts 不配 logoUrl，导航栏品牌完全由这里承担）。
 export function SidebarHeader() {
   return (
-    <Link to="/" className="vocs:flex vocs:items-center vocs:gap-2 vocs:no-underline vocs:py-1">
+    <Link to="/" className="flex items-center gap-2 no-underline py-1">
       <img
         src="/electron-react-monorepo-template/icon.png"
         alt="Electron React Template"
-        className="vocs:h-6 vocs:w-6"
+        className="h-6 w-6"
       />
       <span
         style={{ lineHeight: '1.1' }}
-        className="vocs:text-[14px] vocs:font-bold vocs:text-heading vocs:tracking-tight"
+        className="text-[14px] font-bold text-heading tracking-tight"
       >
         Electron React Template
         <br />
-        <span className="vocs:text-[10px] vocs:font-medium vocs:text-muted">解法合集</span>
+        <span className="text-[10px] font-medium text-muted">解法合集</span>
       </span>
     </Link>
   );

@@ -10,12 +10,12 @@ test.describe
     let updaterPage: Page;
 
     test.beforeAll(async ({ page }) => {
-      // 确保界面处于简体中文环境以稳定匹配测试文案
+      // 确保界面处于简体中文环境以稳定匹配测试文案：等待 lang 真正切换完成
       await page.evaluate(async () => {
         // biome-ignore lint/suspicious/noExplicitAny: window.api access
         await (window as any).api?.config?.update?.({ language: 'zh-CN' });
       });
-      await page.waitForTimeout(300);
+      await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
     });
 
     async function ensureUpdaterWindow(
@@ -204,12 +204,17 @@ test.describe
       await retryBtn.click();
 
       // 验证状态机重入为 downloading 或 checking
-      const currentState = await electronApp.evaluate(() => {
-        // biome-ignore lint/suspicious/noExplicitAny: electron runtime service check
-        const service = (globalThis as any).__updaterService;
-        return service?.getState();
-      });
-      expect(['downloading', 'checking']).toContain(currentState);
+      await expect
+        .poll(
+          async () =>
+            electronApp.evaluate(() => {
+              // biome-ignore lint/suspicious/noExplicitAny: electron runtime service check
+              const service = (globalThis as any).__updaterService;
+              return service?.getState();
+            }),
+          { timeout: 5000 },
+        )
+        .toMatch(/^(downloading|checking)$/);
       await stepDelay(1000);
     });
 
@@ -233,24 +238,29 @@ test.describe
       await expect(hideButton).toBeVisible();
       await hideButton.click();
 
-      // 断言更新窗口已被销毁（不存在于存活的 BrowserWindow 列表中）
-      const isClosedOrDestroyed = await electronApp.evaluate(({ BrowserWindow }) => {
-        const wins = BrowserWindow.getAllWindows();
-        const updaterWin = wins.find((w) => {
-          try {
-            return (
-              !w.isDestroyed() &&
-              Boolean(w.webContents) &&
-              !w.webContents.isDestroyed() &&
-              w.webContents.getURL().includes('updater')
-            );
-          } catch {
-            return false;
-          }
-        });
-        return !updaterWin?.isVisible();
-      });
-      expect(isClosedOrDestroyed).toBe(true);
+      // 断言更新窗口已隐藏/销毁（不存在于可见的 BrowserWindow 列表中）
+      await expect
+        .poll(
+          async () =>
+            electronApp.evaluate(({ BrowserWindow }) => {
+              const wins = BrowserWindow.getAllWindows();
+              const updaterWin = wins.find((w) => {
+                try {
+                  return (
+                    !w.isDestroyed() &&
+                    Boolean(w.webContents) &&
+                    !w.webContents.isDestroyed() &&
+                    w.webContents.getURL().includes('updater')
+                  );
+                } catch {
+                  return false;
+                }
+              });
+              return !updaterWin?.isVisible();
+            }),
+          { timeout: 5000 },
+        )
+        .toBe(true);
       await stepDelay(1500);
 
       // 在窗口销毁期间，后台下载持续推进至 85%
@@ -304,22 +314,24 @@ test.describe
     });
 
     test('用例 7：更新窗口随语言切换为英文', async ({ page, electronApp }) => {
-      // 切到 en-US：两个窗口经 config.onChanged 同步重渲染
-      await page.evaluate(async () => {
-        // biome-ignore lint/suspicious/noExplicitAny: window.api access
-        await (window as any).api?.config?.update?.({ language: 'en-US' });
-      });
-      await page.waitForTimeout(300);
+      try {
+        // 切到 en-US：两个窗口经 config.onChanged 同步重渲染
+        await page.evaluate(async () => {
+          // biome-ignore lint/suspicious/noExplicitAny: window.api access
+          await (window as any).api?.config?.update?.({ language: 'en-US' });
+        });
+        await expect(page.locator('html')).toHaveAttribute('lang', 'en-US');
 
-      updaterPage = await ensureUpdaterWindow(electronApp, page);
-      // 关闭按钮的 aria-label 走 t 宏，是与更新状态无关的稳定断言点
-      await expect(updaterPage.getByRole('button', { name: 'Close' })).toBeVisible();
-
-      // 恢复中文，避免影响后续 spec 与托盘断言
-      await page.evaluate(async () => {
-        // biome-ignore lint/suspicious/noExplicitAny: window.api access
-        await (window as any).api?.config?.update?.({ language: 'zh-CN' });
-      });
-      await page.waitForTimeout(300);
+        updaterPage = await ensureUpdaterWindow(electronApp, page);
+        // 关闭按钮的 aria-label 走 t 宏，是与更新状态无关的稳定断言点
+        await expect(updaterPage.getByRole('button', { name: 'Close' })).toBeVisible();
+      } finally {
+        // 恢复中文，避免影响同进程内的后续断言
+        await page.evaluate(async () => {
+          // biome-ignore lint/suspicious/noExplicitAny: window.api access
+          await (window as any).api?.config?.update?.({ language: 'zh-CN' });
+        });
+        await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
+      }
     });
   });

@@ -1,7 +1,13 @@
-import { ArchitectureView as ArchitectureFeature } from './components/ArchitectureView';
+import { ArchitectureView } from './components/ArchitectureView';
+import { useArchitecture } from './hooks/useArchitecture';
 
 /**
- * 架构说明域入口（feature 唯一公开面）。纯展示页、无 IPC，视图即入口。
+ * 架构说明域入口（feature 唯一公开面）。
  */
+function ArchitectureFeature() {
+  const { copyCode } = useArchitecture();
+  return <ArchitectureView onCopyCode={copyCode} />;
+}
+
 export { ArchitectureFeature };
 export default ArchitectureFeature;

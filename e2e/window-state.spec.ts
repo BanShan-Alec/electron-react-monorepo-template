@@ -70,20 +70,49 @@ test.describe('主窗口初始几何尺寸与工作区视觉居中 E2E 验证', 
 
   test('同一 userData 重启后恢复上次窗口 bounds', async () => {
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-e2e-restore-'));
-    let expected: { x: number; y: number; width: number; height: number } | null = null;
+    type Bounds = { x: number; y: number; width: number; height: number };
+    let expected: Bounds | null = null;
 
     const first = await launchElectronApp({ userDataDir, cleanupUserData: false });
     try {
-      expected = await first.electronApp.evaluate(async ({ BrowserWindow }) => {
+      const targetBounds: Bounds = { x: 120, y: 90, width: 900, height: 620 };
+      const readBounds = () =>
+        first.electronApp.evaluate(({ BrowserWindow }) => {
+          const homeWindow = BrowserWindow.getAllWindows().find(
+            (w) => !w.isDestroyed() && !w.webContents.getURL().includes('updater'),
+          );
+          return homeWindow?.getNormalBounds() ?? null;
+        });
+
+      await first.electronApp.evaluate(({ BrowserWindow }, bounds) => {
         const homeWindow = BrowserWindow.getAllWindows().find(
           (w) => !w.isDestroyed() && !w.webContents.getURL().includes('updater'),
         );
         if (!homeWindow) throw new Error('Home window not found');
-        homeWindow.setBounds({ x: 120, y: 90, width: 900, height: 620 });
-        // 等原生窗口完成一次 resize 后再读回实际值，避免拿到设置过程中的中间态
-        await new Promise((resolve) => setTimeout(resolve, 400));
-        return homeWindow.getNormalBounds();
-      });
+        homeWindow.setBounds(bounds);
+      }, targetBounds);
+
+      // 等原生窗口真正应用新 bounds 并稳定（连续两次读数一致），替代固定 400ms 等待
+      let previous: Bounds | null = null;
+      await expect
+        .poll(
+          async () => {
+            const current = await readBounds();
+            const stable =
+              previous !== null && JSON.stringify(current) === JSON.stringify(previous);
+            previous = current;
+            return stable;
+          },
+          { timeout: 5000, intervals: [150] },
+        )
+        .toBe(true);
+
+      expected = await readBounds();
+      expect(expected).not.toBeNull();
+      // 确认 setBounds 真的生效（容差 10px，容纳 Windows 无边框窗口的边框差异）
+      for (const key of ['x', 'y', 'width', 'height'] as const) {
+        expect(Math.abs((expected?.[key] ?? 0) - targetBounds[key])).toBeLessThanOrEqual(10);
+      }
     } finally {
       await first.cleanup();
     }

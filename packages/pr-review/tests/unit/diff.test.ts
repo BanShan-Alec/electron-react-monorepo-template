@@ -27,11 +27,16 @@ describe('computeFingerprint', () => {
     expect(fpAtLine10).toBe(fpWithChineseLine);
   });
 
-  it('cleans special punctuation and truncates content to 160 characters', () => {
-    const longContent = 'A'.repeat(200);
-    const fp = computeFingerprint('file.ts', longContent);
+  it('normalizes special punctuation before comparing content', () => {
+    const noisy = computeFingerprint('file.ts', '发现 `foo()` 调用!! 与 bar: baz?');
+    const normalized = computeFingerprint('file.ts', '发现foo调用与barbaz');
+    expect(noisy).toBe(normalized);
+  });
+
+  it('truncates normalized content to 160 characters', () => {
+    const fp = computeFingerprint('file.ts', 'A'.repeat(200));
     const [, contentPart] = fp.split('::');
-    expect(contentPart.length).toBe(160);
+    expect(contentPart).toBe('A'.repeat(160));
   });
 });
 
@@ -77,7 +82,6 @@ describe('parseExistingDashboard', () => {
 
     const fp1 = computeFingerprint('packages/main/src/service.ts', '发现未捕获异常');
     const issue1 = result.get(fp1);
-    expect(issue1).toBeDefined();
     expect(issue1?.path).toBe('packages/main/src/service.ts');
     expect(issue1?.line).toBe(42);
     expect(issue1?.userNote).toBe('请提取为命名常量');
@@ -85,7 +89,6 @@ describe('parseExistingDashboard', () => {
 
     const fp2 = computeFingerprint('packages/renderer/src/index.tsx', '建议添加注释说明');
     const issue2 = result.get(fp2);
-    expect(issue2).toBeDefined();
     expect(issue2?.isIgnored).toBe(true);
     // 默认占位符提示应当被清洗掉
     expect(issue2?.userNote).toBe('');
