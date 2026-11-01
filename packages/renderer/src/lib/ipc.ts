@@ -72,6 +72,9 @@ type IpcService<TData, TParams extends unknown[]> = (...args: TParams) => Promis
  * 统一的 IPC 调用原语：Result 解构 + 计时 + 日志。
  * 成功返回解构后的 data，失败抛 IpcError（保留 code 与 traceId）。
  * feature 内禁止手写 window.api.* + if (!res.success)，一律经由本函数或 hooks/useIpc.ts。
+ *
+ * 参数契约：`args` 只包含业务参数，options 由本函数统一追加在末尾；
+ * 调用方不得把 options 混进 args，service 的 options 必须是最后一个可选参数。
  */
 export async function callIpc<TData, TParams extends unknown[]>(
   channel: string,
@@ -82,11 +85,8 @@ export async function callIpc<TData, TParams extends unknown[]>(
   const startedAt = performance.now();
   let traceId: string | undefined;
   try {
-    const callArgs: unknown[] = [...args];
-    if (options.recordSuccess === false) {
-      while (callArgs.length < Math.max(0, service.length - 1)) callArgs.push(undefined);
-      callArgs.push({ recordSuccess: false });
-    }
+    const callArgs: unknown[] =
+      options.recordSuccess === false ? [...args, { recordSuccess: false }] : args;
     const res = await service(...(callArgs as TParams));
     traceId = res.traceId;
     if (!res.success) {

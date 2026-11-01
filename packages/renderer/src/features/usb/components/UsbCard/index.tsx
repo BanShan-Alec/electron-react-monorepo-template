@@ -33,7 +33,13 @@ const _UsbCard = (props: IUsbCardProps) => {
       return;
     }
 
-    setScrollFadeState(getScrollFadeState(element));
+    // scroll 事件按帧触发：同值返回 prev，避免滚动与 ResizeObserver 回调造成无效重渲染
+    setScrollFadeState((prev) => {
+      const next = getScrollFadeState(element);
+      return prev.topOpacity === next.topOpacity && prev.bottomOpacity === next.bottomOpacity
+        ? prev
+        : next;
+    });
   }, []);
 
   useEffect(() => {

@@ -90,8 +90,8 @@ function destroyStdio(proc: ChildProcess | undefined): void {
 }
 
 function removeUserDataDir(tempUserDataDir: string): void {
-  if (!fs.existsSync(tempUserDataDir)) return;
   try {
+    // force: true 对不存在的路径同样静默成功，无需前置 existsSync 判断
     fs.rmSync(tempUserDataDir, { recursive: true, force: true });
   } catch {
     // 忽略 Windows 系统下的进程临时文件锁

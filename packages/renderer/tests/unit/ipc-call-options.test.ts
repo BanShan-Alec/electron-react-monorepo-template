@@ -31,6 +31,21 @@ describe('callIpc success logging options', () => {
     expect(consoleInfo).not.toHaveBeenCalled();
   });
 
+  it('appends quiet-success options after the business arguments', async () => {
+    const windowState = window as Window & { __APP_ENV__: { mode: string } };
+    windowState.__APP_ENV__.mode = 'development';
+    const service = vi.fn(async (id: string, options?: { recordSuccess?: boolean }) => {
+      expect(options).toEqual({ recordSuccess: false });
+      return { success: true as const, data: id };
+    });
+
+    await expect(callIpc('test.get', service, ['item'], { recordSuccess: false })).resolves.toBe(
+      'item',
+    );
+    expect(service).toHaveBeenCalledWith('item', { recordSuccess: false });
+    expect(consoleInfo).not.toHaveBeenCalled();
+  });
+
   it('keeps the service arguments unchanged when success logging is enabled', async () => {
     const windowState = window as Window & { __APP_ENV__: { mode: string } };
     windowState.__APP_ENV__.mode = 'development';
