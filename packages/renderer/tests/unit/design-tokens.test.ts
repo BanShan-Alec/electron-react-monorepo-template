@@ -80,4 +80,11 @@ describe('cssVar 颜色链路', () => {
     expect(lightCss).toContain('--ant-color-bg-layout:');
     expect(darkCss).toContain('--ant-color-bg-layout:');
   });
+
+  it('USB 渐隐使用主题表面色', () => {
+    expect(indexCss).toContain(
+      'linear-gradient(to bottom, var(--color-bg-container), transparent)',
+    );
+    expect(indexCss).toContain('linear-gradient(to top, var(--color-bg-container), transparent)');
+  });
 });

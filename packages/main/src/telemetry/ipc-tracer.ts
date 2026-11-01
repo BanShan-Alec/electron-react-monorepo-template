@@ -34,9 +34,11 @@ export function handleTraced<T = unknown, R = unknown>(
     const tracer = getTracer();
     let data: T;
     let parentContext: SpanContext | undefined;
+    let recordSuccess = true;
 
     if (isTracedIpcPayload<T>(rawInput)) {
       data = rawInput.data;
+      recordSuccess = rawInput.callOptions?.recordSuccess !== false;
       if (rawInput.__trace_carrier) {
         parentContext = tracer.extract(
           rawInput.__trace_carrier as Record<string, string | undefined>,
@@ -55,6 +57,7 @@ export function handleTraced<T = unknown, R = unknown>(
       `ipc.receive:${channel}`,
       {
         parentContext,
+        recordSuccess,
         attributes: {
           'ipc.channel': channel,
           'rpc.system': 'electron-ipc',
@@ -64,8 +67,8 @@ export function handleTraced<T = unknown, R = unknown>(
       },
       async (span) => {
         const winTag = windowName ? `[${windowName}] ` : windowId ? `[win#${windowId}] ` : '';
-        // 生产调用记录由 traces.ndjson 的 span 承担；此处只保留开发终端可见的在飞标记
-        getLogManager().scoped('IPC').debug(`${winTag}Handling ${channel}`);
+        // 成功记录关闭时，跳过轮询的调试行；失败仍由下面的错误日志记录。
+        if (recordSuccess) getLogManager().scoped('IPC').debug(`${winTag}Handling ${channel}`);
         const startedAt = performance.now();
         try {
           const result = await handler(event, data, windowName);

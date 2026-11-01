@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { type ChildProcess, execSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -71,6 +71,34 @@ function killProcessTree(pid: number, tempUserDataDir?: string): void {
 }
 
 /**
+ * 断开并销毁 stdio 管道，防止未关闭句柄阻塞 Worker 退出
+ */
+function destroyStdio(proc: ChildProcess | undefined): void {
+  if (!proc) return;
+  try {
+    if (proc.stdout) {
+      proc.stdout.unpipe(process.stdout);
+      proc.stdout.destroy();
+    }
+    if (proc.stderr) {
+      proc.stderr.unpipe(process.stderr);
+      proc.stderr.destroy();
+    }
+  } catch {
+    // 忽略流销毁异常
+  }
+}
+
+function removeUserDataDir(tempUserDataDir: string): void {
+  try {
+    // force: true 对不存在的路径同样静默成功，无需前置 existsSync 判断
+    fs.rmSync(tempUserDataDir, { recursive: true, force: true });
+  } catch {
+    // 忽略 Windows 系统下的进程临时文件锁
+  }
+}
+
+/**
  * 启动 Electron 自动化测试环境公共上下文
  * 封装了 4 大标准启动步骤：
  * 1. 创建隔离的临时用户数据目录（规避本地单例锁冲突）
@@ -87,66 +115,74 @@ export async function launchElectronApp(
     options.userDataDir ?? fs.mkdtempSync(path.join(os.tmpdir(), 'electron-e2e-'));
   const shouldCleanupUserData = options.cleanupUserData ?? ownsUserDataDir;
 
-  // 2. 启动 Electron 应用
-  const electronApp = await electron.launch({
-    args: [
-      '.',
-      `--user-data-dir=${tempUserDataDir}`,
-      '--disable-gpu',
-      '--disable-dev-shm-usage',
-      '--no-sandbox',
-      ...(options.extraArgs ?? []),
-    ],
-    env: {
-      ...process.env,
-      MODE: 'test',
-      ...options.extraEnv,
-    },
-  });
+  // 启动链路失败时用它回收已拉起的进程
+  let launchedApp: ElectronApplication | undefined;
 
-  // 3. 将主进程日志重定向至控制台以便追踪诊断
-  const proc = electronApp.process();
-  proc.stdout?.pipe(process.stdout);
-  proc.stderr?.pipe(process.stderr);
+  try {
+    // 2. 启动 Electron 应用
+    const electronApp = await electron.launch({
+      args: [
+        '.',
+        `--user-data-dir=${tempUserDataDir}`,
+        '--disable-gpu',
+        '--disable-dev-shm-usage',
+        '--no-sandbox',
+        ...(options.extraArgs ?? []),
+      ],
+      env: {
+        ...process.env,
+        MODE: 'test',
+        ...options.extraEnv,
+      },
+    });
+    launchedApp = electronApp;
 
-  // 4. 注入主进程 shell 安全桩
-  // 【为什么必须全局 Mock 掉 shell 模块？】
-  // - 在 Linux Xvfb / GitHub Actions 等无头 CI 环境中，缺少标准桌面文件管理器（如 Nautilus），
-  //   Electron 的 shell.showItemInFolder / openPath 会降级触发 xdg-open，导致系统在后台误唤起
-  //   Firefox 或其他默认浏览器作为独立后台孤儿进程常驻。
-  // - 这些外部孤儿进程会持有主进程的 stdout/stderr 管道写端，导致测试套件全部通过后，
-  //   Playwright Worker 因 stdio 管道无法到达 EOF 而发生严重挂死，触发 45000ms Worker teardown 超时。
-  // - 同时亦可防止在本地开发者机器上运行 E2E 测试时频繁弹出真实的外部浏览器或资源管理器窗口。
-  // - 测试用例只需验证 IPC 通信协议与参数分发正确性，严禁直接穿透操作系统原生界面。
-  await electronApp.evaluate(({ shell }) => {
-    shell.openExternal = async (url) => {
-      console.warn('[E2E Shell Stub] openExternal called with:', url);
-    };
-    shell.openPath = async (path) => {
-      console.warn('[E2E Shell Stub] openPath called with:', path);
-      return '';
-    };
-    shell.showItemInFolder = (fullPath) => {
-      console.warn('[E2E Shell Stub] showItemInFolder called with:', fullPath);
-    };
-  });
+    // 3. 将主进程日志重定向至控制台以便追踪诊断
+    const proc = electronApp.process();
+    proc.stdout?.pipe(process.stdout);
+    proc.stderr?.pipe(process.stderr);
 
-  // 5. 等待应用首个窗口加载就绪
-  const page = await electronApp.firstWindow();
-  page.on('pageerror', (err) => console.error('PAGE ERROR:', err));
-  await page.waitForLoadState('domcontentloaded');
+    // 4. 注入主进程 shell 安全桩
+    // 【为什么必须全局 Mock 掉 shell 模块？】
+    // - 在 Linux Xvfb / GitHub Actions 等无头 CI 环境中，缺少标准桌面文件管理器（如 Nautilus），
+    //   Electron 的 shell.showItemInFolder / openPath 会降级触发 xdg-open，导致系统在后台误唤起
+    //   Firefox 或其他默认浏览器作为独立后台孤儿进程常驻。
+    // - 这些外部孤儿进程会持有主进程的 stdout/stderr 管道写端，导致测试套件全部通过后，
+    //   Playwright Worker 因 stdio 管道无法到达 EOF 而发生严重挂死，触发 45000ms Worker teardown 超时。
+    // - 同时亦可防止在本地开发者机器上运行 E2E 测试时频繁弹出真实的外部浏览器或资源管理器窗口。
+    // - 测试用例只需验证 IPC 通信协议与参数分发正确性，严禁直接穿透操作系统原生界面。
+    await electronApp.evaluate(({ shell }) => {
+      shell.openExternal = async (url) => {
+        console.warn('[E2E Shell Stub] openExternal called with:', url);
+      };
+      shell.openPath = async (path) => {
+        console.warn('[E2E Shell Stub] openPath called with:', path);
+        return '';
+      };
+      shell.showItemInFolder = (fullPath) => {
+        console.warn('[E2E Shell Stub] showItemInFolder called with:', fullPath);
+      };
+    });
 
-  const cleanup = async () => {
-    if (electronApp) {
+    // 5. 等待应用首个窗口加载就绪
+    const page = await electronApp.firstWindow();
+    page.on('pageerror', (err) => console.error('PAGE ERROR:', err));
+    await page.waitForLoadState('domcontentloaded');
+
+    const cleanup = async () => {
       const pid = proc?.pid;
+      let closeTimer: NodeJS.Timeout | undefined;
 
       try {
         // 限时 5 秒等待 Playwright electronApp.close() 完成
         await Promise.race([
           electronApp.close(),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('electronApp.close() timed out after 5000ms')), 5000),
-          ),
+          new Promise((_, reject) => {
+            closeTimer = setTimeout(
+              () => reject(new Error('electronApp.close() timed out after 5000ms')),
+              5000,
+            );
+          }),
         ]);
       } catch (err) {
         console.warn(
@@ -157,21 +193,9 @@ export async function launchElectronApp(
           killProcessTree(pid, tempUserDataDir);
         }
       } finally {
-        // 确保断开并销毁 stdio 管道，防止未关闭句柄阻塞 Worker 退出
-        if (proc) {
-          try {
-            if (proc.stdout) {
-              proc.stdout.unpipe(process.stdout);
-              proc.stdout.destroy();
-            }
-            if (proc.stderr) {
-              proc.stderr.unpipe(process.stderr);
-              proc.stderr.destroy();
-            }
-          } catch {
-            // 忽略流销毁异常
-          }
-        }
+        // 正常关闭时也要清掉兜底 timer，避免它拖住 Worker 事件循环
+        if (closeTimer) clearTimeout(closeTimer);
+        destroyStdio(proc);
 
         // 兜底检查：如果主进程或子进程依然残留，强制杀灭进程树
         if (pid) {
@@ -183,21 +207,32 @@ export async function launchElectronApp(
           }
         }
       }
-    }
 
-    if (shouldCleanupUserData && tempUserDataDir && fs.existsSync(tempUserDataDir)) {
-      try {
-        fs.rmSync(tempUserDataDir, { recursive: true, force: true });
-      } catch {
-        // 忽略 Windows 系统下的进程临时文件锁
+      if (shouldCleanupUserData) {
+        removeUserDataDir(tempUserDataDir);
       }
-    }
-  };
+    };
 
-  return {
-    electronApp,
-    page,
-    tempUserDataDir,
-    cleanup,
-  };
+    return {
+      electronApp,
+      page,
+      tempUserDataDir,
+      cleanup,
+    };
+  } catch (error) {
+    // 启动/桩注入/首窗口任一环节失败：回收已拉起的进程与本次自建目录，避免残留
+    if (launchedApp) {
+      const proc = launchedApp.process();
+      try {
+        await launchedApp.close();
+      } catch {
+        if (proc?.pid) killProcessTree(proc.pid, tempUserDataDir);
+      }
+      destroyStdio(proc);
+    }
+    if (shouldCleanupUserData) {
+      removeUserDataDir(tempUserDataDir);
+    }
+    throw error;
+  }
 }

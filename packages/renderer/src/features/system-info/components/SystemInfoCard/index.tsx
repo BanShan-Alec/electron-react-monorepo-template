@@ -1,8 +1,8 @@
-import { DesktopOutlined, ReloadOutlined } from '@ant-design/icons';
+import { DesktopOutlined } from '@ant-design/icons';
 import { plural, t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import type { SystemInfo } from '@shared/types/system';
-import { Button, Skeleton } from 'antd';
+import { Skeleton } from 'antd';
 import { memo } from 'react';
 import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
@@ -26,7 +26,7 @@ function InfoCell({ label, value }: { label: string; value: string }) {
 const _SystemInfoCard = (props: ISystemInfoCardProps) => {
   useLingui();
   // 变量声明、解构
-  const { systemInfo, isLoading, onRefresh } = props;
+  const { systemInfo, isLoading } = props;
 
   // 组件状态
 
@@ -52,11 +52,6 @@ const _SystemInfoCard = (props: ISystemInfoCardProps) => {
           title={t`系统与运行环境`}
           subtitle={t`Electron & Node.js 原生底层探针`}
         />
-      }
-      extra={
-        <Button size="small" icon={<ReloadOutlined />} loading={isLoading} onClick={onRefresh}>
-          {t`刷新`}
-        </Button>
       }
     >
       {showSkeleton ? (
@@ -98,7 +93,6 @@ const _SystemInfoCard = (props: ISystemInfoCardProps) => {
 interface ISystemInfoCardProps {
   systemInfo: SystemInfo | null;
   isLoading: boolean;
-  onRefresh: () => void;
 }
 
 const SystemInfoCard = memo(_SystemInfoCard);

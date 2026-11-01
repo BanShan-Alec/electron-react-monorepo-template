@@ -7,6 +7,8 @@ describe('createRenderLogThrottle', () => {
   });
 
   afterEach(() => {
+    // 恢复真实 timer 前清掉残留定时器，避免跨用例回调继续触发
+    vi.clearAllTimers();
     vi.useRealTimers();
   });
 

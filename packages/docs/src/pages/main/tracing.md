@@ -34,6 +34,7 @@ export async function invokeTraced<R = unknown, T = unknown>(
     __trace_carrier: {
       traceparent,
     },
+    callOptions,
     data,
   };
 
@@ -62,6 +63,7 @@ return tracer.startActiveSpan(
   `ipc.receive:${channel}`,
   {
     parentContext,
+    recordSuccess: rawInput.callOptions?.recordSuccess !== false,
     attributes: {
       'ipc.channel': channel,
       'rpc.system': 'electron-ipc',
@@ -84,8 +86,8 @@ private readonly storage = new AsyncLocalStorage<SpanContext>();
 // ...
 return this.storage.run(manualSpan.context, async () => {
   try {
-    const result = await fn(manualSpan);
-    manualSpan.end('OK');
+    const result = await fn(span);
+    if (options?.recordSuccess !== false) manualSpan.end('OK');
     return result;
   } catch (err) {
     manualSpan.recordException(err);
@@ -98,7 +100,7 @@ return this.storage.run(manualSpan.context, async () => {
 三个出口让 trace 真正可消费：
 
 - **每条主进程日志自动带前缀**——LogManager 注册 hook，活跃上下文存在时给日志行加 `[trace_id:xxx span_id:yyy]`（见[本地日志（Electron-log）](/main/logging)），拿一个 traceId 就能在 main.log 里 grep 出整条链路
-- **span 落盘 traces.ndjson**——LogManager 监听 `onSpanEnd`，把 SpanRecord 以 NDJSON 逐行写入独立文件
+- **span 落盘 traces.ndjson**——LogManager 监听 `onSpanEnd`，把 SpanRecord 以 NDJSON 逐行写入独立文件；高频成功轮询可设置 `recordSuccess: false` 省略成功 span，异常和业务失败仍会记录
 - **traceId 回注渲染层**——业务返回 `Result` 结构时注入 `traceId`：
 
 ```ts

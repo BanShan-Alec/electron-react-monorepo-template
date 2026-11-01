@@ -1,4 +1,4 @@
-import type { TracedIpcPayload } from '@app/shared/types/telemetry';
+import type { IpcCallOptions, TracedIpcPayload } from '@app/shared/types/telemetry';
 import {
   generateSpanId,
   generateTraceId,
@@ -12,6 +12,7 @@ import { ipcRenderer } from 'electron';
 export async function invokeTraced<R = unknown, T = unknown>(
   channel: string,
   data?: T,
+  callOptions?: IpcCallOptions,
 ): Promise<R> {
   const traceId = generateTraceId();
   const spanId = generateSpanId();
@@ -25,6 +26,7 @@ export async function invokeTraced<R = unknown, T = unknown>(
     __trace_carrier: {
       traceparent,
     },
+    callOptions,
     data,
   };
 

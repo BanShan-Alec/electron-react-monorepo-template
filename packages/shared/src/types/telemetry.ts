@@ -33,8 +33,13 @@ export interface TraceCarrier {
   traceparent?: string;
 }
 
+export interface IpcCallOptions {
+  recordSuccess?: boolean;
+}
+
 export interface TracedIpcPayload<T = unknown> {
   __trace_carrier?: TraceCarrier;
+  callOptions?: IpcCallOptions;
   data: T;
 }
 

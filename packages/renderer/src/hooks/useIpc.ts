@@ -1,3 +1,4 @@
+import type { IpcCallOptions } from '@app/shared/types/telemetry';
 import type { Result } from '@shared/types/result';
 import type { UseManualRequestOptions, UseManualRequestResult } from '@/hooks/useManualRequest';
 import { useManualRequest } from '@/hooks/useManualRequest';
@@ -14,9 +15,11 @@ import { callIpc } from '@/lib/ipc';
 export function useIpc<TData, TParams extends unknown[]>(
   channel: string,
   service: (...args: TParams) => Promise<Result<TData>>,
-  options?: UseManualRequestOptions<TData, TParams>,
+  options?: UseManualRequestOptions<TData, TParams> & IpcCallOptions,
 ): UseManualRequestResult<TData, TParams> {
+  const { recordSuccess, ...requestOptions } = options ?? {};
+
   return useManualRequest<TData, TParams>(async (...args: TParams) => {
-    return callIpc(channel, service, args);
-  }, options);
+    return callIpc(channel, service, args, { recordSuccess });
+  }, requestOptions);
 }

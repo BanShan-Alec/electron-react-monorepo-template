@@ -1,6 +1,6 @@
 import { isTracedIpcPayload } from '@app/main/telemetry/ipc-tracer';
 import { getTracer } from '@app/main/telemetry/tracer';
-import type { TracedIpcPayload } from '@app/shared/types/telemetry';
+import type { SpanContext, SpanRecord, TracedIpcPayload } from '@app/shared/types/telemetry';
 import { describe, expect, it } from 'vitest';
 
 describe('IPC Tracer Contract', () => {
@@ -19,67 +19,55 @@ describe('IPC Tracer Contract', () => {
     expect(isTracedIpcPayload(undefined)).toBe(false);
   });
 
-  it('extracts parentContext from carrier and maintains causal link', async () => {
+  it('derives the parent context from the carrier and falls back when it is missing', async () => {
     const tracer = getTracer();
     const parentTraceId = '4bf92f3577b34da6a3ce929d0e0e4736';
     const clientSpanId = '00f067aa0ba902b7';
-    const traceparent = `00-${parentTraceId}-${clientSpanId}-01`;
-
     const payload: TracedIpcPayload<string> = {
-      __trace_carrier: { traceparent },
+      __trace_carrier: { traceparent: `00-${parentTraceId}-${clientSpanId}-01` },
       data: 'test-data',
     };
-
-    let capturedTraceId: string | undefined;
-    let capturedParentId: string | undefined;
 
     const parentContext = tracer.extract(
       payload.__trace_carrier as Record<string, string | undefined>,
     );
-
-    await tracer.startActiveSpan('ipc.receive:test', { parentContext }, async (_span) => {
-      const active = tracer.getActiveContext();
-      capturedTraceId = active?.traceId;
-      capturedParentId = active?.parentSpanId;
+    let tracedContext: SpanContext | undefined;
+    await tracer.startActiveSpan('ipc.receive:test', { parentContext }, async () => {
+      tracedContext = tracer.getActiveContext();
     });
 
     // 因果关系验证：主进程内部操作的 parent_id 必须严格等于 IPC 传入的客户端 span_id
-    expect(capturedTraceId).toBe(parentTraceId);
-    expect(capturedParentId).toBe(clientSpanId);
-  });
+    expect(tracedContext?.traceId).toBe(parentTraceId);
+    expect(tracedContext?.parentSpanId).toBe(clientSpanId);
 
-  it('falls back gracefully to new traceId when carrier is missing', async () => {
-    const tracer = getTracer();
-    let capturedTraceId: string | undefined;
-    let capturedParentId: string | undefined;
-
+    let untracedContext: SpanContext | undefined;
     await tracer.startActiveSpan('ipc.receive:untraced', { parentContext: undefined }, async () => {
-      const active = tracer.getActiveContext();
-      capturedTraceId = active?.traceId;
-      capturedParentId = active?.parentSpanId;
+      untracedContext = tracer.getActiveContext();
     });
 
-    expect(capturedTraceId).toBeDefined();
-    expect(capturedTraceId).toMatch(/^[0-9a-f]{32}$/);
-    expect(capturedParentId).toBeUndefined();
+    expect(untracedContext?.traceId).toMatch(/^[0-9a-f]{32}$/);
+    expect(untracedContext?.parentSpanId).toBeUndefined();
   });
 
   it('marks span as ERROR when setStatus("ERROR") is called', async () => {
     const tracer = getTracer();
-    let capturedRecord: unknown;
-    const unsub = tracer.onSpanEnd((record) => {
+    let capturedRecord: SpanRecord | undefined;
+    const unsubscribe = tracer.onSpanEnd((record) => {
       if (record.name === 'test.error.span') {
         capturedRecord = record;
       }
     });
 
-    await tracer.startActiveSpan('test.error.span', undefined, async (span) => {
-      span.setStatus('ERROR');
-      return { success: false };
-    });
+    try {
+      await tracer.startActiveSpan('test.error.span', undefined, async (span) => {
+        span.setStatus('ERROR');
+        return { success: false };
+      });
+    } finally {
+      // 断言失败也必须注销，避免污染同进程内后续用例
+      unsubscribe();
+    }
 
-    unsub();
-    expect(capturedRecord).toBeDefined();
-    expect((capturedRecord as { status: string }).status).toBe('ERROR');
+    expect(capturedRecord?.status).toBe('ERROR');
   });
 });
