@@ -205,7 +205,7 @@ pnpm -F @app/renderer remove <包名>
 ### 5. pnpm 12 构建审批与缓存设置
 
 - **构建脚本审批**：`strictDepBuilds` 默认开启，未列入 `allowBuilds` 且带构建脚本的依赖会直接让安装失败（`ERR_PNPM_IGNORED_BUILDS`）——这是故意的快速失败，避免重演「electron 二进制静默缺失」。处置：`pnpm ignored-builds` 查看全部待审批包 → `pnpm approve-builds <包名>` 审批，决策写入 `pnpm-workspace.yaml` 的 `allowBuilds`。
-- **electron 二进制兜底**：electron 42+ 起 npm 包无 install 生命周期脚本，二进制惰性下载——全新工作区装完不带 dist，`require('electron')` 直接报错。根 `postinstall` 一行 `install-electron` 在每次安装后调用官方安装器（内部自带版本/dist 判定：就绪时约 100ms 空转，缺失时命中机器级 zip 缓存约 2 秒）；二进制损坏或 electron 升级后同样自动重装。CI 侧由 setup-env 的 `actions/cache` 预热三平台 electron 缓存目录，e2e job 另留一步显式安装作保险冗余。国内镜像已配在根 `package.json` 的 `config.electron_mirror`（npmmirror，开箱即走；**勿移至 `.npmrc`——pnpm 不注入 `.npmrc` 自定义键，那边写不生效**）。换源改这一处即可：`ELECTRON_MIRROR` 环境变量优先级在 config 之后，压不过它。
+- **electron 二进制兜底**：electron 42+ 起 npm 包无 install 生命周期脚本，二进制惰性下载——全新工作区装完不带 dist，`require('electron')` 直接报错。根 `postinstall` 用 `cross-env ELECTRON_MIRROR=… install-electron` 在每次安装后调用官方安装器（内部自带版本/dist 判定：就绪时约 100ms 空转，缺失时命中机器级 zip 缓存约 2 秒）；二进制损坏或 electron 升级后同样自动重装。CI 侧由 setup-env 的 `actions/cache` 预热三平台 electron 缓存目录，e2e job 另留一步显式安装作保险冗余。国内镜像就写在这个 postinstall 命令里（npmmirror，开箱即走），**只作用于这一次二进制安装**：`@electron/get` 的镜像查找顺序把 npm 注入的 `npm_package_config_electron_mirror` / `npm_config_electron_mirror` 排在调用方显式 URL 之前，所以镜像绝不能写成根 `package.json` 的 `config.electron_mirror`——那会让 electron-builder 打 macOS DMG 时把 dmgbuild 辅助包也改写到 electron 镜像路径下，直接 404；同理也别挪进 `.npmrc`。换源改 postinstall 这一处即可。
 - **minimumReleaseAge: 1440**：发布不满 24 小时的依赖禁止安装（供应链防护）。确需安装全新冠名版本时，用 `minimumReleaseAgeExclude` 按包临时豁免，不要全局关闭。
 
 ---
