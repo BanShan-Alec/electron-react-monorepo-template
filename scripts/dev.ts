@@ -16,7 +16,9 @@ const ROOT_DIR = repoEnv.rootDir;
 // 未注入时归一为 production:主进程的 isDev / isProd 与窗口加载路径统一按生产语义,
 // 不再出现「开发语义 + 加载 dist」的混合态。
 if (!process.env.MODE) {
-  console.warn('[dev] MODE 未注入(应经 package.json 脚本的 cross-env 提供),已归一为 production');
+  console.warn(
+    '[dev] MODE not injected (expected via package.json cross-env), normalized to production',
+  );
   process.env.MODE = 'production';
 }
 
@@ -225,10 +227,14 @@ async function runPreview(): Promise<void> {
       stdio: 'inherit',
     });
   } else {
-    console.warn(`${LOG_PREFIX} --skip-build:未校验产物完整性,缺失时应用可能无窗口常驻`);
+    console.warn(
+      `${LOG_PREFIX} --skip-build: artifact check skipped, app may run without a window`,
+    );
   }
 
-  console.log(`${LOG_PREFIX} mode=${config.mode}: 跳过 renderer dev server,加载 dist 产物`);
+  console.log(
+    `${LOG_PREFIX} mode=${config.mode}: skip renderer dev server, loading dist artifacts`,
+  );
 
   const electronApp = spawn(String(electronPath), [...buildElectronArgs(), '.'], {
     stdio: 'inherit',
@@ -249,6 +255,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error(`${LOG_PREFIX} 启动失败:`, err);
+  console.error(`${LOG_PREFIX} Failed to start:`, err);
   process.exit(1);
 });

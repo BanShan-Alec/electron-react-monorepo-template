@@ -184,7 +184,7 @@ dev.ts 还给忘了注入 MODE 的情况留了兜底：缺失时归一为 `produ
 
 ```ts
 if (!process.env.MODE) {
-  console.warn('[dev] MODE 未注入(应经 package.json 脚本的 cross-env 提供),已归一为 production');
+  console.warn('[dev] MODE not injected (expected via package.json cross-env), normalized to production');
   process.env.MODE = 'production';
 }
 ```
