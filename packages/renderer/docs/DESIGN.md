@@ -27,7 +27,7 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 | margin / padding | Tailwind 4px 阶（Tabs 底边对缝允许 `-mb-px`） | 组间距 > 组内距 |
 | width | 看板 `max-w-7xl`；架构 `max-w-5xl` | 同页不混用两种内容列宽 |
 | height | 控件 28（SM）/ 32；卡片随内容 | 行内等高由 `AppCard` body flex 承担 |
-| box-shadow | `.app-card` 一组三级投影 | 不另写自定义阴影 |
+| box-shadow | `.app-card` 一组三级投影，hover 时加深 | 不另写自定义阴影 |
 | border-radius | 4（logo）/ 6（图标块）/ 8（卡片、面板）/ full（圆点） | 内层半径 = 外层 − padding |
 | border-width | 统一 1px | 更弱的分隔用透明度（`/40`、`/60`），不用更细的 px |
 | opacity | 表面/描边只用 10/20/30/40/60/80 | 文字不用 alpha 造灰，取三档文字色 |
@@ -59,7 +59,7 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 - 一律 `AppCard`，不直接用 antd `Card`，不再引入 `glass-card`。
 - 卡片只有一个内容块时，给它 `flex-1`（body 已是 flex column），避免行内等高留下空白。
 - 卡片头右侧动作（`extra`）与标题之间由 `AppCard` 统一留 12px，不在各卡片里手写 `ml-*`。
-- hover 由 `AppCard` 提供（`border-primary/40` + 投影过渡），组件内不再写 `hover:border-*`。
+- hover 由 `AppCard` 提供（保持描边颜色、加深投影），组件内不再写 `hover:border-*`。
 - 卡内凹槽用 `bg-background-sunken`；页面上的浮起卡片用 `bg-background-elevated`。
 
 ### 状态标签：`StatusTag`
