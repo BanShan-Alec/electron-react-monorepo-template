@@ -5,7 +5,7 @@
 > 🤖 **AI 协作者**：本包的目录结构 / Feature 规范 / 请求层 / 组件约定已收敛至 [AGENTS.md](./AGENTS.md)，动手前必读；视觉规范见 [docs/DESIGN.md](./docs/DESIGN.md)；全局红线与全仓任务路由见 [根 AGENTS.md](../../AGENTS.md)。
 
 ```bash
-pnpm --filter @app/renderer dev        # 本地开发（由根目录 pnpm start 统一编排）
+pnpm --filter @app/renderer dev        # 本地开发（由根目录 pnpm dev 统一编排）
 pnpm --filter @app/renderer build      # 生产打包（含类型检查与按需 Chunk 分割）
 pnpm --filter @app/renderer extract    # 一键提取自然中文词条至 PO 字典
 pnpm --filter @app/renderer typecheck  # TypeScript 类型检查

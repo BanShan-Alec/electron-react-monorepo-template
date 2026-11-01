@@ -32,7 +32,7 @@ if (!values['skip-verify']) {
 }
 ```
 
-`build:dir` / `build:win` / `build:mac` / `build:linux` 全部经 `scripts/build.ts` 触发，electron-builder 完成后默认调用 `verifyPostbuild`；只有显式传 `--skip-verify` 才跳过。产物目录固定是仓库根下的 `dist`：
+`build:unpack` / `build:win` / `build:mac` / `build:linux` 全部经 `scripts/build.ts` 触发，electron-builder 完成后默认调用 `verifyPostbuild`；只有显式传 `--skip-verify` 才跳过。产物目录固定是仓库根下的 `dist`：
 
 → 源码：[build/lib/repo-paths.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/lib/repo-paths.ts)
 
@@ -150,7 +150,7 @@ try {
 
 ## 怎么抄
 
-1. 打包统一走 `scripts/build.ts`（`build:dir` / `build:win` / `build:mac` / `build:linux`），让 postbuild 默认执行；不要绕过它直接调 electron-builder
+1. 打包统一走 `scripts/build.ts`（`build:unpack` / `build:win` / `build:mac` / `build:linux`），让 postbuild 默认执行；不要绕过它直接调 electron-builder
 2. 单独重跑用 `pnpm verify:postbuild`，先确认 `dist/` 里已有解包产物，否则脚本直接抛错
 3. 冒烟只锁「产物能启动 + `#root` 挂载」；交互与协议行为交给[端到端测试（Playwright）](/testing/e2e-electron)
 4. 交叉编译或无显示环境用平台 / DISPLAY 守卫显式跳过启动，跳过前体积门禁已经跑过（见[分包与体积门禁（Chunk + Asar）](/security/bundle-budget)）
