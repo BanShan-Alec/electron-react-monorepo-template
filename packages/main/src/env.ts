@@ -23,7 +23,7 @@ export const isDev: boolean = !isPackaged && !isTest && process.env.MODE !== 'pr
 
 /**
  * 是否处于生产行为态
- * 判定原则：非测试模式，且已打包或 MODE 显式为 production（例如 start:dist 预览）
+ * 判定原则：非测试模式，且已打包或 MODE 显式为 production（例如 preview 预览）
  */
 export const isProd: boolean = !isTest && (isPackaged || process.env.MODE === 'production');
 
@@ -77,7 +77,7 @@ export function getEnv(key: EnvKey, fallback?: string): string {
 /**
  * 编译期从根 package.json 的 repository.url 解析出的 GitHub 发布源坐标
  *
- * 未打包形态（start:dist）下 electron-updater 需要显式 setFeedURL；
+ * 未打包形态（preview）下 electron-updater 需要显式 setFeedURL；
  * 该坐标属于仓库身份，随代码走，不再支持 .env 覆盖。
  */
 export const bundledRepository = {
