@@ -241,44 +241,66 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     page,
     electronCtx,
   }) => {
-    // 步骤 1: 修改 theme 为 dark
-    const themeSelect = page.locator('#theme-select');
-    await themeSelect.click();
-    await page.locator('.ant-select-item-option-content', { hasText: '深色模式' }).click();
-
     const html = page.locator('html');
-    await expect(html).toHaveAttribute('data-theme', 'dark');
 
-    // 步骤 2: 修改 language 为 en-US
-    const langSelect = page.locator('#lang-select');
-    await langSelect.click();
-    await page.locator('.ant-select-item-option-content', { hasText: 'English' }).click();
+    try {
+      // 步骤 1: 修改 theme 为 dark
+      const themeSelect = page.locator('#theme-select');
+      await themeSelect.click();
+      await page.locator('.ant-select-item-option-content', { hasText: '深色模式' }).click();
 
-    // 断言语言变更为 en-US
-    await expect(html).toHaveAttribute('lang', 'en-US');
+      await expect(html).toHaveAttribute('data-theme', 'dark');
 
-    // 【致命校验】：修改语言后，主题必须依然保持为 dark，绝不能被重置回默认的 system 或 light！
-    await expect(html).toHaveAttribute('data-theme', 'dark');
+      // 步骤 2: 修改 language 为 en-US
+      const langSelect = page.locator('#lang-select');
+      await langSelect.click();
+      await page.locator('.ant-select-item-option-content', { hasText: 'English' }).click();
 
-    // 步骤 3: 修改 minimizeToTray 为 false
-    const toggleRow = page.locator('.settings-toggle-row', {
-      hasText: 'Minimize to tray on close',
-    });
-    const switchEl = toggleRow.locator('#tray-switch');
-    await toggleRow.locator('label[for="tray-switch"]').click();
-    await expect(switchEl).toHaveAttribute('aria-checked', 'false');
+      // 断言语言变更为 en-US
+      await expect(html).toHaveAttribute('lang', 'en-US');
 
-    // 【致命校验】：修改托盘开关后，theme 必须依然是 dark，language 必须依然是 en-US！
-    await expect(html).toHaveAttribute('data-theme', 'dark');
-    await expect(html).toHaveAttribute('lang', 'en-US');
+      // 【致命校验】：修改语言后，主题必须依然保持为 dark，绝不能被重置回默认的 system 或 light！
+      await expect(html).toHaveAttribute('data-theme', 'dark');
 
-    // 验证磁盘落盘的 config.json 文件确实保留了所有修改项
-    const configPath = path.join(electronCtx.tempUserDataDir, 'config.json');
-    expect(fs.existsSync(configPath)).toBe(true);
-    const savedConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      // 步骤 3: 修改 minimizeToTray 为 false
+      const toggleRow = page.locator('.settings-toggle-row', {
+        hasText: 'Minimize to tray on close',
+      });
+      const switchEl = toggleRow.locator('#tray-switch');
+      await toggleRow.locator('label[for="tray-switch"]').click();
+      await expect(switchEl).toHaveAttribute('aria-checked', 'false');
 
-    expect(savedConfig.theme).toBe('dark');
-    expect(savedConfig.language).toBe('en-US');
-    expect(savedConfig.minimizeToTray).toBe(false);
+      // 【致命校验】：修改托盘开关后，theme 必须依然是 dark，language 必须依然是 en-US！
+      await expect(html).toHaveAttribute('data-theme', 'dark');
+      await expect(html).toHaveAttribute('lang', 'en-US');
+
+      // 验证磁盘落盘的 config.json 文件确实保留了所有修改项
+      const configPath = path.join(electronCtx.tempUserDataDir, 'config.json');
+      expect(fs.existsSync(configPath)).toBe(true);
+      const savedConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+
+      expect(savedConfig.theme).toBe('dark');
+      expect(savedConfig.language).toBe('en-US');
+      expect(savedConfig.minimizeToTray).toBe(false);
+    } finally {
+      // 恢复默认偏好，避免 dark / en-US / 托盘关闭残留给同进程内的后续用例
+      await page.evaluate(async () => {
+        // biome-ignore lint/suspicious/noExplicitAny: window.api access
+        await (window as any).api?.config?.update?.({
+          theme: 'system',
+          language: 'zh-CN',
+          minimizeToTray: true,
+        });
+      });
+      // 直接调用 config.update 不会经过 Settings hook 的本地回填，重载以重新读取持久化配置
+      await page.reload();
+      await page.waitForLoadState('domcontentloaded');
+      await expect(html).toHaveAttribute('lang', 'zh-CN');
+      await expect(
+        page
+          .locator('.settings-toggle-row', { hasText: '点击关闭时最小化到托盘' })
+          .locator('#tray-switch'),
+      ).toHaveAttribute('aria-checked', 'true');
+    }
   });
 });
