@@ -18,6 +18,7 @@
 ### 🩹 缺陷修复 (Bug Fixes)
 
 - **docs:** 移除 accentColor 覆盖，回归 Vocs 默认主题 ([#59](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/59))
+- **build:** electron 镜像限定在 postinstall，修复 macOS DMG 打包下载 dmgbuild 404 ([#71](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/71))
 
 ### 💅 代码重构 (Refactoring)
 
