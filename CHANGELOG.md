@@ -1,6 +1,45 @@
 # Changelog
 
 
+## v1.12.0
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.11.1...v1.12.0)
+
+### 🚀 新增特性 (Features)
+
+- **docs:** 文档站迁移 VitePress → Vocs 并接通 GitHub Pages 部署 ([#58](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/58))
+- **docs:** 解法清单重构为 9 维度 47 个独立解法页 ([#60](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/60))
+- **renderer:** 开启 React Compiler（oxc 路线）并清理冗余 useCallback ([#61](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/61))
+- **docs:** 新增前言章节并仿 vocs.dev 改造首页 ([#62](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/62))
+- **renderer:** 设计体系整改（cssVar 单源 + 可读性 + 卡片与规范门禁） ([#66](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/66))
+- **window:** 首次关闭时确认窗口/应用行为 ([#67](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/67))
+- **renderer:** 交互体验增强与全仓测试整改（含文档站构建改造） ([#68](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/68))
+
+### 🩹 缺陷修复 (Bug Fixes)
+
+- **docs:** 移除 accentColor 覆盖，回归 Vocs 默认主题 ([#59](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/59))
+
+### 💅 代码重构 (Refactoring)
+
+- **dx:** ⚠️  根命令对齐 electron-vite ([#69](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/69))
+
+### 📖 文档更新 (Documentation)
+
+- 重构根 README 并修正文档站滚动条与 Ask AI 细节 ([#65](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/65))
+
+### 🏡 工程维护 (Chores)
+
+- Electron 二进制兜底简化为 postinstall 一行 install-electron ([#64](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/64))
+
+### ⚠️ 行为变更
+
+- **BREAKING CHANGE：根命令对齐 electron-vite**（[#69](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/69)）：`pnpm start` 语义翻转，现在等价于 `pnpm preview`（生产预览），开发态请改用 `pnpm dev`；`pnpm start:dist` 已删除，改用 `pnpm preview`；`build:dir` 更名为 `build:unpack`，`build:app` 已删除（按平台改用 `build:win` / `build:mac` / `build:linux`）。
+- **工具链要求 pnpm ≥ 12**（[#63](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/63)）：`engines.pnpm` 提升为 `^12.0.0`、`packageManager` 钉 `pnpm@12.15.0`，pnpm 配置迁至 `pnpm-workspace.yaml`；pnpm 10 会被 engines 拒绝执行脚本，升级前请 `corepack enable` 或安装 pnpm 12。
+
+### ❤️ Contributors
+
+- 半山Alec ([@BanShan-Alec](https://github.com/BanShan-Alec))
+
 ## v1.11.1
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.11.0...v1.11.1)
