@@ -1,7 +1,21 @@
 import { session } from 'electron';
 import type { AppModule } from '../../AppModule';
+import { getEnv } from '../../env';
 import type { ModuleContext } from '../../ModuleContext';
 import { getLogManager } from '../log.module';
+
+function getValidOrigin(urlStr: string | undefined): string | null {
+  if (!urlStr) return null;
+  try {
+    const parsed = new URL(urlStr);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return parsed.origin;
+    }
+  } catch {
+    // 忽略格式非法的 URL
+  }
+  return null;
+}
 
 /**
  * CSP 安全模块：
@@ -26,11 +40,16 @@ export class ContentSecurityPolicyModule implements AppModule {
 
     const isDev = !import.meta.env.PROD;
 
-    // 标准宽松策略：允许自身、内联脚本/样式、eval、data/blob 协议、https 外部资源；
-    // 开发环境下额外允许 ws:// 和 http: 以支持 Vite HMR 和本地开发服务器
+    // 动态提取 API 网关 Origin，若配置则允许渲染进程 connect-src 跨域直连
+    const apiBaseUrl = getEnv('API_BASE_URL');
+    const apiOrigin = getValidOrigin(apiBaseUrl);
+    const connectSrc = apiOrigin ? `'self' ${apiOrigin}` : "'self'";
+
+    // 开发态：允许自身、内联脚本/样式、eval、data/blob 协议、https/http 与 ws:（支持 Vite HMR 和本地开发服务器）；
+    // 生产态：收紧策略，移除 unsafe-eval，放行必要自身源、首屏协调器内联脚本 ('unsafe-inline')、内联样式与静态媒体，并动态放行 apiBaseUrl
     const cspPolicy = isDev
       ? "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https: http: ws:;"
-      : "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:;";
+      : `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src ${connectSrc};`;
 
     defaultSession.webRequest.onHeadersReceived((details, callback) => {
       const responseHeaders = { ...details.responseHeaders };

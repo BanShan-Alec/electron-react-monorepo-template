@@ -1,69 +1,70 @@
 ---
 title: 崩溃上报（Sentry）
-description: 只在打包后且配置 DSN 时启用，渲染进程崩溃由主进程代报。
+description: 严格收窄激活条件，渲染进程崩溃由主进程兜底代报，关闭噪音埋点。
 ---
 
 # 崩溃上报（Sentry）
 
-> **TL;DR**：只在打包后且配置 DSN 时启用，渲染进程崩溃由主进程代报。
+> **TL;DR**：仅在物理打包态且配置有效 DSN 时激活 Sentry，开发模式零网络开销与噪音；彻底关闭面包屑轨迹与性能采样以减轻性能负担；渲染进程异常退出由主进程监听兜底上报。
 
-## 要解决的坑
+## 1. 选型理由
 
-崩溃静默发生，开发者永远不知道。
+桌面客户端运行在不可控的用户终端环境中，崩溃往往静默发生：
+1. **渲染进程崩溃无法自报**：若 Chromium 渲染进程发生 OOM（内存溢出）或 Native 段错误闪退，页面 JS 引擎随之灰飞烟灭，前端 Sentry 根本没有执行上报的机会。
+2. **海量网络噪音与卡顿**：传统 Web 默认收集 DOM 交互轨迹（Breadcrumbs）、Console 日志与性能采样，在桌面端不仅消耗用户带宽与 CPU，还极易录入敏感隐私。
 
-## 本仓库的解法
+工程采取主进程代报兜底策略，并将 Sentry 定位为“极简致命崩溃捕获器”。
+
+## 2. 核心配置代码
+
+### 严格的激活守卫与范围收窄
 
 → 源码：[packages/main/src/modules/sentry.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/sentry.module.ts)
-
-激活条件刻意收窄：只打包后且配置了有效 DSN 才开启，开发期零网络开销、零上报噪音：
 
 ```ts
 export function isSentryEnabled(): boolean {
   return app.isPackaged && Boolean(getSentryDsn());
 }
+
+// 采集范围最小化：彻底关闭行为轨迹与性能剖析，仅上报未捕获崩溃
+Sentry.init({
+  dsn: getSentryDsn(),
+  maxBreadcrumbs: 0,
+  beforeBreadcrumb: () => null,
+  tracesSampleRate: 0,
+});
 ```
 
-采集范围最小化——只要崩溃，不要行为轨迹与性能剖析：
+### 主进程代报渲染进程崩溃（render-process-gone）
+
+监听 Electron 原生应用级事件，在渲染进程阵亡时由主进程收集退出原因并上报：
 
 ```ts
-// 彻底关闭行为监控（Breadcrumbs / DOM / Console / Net 轨迹）
-maxBreadcrumbs: 0,
-beforeBreadcrumb: () => null,
-integrations: (defaults) => defaults.filter((i) => !i.name.includes('Breadcrumb')),
+app.on('render-process-gone', (_event, _webContents, details) => {
+  // 正常退出（clean-exit）或主动关机时不报
+  if (appLifecycle.isQuitting || details.reason === 'clean-exit') return;
 
-// 彻底关闭性能监控（Tracing / Profiling）
-tracesSampleRate: 0,
-```
-
-渲染进程崩溃走 app 级监听——进程都没了，渲染层自己报不了，只能主进程替它报：
-
-```ts
-app.on('render-process-gone', (_event, webContents, details) => {
-  if (appLifecycle.isQuitting || details.reason === 'clean-exit') {
-    return;
-  }
-  // ...
   Sentry.captureException(
-    new Error(
-      `[Renderer Crash] process gone: reason=${details.reason}, exitCode=${details.exitCode}`,
-    ),
+    new Error(`[Renderer Crash] process gone: reason=${details.reason}, exitCode=${details.exitCode}`),
     {
       level: 'fatal',
-      tags: buildSentryTags(APP_FEATURES.WINDOW, {
-        // ...
-        [SENTRY_TAGS.PROCESS]: 'renderer',
-        [SENTRY_TAGS.CRASH_REASON]: details.reason,
-        [SENTRY_TAGS.EXIT_CODE]: details.exitCode,
-      }),
+      tags: {
+        process: 'renderer',
+        crash_reason: details.reason,
+        exit_code: details.exitCode,
+      },
     },
   );
 });
 ```
 
-窗口未响应同样监听（`browser-window-created` 里给每个窗口挂 `unresponsive`，`captureMessage` 上报并附当前 URL）；退出流程中的正常关闭（`clean-exit`）不上报，避免噪音。
+针对页面假死挂起，通过监听 `browser-window-created` 挂载 `unresponsive` 事件进行警报。
 
-渲染层侧独立初始化（→ 源码：[packages/renderer/src/lib/sentry.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/lib/sentry.ts)），同样的严格守卫加 `ignoreErrors` 过滤 ResizeObserver 等前端噪声；SourceMap 用 `hidden` 模式构建，Sentry 插件上传后删除 map 文件，配合 electron-builder 排除规则确保 SourceMap 绝不进 asar（→ 源码：[packages/renderer/vite.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/vite.config.ts)）。
+## 3. 桌面端避坑注意事项
 
-注意点：
-
-- 未配 `SENTRY_DSN` 或处于开发模式时 Sentry 全链路静默，不报错也不上报——「没收到事件」先查这两个条件
+- **开发态与未配 DSN 时全链路静默**：
+  - 本地运行 `pnpm dev` 或未配置 `SENTRY_DSN` 时，Sentry 初始化静默跳过，控制台不报任何警报。排查“为何没收到报错”前先核实运行形态。
+- **SourceMap 绝不打包进最终 ASAR**：
+  - 构建产物使用 `hidden-source-map` 模式生成映射。CI 流水线调用 `@sentry/cli` 上传 SourceMap 后立即物理删除 `.map` 文件，配合打包规则杜绝源码逆向风险。
+- **前端忽略无害噪声（ignoreErrors）**：
+  - 渲染端需显式过滤 `ResizeObserver loop completed with undelivered notifications` 等浏览器引擎内部微量良性警告，避免占用企业 Sentry 事件配额。

@@ -1,4 +1,5 @@
 import { ALLOWED_EXTERNAL_URLS } from '@app/shared/constants/security';
+import { app } from 'electron';
 import log from 'electron-log/main';
 import type { AppInitConfig } from './AppInitConfig';
 import { SILENT_CHECK_DELAY_MS } from './constants/updater';
@@ -90,7 +91,8 @@ initApp({
   preload: {
     path: require.resolve('@app/preload'),
   },
-  // 初始化失败只经 electron-log 记入 main.log，不弹窗不退出
+  // 初始化失败记入 main.log，并以非零状态码退出，杜绝无窗口僵尸进程驻留
 }).catch((error) => {
   log.error('[initAppFailed]', error);
+  app.exit(1);
 });

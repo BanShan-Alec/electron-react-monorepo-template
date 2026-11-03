@@ -1,63 +1,117 @@
 ---
 title: AI 友好代码约定（Reference-style）
-description: 组件分区与中文提交等可判定约定，让人和 AI 写出同构的代码与提交历史。
+description: 拒绝空洞说教，提供开箱即用的 AI 约束提示词、7 段式组件骨架、Zod 契约与中文提交正则。
 ---
 
 # AI 友好代码约定（Reference-style）
 
-> **TL;DR**：组件分区与中文提交等可判定约定，让人和 AI 写出同构的代码与提交历史。
+> **TL;DR**：让 AI 产出高质量代码的秘诀不是写漫长模糊的自然语言规范，而是提供**「可判定、结构化、机器能直接报错」**的工程骨架。本页直接给出本仓库经过实践验证的 AI 提示词、7 段式组件模板、Zod 契约模式与 Commitlint 正则。
 
-## 要解决的坑
+## 1. 选型理由
 
-- 代码风格靠口口相传：同一个人隔一周写的组件、不同 AI 写的组件，分区顺序各异，diff 里一半是搬家
-- 提交信息随手写：`fix bug`、`update`、拼音首字母，changelog 生成器与后来者都读不出意图
-- 规则只写在长文里：AI 读得到「要统一」，读不到「怎样算通过」，每次都要重新猜
-- 约定一旦不可判定，就只能等 Review 阶段返工
+- **代码风格收敛**：不同 AI 编程助手（Claude Code / Cursor / Windsurf / Copilot）生成的组件结构天差地别，缺乏固定锚点会导致 Git Diff 中充斥大量代码块搬家噪声。
+- **机器可判定性（Machine-verifiable）**：约定必须挂在编译器、Linter 或 Git Hook 上，AI 生成完毕后直接跑 `pnpm lint` 和 `pnpm typecheck` 即可自检修复，不依赖评审人主观口味。
+- **单一真源与杜绝空话**：拒绝“请遵循规范”的空洞说教，直接提供可复制的骨架模板与单一真源契约模式。
 
-## 本仓库的解法
+## 2. 核心代码与实现模板
 
-### 组件固定分区：把「怎么写」变成可复制的顺序
+### 1. 复制即用的 AI System Prompt 规范注入
 
-完整模板与分区清单见 [React 组件编写规范（Code-partition + Hooks）](/architecture/react-conventions)，这里只解释它为什么对 AI 有效。
+```markdown
+你是一个精通 Electron 45、React 19 和 TypeScript 的资深架构师。在本仓库编写代码时，必须无条件遵循以下铁律：
+1. 【禁止桶文件】：严禁新建只做 re-export 的 index.ts，严禁使用 export *。
+2. 【组件固定骨架】：新建 React 组件必须完整包含 7 个分区注释，即使某段为空也必须保留注释占位。
+3. 【IPC 单一真源】：跨端通信必须在 packages/shared 定义 Zod Schema 与 IPC 通道常量。
+4. 【Commit 规范】：提交信息 subject 必须包含简体中文，格式：<type>(<scope>): <中文说明>。
+```
 
-规则本身很短：每个组件文件用同一套分区注释、按同一顺序排列，空分区也保留。对无状态的生成者来说，这是一个稳定的骨架：每次新建组件都从同一个位置开始写，新逻辑只会落在它该在的段里。结果是人和 AI 产出的组件在结构上同构，diff 里只剩语义改动，评审能直接看「改了什么」而不是「搬了哪几段」。
+### 2. React 组件 7 段式标准注释骨架
 
-规则真源在 `packages/renderer/AGENTS.md` §5「组件书写约定」，模板本体是一组件一文件夹下的 `index.tsx`；两份互为印证，文档站不复制模板正文。
+→ 规范真源：[packages/renderer/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/AGENTS.md) · [架构文档](/architecture/react-conventions)
 
-### 中文提交规范：把「写清楚」变成硬校验
+```tsx
+import { memo } from 'react';
 
-完整的 commit 格式、type 枚举与 scope 约定见 [提交信息规范（Commitlint）](/engineering/commit-convention)。这里只保留与 AI 相关的一层：`subject` 必须包含简体中文，这是 `.config/commitlint.config.ts` 里的 `subject-chinese` 自定义插件规则，用 `/[\u4e00-\u9fa5]/` 判定，命中即 error；husky 的 `commit-msg` 钩子执行 commitlint，不合规的提交进不了历史。
+// 私有常量与可抽离工具函数
+const STEP_OPTIONS = [1, 5, 10];
 
-为什么值得为 AI 单独强调：提交信息是唯一会长期留存、又被机器消费的意图记录。`changelogen` 按 conventional commit 的 type 分节生成 changelog（`.config/changelog.config.ts` 把 feat / fix / perf / refactor 等映射到不同章节与 semver），`pnpm pr-review create` 则直接取分支首个提交的 subject 当 PR 标题——AI 写对一条 commit，版本记录与 PR 标题都不需要二次加工。
+interface CounterCardProps {
+  step: number;
+  onStepChange: (step: number) => void;
+}
 
-### 可判定：同构来自「机器能说不」
+const _CounterCard = (props: CounterCardProps) => {
+  // 1. 变量声明、解构
+  const { step, onStepChange } = props;
 
-约定分三层落地，每一层都能给出 pass/fail：
+  // 2. 组件状态
+  // const [count, setCount] = useState(0);
 
-- **提交钩子**：`.husky/pre-commit` 执行 `lint-staged`，对暂存文件跑 `biome check --write --config-path=.config`，格式化或 Lint 失败即中断提交
-- **Lint**：Biome 的 `noBarrelFile` / `noReExportAll` 为 error，`noRestrictedImports` 禁止直连 ahooks `useRequest`（规则细节见 [代码规范与风格（Biome）](/engineering/code-style)）
-- **CI**：`typecheck` / `lint` / `test` / `e2e` / `docs` 五个并行 job，均为分支保护的 required checks
+  // 3. 网络IO (必须使用 useManualRequest 或 useIpc，严禁自动轮询)
 
-对 AI 来说，可判定的意义是可以在提交前自检：跑一遍 `pnpm lint` / `pnpm typecheck` / `pnpm test`，规则通过与否不依赖评审者的口味。反过来，无法判定的「风格偏好」不要写成红线——AI 只能猜，猜错就是返工。
+  // 4. 数据转换（React Compiler 自动记忆化推导，无需手动 useMemo）
+  const formattedStep = `步长: ${step}`;
 
-### 引用式：规则只留一个真源
+  // 5. 逻辑处理函数（React Compiler 自动记忆化推导，无需手动 useCallback）
+  const handleSelect = (nextStep: number) => {
+    onStepChange(nextStep);
+  };
 
-这一页不复制分区模板与 commit 格式，只解释动机并给出链接。原因和规则本身一致：同一份规则维护两处，改一处漏一处；对 AI 而言，上下文里多一份过时副本，比没有更糟。规则真源在 `packages/renderer/AGENTS.md`、`.config/commitlint.config.ts` 与 `.config/biome.json`，文档站只做索引。
+  // 6. 组件Effect (挂载请求与清理闭环)
 
-AI 协作者约定的分层与红线另见 [AI 协作者约定（Agents.md）](/ai/collaboration-convention)；AI 评审如何把看板变成可勾选的修复清单，见 [AI 评审闭环（Open-code-review）](/ai/review-loop)。
+  // 7. 组件渲染 (JSX)
+  return (
+    <div className="p-4 border rounded">
+      <span>{formattedStep}</span>
+      <button type="button" onClick={() => handleSelect(5)}>设为5</button>
+    </div>
+  );
+};
 
-## 怎么抄
+export const CounterCard = memo(_CounterCard);
+```
 
-以「让 AI 与人类产出同构代码」为目标，四步：
+### 3. Zod 强类型 IPC 契约模式
 
-1. **先固化结构模板**：把组件分区写成注释骨架，按 [React 组件编写规范（Code-partition + Hooks）](/architecture/react-conventions) 落地
-2. **再把提交格式交给工具**：commitlint + husky，按 [提交信息规范（Commitlint）](/engineering/commit-convention) 配置
-3. **把每条约定改写成可判定句子**：能挂 lint 的挂 lint，能进门禁的进门禁，挂不上的降级为文档说明
-4. **规则写进仓库、文档只引用**：AGENTS.md 与配置文件是真源，文档站不复制正文
+→ 源码：[packages/shared/src/schemas/close-behavior.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/schemas/close-behavior.ts)
 
-注意点：
+```ts
+import { z } from 'zod';
 
-- 分区注释即使某段为空也保留，AI 才会在同一位置继续写
-- 提交说明必须含简体中文是 commitlint 的 error 规则，不是风格建议
-- 无法判定的偏好不要写成红线；红线越多越不可执行
-- 引用不复制：同一条规则只维护一处，改的时候只改真源
+// 1. 定义入参枚举契约（单一真源）
+export const closeBehaviorChoiceSchema = z.enum(['window', 'quit', 'cancel']);
+export type CloseBehaviorChoice = z.infer<typeof closeBehaviorChoiceSchema>;
+
+// 2. 在主进程 Controller 中一行校验，入参自动具备类型推导：
+// const validatedChoice = closeBehaviorChoiceSchema.parse(rawInput);
+```
+
+### 4. 中文 Commitlint 正则与 Biome 门禁
+
+→ 源码：[.config/commitlint.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.config/commitlint.config.ts)
+
+```ts
+// 强制提交说明包含中文（机器判定）
+plugins: [
+  {
+    rules: {
+      'subject-chinese': ({ subject }) => {
+        const hasChinese = /[\u4e00-\u9fa5]/.test(subject || '');
+        return [hasChinese, '提交说明 (subject) 必须包含简体中文描述意图'];
+      },
+    },
+  },
+],
+rules: {
+  'subject-chinese': [2, 'always'], // 2 即 error 级别
+}
+```
+
+## 3. 桌面端避坑注意事项
+
+| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
+| :--- | :--- | :--- |
+| **注释骨架缺失导致 Diff 污染** | AI 每次随意放置 `useState` 和 `useEffect`，同一个组件多次迭代导致 Git diff 无法看清真实改动。 | 7 段式注释骨架即使段内无代码，也必须保留注释占位，形成固定的上下文锚点。 |
+| **过度手动使用 useMemo** | AI 在 React 19 环境下仍机械地给所有函数套 `useCallback`，代码冗长且徒增闭包开销。 | 本仓库已开启 **React Compiler** 自动记忆化，禁止 AI 编写样板式 `useMemo` / `useCallback`。 |
+| **Commit 校验不可判定** | 仅口头要求“提交写清楚”，导致出现大量无意义的 `git commit -m "fix"`。 | Commitlint 规则强制拦截无中文提交，Husky 挂钩校验失败立即中断 commit。 |
+| **随意引入桶文件导出** | AI 习惯新建 `index.ts` 并写 `export * from './xxx'`，导致模块加载变慢。 | Biome 规则开启 `"noBarrelFile": "error"` 与 `"noReExportAll": "error"`，硬性阻断。 |

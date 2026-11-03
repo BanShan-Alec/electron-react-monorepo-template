@@ -1,77 +1,70 @@
 ---
 title: 组件目录结构（Component-folder）
-description: "组件一律 `Xxx/index.tsx`，组件私有的 hook、lib、样式住同一文件夹，目录即组件边界。"
+description: 组件统一采用一组件一文件夹（Xxx/index.tsx），私有资产同目录收敛，澄清组件本体非桶文件。
 ---
 
 # 组件目录结构（Component-folder）
 
-> **TL;DR**：组件一律 `Xxx/index.tsx`，组件私有的 hook、lib、样式住同一文件夹，目录即组件边界。
+> **TL;DR**：所有 React 组件均采用独立目录形式（`Xxx/index.tsx`），组件私有的样式、Hook 与工具收敛在同级目录下；组件本体的 `index.tsx` 是实体实现而非重导出桶文件，受 Biome 规范豁免。
 
-## 要解决的坑
+## 1. 选型理由
 
-Electron 项目最容易长歪的地方就是组织方式：
+在组件组织上，扁平文件结构（如 `CounterCard.tsx`、`CounterCard.css` 混杂在一个大目录中）容易导致：
+- 一个组件如果伴随私有样式、测试用例与子 Hook，会导致目录文件爆炸，无法直观辨析归属。
+- 难以厘清私有资产与公共资产的边界。
 
-- 组件写法看作者心情：代码分区、命名、导出方式各有各的样
+工程统一实行「一组件一文件夹」：**目录即组件实体，目录名即组件名**。
 
-## 本仓库的解法
+## 2. 核心配置代码
 
-### 组件编写模板：一组件一文件夹 + 固定代码分区
+### 标准组件目录形态
+
+以复杂组件 `CodeHighlight` 为例，其私有 Hook 与 CSS 均闭合在文件夹内部：
+
+```text
+src/components/ui/CodeHighlight/
+├── index.tsx                # 组件本体实现（包含 JSX 渲染与 Props 接口定义）
+├── highlight.css            # 组件专属局部样式
+└── hooks/
+    └── useCodeHighlight.ts  # 组件专属私有 Hook
+```
+
+### 组件本体写法（单一本体验证）
 
 → 源码：[packages/renderer/src/features/counter/components/CounterCard/index.tsx](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/features/counter/components/CounterCard/index.tsx)
 
 ```tsx
-// 私有常量
-const STEP_OPTIONS = [1, 5, 10, 50];
-
-// 可抽离的逻辑处理函数/组件
-function toSelectOptions(steps: number[]) {
-  return steps.map((step) => ({ label: String(step), value: step }));
-}
-
-const _CounterCard = (props: ICounterCardProps) => {
+const _CounterCard = (props: CounterCardProps) => {
   useLingui();
-  // 变量声明、解构
   const { count, step, onStepChange, isUpdating, onIncrement, onDecrement, onReset } = props;
 
-  // 组件状态
-
-  // 网络IO
-
-  // 数据转换
-  const selectOptions = toSelectOptions(STEP_OPTIONS);
-
-  // 逻辑处理函数
-
-  // 组件Effect
-
-  // 组件渲染
-  return (/* JSX */);
+  return (
+    <Card title={t`IPC 计数器 (Counter)`}>
+      {/* 渲染逻辑 */}
+    </Card>
+  );
 };
 
-// props 类型定义
-interface ICounterCardProps { /* ... */ }
+// 接口命名禁止 I 前缀，统一采用 <ComponentName>Props
+interface CounterCardProps {
+  count: number;
+  step: number;
+  onStepChange: (step: number) => void;
+  isUpdating: boolean;
+  onIncrement: () => void;
+  onDecrement: () => void;
+  onReset: () => void;
+}
 
-const CounterCard = memo(_CounterCard);
-
-export { CounterCard };
-export default CounterCard;
+// 统一具名导出，禁止 export default 双导出反模式
+export const CounterCard = memo(_CounterCard);
 ```
 
-文件内部的分区顺序见 [React 组件编写规范（Code-partition + Hooks）](/architecture/react-conventions)，本页只看目录。
+## 3. 桌面端避坑注意事项
 
-一组件一文件夹是标准形态，不存在扁平的 `Xxx.tsx` 组件文件：
-
-→ 源码：[packages/renderer/src/components/ui/CodeHighlight/index.tsx](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/components/ui/CodeHighlight/index.tsx)
-
-```tsx
-import { useCodeHighlight } from './hooks/useCodeHighlight';
-import './highlight.css';
-```
-
-组件一律是 `Xxx/index.tsx`（目录与组件同名 PascalCase）。组件私有的 hook、lib、样式住组件文件夹内——CodeHighlight 的 `hooks/`、`lib/`、`highlight.css` 都在同一个目录；被跨组件共享的才上提顶层 `hooks/`、`lib/`、`styles/`。注意组件本体的 `index.tsx` 是实现文件，不是 re-export 桶文件。
-
-设计动机：目录即组件边界。改一个组件只打开一个文件夹，Code Review 的 diff 也天然按组件聚合。
-
-注意点：
-
-- 一组件一文件夹是标准形态，不存在扁平 `Xxx.tsx` 组件文件；组件本体的 `index.tsx` 不是桶文件
+- **组件本体与桶文件（Barrel File）的界限**：
+  - Biome 的 `noBarrelFile` 旨在拦截只做 `export * from './xxx'` 的无意义中转文件。`CounterCard/index.tsx` 本身包含完整的 React 组件渲染逻辑，属于组件实体，严格受到规范支持，绝非桶文件。
+- **杜绝双导出（Dual Export）反模式**：
+  - 严禁在文件末尾同时书写 `export const Xxx = ...` 和 `export default Xxx`。混用导出方式会导致消费者导入途径分裂、IDE 自动引入路径漂移并阻碍打包编译器的 Tree-shaking 优化。
+- **私有资产不向外暴露**：
+  - `CounterCard` 内部依赖的私有辅助函数或子组件切勿导出给其他组件使用。若确需跨组件共享，应先将其重构上提至公共组件库目录。

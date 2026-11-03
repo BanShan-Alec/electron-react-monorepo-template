@@ -1,74 +1,35 @@
----
+﻿---
 title: 端到端测试（Playwright）
-description: "Playwright 官方 `_electron` 拉起真实窗口，worker 级夹具单次冷启动并隔离用户数据目录。"
+description: Playwright 官方 `_electron` 真实拉起无边框窗口，Worker 级全局单次启动夹具与强制串行执行。
 ---
 
 # 端到端测试（Playwright）
 
-> **TL;DR**：Playwright 官方 `_electron` 拉起真实窗口，worker 级夹具单次冷启动并隔离用户数据目录。
+> **TL;DR**：借助 Playwright 原生 `_electron` 引擎拉起真实编译产物。采用 Worker 级单次冷启动夹具大幅压低测试耗时，结合隔离临时 `user-data-dir`、单 Worker 串行执行与强杀进程树守护，打造稳定不漂移的 E2E 体系。
 
-## 要解决的坑
+## 1. 选型理由
 
-- E2E 要拉起真实窗口：Electron 冷启动慢、单例锁冲突、进程树残留，任何一项都能把 CI 拖挂
+- **真实 Electron 运行环境**：杜绝第三方 WebDriver（如 Spectron/Selenium）的中间桥接损耗与版本脱节，Playwright 官方直接通过 CDP 与 Electron 进程建立双向通信，完整覆盖 Native 窗口与 Preload 桥。
+- **大幅压缩冷启动开销**：Electron 每次冷启动耗时 1.5s~3s，如果每个测试文件甚至每个测试用例都重新启动一次，E2E 矩阵将膨胀至数十分钟。通过 Worker 级夹具实现整个套件单次冷启动复用。
+- **消除进程残留与僵尸状态**：桌面端测试若异常退出，残留的无头 Electron 进程会独占端口与单例锁，导致后续构建完全死锁。
 
-## 本仓库的解法
+## 2. 核心配置与实现
 
-### E2E 真实拉起 Electron：worker 级单次启动 + 隔离用户数据目录
-
-→ 源码：[e2e/helpers/electron.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/e2e/helpers/electron.ts)
-
-```ts
-// 1. 准备隔离的用户数据目录（外部传入时复用，用于验证跨进程持久化）
-const ownsUserDataDir = !options.userDataDir;
-const tempUserDataDir =
-  options.userDataDir ?? fs.mkdtempSync(path.join(os.tmpdir(), 'electron-e2e-'));
-const shouldCleanupUserData = options.cleanupUserData ?? ownsUserDataDir;
-
-// 2. 启动 Electron 应用
-const electronApp = await electron.launch({
-  args: [
-    '.',
-    `--user-data-dir=${tempUserDataDir}`,
-    '--disable-gpu',
-    '--disable-dev-shm-usage',
-    '--no-sandbox',
-    ...(options.extraArgs ?? []),
-  ],
-  env: {
-    ...process.env,
-    MODE: 'test',
-    ...options.extraEnv,
-  },
-});
-
-// 3. 将主进程日志重定向至控制台以便追踪诊断
-const proc = electronApp.process();
-proc.stdout?.pipe(process.stdout);
-proc.stderr?.pipe(process.stderr);
-
-// ……（源码第 4 步在此注入主进程 shell 安全桩，见下一节）
-
-// 5. 等待应用首个窗口加载就绪
-const page = await electronApp.firstWindow();
-page.on('pageerror', (err) => console.error('PAGE ERROR:', err));
-await page.waitForLoadState('domcontentloaded');
-```
-
-每次启动都建独立的临时 user-data-dir：规避 Electron 单例锁冲突；持久化类用例显式传入目录即可复用，测「同一 userData 重启恢复窗口」——目录是否随用例清理由 `shouldCleanupUserData` 决定，自建目录默认删除、外部传入默认保留。启动参数带 `--disable-gpu` 等降级项，`MODE=test` 注入测试环境。
-
-（源码第 4 步的 shell 安全桩见[端到端断言策略（Shell-stub + Tolerance）](/testing/e2e-assertions)。）
-
-启动逻辑收敛成一个 worker 级夹具：
+### Worker 级全局冷启动扩展夹具
 
 → 源码：[e2e/helpers/fixture.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/e2e/helpers/fixture.ts)
 
 ```ts
+import { test as base, type ElectronApplication, expect, type Page } from '@playwright/test';
+import { type ElectronTestContext, launchElectronApp } from './electron';
+
 export const test = base.extend<TestFixtures, WorkerFixtures>({
   electronCtx: [
-    // biome-ignore lint/correctness/noEmptyPattern: Playwright fixtures require object destructuring pattern for dependency analysis
     async ({}, use) => {
+      // 1. 整个测试运行生命周期（单一 Worker）只执行一次冷启动
       const ctx = await launchElectronApp();
       await use(ctx);
+      // 2. 全部用例完成后统一执行清理收尾
       await ctx.cleanup();
     },
     { scope: 'worker', auto: true },
@@ -82,31 +43,71 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   ],
 
   page: async ({ electronCtx }, use) => {
-    // 复用已启动的 Electron 主窗口
+    // 复用已启动的主渲染窗口句柄
     await use(electronCtx.page);
-  },
-
-  tempUserDataDir: async ({ electronCtx }, use) => {
-    await use(electronCtx.tempUserDataDir);
   },
 });
 ```
 
-`scope: 'worker'` + `auto: true`：整个 Worker 生命周期只冷启动一次，用例直接拿现成的 `page` / `electronApp` / `tempUserDataDir`，全部跑完自动清理。清理函数对 `electronApp.close()` 加 5 秒限时，超时就跨平台强杀进程树并销毁 stdio 管道，进程残留不外泄。Playwright 侧配合强制串行：
+### 强隔离启动与强杀进程树
+
+→ 源码：[e2e/helpers/electron.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/e2e/helpers/electron.ts)
+
+```ts
+export async function launchElectronApp(options: LaunchElectronOptions = {}): Promise<ElectronTestContext> {
+  const ownsUserDataDir = !options.userDataDir;
+  const tempUserDataDir = options.userDataDir ?? fs.mkdtempSync(path.join(os.tmpdir(), 'electron-e2e-'));
+
+  const electronApp = await electron.launch({
+    args: [
+      '.',
+      `--user-data-dir=${tempUserDataDir}`,
+      '--disable-gpu',
+      '--disable-dev-shm-usage',
+      '--no-sandbox',
+      ...(options.extraArgs ?? []),
+    ],
+    env: { ...process.env, MODE: 'test', ...options.extraEnv },
+  });
+
+  return {
+    electronApp,
+    page: await electronApp.firstWindow(),
+    tempUserDataDir,
+    cleanup: async () => {
+      try {
+        await Promise.race([
+          electronApp.close(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Close timeout')), 5000)),
+        ]);
+      } catch {
+        killProcessTree(electronApp.process().pid); // 超时强杀进程树
+      } finally {
+        if (ownsUserDataDir) fs.rmSync(tempUserDataDir, { recursive: true, force: true });
+      }
+    },
+  };
+}
+```
+
+### 单 Worker 串行配置
 
 → 源码：[.config/playwright.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.config/playwright.config.ts)
 
 ```ts
-fullyParallel: false,
-workers: 1, // Electron E2E must run sequentially to avoid display/process lock conflicts
+export default defineConfig({
+  testDir: path.join(ROOT_DIR, 'e2e'),
+  timeout: 45000,
+  fullyParallel: false, // 必须禁止并发
+  workers: 1,           // 必须单 Worker 运行，规避多窗口聚焦抢占与单例锁冲突
+});
 ```
 
-## 怎么抄
+## 3. 桌面端避坑注意事项
 
-黑盒行为测试的接入步骤：
-
-2. **黑盒行为**：在 `e2e/` 建 spec，`import { test, expect } from './helpers/fixture'` 直接拿 `page` / `electronApp` / `tempUserDataDir`；本地跑 `pnpm test:e2e:build`——E2E 以根 `package.json` 的 `main` 为入口，必须先产出各包构建产物（CI 的 e2e job 同样先 build 再测）
-
-注意点：
-
-- E2E 的 `workers: 1` 是硬约束——Electron 多实例并发会撞显示与进程锁，别为提速改并发
+| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
+| :--- | :--- | :--- |
+| **单例锁与数据竞争** | 若多用例共用默认系统 `userData`，已运行的本地开发进程会拦截测试实例启动并将其直接静默杀死。 | 每次测试运行必须动态生成隔离的 `electron-e2e-*` 临时目录；需测试“跨重启持久化”时显式传入相同的 `userDataDir`。 |
+| **多 Worker 并发冲突** | 若 `workers > 1`，多个 Electron 窗口抢占 OS 桌面焦点、互相争抢系统托盘图标和文件锁，断言大面积偶发失败。 | Playwright 配置文件中严格锁定 `workers: 1` 且 `fullyParallel: false`。 |
+| **退出死锁与悬挂进程** | `electronApp.close()` 偶尔因未处理的异步 IPC 任务挂起，导致测试跑完后 CI 卡死直到整个 GitHub Actions 超时。 | 清理函数封装 `Promise.race`（5 秒限时），一旦超时立即调用跨平台 `killProcessTree`（Windows `taskkill /pid /T /F`，POSIX `pkill -9 -P`）并彻底摧毁 stdio 管道。 |
+| **Linux 共享内存溢出** | CI 虚拟机 `/dev/shm` 空间狭小，Chromium 渲染大 DOM 时崩溃退出（SIGBUS）。 | 启动参数固定传入 `--disable-dev-shm-usage` 与 `--no-sandbox`。 |

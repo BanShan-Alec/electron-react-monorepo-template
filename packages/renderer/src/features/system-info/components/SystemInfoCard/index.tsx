@@ -23,7 +23,7 @@ function InfoCell({ label, value }: { label: string; value: string }) {
   );
 }
 
-const _SystemInfoCard = (props: ISystemInfoCardProps) => {
+const _SystemInfoCard = (props: SystemInfoCardProps) => {
   useLingui();
   // 变量声明、解构
   const { systemInfo, isLoading } = props;
@@ -90,12 +90,9 @@ const _SystemInfoCard = (props: ISystemInfoCardProps) => {
 };
 
 // props 类型定义
-interface ISystemInfoCardProps {
+interface SystemInfoCardProps {
   systemInfo: SystemInfo | null;
   isLoading: boolean;
 }
 
-const SystemInfoCard = memo(_SystemInfoCard);
-
-export { SystemInfoCard };
-export default SystemInfoCard;
+export const SystemInfoCard = memo(_SystemInfoCard);

@@ -1,27 +1,28 @@
 ---
 title: 原生窗口体验（WCO）
-description: 系统标题栏让位但窗口管理仍归操作系统，overlay 与窗口底色同源防白闪。
+description: 采用 Window Controls Overlay，保留 Win11 贴靠与原生管理，底色同源杜绝白闪与重绘黑边。
 ---
 
 # 原生窗口体验（WCO）
 
-> **TL;DR**：系统标题栏让位但窗口管理仍归操作系统，overlay 与窗口底色同源防白闪。
+> **TL;DR**：系统标题栏让位给内容但窗口管理权仍归操作系统（保留 Win11 贴靠、最大化动画与原生右键菜单）；窗口底色与原生控件覆盖层（Overlay）同源配置杜绝白闪；挂载专属重绘守护消除无边框黑边残影。
 
-## 要解决的坑
+## 1. 选型理由
 
-自定义标题栏通常意味着 `frame: false` 全自绘：Win11 贴靠、最大化动画、系统菜单全部失守，窗口底色与标题栏色值不同源时还会白闪。
+传统桌面应用自定义标题栏往往简单粗暴地配置 `frame: false`：
+- **系统能力严重失守**：Windows 11 的分屏贴靠（Snap Layouts）、平滑最大化动画、原生窗口阴影以及双击标题栏缩放全部失效，需开发者手写大量容易出 Bug 的模拟逻辑。
+- **白闪与残影突出**：窗口创建瞬间若背景色未与页面底色对齐，深色模式下会产生强烈的白屏闪烁；而在 Windows 跨屏拖拽或锁屏唤醒后容易产生黑边残影。
 
-## 本仓库的解法
+工程采用现代规范 **Window Controls Overlay (WCO)** 配合底层重绘守护，兼得现代无边框视觉与原生窗口稳健性。
 
-### 平台分支启用 WCO
+## 2. 核心配置代码
+
+### 跨平台分流配置
 
 → 源码：[packages/main/src/modules/window/index.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/index.module.ts)
 
-Window Controls Overlay：系统标题栏让位给内容，但窗口管理仍归操作系统——Win11 贴靠、最大化动画、系统菜单全部保留。平台分支参照 VS Code 的做法：
-
 ```ts
 backgroundColor: getWindowBackgroundColor(),
-// ...
 ...(isMac ? { titleBarStyle: 'hidden', titleBarOverlay: true } : {}),
 ...(isWin
   ? {
@@ -32,13 +33,9 @@ backgroundColor: getWindowBackgroundColor(),
   : {}),
 ```
 
-- **win32**：`hidden + frame:false` 启用 WCO，overlay 颜色随主题；运行时主题切换经 `setTitleBarOverlay` 同步（→ 源码：[packages/main/src/modules/native-theme.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/native-theme.module.ts) 监听 `nativeTheme.updated`）
-- **darwin**：`titleBarOverlay: true` 仅用于启用 WCO JS API 与 CSS `env(titlebar-area-*)`，红绿灯外观由系统管理（构造项的 color/symbolColor 在 darwin 平台无效）
-- **linux**：保持系统默认边框，不做定制
+### 窗口底色与 Overlay 同源防白闪
 
-### overlay 与窗口底色同源防白闪
-
-overlay 与窗口底色同源同分支，这是防白闪的关键：
+底色与按钮颜色在主进程一处收敛，直接对齐 Ant Design 容器色值（深色 `#141414` / 浅色 `#ffffff`）：
 
 → 源码：[packages/main/src/modules/window/titlebar-overlay.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/titlebar-overlay.ts)
 
@@ -47,18 +44,24 @@ export function getWindowBackgroundColor(): string {
   return nativeTheme.shouldUseDarkColors ? '#141414' : '#ffffff';
 }
 
-/** overlay 颜色与 antd colorBgContainer / colorText 同值（浅 #ffffff / 深 #141414 + 主文字色） */
 export function getTitleBarOverlayOptions(): { color: string; symbolColor: string } {
-  const shouldUseDarkColors = nativeTheme.shouldUseDarkColors;
+  const isDark = nativeTheme.shouldUseDarkColors;
   return {
     color: getWindowBackgroundColor(),
-    symbolColor: shouldUseDarkColors ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)',
+    symbolColor: isDark ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)',
   };
 }
 ```
 
-`backgroundColor` 在渲染进程起来之前就生效，首帧看到的就是主题底色而非白屏。这对色值与 antd `colorBgContainer` 同值（浅 #ffffff / 深 #141414）——源码注释自己写明「overlay 颜色与 antd colorBgContainer / colorText 同值」；「严禁在别处硬编码」约束的是主进程 JS 侧：这对色值只在 titlebar-overlay.ts 一处计算，别处不得再写死。窗口位置与尺寸的记忆与首启计算见[窗口位置与尺寸（Window-state）](/ui/window-state)。
+系统或用户在运行时切换明暗主题时，主进程通过 `browserWindow.setTitleBarOverlay(...)` 同步刷新按钮色阶。
 
-## 注意点
+## 3. 桌面端避坑注意事项
 
-- WCO 与窗口底色的色值只在 `titlebar-overlay.ts` 一处计算；antd `colorBgContainer` 与之同值属正常对齐，主进程 JS 里再硬编码同色值才算违规
+- **Windows 无边框重绘守护（attachWindowsWindowRepaint）**：
+  - Windows 在无边框 WCO 模式下，当遭遇跨多 DPI 屏幕拖拽、Snap 贴靠或锁屏唤醒时，Chromium 合成器偶发挂起留下黑边残影。主进程在 `window-repaint.ts` 实现了重绘守护，仅监听低频 `'resized'` 与 `'show'` 事件并在 32ms 内补绘有界双帧（`win.webContents.invalidate()`），有效消除残影而绝不占用 CPU。
+- **可拖拽区域内的子交互控件必须声明 `no-drag`**：
+  - 顶部导航栏通常设置了 `-webkit-app-region: drag`。内部嵌套的搜索框、头像、设置按钮等子元素**必须显式声明 `-webkit-app-region: no-drag`**，否则系统会将点击动作全部拦截为窗口拖动，导致按钮无法点击或文本无法选中。
+- **macOS 与 Windows 参数差异**：
+  - 在 macOS 上，`titleBarOverlay: true` 仅用于开启安全区域 CSS 变量支持，红绿灯按钮的色阶完全由 macOS 系统托管（传 `color` 会被系统静默忽略）。
+- **Linux 平台不做 WCO 定制**：
+  - Linux 桌面环境窗口管理器碎片化严重（X11 / Wayland / GNOME / KDE），强制开启 WCO 容易导致窗口无法拖拽或控制按钮丢失，Linux 下保持系统默认边框是最佳实践。

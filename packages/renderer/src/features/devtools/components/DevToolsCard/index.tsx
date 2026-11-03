@@ -11,7 +11,7 @@ import { statusBoxClass } from '@/lib/classNames';
 
 // 可抽离的逻辑处理函数/组件
 
-const _DevToolsCard = (props: IDevToolsCardProps) => {
+const _DevToolsCard = (props: DevToolsCardProps) => {
   useLingui();
   // 变量声明、解构
   const { actionMessage, onToggleDevTools, onOpenDocs, onOpenBlockedUrl } = props;
@@ -61,14 +61,11 @@ const _DevToolsCard = (props: IDevToolsCardProps) => {
 };
 
 // props 类型定义
-interface IDevToolsCardProps {
+interface DevToolsCardProps {
   actionMessage: string;
   onToggleDevTools: () => void;
   onOpenDocs: () => void;
   onOpenBlockedUrl: () => void;
 }
 
-const DevToolsCard = memo(_DevToolsCard);
-
-export { DevToolsCard };
-export default DevToolsCard;
+export const DevToolsCard = memo(_DevToolsCard);

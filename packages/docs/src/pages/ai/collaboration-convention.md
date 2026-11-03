@@ -1,153 +1,79 @@
----
+﻿---
 title: AI 协作者约定（Agents.md）
-description: 根 AGENTS.md 放全局红线与任务路由，各包 AGENTS.md 放本包铁律，AI 进场先读规则再动手。
+description: 根目录管全局红线与任务路由，各包管局部铁律，单一真源与全自动代码自检。
 ---
 
 # AI 协作者约定（Agents.md）
 
-> **TL;DR**：根 AGENTS.md 放全局红线与任务路由，各包 AGENTS.md 放本包铁律，AI 进场先读规则再动手。
+> **TL;DR**：建立根目录与子包两层 `AGENTS.md` 体系。根目录统一收敛技术栈底座、全局红线与跨包任务路由；各子包 `AGENTS.md` 承载本包唯一真源。让 AI 助手进场即可按图索骥，无需猜测工程结构。
 
-## 要解决的坑
+## 1. 选型理由
 
-- 仓库知识散在 README、CONTRIBUTING 和各个包的注释里：AI 进场先猜一轮，该读哪个文件、哪条规则优先、改错了谁来拦
-- 「根目录不能加依赖」「不要写桶文件」这类经验只活在人的脑子里，AI 无从判定，只能等 Review 阶段被指出
-- 同一套约定在每个包重抄一遍，改一处漏四处
-- 没有导航：问「加一个业务域要动哪些包」，得到的是泛泛而谈，而不是一份可执行的阅读顺序
+- **消除规则冲突与上下文丢失**：大型 Monorepo 规则若散落在不同包的 README 中，AI 进场极易产生幻觉（例如在渲染层导入 Node 原生模块）。
+- **任务路由按需指引**：AI 在执行特定任务（如新增 IPC 业务域、修改打包配置）时，通过任务路由表直接获取阅读顺序与深档指针，避免一次性吞入过多无用上下文。
+- **全局红线一句话硬判定**：用简单有力的单句判定，并严格绑定自动化门禁工具。
 
-## 本仓库的解法
+## 2. 核心配置与实现
 
-### 两层 AGENTS.md：根管全局，包管局部
+### 根目录任务路由表（全局指引）
 
-→ 源码：[AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/AGENTS.md) · [packages/main/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/AGENTS.md) · [packages/preload/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/AGENTS.md) · [packages/renderer/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/AGENTS.md) · [packages/shared/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/AGENTS.md) · [packages/pr-review/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/pr-review/AGENTS.md)
+→ 源码：[AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/AGENTS.md)
 
-根 `AGENTS.md` 的六节构成固定的入口顺序：技术栈速览 → 全局红线 → 包索引 → 任务路由 → 常用命令 → 指针。包无关的底线、包索引与任务路由集中在入口一处，常用命令与指针收尾。
+| 任务类型 | 第一步（先读） | 第二步（深查真源） |
+| :--- | :--- | :--- |
+| **新增跨端业务域** | `shared` → `preload` → `main` → `renderer` 的 `AGENTS.md` | [架构分层与责任边界](/architecture/layering) |
+| **主进程模块生命周期** | `packages/main/AGENTS.md` | [主进程模块化生命周期](/architecture/module-lifecycle) |
+| **渲染层组件与状态** | `packages/renderer/AGENTS.md` | [React 组件编写规范](/architecture/react-conventions) |
+| **打包与安装包构建** | `packages/main/AGENTS.md` | [应用打包（Electron-builder）](/delivery/packaging) |
+| **日志与链路追踪** | `.agents/rules/logging-specification.md` | [主进程日志分级管理](/main/logging) |
 
-包索引把每个包的职责与规则文件列成一张表：
+### 三大全局红线（机器硬拦截）
 
-| 包 | 职责 | 规则文件 |
-| --- | --- | --- |
-| `@app/main` | 主进程：Controller/Service 分层、窗口与系统生命周期 | `packages/main/AGENTS.md` |
-| `@app/preload` | 安全桥接层：contextBridge 暴露 `window.api` | `packages/preload/AGENTS.md` |
-| `@app/renderer` | React 界面层：Feature 驱动 + LinguiJS | `packages/renderer/AGENTS.md`（视觉另见 `packages/renderer/docs/DESIGN.md`） |
-| `@app/shared` | 跨端契约单一事实源：Schema / 通道 / 类型 | `packages/shared/AGENTS.md` |
-| `@app/pr-review` | PR 生命周期与 OCR 审查工具链 | `packages/pr-review/AGENTS.md` |
-| `@app/docs` | Electron React Template 解法文档站（Vocs，GitHub Pages 部署） | — |
-
-四个主包的文件开头都声明同一件事——「本文件是该包规则的唯一真源」，README 不再承载目录树、铁律或 SOP，并回链根 `AGENTS.md`。`@app/pr-review` 从简，只有三条：改本包代码前读 Skill、CLI 入口收敛、`reviews/` 只读不手改。
-
-### 三条全局红线（一句话可判定）
-
-三条红线都写成单句可判定的形式，且各自挂在一个机器检查点上。
-
-**根目录禁增业务依赖**：根 `package.json` 的 `dependencies` 只能包含 `@app/main`。
+#### 红线 1：根目录严禁新增业务依赖
 
 ```json
+// package.json: dependencies 只能且仅能包含 @app/main
 "dependencies": {
   "@app/main": "workspace:*"
-},
+}
 ```
+*门禁验证*：`pnpm verify:prebuild` 静态扫描，发现任何非 `@app/main` 的根业务依赖立即退出并报错。
 
-打包前置门禁把白名单写死，build 脚本在 electron-builder 启动前调用它：
+#### 红线 2：严禁新增桶文件（Barrel Files）
+
+```json
+// .config/biome.json
+{
+  "linter": {
+    "rules": {
+      "performance": {
+        "noBarrelFile": "error",
+        "noReExportAll": "error"
+      }
+    }
+  }
+}
+```
+*澄清说明*：不得新增只做重导出的 `index.ts`，严禁 `export *`。组件自身的 `Button/index.tsx`（一组件一文件夹本体实现）非桶文件，属于合规例外。
+
+#### 红线 3：路径推导基于模块锚点
 
 ```ts
-const rootDeps = Object.keys(rootPkg.dependencies || {});
-const allowedRootDeps = ['@app/main'];
-
-const illegalRootDeps = rootDeps.filter((dep) => !allowedRootDeps.includes(dep));
-```
-
-→ 源码：[scripts/verify-prebuild.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/verify-prebuild.ts)（`pnpm verify:prebuild` 可单独运行）
-
-**禁止桶文件**：不得新增只做重导出的 `index.ts`，严禁 `export *`。
-
-```json
-"performance": {
-  "noBarrelFile": "error",
-  "noReExportAll": "error"
-},
-```
-
-→ 源码：[.config/biome.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.config/biome.json)
-
-两条规则都是 error 级、不设白名单。例外同样写在根文件里：组件 `Xxx/index.tsx` 是一组件一文件夹的本体实现，不是桶文件。`@app/shared` 把这条红线推到极端——`package.json` 连根入口都不设，用子路径 `exports` 直出具体文件：
-
-```json
-"exports": {
-  "./constants/*": "./src/constants/*.ts",
-  "./schemas/*": "./src/schemas/*.ts",
-  "./types/*": "./src/types/*.ts",
-  "./utils/*": "./src/utils/*.ts"
+// build/lib/repo-paths.ts: 严禁强依赖不稳定且存在工作目录偏移的 process.cwd()
+export function findRepoRoot(startDir: string): string {
+  let current = path.resolve(startDir);
+  while (current !== path.dirname(current)) {
+    if (fs.existsSync(path.join(current, 'pnpm-workspace.yaml'))) return current;
+    current = path.dirname(current);
+  }
+  throw new Error('未找到仓库根目录');
 }
 ```
 
-**严禁 `process.cwd()` 算相对路径**：Node 脚本与构建配置必须用 `__dirname`。
+## 3. 桌面端避坑注意事项
 
-```ts
-/**
- * 仓库物理路径解析（构建期基础设施单一事实源）
- *
- * 所有脚本与 Vite 配置统一从这里取根目录，禁止用 process.cwd() 推导
- * （桌面快捷方式/CI 工作目录偏移会让相对路径失效，见 AGENTS.md 全局红线 3）。
- */
-```
-
-`build/lib/repo-paths.ts` 把这件事收敛成一个函数：`findRepoRoot(__dirname)` 从调用方目录逐级向上找「同时存在 `package.json` 与 `pnpm-workspace.yaml`」的目录，新增脚本不按自身深度手算 `../..`：
-
-```ts
-const rootDir = findRepoRoot(__dirname);
-```
-
-→ 源码：[build/lib/repo-paths.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/lib/repo-paths.ts) · [scripts/verify-prebuild.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/verify-prebuild.ts)
-
-### 任务路由：先读包规则，再查深档
-
-根 `AGENTS.md` 的任务路由是一张三列表：任务、先读、再查。节选几行（路径相对仓库根目录）：
-
-| 任务 | 先读 | 再查 |
-| --- | --- | --- |
-| 新增业务域（shared→preload→main→renderer 全链路） | 四包的 AGENTS.md | README「全栈端到端功能开发 SOP」 |
-| 模块装配 / 启动流程 / 运行时 | `main/AGENTS.md` | `packages/docs/src/pages/architecture/module-lifecycle.md` |
-| renderer 页面 / 卡片 / 请求层 | `renderer/AGENTS.md` | — |
-| 日志 / 异常 / 链路追踪 | `.agents/rules/logging-specification.md` | `packages/docs/src/pages/main/logging.md` · `packages/docs/src/pages/main/tracing.md` |
-| 发版流程 / tag / changelogen | 全局红线 | `.github/CICD.md` |
-
-这张表把「AI 该读什么」从临场判断变成查表：新增业务域先去读四包 AGENTS.md，模块装配先读 main 的规则，日志问题先读横切规则。表里的「再查」列只给路径，不复制深档内容——规则与解释各留一处。
-
-### 包级铁律：约束落在具体目录上
-
-根文件只给底线，目录级约束住在各包 `AGENTS.md` 里，且都能对应到一个可执行的检查：
-
-- `@app/main`：依赖方向单向 `IPC 事件 → Controller → Service`，Service 严禁感知 IPC；入参必须 `safeParse`；IPC 返回统一 `Result<T>`；所有 handler 经 `handleTraced` 注册，禁止裸写 `ipcMain.handle`
-- `@app/preload`：`apiBridge` 显式声明 `ElectronApi`；通道常量从 `@app/shared/constants/ipc-channels` 引入；所有 invoke 经 `invokeTraced`；零业务逻辑
-- `@app/renderer`：`entries → features → 跨域层` 单向；feature 之间禁止互相 import（`dashboard` 组合编排例外）；异步请求一律 `useManualRequest`，Biome `noRestrictedImports` 禁止直连 ahooks `useRequest`
-- `@app/shared`：Schema 与 `z.infer` 推导类型只在 `schemas/*.ts` 定义；纯返回接口归 `types/`；子路径直出，不设根入口
-- `@app/pr-review`：对外命令只在 `src/cli.ts` 与 `src/commands/` 增删；根目录 `pnpm pr-review <command>` 是唯一调用方式；`reviews/` 是运行产物，只读不手改
-
-`@app/renderer` 那条限制可以直接在配置里读到，错误信息本身就是给 AI 的指令：
-
-```json
-"ahooks": {
-  "message": "禁用直接引用 ahooks useRequest；请求一律使用 src/hooks/useManualRequest.ts",
-  "importNames": ["useRequest"]
-}
-```
-
-### 横切规则：`.agents/rules` 按 globs 触发
-
-不是所有规则都挂在某个包上。`.agents/rules/` 放横切规则，文件头用 globs 声明触发范围；目前一份 `logging-specification.md`，`globs: packages/**/*.{ts,tsx}`，规定落盘日志必须纯英文。根 `AGENTS.md` 只在「指针」与任务路由里引用它，不展开内容。
-
-## 怎么抄
-
-以「给一个已有 monorepo 补 AI 协作者约定」为例，四步：
-
-1. **根文件只放三类内容**：包无关红线（一句话可判定）、包索引、任务路由；常用命令与指针放最后
-2. **每包一份 AGENTS.md**：开头声明「本文件是该包规则的唯一真源」并回链根文件，正文写目录结构、依赖方向、铁律、Anti-Patterns、SOP、提交前门禁
-3. **每条红线配一个落点**：Biome 规则、`verify-prebuild` 静态检查、lint / typecheck / test 门禁——AI 才能在提交前自检
-4. **横切规则单独目录**：用 globs 声明作用范围，根文件只留指针
-
-注意点：
-
-- 根 AGENTS.md 的包索引要如实标注没有规则文件的包（`@app/docs` 一栏是 `—`），否则 AI 会去找不存在的文件
-- 规则真源在包 AGENTS.md，README 不承载目录树 / 铁律 / SOP（四份包文件的措辞一致）
-- 新增包时把 AGENTS.md 登记进根文件的包索引与任务路由，否则它不会被主动读取
-- 红线写成「一句话可判定」，不要写成需要解释的风格偏好
+| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
+| :--- | :--- | :--- |
+| **渲染层偷渡 Node 原生模块** | AI 在 `packages/renderer` 中擅自引入 `node:fs` 或 `__dirname`，开发态可能不报错，打包后立即白屏崩溃。 | `packages/tsconfig/react.json` 严格限制类型定义；Preload 桥接是与操作系统交互的唯一合法出口。 |
+| **子包规则重复维护** | 在根目录和子包 README 同时写了一套分层说明，修改时不同步导致 AI 读到过期指示。 | 子包 `AGENTS.md` 为该包唯一真源；根目录仅做链接和任务路由，杜绝内容冗余。 |
+| **快捷方式启动工作目录偏移** | 桌面快捷方式启动时 `process.cwd()` 指向 Windows System32 或桌面，代码依赖相对路径导致文件丢失。 | 统一通过 `findRepoRoot(import.meta.dirname)` 向上物理锁定根目录。 |

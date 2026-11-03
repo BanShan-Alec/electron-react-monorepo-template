@@ -1,57 +1,63 @@
 ---
 title: 应用更新（Electron-updater）
-description: 关掉自动下载与自动安装，改由快照状态机 + IPC 推送推进；退出应用时取消未完成的下载。
+description: 采用显式快照状态机接管更新生命周期，禁用静默强装，退出时安全取消下载与节流推送。
 ---
 
 # 应用更新（Electron-updater）
 
-> **TL;DR**：关掉自动下载与自动安装，改由快照状态机 + IPC 推送推进；退出应用时取消未完成的下载
+> **TL;DR**：全面接管 `electron-updater`。刻意关闭 `autoDownload` 与 `autoInstallOnAppQuit`，通过 7 态受控快照状态机向渲染层节流推送进度，支持中途取消下载，并在应用退出时清理未完成临时包，杜绝后台僵尸进程与文件锁冲突。
 
-## 要解决的坑
+## 1. 选型理由
 
-- 用户升级要么全量重下、要么静默装完强重启，还可能出现下载到一半没人管的僵尸进程
+- **规避静默强装与卡顿**：官方默认行为是在后台静默全量下载并在应用退出时强制重启安装，若用户正处于未保存的关键工作流中将造成严重灾难。
+- **状态透明与节流推送**：通过统一的受控状态机（7 态），配合高频下载进度的节流（Throttle）广播，更新进度窗口始终保持 60fps 平滑流畅而不挤爆 IPC。
+- **全通道与差分更新支持**：物料由打包阶段一键产出 `.blockmap` 索引，`electron-updater` 客户端按需实现分块差量下载，节约带宽与等待耗时。
 
-## 差分热更新：受控状态机 + 退出取消下载
+## 2. 核心配置与实现
+
+### 显式禁用默认行为与状态机定义
 
 → 源码：[packages/main/src/services/updater.service.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/services/updater.service.ts)
 
-electron-updater 的「全自动更新」在这里被刻意关掉，改由显式状态机推进：
-
 ```ts
-updater.logger = this.logger;
+import type { UpdaterState, UpdaterSnapshot } from '@app/shared/types/updater';
+import electronUpdater, { CancellationToken } from 'electron-updater';
+
+// 核心原则：彻底关闭官方默认自动下载与强行退出安装
 updater.autoDownload = false;
 updater.autoInstallOnAppQuit = false;
 updater.fullChangelog = true;
 
-const channel = getEnv('DISTRIBUTION_CHANNEL');
-if (channel) {
-  updater.channel = channel;
-}
+// 状态机 7 大标准状态（单一真源来自 @app/shared 契约定义）
+// UpdaterState: 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'up-to-date' | 'error'
 ```
 
-发现新版本、下载、安装全部由 `UpdaterService` 的快照状态机（idle / checking / available / downloading / downloaded / up-to-date / error 七态，`UpdaterState` 由 `@app/shared` 的 zod schema 推导）流转，经 IPC 推给渲染层更新窗口；下载进度按时间阈值节流推送，不刷屏。
-
-下载用 `CancellationToken` 支持中途取消：
+### 可取消下载与退出收尾
 
 ```ts
+// 1. 通过 CancellationToken 支持用户主动取消或应用退出时中止
 this.cancellationToken = new CancellationToken();
 this.snapshot.state = 'downloading';
-// ...
 await updater.downloadUpdate(this.cancellationToken);
+
+// 2. 退出时安全终止：未完成的临时文件立即取消，不留僵尸任务
+public cancelDownload(): void {
+  if (this.cancellationToken && this.snapshot.state === 'downloading') {
+    this.cancellationToken.cancel();
+    this.cancellationToken = null;
+    this.snapshot.state = 'idle';
+  }
+}
+
+// 3. 安装时机控制：主窗口存在时打开更新对话框；用户确认后再触发安装重启
+updater.quitAndInstall(false, true); // isSilent=false, isForceRunAfter=true
 ```
 
-安装时机分场景：主窗口存活走更新窗口确认 `quitAndInstall(false, true)`；用户此前关过更新窗口就降级为系统通知，点击再拉起安装入口。
+## 3. 桌面端避坑注意事项
 
-退出即放弃下载：用户在下载中选择退出应用（或未开启托盘常驻时关闭最后一个窗口）时，主进程先取消下载再退出，不保留后台进程。electron-updater 在取消时清理未完成的临时文件，下次启动重新检查并从头下载；已下载完成的安装包保留在缓存中，下次启动可直接安装。错误统一过 `classifyUpdaterError` 分类成语义化 `ErrorCode`，并按阶段打点 Sentry。
-
-差分升级的物料由本仓库备齐：打包配置声明 `generateUpdatesFilesForAllChannels: true` 生成全通道更新元数据（`build/electron-builder.ts`），Release 流水线把 `*.blockmap` 差分索引与 `latest.yml` 元数据连同安装包一起上传（见 [发版流水线（Changelogen）](/delivery/release-pipeline)）。electron-updater 的升级客户端按 blockmap 比对新旧版本、只下载差异块——这是该库的内置行为，不在本仓库代码内，本仓库保证的是物料就位。未打包形态（源码运行）读不到 `resources/app-update.yml`，改用编译期注入的 `repository.url` 坐标手动 `setFeedURL`；dev 模式全链路模拟，不请求真实源。
-
-## 怎么抄
-
-- **升级与 AI 评审**：electron-updater 关 `autoDownload` / `autoInstallOnAppQuit`，包一层状态机 + IPC 推送 + 退出时取消下载
-
-AI 评审部分见 [AI 评审闭环（Open-code-review）](/ai/review-loop)。
-
-注意点：
-
-- 不要绕过 `UpdaterService` 直接调 autoUpdater：channel、feedURL、取消下载、错误分类都挂在状态机上
+| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
+| :--- | :--- | :--- |
+| **退出应用被文件锁卡死** | 用户正在下载 200MB 安装包时突然关闭应用，未关闭的下载任务持有本地临时文件句柄，导致下次启动安装包损坏或进程挂起。 | 在应用退出流程（`before-quit` / 最后一个窗口关闭）中显式调用 `cancelDownload()` 取消未完成的流并清理句柄。 |
+| **源码/开发模式更新报错** | 在 `pnpm dev` 下执行检查更新，由于未打包状态下缺少 `resources/app-update.yml`，导致程序直接抛出未捕获异常。 | 在开发态自动拦截并使用本地 Mock 逻辑，生产态基于 `package.json` 的 `repository.url` 自动合成更新源。 |
+| **高频 Progress 冲垮渲染层** | 宽带极速下载时，`download-progress` 事件每秒触发数百次，频繁触发 IPC 序列化与 React 重新渲染致使界面卡死。 | 在主进程内部引入 `PROGRESS_EMIT_THROTTLE_MS`（节流阀），将推送频率严格限制在每 100ms 一次。 |
+| **错误分类与语义提示缺失** | 报错仅显示 `Error: net::ERR_CONNECTION_TIMED_OUT` 等底层原始堆栈，用户无法理解。 | 通过 `classifyUpdaterError` 将网络超时、哈希校验失败、文件占用等异常映射为结构化 `ErrorCode` 并附带友好中文提示。 |

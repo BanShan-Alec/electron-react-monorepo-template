@@ -166,9 +166,9 @@ const { runAsync: runCounterOp } = useManualRequest(async (action: CounterAction
   hook 文件本身不是组件，保持扁平 `useXxx.ts`。
 - 公开面：共享 `components/` 不限制深层引用；feature 及其卡片对外仍遵守 Feature 规范第 1 条的唯一公开面规则。
 - 七段式模板：私有常量 → 可抽离函数 → 变量解构 → 组件状态 → 网络IO → 数据转换 → 逻辑函数 → Effect → 渲染；
-  之后是 `IXxxProps` 类型定义；类组件（ErrorBoundary）不适用。
+  之后是 `XxxProps` 类型定义（无 `I` 前缀）；类组件（ErrorBoundary）不适用。
 - 命名：hook `useXxx.ts`、卡片 `XxxCard/index.tsx`、入口 `index.tsx` 导出 `XxxFeature`、常量 SCREAMING_SNAKE。
-- 展示卡片（`features/*/components/**`）：`const _X = (props) => …` + `const X = memo(_X)` + `export { X }` + `export default X`。
+- 展示卡片（`features/*/components/**`）：`const _X = (props) => …` + `export const X = memo(_X)`（仅具名导出，移除多余的 `export default` 双导出）。
 - 容器入口（`features/*/index.tsx`）：直接 `function XFeature()`，不套 memo——内部持有 hook，memo 无收益；
   导出用 `export { XFeature }` + `export default XFeature`（勿与 `export function` 并用，TS 会报重复导出）。
 - 别名：`@/` → `packages/renderer/src/*`，`@shared/` → `packages/shared/src/*`（单一事实源在根 tsconfig.json）。

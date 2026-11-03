@@ -38,16 +38,51 @@ describe('env-packer Codec', () => {
     const packed = packRuntimeEnv(minimal);
     const unpacked = unpackRuntimeEnv(packed);
 
-    expect(unpacked).toEqual({
-      mode: APP_ENV.TEST,
-      appVersion: '0.0.1',
-      appName: 'test-app',
-      channel: undefined,
-      apiBaseUrl: undefined,
-      systemCode: undefined,
-      sentryDsn: undefined,
-      releaseName: undefined,
-    });
+    expect(unpacked).toEqual(minimal);
+  });
+
+  it('is resilient to added fields without positional shifting', () => {
+    const extended = {
+      mode: APP_ENV.PRODUCTION,
+      appVersion: '2.0.0',
+      appName: 'app-with-extra',
+      newFeatureFlag: true,
+      customMetadata: { cluster: 'us-east-1' },
+    } as unknown as AppRuntimeEnv;
+
+    const packed = packRuntimeEnv(extended);
+    const unpacked = unpackRuntimeEnv(packed);
+    expect(unpacked).toEqual(extended);
+  });
+
+  it('handles unicode, non-ASCII and special characters correctly', () => {
+    const unicodeEnv: AppRuntimeEnv = {
+      mode: APP_ENV.DEVELOPMENT,
+      appVersion: '3.1.0-beta.1',
+      appName: '企业级桌面客户端 🚀',
+      channel: '测试渠道 #01',
+      apiBaseUrl: 'https://api.example.com/v1?token=xyz&debug=true#section',
+      systemCode: 'SYS-中文-001',
+      sentryDsn: 'https://key@sentry.example.org/456?env=prod&lang=zh_CN',
+      releaseName: 'template-v3.1.0-🚀',
+    };
+
+    const packed = packRuntimeEnv(unicodeEnv);
+    const unpacked = unpackRuntimeEnv(packed);
+    expect(unpacked).toEqual(unicodeEnv);
+  });
+
+  it('throws error on corrupted or malformed base64 input', () => {
+    expect(() => unpackRuntimeEnv('!!!not_base64***')).toThrow();
+  });
+
+  it('throws error when base64 content is not valid JSON', () => {
+    // Valid Base64URL string of non-JSON text "not a json object"
+    const nonJsonB64 = btoa('not a json object')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+    expect(() => unpackRuntimeEnv(nonJsonB64)).toThrow();
   });
 
   it('exposes standard command line argument prefix', () => {

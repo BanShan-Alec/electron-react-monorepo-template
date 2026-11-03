@@ -8,13 +8,7 @@ import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
 import { getScrollFadeState } from './lib/scrollFade';
 
-export interface IUsbCardProps {
-  devices: UsbDeviceItem[];
-  isLoading: boolean;
-  onRefresh: () => void;
-}
-
-const _UsbCard = (props: IUsbCardProps) => {
+const _UsbCard = (props: UsbCardProps) => {
   useLingui();
   const { devices, isLoading, onRefresh } = props;
 
@@ -142,5 +136,12 @@ const _UsbCard = (props: IUsbCardProps) => {
     </AppCard>
   );
 };
+
+// props 类型定义
+export interface UsbCardProps {
+  devices: UsbDeviceItem[];
+  isLoading: boolean;
+  onRefresh: () => void;
+}
 
 export const UsbCard = memo(_UsbCard);

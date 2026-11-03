@@ -1,40 +1,50 @@
 ---
 title: 分层架构（Controller / Service）
-description: IPC 事件只进 Controller，业务住 Service，纯逻辑服务不 import Electron，可在 node 环境直接单测。
+description: IPC 事件收敛于 Controller，核心业务封装在 Service，脱离 Electron 依赖实现纯 Node 单测。
 ---
 
 # 分层架构（Controller / Service）
 
-> **TL;DR**：IPC 事件只进 Controller，业务住 Service，纯逻辑服务不 import Electron，可在 node 环境直接单测。
+> **TL;DR**：主进程严格分为通信控制层（Controller）与业务逻辑层（Service）。Controller 负责参数校验与响应包装，Service 保持纯数据进出且不依赖 Electron API，可在纯 Node 环境下秒级单测。
 
-## 要解决的坑
+## 1. 选型理由
 
-Electron 项目最容易长歪的地方就是组织方式：
+桌面端主进程最常见的坏味道是把 `ipcMain.handle` 与业务逻辑糊在一个函数内：
+1. **测试成本高昂**：单测一段简单逻辑必须拉起整个 Electron 原生实例，耗时长且无法在无 GUI 环境（如极简 CI runner）运行。
+2. **通信与业务耦合**：一旦需要支持 CLI 模式、定时器触发或多窗口复用，原有的 IPC handler 无法被直接调用。
 
-- 业务逻辑和 `ipcMain.handle` 糊在同一个函数里，想单测一段业务都得先拉起 Electron
+为此，主进程建立单向依赖流：`IPC 事件 ──> Controller ──> Service`。
 
-## 本仓库的解法
+## 2. 核心配置代码
 
-### 分层纪律：Controller/Service 分离，业务可脱离 Electron 单测
+### Controller 职责：校验、调用与包装
 
-主进程纵向三层：`controllers/` 通信接入、`services/` 核心业务、`modules/` 系统切片。铁律是依赖只能单向流动 `IPC 事件 → Controller → Service`：Service 方法签名纯数据进出，不出现 `ipcMain`、事件对象，也不向渲染端回发消息。
+Controller 负责路由分发、Zod 参数合法性校验，并将异常收敛为统一的 `Result<T>`：
 
 → 源码：[packages/main/src/controllers/counter.controller.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/controllers/counter.controller.ts)
 
 ```ts
 export function registerCounterControllers(): void {
-  handleTraced(IPC_CHANNELS.COUNTER_GET, async (): Promise<Result<CounterResult>> => {
+  handleTraced(IPC_CHANNELS.COUNTER_INCREMENT, async (stepInput): Promise<Result<CounterResult>> => {
     try {
-      return successResult(counterService.getCounter());
+      // 1. Zod 校验入参，非法入参直接阻断
+      const parsed = stepInputSchema.safeParse(stepInput);
+      if (!parsed.success) {
+        return failResult(ErrorCode.INVALID_ARGUMENT, '步长参数格式错误');
+      }
+
+      // 2. 委托纯业务 Service 处理
+      return successResult(counterService.increment(parsed.data.step));
     } catch (err) {
       return catchToResult(err);
     }
   });
-  // ...其余 handler 同构：有入参的经 zod safeParse 校验，返回统一包成 Result<T>（无入参的仅做包装）
 }
 ```
 
-Controller 只做三件事：校验入参、调用 Service、把结果包成 `Result<T>`，不写实质业务。业务住在 Service：
+### Service 职责：纯粹的业务本体与脱壳单测
+
+Service 不接触 `ipcMain`、`event.sender`，输入与输出均为纯 TypeScript 数据结构：
 
 → 源码：[packages/main/src/services/counter.service.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/services/counter.service.ts)
 
@@ -51,61 +61,29 @@ export class CounterService {
     store.set({ serverCounter: newCount });
     return { count: newCount, step };
   }
-
-  // ...decrement() / reset() 省略：同为「读写 store、返回 CounterResult」模式
 }
 
 export const counterService = new CounterService();
 ```
 
-IPC 注册集中显式：所有 handler 必须经 `register<Domain>Controllers()` 在一处挂载，入口、Service、Module 里禁止裸写 `ipcMain.handle`：
-
-→ 源码：[packages/main/src/controllers/index.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/controllers/index.ts)
+所有 Controller 由主模块显式注册挂载，全仓禁止散落的裸写：
 
 ```ts
 export function registerAllControllers(): void {
   registerSystemControllers();
-  registerUsbControllers();
   registerCounterControllers();
   registerCalculatorControllers();
-  registerConfigControllers();
-  registerDiagnosticsControllers();
-  registerDialogControllers();
-  registerUpdaterControllers();
+  // ... 其余业务域控制器
 }
 ```
 
-「业务可脱离 Electron 单测」的实据是纯逻辑服务不 import electron——`classifyUpdaterError` 只依赖 `AppError` 与错误码常量，它的单测在 Vitest node 环境直接运行，不需要启动 Electron：
+## 3. 桌面端避坑注意事项
 
-→ 源码：[packages/main/src/services/updater-classify.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/services/updater-classify.ts) · [packages/main/tests/unit/updater-classify.test.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/tests/unit/updater-classify.test.ts)
-
-```ts
-export function classifyUpdaterError(err: unknown, fallback: ErrorCodeType): ErrorCodeType {
-  if (err instanceof AppError) {
-    return err.code as ErrorCodeType;
-  }
-  const message = err instanceof Error ? err.message : String(err);
-  if (message.includes('net::ERR_')) {
-    return ErrorCode.UPDATER_NETWORK_ERROR;
-  }
-  return fallback;
-}
-```
-
-设计动机：IPC 是外部边界，不是业务本体。把「跨进程」锁死在 Controller 一层，Service 才是可积累、可测试的资产；需要系统能力的服务（如经 `config.module` 持久化的 counter.service）把 electron API 压在少数取数点后面，业务分支本身仍不与 Electron 类型纠缠。规则真源：`packages/main/AGENTS.md`（依赖方向与核心铁律）。
-
-## 怎么抄
-
-以新增一个业务域（如 counter）为例，六步：
-
-本页覆盖第 1–4 步，渲染层与上架步骤见[功能域组织（Features）](/architecture/feature-domains)。
-
-1. **shared 定义契约**：`IPC_CHANNELS` 加通道、zod schema、返回类型（详见[类型安全的 IPC 契约（Zod + ContextBridge）](/security/ipc-contract)一文）
-2. **main 写 Service**：`services/<domain>.service.ts` 纯业务逻辑，单例导出
-3. **main 写 Controller**：`controllers/<domain>.controller.ts` 经 `handleTraced` 注册，safeParse 校验、`Result<T>` 包装；`controllers/index.ts` 登记一行
-4. **preload 加白名单**：`apiBridge` 加方法（详见[类型安全的 IPC 契约（Zod + ContextBridge）](/security/ipc-contract)一文）
-
-注意点：
-
-- 严禁裸写 `ipcMain.handle`，所有 handler 走 `register<Domain>Controllers()` 集中挂载
-- Service 不感知 IPC：签名纯数据进出，electron 系统能力集中在少数显式取数点
+- **Service 严禁 import Electron**：
+  - 纯业务 Service（如运算、数据清洗、更新错误分类）不得出现 `import { ... } from 'electron'`。若需持久化或系统能力，必须通过依赖注入或下沉至 `modules/` 基础设施层，确保 Service 可在 Vitest Node 环境下直接测试。
+- **Store 依赖严禁在 Service 构造函数立即求值**：
+  - 若 Service 依赖持久化配置（如 `getAppConfigStore()`），必须在业务方法调用时延迟读取（Lazy Read），严禁在 `new Service()` 构造函数中直接执行。避免因主进程模块装配时序未就绪引发启动闪退。
+- **IPC 管道中禁止抛出未捕获异常**：
+  - 未捕获的 Promise Rejection 会导致跨进程 IPC 通道挂死或渲染端处于无限等待状态。必须经由 `catchToResult(err)` 转化为包含结构化 `ErrorCode` 的 `Result<T>`。
+- **禁止在 Controller 之外裸写 `ipcMain.handle`**：
+  - 所有跨端监听统一通过 `register<Domain>Controllers()` 集中装配，并用 `handleTraced` 包装以自动接入 W3C 链路追踪上下文。

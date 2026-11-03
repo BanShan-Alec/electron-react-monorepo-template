@@ -8,7 +8,7 @@ import { memo, useEffect } from 'react';
 
 // 可抽离的逻辑处理函数/组件
 
-const _StartupReadyNotifier = (_props: IProps) => {
+const _StartupReadyNotifier = (_props: StartupReadyNotifierProps) => {
   // 变量声明、解构
 
   // 组件状态
@@ -31,7 +31,7 @@ const _StartupReadyNotifier = (_props: IProps) => {
 };
 
 // props 类型定义
-type IProps = Record<string, never>;
+type StartupReadyNotifierProps = Record<string, never>;
 
 declare global {
   interface Window {
@@ -39,7 +39,4 @@ declare global {
   }
 }
 
-const StartupReadyNotifier = memo(_StartupReadyNotifier);
-
-export { StartupReadyNotifier };
-export default StartupReadyNotifier;
+export const StartupReadyNotifier = memo(_StartupReadyNotifier);

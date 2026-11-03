@@ -1,29 +1,31 @@
 ---
 title: 路径稳健性（Relative-path）
-description: "构建脚本与运行期资源都锚定模块自身位置，不依赖 `process.cwd()`。"
+description: 向上定位仓库根（findRepoRoot），运行期资源依赖 Node 图与资源锚点，防工作目录偏移。
 ---
 
 # 路径稳健性（Relative-path）
 
-> **TL;DR**：构建脚本与运行期资源都锚定模块自身位置，不依赖 `process.cwd()`。
+> **TL;DR**：构建脚本与工具链统一依托 `findRepoRoot` 向上探测仓库根目录；运行期资源采用 `require.resolve` 与 `process.resourcesPath` 稳定锚点定位，彻底规避因桌面快捷方式启动导致 `process.cwd()` 偏移而引发的资源 404。
 
-## 要解决的坑
+## 1. 选型理由
 
-Electron 的默认配置是「能跑」，不是「防住」：
+桌面客户端执行环境与普通后端服务有本质差异：
+- **快捷方式与右键启动的工作目录偏移**：用户双击桌面快捷方式、右键“以此方式打开”或被操作系统自启拉起时，进程的工作目录（`process.cwd()`）往往会漂移到 `C:\Windows\System32`、用户桌面或任意挂载盘符。
+- **相对路径直接断裂**：若构建脚本或运行时使用 `path.resolve('./resources/icon.png')`，必定导致物理文件找不到，产生极难复现的线上资源 404。
 
-- 脚本从工作目录找文件，桌面快捷方式启动时 `process.cwd()` 偏移，资源全部 404
+工程确立「模块自身位置锚定」原则：**一切从模块物理位置出发定位，不依赖 `process.cwd()`**。
 
-## 本仓库的解法
+## 2. 核心配置代码（单一真源）
 
-### 路径稳健性：一切从模块自身定位
-
-构建期与运行期的路径解析都不问「当前工作目录」，各自有稳定锚点。
-
-**构建脚本取根**：从调用文件自己的位置向上找仓库根（同时存在 `package.json` 与 `pnpm-workspace.yaml` 的目录），找不到就抛错：
+### 向上探测仓库根（findRepoRoot）
 
 → 源码：[build/lib/repo-paths.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/lib/repo-paths.ts)
 
 ```ts
+/**
+ * 从指定目录向上递归探测 Monorepo 仓库物理根目录。
+ * 判定依据：同时包含 package.json 与 pnpm-workspace.yaml 的最近层级。
+ */
 export function findRepoRoot(fromDir: string): string {
   let current = path.resolve(fromDir);
   while (true) {
@@ -42,50 +44,25 @@ export function findRepoRoot(fromDir: string): string {
 }
 ```
 
-打包校验脚本与 renderer 的 Vite 配置统一从这里取根（`verify-prebuild` 直接调 `findRepoRoot(__dirname)`；`build.ts` 与 `verify-postbuild` 经 `build/lib/env.ts` 的 `loadRepoEnv` 间接使用；`renderer/vite.config.ts` 用 `findRepoRoot(import.meta.dirname)`）；electron-builder 配置则用 `join(__dirname, '..')` 自行锚定——锚点不同，主旨一致：都锚定模块自身位置，都不碰 `process.cwd()`（`repo-paths.ts` 注释里写明这是仓库全局红线）。桌面快捷方式启动时工作目录不可预期，`__dirname` / `import.meta.dirname` 永远指向模块自己，所以永远不错位。
+全仓构建脚本统一通过 `findRepoRoot(__dirname)` 或 `findRepoRoot(import.meta.dirname)` 获取绝对基准，无论在哪个子包执行命令均可保持一致。
 
-**运行期资源定位**：主进程入口用 `require.resolve` 沿 node_modules 依赖图找渲染产物与 preload，开发态才换成 dev server URL：
+### 运行期资源的确定性定位
 
-→ 源码：[packages/main/src/index.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/index.ts)
-
-```ts
-initApp({
-  windows: {
-    home: devServer
-      ? new URL('src/entries/home/index.html', devServer)
-      : { path: require.resolve('@app/renderer') },
-    updater: devServer
-      ? new URL('src/entries/updater/index.html', devServer)
-      : { path: require.resolve('@app/renderer/updater') },
-  },
-  preload: {
-    path: require.resolve('@app/preload'),
-  },
-  // 初始化失败只经 electron-log 记入 main.log，不弹窗不退出
-}).catch((error) => {
-  log.error('[initAppFailed]', error);
-});
-```
-
-**运行期磁盘资源**：托盘图标这类打包后才存在的文件，用 Electron 提供的锚点（`process.resourcesPath`、`app.getAppPath()`）列出候选目录逐个探测，而不是拿 cwd 拼：
-
-→ 源码：[packages/main/src/modules/tray.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/tray.module.ts)
+- **打包产物定位**：主进程通过 `require.resolve('@app/renderer')` 沿 Node 依赖图安全获取编译产物物理入口，不手拼相对路径。
+- **打包原生资源定位**：托盘图标与打包后独立资产通过 Electron 官方锚点寻找：
 
 ```ts
-if (process.resourcesPath) {
-  baseDirs.push(path.join(process.resourcesPath, 'buildResources'));
-}
-if (app) {
-  baseDirs.push(path.join(app.getAppPath(), 'build', 'resources'));
-}
+const baseDirs = [
+  process.resourcesPath && path.join(process.resourcesPath, 'buildResources'),
+  app && path.join(app.getAppPath(), 'build', 'resources'),
+].filter(Boolean);
 ```
 
-## 怎么抄
+## 3. 桌面端避坑注意事项
 
-以新增构建脚本为例：
-
-1. **路径只走稳定锚点**：构建脚本与配置从 `findRepoRoot(__dirname)` 取根；运行期资源用 `require.resolve` / `process.resourcesPath` / `app.getAppPath()` 定位
-
-注意点：
-
-- `process.cwd()` 红线目前靠约定执行（`repo-paths.ts` 注释与 AGENTS.md 全局红线），没有静态扫描门禁——code review 时要人工盯
+- **规约定位：最佳工程指导而非机械阻断门禁**：
+  - 避免依赖 `process.cwd()` 作为全仓推荐最佳实践遵循，以规避快捷方式偏移风险。该原则作为代码审查和开发指南生效，不设立不切实际的全局静态机械阻断门禁。
+- **`__dirname` 与 ESM 的环境差异**：
+  - 全仓源码为 ESM，脚本使用 `import.meta.dirname`（Node 20+ 原生支持）获取当前文件绝对目录；CJS 转译产物或工具配置中回退至 `__dirname`。
+- **ASAR 归档内的路径读取**：
+  - 原生 C++ 动态链接库（`.node`）或外部 Shell 调用的执行文件必须置于 ASAR 外部（`asarUnpack`），否则通过文件系统路径无法直接由操作系统内核执行。

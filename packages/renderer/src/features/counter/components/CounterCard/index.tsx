@@ -14,7 +14,7 @@ function toSelectOptions(steps: number[]) {
   return steps.map((step) => ({ label: String(step), value: step }));
 }
 
-const _CounterCard = (props: ICounterCardProps) => {
+const _CounterCard = (props: CounterCardProps) => {
   useLingui();
   // 变量声明、解构
   const { count, step, onStepChange, isUpdating, onIncrement, onDecrement, onReset } = props;
@@ -86,7 +86,7 @@ const _CounterCard = (props: ICounterCardProps) => {
 };
 
 // props 类型定义
-interface ICounterCardProps {
+interface CounterCardProps {
   count: number;
   step: number;
   onStepChange: (step: number) => void;
@@ -96,7 +96,4 @@ interface ICounterCardProps {
   onReset: () => void;
 }
 
-const CounterCard = memo(_CounterCard);
-
-export { CounterCard };
-export default CounterCard;
+export const CounterCard = memo(_CounterCard);

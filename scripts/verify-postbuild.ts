@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { _electron as electron } from '@playwright/test';
+import { _electron as electron, type Page } from '@playwright/test';
 import { getRepoEnvValue, loadRepoEnv } from '../build/lib/env.ts';
 import { getDistDir } from '../build/lib/repo-paths.ts';
 
@@ -179,7 +179,7 @@ function analyzeAsarSize(asarPath: string): void {
  * 核心职责：在打包完成后验证物理产物完整性与可用性
  * 1. 跨平台自动发现解包产物与 asar 归档
  * 2. asar 体积防劣化硬门禁与构成透视分析（<10MB）
- * 3. 真实拉起已打包程序执行 Playwright Smoke 烟雾健康检查（验证 React #root 正常挂载）
+ * 3. 真实拉起已打包程序执行 Playwright Smoke 烟雾健康检查（验证 body.app-startup-ready 揭幕与无未捕获异常）
  */
 async function verifyPostbuild(options: PostbuildVerificationOptions = {}): Promise<void> {
   const repoEnv = loadRepoEnv(__dirname, 'production');
@@ -251,13 +251,53 @@ async function verifyPostbuild(options: PostbuildVerificationOptions = {}): Prom
 
     try {
       console.log('⏳ [verify-postbuild] 等待主窗口就绪...');
+      const pageErrors: Error[] = [];
+      const errorFingerprints = new Set<string>();
+      const attachedPages = new WeakSet<Page>();
+
+      const recordPageError = (err: Error) => {
+        const fingerprint = `${err.name}:${err.message}\n${err.stack ?? ''}`;
+        if (errorFingerprints.has(fingerprint)) return;
+        errorFingerprints.add(fingerprint);
+        pageErrors.push(err);
+        console.error('❌ [verify-postbuild] 捕获到页面未处理异常 (pageerror):', err);
+      };
+
+      const attachPage = (p: Page) => {
+        if (attachedPages.has(p)) return;
+        attachedPages.add(p);
+        p.on('pageerror', recordPageError);
+      };
+
+      app.on('window', attachPage);
+
       const page = await app.firstWindow();
+      attachPage(page);
+
       const title = await page.title();
       console.log(`🪟 [verify-postbuild] 主窗口捕获成功: title="${title}"`);
 
-      console.log('⏳ [verify-postbuild] 校验 #root 界面渲染...');
-      await page.waitForSelector('#root', { timeout: 15000 });
-      console.log('✅ [verify-postbuild] React 渲染容器 #root 已成功挂载！');
+      console.log('⏳ [verify-postbuild] 校验启动就绪揭幕 (body.app-startup-ready)...');
+      try {
+        await page.waitForSelector('body.app-startup-ready', { timeout: 15000 });
+        console.log('✅ [verify-postbuild] 启动协调器已揭幕就绪 (body.app-startup-ready)！');
+      } catch (waitErr) {
+        if (pageErrors.length > 0) {
+          throw new Error(
+            `[verify-postbuild] 等待启动就绪揭幕超时或失败，且捕获到 ${pageErrors.length} 个未处理页面异常:\n` +
+              pageErrors.map((e) => `  - ${e.message}\n${e.stack ?? ''}`).join('\n'),
+            { cause: waitErr },
+          );
+        }
+        throw waitErr;
+      }
+
+      if (pageErrors.length > 0) {
+        throw new Error(
+          `[verify-postbuild] 启动阶段捕获到 ${pageErrors.length} 个未处理页面异常:\n` +
+            pageErrors.map((e) => `  - ${e.message}\n${e.stack ?? ''}`).join('\n'),
+        );
+      }
     } finally {
       await app.close();
       console.log('🛑 [verify-postbuild] 应用程序已正常优雅退出。');

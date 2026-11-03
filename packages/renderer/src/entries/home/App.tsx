@@ -49,7 +49,4 @@ const _App = () => {
   );
 };
 
-const App = memo(_App);
-
-export { App };
-export default App;
+export const App = memo(_App);

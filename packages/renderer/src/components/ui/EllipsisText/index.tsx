@@ -14,7 +14,7 @@ import { memo, useEffect, useRef, useState } from 'react';
  *   省略号实际由外层容器裁出、自身永远检测不到溢出。
  * - 多行截断（`line-clamp-*`）不在本组件职责内。
  */
-const _EllipsisText = (props: IEllipsisTextProps) => {
+const _EllipsisText = (props: EllipsisTextProps) => {
   // 变量声明、解构
   const { children, tooltip, className } = props;
   const textRef = useRef<HTMLSpanElement>(null);
@@ -43,14 +43,11 @@ const _EllipsisText = (props: IEllipsisTextProps) => {
 };
 
 // props 类型定义
-interface IEllipsisTextProps {
+export interface EllipsisTextProps {
   children: ReactNode;
   /** 截断时展示的完整文本；非字符串内容不传，此时不弹 Tooltip */
   tooltip?: string;
   className?: string;
 }
 
-const EllipsisText = memo(_EllipsisText);
-
-export { EllipsisText };
-export default EllipsisText;
+export const EllipsisText = memo(_EllipsisText);

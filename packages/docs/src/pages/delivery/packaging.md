@@ -1,83 +1,87 @@
 ---
 title: 应用打包（Electron-builder）
-description: "electron-builder 用 TypeScript 写配置，应用身份收敛到根 `package.json`，三平台 target 由同一 CLI 入口分发。"
+description: electron-builder 采用 TypeScript 类型化配置，应用身份全仓收敛，基于依赖白名单自动外置与排除。
 ---
 
 # 应用打包（Electron-builder）
 
-> **TL;DR**：electron-builder 用 TypeScript 写配置，应用身份收敛到根 `package.json`，三平台 target 由同一 CLI 入口分发
+> **TL;DR**：抛弃脆弱易错的手写 JSON 打包配置，全面采用 TypeScript 编写 `electron-builder` 配置。应用身份从根 `package.json` 单一真源推导，主进程依赖基于清单自动外置，严禁源码映射进入 ASAR，实现三平台标准自动化出包。
 
-## 要解决的坑
+## 1. 选型理由
 
-- 打包配置写死在 JSON 里：appId、产物名、发布坐标散落多处，改个应用名要跨文件对齐；产物命名不规范这类问题，直到 GitHub Release 寻址 404 才暴露
-- 依赖收进 asar 全靠默认行为：渲染层依赖混进主进程包、node_modules 里的 README/测试/类型声明全进安装包，体积悄悄膨胀没人发现
+- **类型安全与逻辑复用**：`build/electron-builder.ts` 可直接导入 TypeScript 模块、执行路径运算与共享常量，配置错误在编译期即被拦截。
+- **应用身份单一真源**：`appId`、`productName`、版本号与发布仓库坐标统一源自根 `package.json`，杜绝散落在不同文件中的手动复制和版本号漂移。
+- **产物寻址强安全保障**：`artifactName` 遵循 `${name}-${version}-${os}-${arch}.${ext}` 命名契约，防止因项目名称带空格导致 GitHub Releases 上传自动转点从而使 `latest.yml` 寻址 404。
 
-## 动态打包：TypeScript 配置 + 按平台出包
+## 2. 核心配置与实现
+
+### TypeScript 打包配置与依赖放行
 
 → 源码：[build/electron-builder.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/electron-builder.ts)
 
-electron-builder 支持直接用 TypeScript 写配置，于是打包规则也能类型检查、能复用逻辑：
-
 ```ts
+import type { Configuration } from 'electron-builder';
+import { APP_IDENTITY } from './lib/app-identity.ts';
+
 const config: Configuration = {
-  // ...（directories / publish / generateUpdatesFilesForAllChannels /
-  //      nsis / extraResources / 三平台 icon 等键见源文件）
   appId: APP_IDENTITY.appId,
   productName: APP_IDENTITY.productName,
   win: { target: [{ target: 'nsis', arch: ['x64'] }] },
   mac: { target: ['dmg', 'zip'] },
   linux: { target: ['deb'] },
-  // biome-ignore lint/suspicious/noTemplateCurlyInString: electron-builder placeholder template
+  // 必须使用 package.json 的小写 ${name}，严禁使用含空格的 ${productName}
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: electron-builder placeholder
   artifactName: '${name}-${version}-${os}-${arch}.${ext}',
   asarUnpack: ['**/*.node'],
+  generateUpdatesFilesForAllChannels: true,
   files: [
     'LICENSE*',
     '!node_modules/@app/**',
+    // 文件私有辅助函数：自动读取各子包 package.json 中的 files 声明字段打包
     ...getListOfFilesFromEachWorkspace(['main', 'preload', 'renderer']),
-    '!**/*.map', // 严禁将 SourceMap 源码映射文件打包进 asar，彻底防止源码泄露
-    // ...（node_modules 冗余文件排除规则见源文件）
+    '!**/*.map', // 严禁将 SourceMap 打入 asar，杜绝源码泄露
+    '!**/node_modules/**/*.d.ts',
   ],
 };
+export default config;
 ```
 
-`appId` / `productName` 不写死在打包配置里，而是收敛到应用身份单一事实源：
+### 主进程构建依赖自动外部化
 
-→ 源码：[build/lib/app-identity.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/lib/app-identity.ts)
-
-```ts
-export const APP_IDENTITY: AppIdentity = {
-  name: rootPkg.name || 'electron-app',
-  version: rootPkg.version || '1.0.0',
-  productName: rootPkg.productName || rootPkg.name || 'Electron React Template',
-  appId: rootPkg.appId || `com.template.${rootPkg.name || 'electron-app'}`,
-  repositoryOwner: owner || '',
-  repositoryName: repo || '',
-};
-```
-
-它静态导入根目录 `package.json`，并从 `repository.url` 解析出 OTA 发布源坐标——`.env` 不参与身份与仓库坐标，应用身份跟随代码仓库而非部署环境。打包配置、主进程编译期注入、渲染层窗口标题三处消费同一份数据。
-
-产物命名用 `${name}`（package.json 的小写 name）而非 `${productName}`：`artifactName` 上方的注释写明，GitHub Releases 上传时空格会被自动转成点号，导致 `latest.yml` 校验与下载 404。这是打包配置里少有的「写错当时不出错、发版才炸」的点。
-
-workspace 产物精确放行，不整包塞：
+→ 源码：[packages/main/vite.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/vite.config.ts)
 
 ```ts
-allFilesToInclude.push({
-  from: `packages/${dirName}`,
-  to: `node_modules/${name}`,
-  filter: [...workspacePkg.files, '!**/*.map'],
+const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
+const runtimeDependencies = Object.keys(pkg.dependencies ?? {});
+
+export default defineConfig({
+  build: {
+    target: 'node24',
+    rolldownOptions: {
+      // 自动从 packages/main/package.json 提取依赖设为 external（外加 electron）
+      // 纯 JS 依赖装在 devDependencies 中由 Vite 自动打包内联进 index.cjs
+      external: ['electron', ...runtimeDependencies],
+    },
+  },
+  ssr: { noExternal: true },
 });
 ```
 
-`getListOfFilesFromEachWorkspace` 逐个读子包 `package.json` 的 `files` 字段生成规则——「哪些文件需要进 asar」由子包自己声明，构建配置不硬编码文件清单。
+### 跨平台打包命令矩阵
 
-三平台不重复维护：[scripts/build.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/build.ts) 用 `parseArgs` 接 `--dir` / `--win` / `--mac` / `--linux` / `--x64` / `--arm64`，一处分发成 electron-builder 选项。本地 `pnpm build:win` 与 CI 的 `pnpm run build:win -- -p never` 走同一入口，不存在「本地一套命令、CI 一套命令」。
+```bash
+# 根目录执行标准打包
+pnpm build:unpack    # 本地解包（快速验证，生成 dist/win-unpacked 等）
+pnpm build:win       # 打包 Windows NSIS 安装包
+pnpm build:mac       # 打包 macOS dmg / zip
+pnpm build:linux     # 打包 Linux deb 安装包
+```
 
-## 怎么抄
+## 3. 桌面端避坑注意事项
 
-- **打包**：electron-builder 换 TS 配置；应用身份（appId / productName / repository.url）收敛进根 `package.json`，构建与运行时都从这一份解析；三平台 target 用 CLI 参数切换，本地与 CI 走同一入口
-
-注意点：
-
-- 根 `package.json` 的 `name` 是产物寻址根：只用小写字母、数字、中划线、下划线，空格 / 大写 / 点号会让 `latest.yml` 与安装包下载 404（verify-prebuild 第 1 条门禁盯的就是它）
-- 根 `dependencies` 只允许 `@app/main`；新增运行时依赖需人工确认是否加进主进程 external 显式清单（`packages/main/vite.config.ts` 的 `rolldownOptions.external`：electron / usb / electron-updater）——verify-prebuild 注释明确原「dependencies 与 external 双向对齐」门禁已删除，这一步没有自动化兜底
+| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
+| :--- | :--- | :--- |
+| **`artifactName` 包含空格** | 使用 `${productName}` 作为文件名（如 `My App Setup.exe`），GitHub Releases 上传时自动将空格替换为点号，导致客户端拉取 `latest.yml` 校验 SHA512 失败或 404。 | `artifactName` 统一强制使用小写无空格的 `${name}`（对应 package.json 的 `name` 字段）。 |
+| **根目录依赖污染** | 在根目录 `package.json` 安装业务依赖，打包器会将整个庞大的 `node_modules` 连同冗余开发包全部打包进 ASAR。 | `verify-prebuild` 门禁严查：根目录 `dependencies` **只能且仅能包含 `@app/main`**。 |
+| **C++ 原生模块损坏** | 包含 `.node` 的模块被封装进 ASAR 后由于无法直接通过操作系统 `dlopen` 加载而报错。 | 打包配置中强制声明 `asarUnpack: ['**/*.node']`，自动解包至 `app.asar.unpacked/`。 |
+| **SourceMap 随包发布** | 忽视打包排除规则，导致 `.map` 源码映射文件流入最终安装包，逆向反编译一览无遗。 | 打包文件白名单中严格注入 `'!**/*.map'` 与 `'!**/node_modules/**/*.d.ts'`。 |

@@ -1,91 +1,74 @@
 ---
 title: 启动预检（Single-instance + Port）
-description: 起服务前先探测存量实例与端口占用，确认后定向清理，非 TTY 环境直接报错。
+description: 启动服务前先探测单实例锁与端口冲突，交互确认后定向清理，非 TTY 环境快速报错。
 ---
 
 # 启动预检（Single-instance + Port）
 
-> **TL;DR**：起服务前先探测存量实例与端口占用，确认后定向清理，非 TTY 环境直接报错。
+> **TL;DR**：执行 `pnpm dev` 时，先探测后台残留的 Electron 实例（打包版或旧 dev 会话），再检测 Vite 与调试端口占用；检测到冲突后交互式提示强杀释放，非 TTY 环境直接阻断报错。
 
-## 要解决的坑
+## 1. 选型理由
 
-- 上一个实例没退干净（打包版托盘常驻、上次的 dev 会话），新实例被单实例锁直接顶掉，窗口没弹出来却看不出原因；端口也可能被残留进程占着
+Electron 开发者常遇到两种极为隐蔽的“假死”现象：
+1. **单实例锁静默退出**：如果上一次的开发会话未退出干净，或者后台托盘常驻着已打包的应用，新拉起的实例因申请单实例锁失败会瞬间自行退出。终端无报错、窗口无弹出，开发者往往误以为是构建闪退。
+2. **端口占用与顺延迷航**：Vite 默认会自动顺延端口（如 5173 被占则自动改用 5174），但如果未被主进程获知，主进程窗口仍然试图连接旧地址，导致白屏超时。
 
-## 本仓库的解法
+## 2. 核心配置代码
 
-### 启动前预检：先单实例锁，后端口占用
+### 预检执行序列与实例探测
 
-→ 源码：[scripts/instance-guard.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/instance-guard.ts) · [scripts/port-guard.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/port-guard.ts)
+→ 源码：[scripts/instance-guard.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/instance-guard.ts)
 
-Electron 应用带单实例锁：打包版托盘常驻、或上一次 dev 会话没退干净时，新实例会被静默顶掉。所以编排第一步不是起服务，而是先探测存量实例。Windows 下按产品名匹配打包版；dev 实例按可执行文件路径锚定在本仓 `node_modules` 下，避免误杀其他项目 / 其他 worktree 的 electron。POSIX 侧同理，模式就两项：
+Windows 端按产品名称匹配，开发态实例则按当前工作区的绝对路径特征精准过滤，避免误杀机器上运行的其他项目：
 
 ```ts
-const patterns = [`${repoRoot}/node_modules/electron/dist/electron`, APP_IDENTITY.productName];
+const patterns = [
+  `${repoRoot}/node_modules/electron/dist/electron`,
+  APP_IDENTITY.productName,
+];
 ```
 
-端口排查走同一套交互契约——找到占用进程后问一声，经确认才杀：
+### 跨平台端口占用探测与降级
+
+→ 源码：[scripts/port-guard.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/port-guard.ts)
 
 ```ts
 export async function ensureSinglePortAvailable(port: number, desc: string): Promise<void> {
   const pid = await findOccupyingPid(port);
-  if (pid === null || pid === process.pid) {
-    return;
-  }
+  if (!pid || pid === process.pid) return;
 
   const procName = await getProcessName(pid);
   const shouldKill = await promptUserToKill(port, desc, pid, procName);
 
   if (shouldKill) {
-    console.log(`[dev] 正在终止进程 ${procName} (PID: ${pid}) 及其子进程树...`);
     await killProcessTree(pid);
-    // 等待 300ms 确保系统彻底释放套接字
     await new Promise((resolve) => setTimeout(resolve, 300));
-    console.log(`\x1b[32m[dev] 端口 ${port} (${desc}) 已成功释放。\x1b[0m`);
+    console.log(`[dev] 端口 ${port} (${desc}) 已成功释放。`);
   } else {
-    console.log('[dev] 用户取消了端口释放，服务启动终止。');
+    console.log('[dev] 用户取消了端口释放，启动终止。');
     process.exit(1);
   }
 }
 ```
 
-占用进程的 PID 探测按平台取最稳的工具，且层层降级：Windows 用 `netstat -ano` 解析 `LISTENING` 行；POSIX 优先 `lsof`，缺失时降级 `ss`、再降级 `fuser`：
+- Windows 下调用 `netstat -ano` 解析 `LISTENING` 行获取 PID。
+- POSIX 下按 `lsof -i :port` ➔ `ss -tulpn` ➔ `fuser` 逐级降级探测。
 
-```ts
-// POSIX: 优先使用 lsof（macOS 标配及大部分 Linux 系统）
-try {
-  const output = execSync(`lsof -i :${port} -t -sTCP:LISTEN`, {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'ignore'],
-  }).trim();
-  if (output) {
-    const pid = Number.parseInt(output.split('\n')[0], 10);
-    if (!Number.isNaN(pid) && pid > 0) return pid;
-  }
-} catch {
-  // ...(lsof 缺失时降级 ss → fuser，见源码)
-}
-```
+### 非 TTY 自动化环境防挂起
 
-两个细节值得抄走：
-
-- **非 TTY 直接抛错**（CI 里等不了交互确认），消息里给出进程名、PID 和人工处理指引，绝不挂起：
+在 CI 或自动化测试等无输入终端的环境中，禁止挂起等待输入：
 
 ```ts
 if (!process.stdin.isTTY) {
-  throw new Error(
-    `[dev] 端口 ${port} (${desc}) 正被 ${procName} (PID: ${pid}) 占用。在非交互式环境 (Non-TTY) 下无法等待确认，请先终止该进程或释放端口。`,
-  );
+  throw new Error(`[dev] 端口 ${port} (${desc}) 被 PID ${pid} 占用，Non-TTY 环境下无法等待确认，请先释放。`);
 }
 ```
 
-- **杀完复检**：实例清理后重新探测一遍，仍有幸存者就红字警告「本次启动可能抢锁失败」——不假装清理成功。
+## 3. 桌面端避坑注意事项
 
-## 怎么抄
-
-注意点：
-
-- 预检顺序固定「单实例 → 端口」：dev-vs-dev 场景下杀掉对端 electron 会连带其 dev 会话退出并释放端口，一次确认解决两件事
-- 端口预检只在开发态执行：`pnpm preview` 一次性构建后直接启动 Electron、不监听 dev server，因此只做单实例排查
-- 非 TTY 环境（CI）等不了交互确认，探测到冲突直接抛错并给出人工处理指引
-- Windows 下启动先 `chcp 65001` 切 UTF-8，避免 Git Bash 等终端中文日志乱码；探测脚本向 PowerShell 传参走环境变量，绕开路径与产品名的引号转义
-- 脚本一律经 `findRepoRoot` 向上锁定仓库根，不依赖 `process.cwd()`——桌面快捷方式 / CI 的工作目录偏移带不偏路径
+- **预检时序必须是「先单实例，后端口」**：
+  - 如果上次的 dev 会话残留在后台，强杀对端 Electron 实例通常会连带导致其父级 dev 进程自动退出，从而顺带释放 5173 等端口。颠倒顺序会导致用户经历两次不必要的二次确认。
+- **Preview 模式下无需预检端口**：
+  - `pnpm preview` 不需要启动 Vite Dev Server，直接加载本地 `file://`，因此预览模式只运行单实例探测，不浪费时间做端口预检。
+- **清理后二次复检**：
+  - 进程树强杀后，脚本会复查目标端口是否彻底归还操作系统。若残留进程拥有高权限无法强杀，会给出醒目的手动终止警告，不假装清理成功。

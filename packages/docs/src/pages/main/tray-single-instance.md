@@ -1,94 +1,88 @@
 ---
 title: 托盘常驻与单实例（Tray + Single-instance）
-description: 单实例锁挡住多开，关闭行为分流到托盘常驻，托盘提供复活与退出入口。
+description: 单实例锁防多开与二次唤起，关闭窗口自然销毁退守托盘，原生菜单多语言映射。
 ---
 
 # 托盘常驻与单实例（Tray + Single-instance）
 
-> **TL;DR**：单实例锁挡住多开，关闭行为分流到托盘常驻，托盘提供复活与退出入口。
+> **TL;DR**：主进程通过 `requestSingleInstanceLock()` 拦截应用重复启动，二次点击直接激活并唤醒现有窗口；点击关闭按钮分流为“退守托盘常驻（自然销毁窗口释放内存）”，托盘菜单作为原生控制台提供多语言文案。
 
-## 要解决的坑
+## 1. 选型理由
 
-用户双击图标就多开一个实例；点关闭按钮进程直接退出，后台正在跑的任务说没就没。
+桌面客户端具有常驻与后台伴随特性：
+1. **多实例冲突**：用户多次双击桌面图标会拉起多个相互独立的实例，互相争抢本地数据库或端口，造成数据覆写。
+2. **内存泄露伪常驻**：传统做法在关闭窗口时调用 `win.hide()`，虽然界面隐藏了，但 Chromium 的 DOM 树与庞大渲染进程内存依然完全留在后台，越积越大。
 
-## 本仓库的解法
+工程通过“单实例抢锁唤起”与“退守托盘时自然销毁窗口”实现极致的内存控制。
+
+## 2. 核心配置代码
+
+### 单实例互斥与对端唤醒
 
 → 源码：[packages/main/src/modules/single-instance.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/single-instance.module.ts)
 
 ```ts
 export class SingleInstanceApp implements AppModule {
-  enable({ app }: { app: Electron.App }): void {
+  enable({ app }: ModuleContext): void {
     const isSingleInstance = app.requestSingleInstanceLock();
     if (!isSingleInstance) {
-      // 抢锁失败最常见成因：上一实例关闭主窗口后退守托盘、仍持有锁。
-      // 一条 log.warn 同时落盘 main.log 并经控制台 transport 回显到终端
-      const message =
-        'Cannot acquire single instance lock: another instance is running (check the tray icon). Exiting.';
-      getLogManager().scoped(this).warn(message);
+      // 抢锁失败：已有实例在运行（可能在后台托盘常驻），记录日志并瞬间退出
+      getLogManager().scoped(this).warn('Cannot acquire single instance lock: another instance is running. Exiting.');
       app.quit();
       process.exit(0);
     }
   }
 }
+
+// 占有锁的初次实例：监听 second-instance 信号，重新激活主窗口
+electronApp.on('second-instance', () => {
+  restoreOrCreateWindow(true);
+});
 ```
 
-抢到锁的实例监听 `second-instance` 唤起主窗口（→ 源码：[packages/main/src/modules/window/index.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/index.module.ts)）：
+### 关闭分流与自然销毁（彻底释放内存）
+
+→ 源码：[packages/main/src/modules/window/index.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/index.module.ts)
 
 ```ts
-electronApp.on('second-instance', () => handleReactivation());
-```
+browserWindow.on('close', (event) => {
+  if (appLifecycle.isQuitting) return;
 
-「点关闭」不等于「退出」——关闭行为按配置分流：
-
-```ts
-browserWindow.on('close', () => {
-  if (appLifecycle.isQuitting) {
-    // ...
-    return;
-  }
-
-  const configStore = getAppConfigStore();
-  const shouldMinimizeToTray = configStore.get('minimizeToTray');
-
+  const shouldMinimizeToTray = getAppConfigStore().get('minimizeToTray');
   if (shouldMinimizeToTray) {
-    // 用户开启了关闭后保留在托盘：允许窗口自然销毁以彻底释放内存，
-    // 不拦截 close 事件（不 event.preventDefault()），亦不触发 app.quit()，
-    // 应用进程继续保留系统托盘常驻。
+    // 不拦截 close 事件（不调用 preventDefault），允许窗口自然销毁以释放渲染内存，
+    // 应用进程依托 Tray 模块继续在系统托盘存活。
     logger.info('Home window closed and destroyed -> running in tray');
-  } else {
-    // 退出应用：先取消正在下载的更新，再 app.quit()
   }
 });
 ```
 
-`minimizeToTray` 默认 `true`（→ 源码：[packages/shared/src/schemas/config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/schemas/config.ts)）；不拦截 close 事件而是让窗口自然销毁，内存彻底释放，比 `hide()` 常驻更干净。未开启托盘常驻时，关闭最后一个窗口会先取消正在下载的更新再退出，不会留下后台进程；下次启动重新检查并下载。
+### 托盘菜单原生多语言与退出防护
 
-这项偏好的加载、校验与落盘见 [配置持久化（Electron-store）](/main/config-persistence)。
-
-托盘补上「复活入口」：单击唤起/重建主窗口，右键菜单双语（主进程用不了 Lingui，文案在 `updateLanguage` 里按 zh-CN 分支手写）：
+托盘菜单文案由轻量函数 `mainMessage(lang, key)` 驱动，退出时先置位生命周期标记再退出：
 
 → 源码：[packages/main/src/modules/tray.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/tray.module.ts)
 
 ```ts
 this.contextMenu = Menu.buildFromTemplate([
-  {
-    label: isZh ? '显示主窗口' : 'Show Main Window',
-    click: () => this.restoreMainWindow(),
-  },
-  // ...检查更新菜单项
+  { label: mainMessage(lang, 'trayShowMainWindow'), click: () => this.restoreMainWindow() },
+  { label: mainMessage(lang, 'trayCheckUpdates'), click: () => updaterService.check() },
   { type: 'separator' },
   {
-    label: isZh ? '退出应用' : 'Quit Application',
+    label: mainMessage(lang, 'trayQuit'),
     click: () => {
-      appLifecycle.isQuitting = true;
+      appLifecycle.isQuitting = true; // 声明处于显式退出流程，防止窗口 close 拦截产生死锁
       app.quit();
     },
   },
 ]);
 ```
 
-托盘图标在 win32 直接传 .ico 文件路径，让系统 `Shell_NotifyIcon` 按 DPI 阶梯自动选图——比 `nativeImage` 强行 resize 的插值模糊干净得多。「退出应用」菜单项先置 `appLifecycle.isQuitting = true` 再 quit，关闭分流的守卫据此放行，退出闭环不会互相打架。
+## 3. 桌面端避坑注意事项
 
-## 怎么抄
-
-桌面原型的注意点：新窗口记得进 window-registry 注册（托盘/单实例唤起都依赖它）；托盘菜单加项要同步 `updateLanguage` 的双语分支。
+- **托盘常驻切勿滥用 `win.hide()`**：
+  - 允许窗口自然触发 `destroy` 可以彻底回收 Chromium 渲染管线、GPU 显存和 WebContext；用户再次点击托盘时重新创建窗口（由启动协调器毫秒级唤起），是长效常驻应用的正确解法。
+- **退出应用必须防循环死锁**：
+  - 从托盘点击“退出应用”时，必须先将全局标记置为 `appLifecycle.isQuitting = true`。如果未做标记，窗口销毁时再次触发 `on('close')` 拦截，将导致应用永远无法退出。
+- **Windows 托盘图标直传 `.ico` 文件路径**：
+  - 在 Windows 平台向 `new Tray(iconPath)` 传入原生 `.ico` 绝对路径，系统通知栏会按用户显示缩放（100%、125%、150%）自动选择最匹配的矢量尺寸，切勿使用 `nativeImage.resize()` 强转，否则会出现严重的马赛克模糊。

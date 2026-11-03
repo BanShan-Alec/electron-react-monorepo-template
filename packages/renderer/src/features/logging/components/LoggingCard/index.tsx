@@ -19,7 +19,7 @@ import { statusBoxClass } from '@/lib/classNames';
 
 // 可抽离的逻辑处理函数/组件
 
-const _LoggingCard = (props: ILoggingCardProps) => {
+const _LoggingCard = (props: LoggingCardProps) => {
   useLingui();
 
   // 变量声明、解构
@@ -115,7 +115,7 @@ const _LoggingCard = (props: ILoggingCardProps) => {
 };
 
 // props 类型定义
-interface ILoggingCardProps {
+interface LoggingCardProps {
   logStatus: string;
   isLoading: boolean;
   isTriggeringSentry?: boolean;
@@ -125,7 +125,4 @@ interface ILoggingCardProps {
   onTriggerErrorBoundaryCrash?: () => void;
 }
 
-const LoggingCard = memo(_LoggingCard);
-
-export { LoggingCard };
-export default LoggingCard;
+export const LoggingCard = memo(_LoggingCard);

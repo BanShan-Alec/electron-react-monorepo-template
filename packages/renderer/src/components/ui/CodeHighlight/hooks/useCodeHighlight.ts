@@ -35,5 +35,3 @@ export function useCodeHighlight(containerRef: RefObject<HTMLElement | null>, co
     };
   }, [containerRef, tokens]);
 }
-
-export default useCodeHighlight;
