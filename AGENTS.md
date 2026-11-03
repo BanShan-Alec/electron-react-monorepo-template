@@ -17,7 +17,7 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 2. **禁止桶文件**：不得新增只做重导出的 `index.ts`，严禁 `export *`；Biome `noBarrelFile` /
    `noReExportAll` 为 error，不设白名单。组件 `Xxx/index.tsx`（一组件一文件夹的本体实现）不是桶文件，除外。
    （2026-10-18 立；例外澄清见 [CONTRIBUTING.md](CONTRIBUTING.md) §一.3）
-3. **严禁 `process.cwd()` 算相对路径**：Node 脚本与构建配置必须用 `__dirname`。
+3. **路径推导最佳实践（非阻断门禁）**：Node 脚本与构建配置推荐优先基于 `__dirname` / `import.meta.dirname` 推导绝对路径，避免依赖 `process.cwd()` 产生工作目录偏移风险；作为工程指导原则遵循，非硬性机械阻断门禁。
    （2026-10-18 立；事由：桌面快捷方式启动时工作目录偏移；规范见 [CONTRIBUTING.md](CONTRIBUTING.md) §七）
 
 ## 3. 包索引（规则真源在各包 AGENTS.md）
@@ -29,7 +29,7 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 | `@app/renderer` | React 界面层：Feature 驱动 + LinguiJS | [packages/renderer/AGENTS.md](packages/renderer/AGENTS.md)（视觉另见 [DESIGN.md](packages/renderer/docs/DESIGN.md)） |
 | `@app/shared` | 跨端契约单一事实源：Schema / 通道 / 类型 | [packages/shared/AGENTS.md](packages/shared/AGENTS.md) |
 | `@app/pr-review` | PR 生命周期与 OCR 审查工具链 | [packages/pr-review/AGENTS.md](packages/pr-review/AGENTS.md) |
-| `@app/docs` | 解决方案合集文档站（Vocs，GitHub Pages 部署） | — |
+| `@app/docs` | 解决方案合集文档站（Vocs，GitHub Pages 部署） | [packages/docs/AGENTS.md](packages/docs/AGENTS.md) |
 
 ## 4. 任务路由（先读包规则，再查深档）
 
@@ -42,6 +42,7 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 | 路径管理 / 跨平台资源 / ASAR 避坑 | main/AGENTS.md | packages/docs/src/pages/security/path-robustness.md |
 | 打包产物 / 安装包 / OTA 升级 | main/AGENTS.md | packages/docs/src/pages/delivery/packaging.md · packages/docs/src/pages/delivery/auto-update.md |
 | renderer 页面 / 卡片 / 请求层 | renderer/AGENTS.md | — |
+| 文档站页面 / 导航 / 写作规范 | packages/docs/AGENTS.md | — |
 | 视觉 / token / 品牌定制 | renderer/docs/DESIGN.md | packages/docs/src/pages/ui/design-tokens.md |
 | 多语言词条与架构 | renderer/AGENTS.md | packages/docs/src/pages/ui/i18n.md |
 | 日志 / 异常 / 链路追踪 | .agents/rules/logging-specification.md | packages/docs/src/pages/main/logging.md · packages/docs/src/pages/main/tracing.md |
@@ -53,7 +54,7 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 
 `pnpm dev` / `preview`（`start` 为 `preview` 别名） · `pnpm test` · `pnpm test:e2e` · `pnpm lint` / `lint:fix` ·
 `pnpm typecheck` · `pnpm i18n:extract` / `i18n:check` · `pnpm build:unpack` / `build:win` / `build:mac` /
-`build:linux` · `pnpm verify:prebuild` · `pnpm pr-review <pull|trigger|create|status|merge>`
+`build:linux` · `pnpm docs:dev` / `docs:build` · `pnpm verify:prebuild` · `pnpm pr-review <pull|trigger|create|status|merge>`
 
 ## 6. 指针
 

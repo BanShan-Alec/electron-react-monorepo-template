@@ -24,7 +24,7 @@ function LatencyTag({ latency }: { latency: number }) {
   return <StatusTag tone="warning">{t`延迟稍高`}</StatusTag>;
 }
 
-const _PingCard = (props: IPingCardProps) => {
+const _PingCard = (props: PingCardProps) => {
   useLingui();
   // 变量声明、解构
   const { latency, serverTime, isPinging, onPing } = props;
@@ -88,14 +88,11 @@ const _PingCard = (props: IPingCardProps) => {
 };
 
 // props 类型定义
-interface IPingCardProps {
+interface PingCardProps {
   latency: number | null;
   serverTime: string;
   isPinging: boolean;
   onPing: () => void;
 }
 
-const PingCard = memo(_PingCard);
-
-export { PingCard };
-export default PingCard;
+export const PingCard = memo(_PingCard);

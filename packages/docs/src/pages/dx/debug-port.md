@@ -1,23 +1,25 @@
 ---
 title: 远程调试端口（CDP）
-description: 渲染进程 CDP 与主进程断点端口都是配置项，注释一行即关闭对应能力。
+description: 渲染层 CDP 端口与主进程断点端口集中管理，配置化控制开关与启动参数联动。
 ---
 
 # 远程调试端口（CDP）
 
-> **TL;DR**：渲染进程 CDP 与主进程断点端口都是配置项，注释一行即关闭对应能力。
+> **TL;DR**：渲染进程 CDP 端口（默认 `9222`）与主进程断点端口（默认 `9229`）集中声明在 `scripts/dev.ts` 的 `config` 对象中；字段注释即关闭该能力，启动参数与日志联动隐退。
 
-## 要解决的坑
+## 1. 选型理由
 
-- 想给渲染进程断点、看性能面板，得翻文档查 `--remote-debugging-port` 怎么传；想调主进程又得另找 `--inspect`
+Electron 包含 Chromium 渲染引擎与 Node.js 运行时，本地调试面临两类不同协议：
+1. **渲染层断点与性能追踪**：需要向 Electron 注入 `--remote-debugging-port`，以便通过 Chrome 独立 DevTools 面板或自动化 CDP 客户端连接。
+2. **主进程源码级断点**：需要向 Electron 注入 `--inspect` 或 `--inspect-brk`，以便 VS Code 等 IDE 附加 Node 调试器。
 
-## 本仓库的解法
+若每次排错都手动在命令行拼接参数，极易遗忘语法，且无法与端口冲突预检联动。
 
-### 调试端口即配置：注释一行开关一个能力
+## 2. 核心配置代码
+
+### 集中式调试端口配置
 
 → 源码：[scripts/dev.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/dev.ts)
-
-调试端口的开关不长在文档里，长在配置上。渲染进程 CDP 默认开启，主进程断点端口默认注释关闭：
 
 ```ts
 const config: {
@@ -29,31 +31,41 @@ const config: {
   mode: repoEnv.mode,
   rendererPort: 5173,
 
-  // 按需注释:注释掉即关闭对应能力
-  // mainInspectPort: 9229, // 主进程调试断点端口(--inspect-brk)
-  rendererCdpPort: 9222, // 渲染进程 CDP 端口(--remote-debugging-port)
+  // 主进程断点端口 (--inspect-brk)，解开注释即可在启动时阻断等待附加
+  // mainInspectPort: 9229,
+
+  // 渲染层 CDP 端口 (--remote-debugging-port)，供外部工具与性能面板连接
+  rendererCdpPort: 9222,
 };
 ```
 
-组装 Electron 启动参数时按需跳过，对应日志一起消失：
+### 启动参数联动组装
+
+当配置项存在有效数值时，参数与指引日志同步生效；注释后自动跳过：
 
 ```ts
-/** 组装 Electron 启动参数;对应端口被注释掉时自动跳过并关闭日志。 */
 function buildElectronArgs(): string[] {
   const args: string[] = [];
 
   if (config.mainInspectPort) {
     args.push(`--inspect-brk=${config.mainInspectPort}`);
-    console.log(`${LOG_PREFIX} main break inspect endpoint: http://127.0.0.1:${config.mainInspectPort}`);
+    console.log(`${LOG_PREFIX} 主进程断点监听: http://127.0.0.1:${config.mainInspectPort}`);
   }
 
   if (config.rendererCdpPort) {
     args.push(`--remote-debugging-port=${config.rendererCdpPort}`);
-    console.log(`${LOG_PREFIX} renderer CDP endpoint: http://127.0.0.1:${config.rendererCdpPort}`);
+    console.log(`${LOG_PREFIX} 渲染进程 CDP 端点: http://127.0.0.1:${config.rendererCdpPort}`);
   }
 
   return args;
 }
 ```
 
-效果：`pnpm dev` 或 `pnpm preview` 起来后终端直接打印 CDP endpoint（日志前缀分别是 `[dev]` / `[preview]`），Chrome 打开 `chrome://inspect` 即可连接渲染进程断点、看 Performance 面板；要调主进程，取消 `mainInspectPort` 的注释即以 `--inspect-brk` 启动。注释掉一个属性，命令行参数、启动日志、开发态启动前的端口预检（[启动预检（Single-instance + Port）](/dx/startup-preflight) 里 `ensurePortsAvailable` 会自动过滤未配置端口）会一起联动，不存在第二处要同步的开关。
+## 3. 桌面端避坑注意事项
+
+- **单一真源联动**：
+  - 启动前端口预检（`ensurePortsAvailable`）会自动过滤未定义的端口。例如注释掉 `mainInspectPort` 后，预检系统便不会检查 9229 端口，避免误杀无关进程。
+- **Chrome 远程连接姿势**：
+  - 启动后控制台打印 `renderer CDP endpoint`，在 Chrome 浏览器地址栏输入 `chrome://inspect`，即可在 "Remote Target" 列表中点击 "inspect" 打开完整的独立 Chrome DevTools 面板，支持查看 Memory 快照与 Performance 录制。
+- **打包安装包严禁开启调试端口**：
+  - `--remote-debugging-port` 与 `--inspect` 允许任何本地进程向应用注入任意 JavaScript 代码甚至执行系统 Shell。在 `build/electron-builder.ts` 与生产发布流程中，切勿将这些参数打入最终包的启动命令中。

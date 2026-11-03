@@ -22,8 +22,8 @@ React 组件在渲染或生命周期里抛异常，如果没有边界接住，�
 `ErrorBoundary` 是类组件：`getDerivedStateFromError` 只做一件事——把 `hasError` 置位并记下 `error`；`render` 在出错时用 `FallbackView` 替换整个子树，未出错时用 `resetKey` 作为 `Fragment` 的 key。
 
 ```tsx
-export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundaryState> {
-  constructor(props: IErrorBoundaryProps) {
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
       hasError: false,
@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
     };
   }
 
-  static getDerivedStateFromError(error: unknown): Partial<IErrorBoundaryState> {
+  static getDerivedStateFromError(error: unknown): Partial<ErrorBoundaryState> {
     return {
       hasError: true,
       error,

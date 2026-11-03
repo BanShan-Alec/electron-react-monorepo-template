@@ -1,23 +1,28 @@
 ---
 title: 首屏体验（Startup-orchestration）
-description: 动画、React 首帧、主进程就绪三路门禁，齐备才揭幕。
+description: 动画、React 首帧与主进程就绪三路门禁协调揭幕，内联启动壳顶住白屏空窗期。
 ---
 
 # 首屏体验（Startup-orchestration）
 
-> **TL;DR**：动画、React 首帧、主进程就绪三路门禁，齐备才揭幕。
+> **TL;DR**：React 挂载前由轻量内联 HTML 启动壳顶住白屏；构建内联的启动协调器（Coordinator）等待 Logo 动画、React 首帧与主进程就绪三路门禁齐备后交叉揭幕，任一路失联均有超时兜底。
 
-用户从双击图标到看见可用界面，中间隔着三段等待：Logo 动画、React 首帧、主进程就绪。启动编排的策略是三者齐备才揭幕，任何一路失联则由兜底放行。
+## 1. 选型理由
+
+桌面应用从双击图标到首屏完全可交互，中间面临三重不确定性：
+1. **白屏闪烁**：Chromium 渲染进程解析庞大 JS 产物时页面空白。
+2. **时序割裂**：前端 React 已经渲染完成，但主进程的核心控制器或配置存储尚未就绪，导致用户点击触发空指针。
+3. **死锁风险**：若强依赖某单一路就绪信号，一旦发生异常（如主进程 IPC 假死），应用将永久卡在 Loading 骨架屏。
+
+传统社区实践常采用 `show: false` 配合 `ready-to-show` 事件再呈现窗口，但这会导致用户双击桌面图标后在数百毫秒内没有任何物理界面出现，产生严重的“假死未启动”迟滞感。本项目刻意采用**「窗口创建即显示 + 底色对齐 + 裸 DOM 启动壳即刻呈现」**，在首帧瞬间给用户即时视觉反馈，再由启动协调器进行三道门禁汇流与超时兜底。
+
+## 2. 核心配置代码
+
+### 三路就绪门禁与揭幕逻辑
+
+协调器作为构建期插件直接内联至 `index.html`，先于 React 执行：
 
 → 源码：[packages/renderer/src/startup/coordinator.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/startup/coordinator.ts)
-
-## 白屏期：裸 DOM 启动壳先顶上
-
-React 挂载前的空窗期，用一个裸 DOM 启动壳顶住：`#root` 透明度 0，`#loading` 层放 Logo 弹出动画，所有就绪源齐备才交叉淡入。协调器是构建期内联进 index.html 的经典 IIFE（[packages/renderer/plugins/startup-shell.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/plugins/startup-shell.ts) 程序化打包），物理位置先于 `main.tsx` 执行，不依赖任何框架。
-
-## 揭幕条件：动画、首帧、主进程三路齐备
-
-门禁注册表：三个就绪源各占一个 `GateId`，全部 settle 才揭幕——
 
 ```ts
 type GateId = 'animation' | 'react' | 'main';
@@ -28,6 +33,7 @@ const pendingGates = new Set<GateId>(['animation', 'react', 'main']);
 const tryFinishStartup = () => {
   if (finished || pendingGates.size > 0) return;
   finished = true;
+  // 揭幕：向 body 挂载就绪标志，触发 CSS 交叉淡入动画
   document.body.classList.add(APP_STARTUP_READY_CLASS);
   window.setTimeout(
     () => document.getElementById(LOADING_ELEMENT_ID)?.remove(),
@@ -42,52 +48,29 @@ const settleGate = (id: GateId) => {
 };
 ```
 
-## 任何一路失联，兜底放行
+### 主进程就绪「先拉后推」双通道防漏
 
-三个门禁各自独立兜底，任一就绪源失联都不会永久卡死壳：
-
-→ 源码：[packages/shared/src/constants/startup.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/constants/startup.ts)
+主进程模块就绪信号可能在渲染层监听器挂载前就已发出。协调器在执行首期通过预拉取快照，晚到信号再由事件补推：
 
 ```ts
-export const STARTUP_ANIMATION_FALLBACK_MS = 1000;
-export const STARTUP_REACT_FALLBACK_MS = 3000;
-export const STARTUP_MAIN_FALLBACK_MS = 5000;
-```
-
-## 主进程就绪：先拉后推，信号不丢
-
-主进程门禁是「先拉后推」双通道——主进程就绪信号可能早于壳监听器注册（信号丢了都没人听见），所以 preload 求值时即预取快照，晚到的信号再经事件推送补发：
-
-```ts
-const bridge = (window as { api?: { startup?: StartupBridgeLike } }).api?.startup;
+const bridge = window.api?.startup;
 if (!bridge) {
-  settleGate('main'); // 无 preload 桥的异常环境不阻塞壳
+  settleGate('main'); // 无 Bridge 环境（如纯浏览器调试）不阻塞揭幕
 } else {
-  bridge
-    .getSnapshot()
-    .then((snapshot) => {
-      if (snapshot.mainReady) settleGate('main');
-    })
-    .catch(() => {}); // 拉取失败交给事件与兜底路径
+  // 1. 先查快照（若主进程已就绪直接放行）
+  bridge.getSnapshot().then((s) => { if (s.mainReady) settleGate('main'); });
+  // 2. 监听补推
   window.addEventListener(APP_STARTUP_MAIN_READY_EVENT, () => settleGate('main'), { once: true });
+  // 3. 超时兜底（5 秒）
   window.setTimeout(() => settleGate('main'), STARTUP_MAIN_FALLBACK_MS);
 }
 ```
 
-## 主进程闩锁与 React 首帧通知
+## 3. 桌面端避坑注意事项
 
-主进程侧的就绪源是一个纯闩锁模块（→ 源码：[packages/main/src/modules/startup-readiness.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/startup-readiness.module.ts)）：`enable()` 置位快照并广播，payload 顺带携带初始化耗时。React 首帧由通知器派发：
-
-→ 源码：[packages/renderer/src/components/startup/StartupReadyNotifier/index.tsx](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/components/startup/StartupReadyNotifier/index.tsx)
-
-```ts
-useEffect(() => {
-  window[APP_REACT_COMMIT_AT_KEY] = Date.now();
-  performance.mark('app:react-commit');
-  window.dispatchEvent(new Event(APP_REACT_STARTUP_READY_EVENT));
-}, []);
-```
-
-## 新增一个就绪源
-
-新增一个就绪源 = 加一个 `GateId` + 一段注册代码 + 一个兜底常量，常量四端共用（shared 单一事实源），改名跨端同步有据可查。
+- **产物冒烟严禁断言静态 `#root` 假阳性**：
+  - 许多冒烟测试仅断言 HTML 包含 `<div id="root">` 便判定渲染成功，此时页面可能因 JS 语法错误处于彻底白屏。产物校验脚本必须等待 `page.waitForSelector('body.app-startup-ready')`，断言协调器真实完成揭幕。
+- **三门禁超时兜底单一真源**：
+  - `STARTUP_ANIMATION_FALLBACK_MS`（1s）、`STARTUP_REACT_FALLBACK_MS`（3s）、`STARTUP_MAIN_FALLBACK_MS`（5s）常量统一定义在 `@app/shared`，严禁在渲染端与主进程分别硬编码数字。
+- **裸 DOM 启动壳样式不引外部资源**：
+  - 启动壳 CSS 必须直接内联在 HTML `<style>` 标签中，严禁引用外部字体或外链图片，确保在最慢的物理磁盘上也能在首帧瞬间呈现。

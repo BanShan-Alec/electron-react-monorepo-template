@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { defineConfig } from 'vite';
 import { APP_IDENTITY } from '../../build/lib/app-identity.ts';
@@ -24,6 +26,10 @@ const envDefaults = ALLOWED_ENV_KEYS.reduce(
   },
   {} as Record<string, string>,
 );
+
+const pkgPath = path.resolve(__dirname, 'package.json');
+const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+const runtimeDependencies = Object.keys(pkg.dependencies ?? {});
 
 export default defineConfig({
   define: {
@@ -63,9 +69,9 @@ export default defineConfig({
       formats: ['cjs'],
     },
     rolldownOptions: {
-      // 精确匹配：electron-log/main 故意不在列表，由 noExternal: true 内联。
-      // 新增必须在运行时 require 的依赖时，务必把实际 specifier（含子路径）加到这里。
-      external: ['electron', 'usb', 'electron-updater'],
+      // 自动从 package.json 的 dependencies 提取运行时依赖设为 external（外加 electron）
+      // 需要内联打进 bundle 的纯 JS 依赖（如 electron-log、zod）装在 devDependencies
+      external: ['electron', ...runtimeDependencies],
       output: {
         entryFileNames: '[name].cjs',
         format: 'cjs',

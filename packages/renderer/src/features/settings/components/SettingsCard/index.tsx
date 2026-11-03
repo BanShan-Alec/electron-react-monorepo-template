@@ -14,7 +14,7 @@ const TOGGLE_ROW_CLASS =
 
 // 可抽离的逻辑处理函数/组件
 
-const _SettingsCard = (props: ISettingsCardProps) => {
+const _SettingsCard = (props: SettingsCardProps) => {
   useLingui();
   const { message } = App.useApp();
   // 变量声明、解构
@@ -147,14 +147,11 @@ const _SettingsCard = (props: ISettingsCardProps) => {
 };
 
 // props 类型定义
-interface ISettingsCardProps {
+interface SettingsCardProps {
   appConfig: AppConfig | null;
   onUpdate: (partial: Partial<AppConfig>) => void;
   onReset: () => void;
   isLoading: boolean;
 }
 
-const SettingsCard = memo(_SettingsCard);
-
-export { SettingsCard };
-export default SettingsCard;
+export const SettingsCard = memo(_SettingsCard);

@@ -6,7 +6,7 @@ import './highlight.css';
 
 // 可抽离的逻辑处理函数/组件
 
-const _CodeHighlight = (props: ICodeHighlightProps) => {
+const _CodeHighlight = (props: CodeHighlightProps) => {
   // 变量声明、解构
   const { code, className, as: Component = 'pre' } = props;
   const containerRef = useRef<HTMLPreElement>(null);
@@ -23,13 +23,11 @@ const _CodeHighlight = (props: ICodeHighlightProps) => {
 };
 
 // props 类型定义
-export interface ICodeHighlightProps {
+export interface CodeHighlightProps {
   code: string;
   className?: string;
   as?: 'pre' | 'code';
 }
 
-const CodeHighlight = memo(_CodeHighlight);
-
-export { CodeHighlight, useCodeHighlight };
-export default CodeHighlight;
+export const CodeHighlight = memo(_CodeHighlight);
+export { useCodeHighlight };

@@ -1,34 +1,37 @@
 ---
 title: 本地日志（Electron-log）
-description: 主进程、每个渲染窗口、遥测拓扑分文件落盘并独立轮转，作用域前缀与渲染层日志桥双写。
+description: 主进程与渲染窗口日志分文件落盘与独立归档，安全预处理与滑窗限流保护。
 ---
 
 # 本地日志（Electron-log）
 
-> **TL;DR**：主进程、每个渲染窗口、遥测拓扑分文件落盘并独立轮转，作用域前缀与渲染层日志桥双写。
+> **TL;DR**：主进程日志（`main.log`）、渲染窗口日志（`renderer-<name>.log`）与遥测拓扑（`traces.ndjson`）按职责分文件独立落盘与大小轮转；Preload 提供克隆安全的日志桥，主进程施加滑窗限流防止刷爆磁盘。
 
-## 要解决的坑
+## 1. 选型理由
 
-日志只活在 DevTools 里，用户机器上出了问题无从查起。
+生产环境没有 Chrome DevTools，原生 `console.log` 随着进程销毁荡然无存：
+1. **进程时序混淆**：若所有窗口和主进程的日志全混在一个文件里，并发异步调用极易让日志穿插错乱。
+2. **失控死循环刷爆磁盘**：若渲染进程因 React 状态死循环疯狂打印，短时间内即可写入数 GB 日志，直接挤爆用户系统盘。
 
-## 本仓库的解法
+工程依托 `electron-log` 构建分级落盘与背压保护系统。
+
+## 2. 核心配置代码
+
+### 分文件独立轮转与异常捕获
 
 → 源码：[packages/main/src/modules/log.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/log.module.ts)
 
-主日志按文件拆分：主进程 `main.log`、每个渲染窗口独立 `renderer-<window>.log`、遥测拓扑独立 `traces.ndjson`，各自独立轮转：
-
 ```ts
-// 主进程日志配置
+// 1. 主进程日志（上限 5MB，超出归档轮转，保留 7 天最多 5 份）
 this.mainLogger.transports.file.fileName = 'main.log';
-this.mainLogger.transports.file.maxSize = MAX_SIZE;
+this.mainLogger.transports.file.maxSize = 5 * 1024 * 1024;
 this.mainLogger.transports.file.archiveLogFn = createCustomArchiveLogFn();
 
-// 遥测拓扑日志配置 (NDJSON 独立文件)
+// 2. 遥测拓扑日志（NDJSON 独立文件）
 this.traceLogger.transports.file.fileName = 'traces.ndjson';
-this.traceLogger.transports.file.maxSize = TRACE_MAX_SIZE;
-this.traceLogger.transports.file.format = '{text}';
+this.traceLogger.transports.file.maxSize = 10 * 1024 * 1024;
 
-// 捕获未捕获异常并落盘
+// 3. 全局未捕获异常自动落盘
 this.mainLogger.errorHandler.startCatching({
   showDialog: false,
   onError: ({ error }) => {
@@ -37,59 +40,26 @@ this.mainLogger.errorHandler.startCatching({
 });
 ```
 
-单文件超过上限（主日志 5MB / 遥测 10MB，见 [packages/main/src/constants/logging.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/constants/logging.ts)）自动归档，归档文件按保留策略清理：最多 7 天、每类最多 5 份（→ 源码：[packages/main/src/modules/log-archiver.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/log-archiver.ts)）。
+### 渲染端日志桥与滑窗节流保护
 
-业务代码不直接摸 log 实例，用作用域 Logger 自动带 `[模块名]` 前缀：
+Preload 对参数进行安全脱敏（消除函数、循环引用与超深对象），主进程提供滑窗节流拦截：
 
-```ts
-public scoped(target: string | object): IScopedLogger {
-  const tag = typeof target === 'string' ? target : target.constructor.name;
-  const prefix = `[${tag}]`;
-  // ...
-  debug: (message: string, ...args: unknown[]) => {
-    // debug 仅开发构建生效：生产排障靠 info/warn/error，高频细节不进文件
-    if (!isDev) return;
-    this.mainLogger.debug(`${prefix} ${message}`, ...args);
-  },
-}
-```
-
-渲染进程拿不到 electron-log，preload 提供一个 console 同手感的日志桥，每次调用双写：
-
-→ 源码：[packages/preload/src/logger.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/src/logger.ts)
+→ 源码：[packages/preload/src/logger.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/src/logger.ts) · [packages/main/src/services/diagnostics.service.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/services/diagnostics.service.ts)
 
 ```ts
-// 第一份：原生 console 回显 + 原始 args——DevTools 里对象可交互展开，与手写 console 体验一致。
+// Preload 侧实现双写：DevTools 原生控制台 + 异步落盘通道（fire-and-forget）
 nativeConsole[level](message, ...cleanArgs);
-
-// 第二份：clone 安全预处理后经 diagnostics:log 落盘（静默管道，不生成独立 traceparent）
-const payload: LogInput = {
-  level,
-  message,
-  args: toCloneSafeArgs(cleanArgs),
-  traceId: finalTraceId,
-  spanId: finalSpanId,
-};
-void ipcRenderer.invoke(IPC_CHANNELS.DIAGNOSTICS_LOG, payload).catch(() => {
-  // fire-and-forget：日志管道自身的故障不向业务调用方传播
-});
+const payload: LogInput = { level, message, args: toCloneSafeArgs(cleanArgs), traceId, spanId };
+void ipcRenderer.invoke(IPC_CHANNELS.DIAGNOSTICS_LOG, payload).catch(() => {});
 ```
 
-参数在 preload 侧先做 clone 安全预处理（Error/function/循环引用/超深结构全部降级可读表示），主进程用 `util.format` 统一渲染——`%s` 模板、对象 inspect 的 console 手感得以保留，行超长自动截断（2000 字符上限）。
+主进程施加滑窗限流：**单窗口每秒最多准入 50 条日志**，超限时主动丢弃并在恢复时汇总一条告警（`Dropped N renderer log line(s)`），单行超过 2000 字符自动截断。
 
-渲染日志进主进程前还有滑窗节流：每调用方每秒最多 50 条准入，超限静默丢弃并汇总一条告警，防止失控的渲染循环刷爆磁盘（→ 源码：[packages/main/src/services/diagnostics.service.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/services/diagnostics.service.ts)）。
+## 3. 桌面端避坑注意事项
 
-日志行里的 trace 前缀与 `traces.ndjson` 里的 span 记录由 [全链路追踪（W3C-trace）](/main/tracing) 提供。
-
-## 怎么抄
-
-可观测性的日常用法：
-
-- 主进程打日志一律 `getLogManager().scoped(this)`，别裸调 log 实例
-- 渲染层调 IPC 一律走 `callIpc`（→ 源码：[packages/renderer/src/lib/ipc.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/lib/ipc.ts)）或 `useIpc` hook：成功行仅 dev 回显、失败行带 traceId 落盘，严禁打印入参（config 含本地路径、dialog 含 URL）
-- 渲染层打日志用全局 `logger.info/warn/error(...)`——DevTools 回显与落盘双写，`console.log` 在生产打包后是不落盘的
-- 用户侧排障入口是「打开日志目录」（`openLogFolder`）
-
-注意点：
-
-- `debug` 级别在打包后的构建里主进程、渲染层两侧都直接丢弃，生产排障只依赖 `info/warn/error`
+- **业务代码禁止裸调 log 实例**：
+  - 主进程打日志必须通过 `getLogManager().scoped(this)` 创建带 `[模块名]` 前缀的 Logger，开发态 `debug` 生效，生产打包自动剔除 `debug` 细节。
+- **渲染端严禁裸写 `console.log`**：
+  - 生产打包后 `console` 等同于丢弃。页面业务日志统一调用全局 `window.logger.info()`、`logger.error()`。
+- **日志管道自身绝不抛出异常**：
+  - 日志管道属于辅助可观测性基座，写入失败必须通过 try/catch 默默消化，严禁向业务调用方反向抛错导致核心业务中断。

@@ -4,7 +4,7 @@ import { App, Button } from 'antd';
 import { memo, useEffect, useRef } from 'react';
 import { callIpc } from '@/lib/ipc';
 
-const _CloseBehaviorDialog = (_props: IProps) => {
+const _CloseBehaviorDialog = (_props: CloseBehaviorDialogProps) => {
   const { message, modal } = App.useApp();
   const trayActionRef = useRef<HTMLButtonElement>(null);
 
@@ -64,6 +64,6 @@ const _CloseBehaviorDialog = (_props: IProps) => {
   return null;
 };
 
-type IProps = Record<string, never>;
+type CloseBehaviorDialogProps = Record<string, never>;
 
 export const CloseBehaviorDialog = memo(_CloseBehaviorDialog);

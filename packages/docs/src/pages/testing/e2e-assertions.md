@@ -1,31 +1,26 @@
----
+﻿---
 title: 端到端断言策略（Shell-stub + Tolerance）
-description: "启动阶段整体替换 `shell` 模块，断言只锁协议与最终态，数值断言带容差。"
+description: 启动期全面打桩系统级 shell 模块，断言只锁协议与最终态，窗口几何与跨进程恢复保留物理容差。
 ---
 
 # 端到端断言策略（Shell-stub + Tolerance）
 
-> **TL;DR**：启动阶段整体替换 `shell` 模块，断言只锁协议与最终态，数值断言带容差。
+> **TL;DR**：E2E 测试严禁穿透操作系统原生界面。启动阶段全局 Mock 掉 Electron `shell` 模块，断言只锁状态机协议与兜底上界，对窗口几何尺寸预留物理舍入容差（2px/10px）。
 
-## 要解决的坑
+## 1. 选型理由
 
-- `shell.openExternal` 这类接口在无头 CI 里会穿透到操作系统，唤起的外部进程持有 stdio 管道，Playwright Worker 收不了尾
+- **规避无头 CI 挂死风险**：在 Linux Xvfb 或 GitHub Actions 无头环境中调用 `shell.openExternal`，由于缺少原生桌面文件管理器，系统会触发 `xdg-open` 误唤起后台浏览器孤儿进程，死锁主进程的 stdio 管道致使 Playwright Worker 45s 超时。
+- **防止本地测试污染**：若直接调用原生接口，本地跑 E2E 会疯狂弹出外部浏览器、资源管理器和原生系统弹窗，干扰开发体验。
+- **抹平跨平台像素级舍入误差**：Windows 无边框窗口在 High-DPI 缩放下具有不可见的边框阴影（Resize Border），必须使用带有容差的断言。
 
-## 本仓库的解法
+## 2. 核心配置与实现
 
-### E2E 只锁协议与最终态：shell 打桩 + 容差断言
-
-E2E 用例严禁穿透操作系统原生界面，`shell` 模块在启动阶段整体替换成桩：
+### 全局 Shell 模块打桩
 
 → 源码：[e2e/helpers/electron.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/e2e/helpers/electron.ts)
 
 ```ts
-// 【为什么必须全局 Mock 掉 shell 模块？】
-// - 在 Linux Xvfb / GitHub Actions 等无头 CI 环境中，缺少标准桌面文件管理器（如 Nautilus），
-//   Electron 的 shell.showItemInFolder / openPath 会降级触发 xdg-open，导致系统在后台误唤起
-//   Firefox 或其他默认浏览器作为独立后台孤儿进程常驻。
-// - 这些外部孤儿进程会持有主进程的 stdout/stderr 管道写端，导致测试套件全部通过后，
-//   Playwright Worker 因 stdio 管道无法到达 EOF 而发生严重挂死，触发 45000ms Worker teardown 超时。
+// 注入主进程 shell 安全桩：防止外部孤儿进程持有 stdio 管道导致 Playwright Worker 挂死
 await electronApp.evaluate(({ shell }) => {
   shell.openExternal = async (url) => {
     console.warn('[E2E Shell Stub] openExternal called with:', url);
@@ -40,36 +35,45 @@ await electronApp.evaluate(({ shell }) => {
 });
 ```
 
-用例只需验证 IPC 通信协议与参数分发正确性，断言只锁「最终态 + 兜底上界」，精确时序归人工目测：
-
-→ 源码：[e2e/first-screen.spec.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/e2e/first-screen.spec.ts)
-
-```ts
-// 时序断言只锁"最终态 + 兜底上界"（spec D7）：
-// 0.72s 动画 / 160ms 交叉淡入 / 500ms 退场的精确节奏归人工目测清单
-test('AC-1 双门禁达成：body 挂上 app-startup-ready（3000ms 兜底界内）', async ({ page }) => {
-  await expect(page.locator('body')).toHaveClass(/app-startup-ready/, {
-    timeout: STARTUP_REACT_FALLBACK_MS,
-  });
-});
-```
-
-涉及原生窗口几何的数值断言一律带容差：
+### 窗口几何与跨进程恢复容差断言
 
 → 源码：[e2e/window-state.spec.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/e2e/window-state.spec.ts)
 
 ```ts
-// 容差 2px：跨进程恢复时 Windows 会对无边框窗口做一次舍入
+// 1. 自适应算法断言：容差 10px（Windows 无边框窗口 getBounds 含不可见 resize 边框，实测 +3/+8px）
+expect(Math.abs(bounds.width - expectedWidth)).toBeLessThanOrEqual(10);
+expect(Math.abs(bounds.height - expectedHeight)).toBeLessThanOrEqual(10);
+
+// 2. 跨进程重启恢复断言：容差 2px（Windows 对无边框窗口恢复时存在亚像素舍入）
 for (const key of ['x', 'y', 'width', 'height'] as const) {
   expect(Math.abs(restored[key] - expected[key])).toBeLessThanOrEqual(2);
 }
 ```
 
-落盘类行为则直接读文件断言：`e2e/telemetry.spec.ts` 在真实 IPC 调用后检查 `main.log`、`renderer-home.log`、`traces.ndjson` 存在且内容因果一致，还专门发送超长探针行验证主进程的静默截断。
+### 状态机与时序只锁最终态与兜底上界
 
-## 怎么抄
+→ 源码：[e2e/first-screen.spec.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/e2e/first-screen.spec.ts)
 
-注意点：
+```ts
+// 时序断言只锁"最终态 + 兜底上界"：微观淡入/淡出节奏留给目测，门禁只锁兜底限时
+test('AC-1 双门禁达成：body 挂上 app-startup-ready（3000ms 兜底界内）', async ({ page }) => {
+  await expect(page.locator('body')).toHaveClass(/app-startup-ready/, {
+    timeout: STARTUP_REACT_FALLBACK_MS,
+  });
+});
 
-- E2E 断言只锁「协议 + 最终态」：`shell` 等系统接口已打桩，穿透原生界面的断言（弹真实对话框、开资源管理器）在这个矩阵里写不了也不该写
-- 数值断言带容差：窗口几何对工作区 10px、跨进程恢复 2px——无头 CI 与本地机器的像素级差异不该让用例翻红
+test('AC-2 壳物理退场：ready 后 ≤1000ms #loading 从 DOM 物理卸载', async ({ page }) => {
+  await expect(page.locator('#loading')).toHaveCount(0, {
+    timeout: STARTUP_UNMOUNT_DELAY_MS * 2,
+  });
+});
+```
+
+## 3. 桌面端避坑注意事项
+
+| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
+| :--- | :--- | :--- |
+| **`shell` 模块泄露导致挂死** | Linux Xvfb 下 `shell.openExternal` 唤起 Firefox 孤儿进程，进程持有 stdout 管道导致 Playwright Worker teardown 永远无法到达 EOF。 | 启动后立即通过 `electronApp.evaluate` 覆盖 `openExternal`、`openPath` 和 `showItemInFolder` 为内存打桩函数。 |
+| **绝对等值断言翻红** | 断言 `expect(bounds.width).toBe(1024)`，在 Windows 上实测返回 1032（含 +8px 隐式阴影边框），导致 CI 随机翻红。 | 涉及操作系统窗口几何尺寸断言，统一使用 `Math.abs(actual - expected) <= tolerance`（工作区 10px，重启恢复 2px）。 |
+| **过度断言动画微观帧** | 断言 CSS 过渡期第 160ms 时的 opacity 为 0.45，CI 虚拟机 CPU 抢占抖动必挂。 | E2E 仅断言最终状态（如稳定后 `opacity === '1'`）与兜底超时时间（如 `STARTUP_REACT_FALLBACK_MS`），不过度干预过渡态。 |
+| **日志因果一致性验证** | 仅验证 UI 不验证日志落盘，生产环境丢日志难以排查。 | 真实 IPC 交互后，直接调用 `fs.readFileSync` 校验 `userData/logs/main.log` 与 `traces.ndjson` 中的真实行因果关联。 |

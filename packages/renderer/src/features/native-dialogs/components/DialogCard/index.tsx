@@ -12,7 +12,7 @@ import type { DialogAction } from '../../hooks/useNativeDialogs';
 
 // 可抽离的逻辑处理函数/组件
 
-const _DialogCard = (props: IDialogCardProps) => {
+const _DialogCard = (props: DialogCardProps) => {
   useLingui();
   // 变量声明、解构
   const {
@@ -98,7 +98,7 @@ const _DialogCard = (props: IDialogCardProps) => {
 };
 
 // props 类型定义
-interface IDialogCardProps {
+interface DialogCardProps {
   selectedPath: string;
   statusMessage: string;
   activeAction?: DialogAction | null;
@@ -109,7 +109,4 @@ interface IDialogCardProps {
   onShowInFolder: () => void;
 }
 
-const DialogCard = memo(_DialogCard);
-
-export { DialogCard };
-export default DialogCard;
+export const DialogCard = memo(_DialogCard);

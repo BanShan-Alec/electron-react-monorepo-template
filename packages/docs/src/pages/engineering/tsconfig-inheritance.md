@@ -1,34 +1,28 @@
 ---
 title: 编译配置继承（Tsconfig）
-description: "`@app/tsconfig` 提供 base/node/react 三档，各包 tsconfig 只剩 extends 与 include。"
+description: "@app/tsconfig 集中管理 base/node/react 三档，各包仅保留 extends 与 include。"
 ---
 
 # 编译配置继承（Tsconfig）
 
-> **TL;DR**：`@app/tsconfig` 提供 base/node/react 三档，各包 tsconfig 只剩 extends 与 include
+> **TL;DR**：tsconfig 同样作为 Workspace 内部私有包（`@app/tsconfig`）管理，提供 `base.json`、`node.json`、`react.json` 三档分层模板；全仓路径别名统一指向各包源码目录 `src/*`，修改实时跨包联动。
 
-## 要解决的坑
+## 1. 选型理由
 
-- 五六个包各配各的 TypeScript，`strict` 开关和路径别名改一处漏四处；typescript、vite 这类公共依赖在每个包里各写一个版本号，升一次级要全局搜索替换
+Electron Monorepo 在 TypeScript 编译层面天生具备多态性：
+- 主进程（Main）与构建脚本运行在 Node.js 运行时，需要最新的 Node 类型与原生语法支持。
+- 渲染层（Renderer）运行在浏览器 Chromium 环境，需要 DOM API、React JSX 变换与前端资产扩展。
+- 契约层（Shared）必须保持跨环境同构，严禁混入任何特定平台的全局环境声明。
 
-## 本仓库的解法
+若各包各自写 `tsconfig.json`，不仅数十行 `compilerOptions` 严重冗余，路径别名（paths）稍有不一致就会引发难以定位的跨包解析错误。
 
-### @app/tsconfig 继承包：编译配置一处定义
+## 2. 核心配置代码
 
-→ 源码：[packages/tsconfig/package.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/tsconfig/package.json)
-
-```json
-{
-  "name": "@app/tsconfig",
-  "private": true,
-  "files": ["base.json", "node.json", "react.json"]
-}
-```
-
-tsconfig 本身也被做成一个 workspace 包，三个 JSON 就是三档配置：
+### 三档配置分层体系
 
 → 源码：[packages/tsconfig/base.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/tsconfig/base.json)
 
+- **`base.json`**：声明公共严格模式与集中式路径别名，指向源码路径：
 ```json
 {
   "compilerOptions": {
@@ -46,8 +40,12 @@ tsconfig 本身也被做成一个 workspace 包，三个 JSON 就是三档配置
   }
 }
 ```
+- **`node.json`**：继承 `base.json`，追加 `"types": ["node", "vite/client"]`，供 `main`、`preload`、`pr-review` 及构建脚本使用。
+- **`react.json`**：继承 `base.json`，启用 `"jsx": "react-jsx"`、`"lib": ["DOM", "DOM.Iterable", "ES2023"]`，供 `renderer` 与组件包使用。
 
-`base.json` 管全局共识（`strict`、路径别名），`node.json` 和 `react.json` 各自 extends 它、只补运行时差异——Node 侧加 `types: ["node", "vite/client"]`，React 侧降 target 到 ES2023、开 DOM lib 和 `jsx: react-jsx`。各包的 tsconfig 不再抄配置，extends 之外只剩 `include` 范围和少量自身差异：
+### 业务包的极简写法
+
+业务子包的 `tsconfig.json` 无需重复声明别名与严格项，仅需指定继承档次与扫描范围：
 
 → 源码：[packages/main/tsconfig.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/tsconfig.json)
 
@@ -62,8 +60,11 @@ tsconfig 本身也被做成一个 workspace 包，三个 JSON 就是三档配置
 }
 ```
 
-main、preload、pr-review 用 `node.json`，renderer 用 `react.json`，shared 和根目录用 `base.json`。差异全部收敛在 `include` 与个别 `compilerOptions` 上（如 renderer 的 `verbatimModuleSyntax`、main 的 `noEmit`）——preload 和 shared 干脆只剩 extends 加 include，`strict` 与 `paths` 没有一个包自己重复声明。`paths` 别名指向各包的 **源码** 目录（`../main/src/*`）而不是 dist，跨包跳转和类型检查都读最新代码，改了 shared 立刻在所有引用方生效。
+## 3. 桌面端避坑注意事项
 
-## 怎么抄
-
-1. **tsconfig 包**：建 `@app/tsconfig`，base/node/react 三档，`paths` 别名指向各包 `src`；所有包 tsconfig 只剩一行 `extends`
+- **别名必须指向源码目录而非产物**：
+  - `paths` 别名统一映射至 `../<pkg>/src/*` 而非 `dist/index.cjs`。这使得开发和重构时，对 `@app/shared` 的类型或逻辑变更会立即跨包生效，避免改一行逻辑就要先对 shared 跑一次全量 build。
+- **渲染进程的 Node 类型隔离约定**：
+  - 虽然 Vite 插件可能在渲染层带来微量环境类型注入，但必须杜绝在 `packages/renderer` 内使用 `import 'node:fs'` 或 `process.cwd()`。渲染进程纯属 Chromium 运行域，任何底层系统能力必须经由 Preload 白名单通道代理。
+- **TypeScript `paths` 与 Vite `resolve.alias` 镜像对齐**：
+  - 在修改路径别名时，必须保证 Vite 配置中的别名映射与 `base.json` 保持严格对齐，否则将出现「IDE 类型检查通过、但 Vite 打包时报模块未找到」的脱节现象。

@@ -6,24 +6,24 @@ import * as Sentry from '@sentry/electron/renderer';
 import { Button, Empty } from 'antd';
 import { Component, type ErrorInfo, Fragment, type ReactNode } from 'react';
 
-interface IErrorBoundaryProps {
+export interface ErrorBoundaryProps {
   children: ReactNode;
   /** 发生未捕获异常时的自定义业务回调（如自定义日志或状态通知） */
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
-interface IErrorBoundaryState {
+interface ErrorBoundaryState {
   hasError: boolean;
   error: unknown;
   resetKey: number;
 }
 
-interface IFallbackProps {
+interface FallbackProps {
   error: unknown;
   resetError?: () => void;
 }
 
-function FallbackView({ error, resetError }: IFallbackProps) {
+function FallbackView({ error, resetError }: FallbackProps) {
   useLingui();
   const isDev = window.__APP_ENV__?.mode === APP_ENV.DEVELOPMENT || import.meta.env.DEV;
   const errorMessage = error instanceof Error ? error.message : String(error || '');
@@ -58,8 +58,8 @@ function FallbackView({ error, resetError }: IFallbackProps) {
   );
 }
 
-export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundaryState> {
-  constructor(props: IErrorBoundaryProps) {
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
       hasError: false,
@@ -68,7 +68,7 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
     };
   }
 
-  static getDerivedStateFromError(error: unknown): Partial<IErrorBoundaryState> {
+  static getDerivedStateFromError(error: unknown): Partial<ErrorBoundaryState> {
     return {
       hasError: true,
       error,
@@ -114,5 +114,3 @@ export class ErrorBoundary extends Component<IErrorBoundaryProps, IErrorBoundary
     return <Fragment key={this.state.resetKey}>{this.props.children}</Fragment>;
   }
 }
-
-export default ErrorBoundary;

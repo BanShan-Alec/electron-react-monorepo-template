@@ -89,7 +89,7 @@ function StepItem({
   );
 }
 
-const _ArchitectureView = (props: IProps) => {
+const _ArchitectureView = (props: ArchitectureViewProps) => {
   const { i18n } = useLingui();
   const { onCopyCode } = props;
   const samples = CODE_SAMPLES[i18n.locale as SupportedLocale] ?? CODE_SAMPLES['zh-CN'];
@@ -186,11 +186,8 @@ const _ArchitectureView = (props: IProps) => {
 };
 
 // props 类型定义
-interface IProps {
+interface ArchitectureViewProps {
   onCopyCode: (code: string) => Promise<void>;
 }
 
-const ArchitectureView = memo(_ArchitectureView);
-
-export { ArchitectureView };
-export default ArchitectureView;
+export const ArchitectureView = memo(_ArchitectureView);

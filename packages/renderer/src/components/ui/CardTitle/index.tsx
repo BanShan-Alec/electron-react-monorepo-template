@@ -7,7 +7,7 @@ import { EllipsisText } from '@/components/ui/EllipsisText';
 const TITLE_CLASS = 'text-base font-semibold text-foreground tracking-tight truncate leading-tight';
 const SUBTITLE_CLASS = 'text-xs text-foreground-secondary mt-0.5 font-normal truncate';
 
-const _CardTitle = (props: ICardTitleProps) => {
+const _CardTitle = (props: CardTitleProps) => {
   // 变量声明、解构
   const { icon, title, subtitle } = props;
 
@@ -50,13 +50,10 @@ const _CardTitle = (props: ICardTitleProps) => {
 };
 
 // props 类型定义
-interface ICardTitleProps {
+export interface CardTitleProps {
   icon?: ReactNode;
   title: ReactNode;
   subtitle?: ReactNode;
 }
 
-const CardTitle = memo(_CardTitle);
-
-export { CardTitle };
-export default CardTitle;
+export const CardTitle = memo(_CardTitle);

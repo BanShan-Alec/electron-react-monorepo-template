@@ -26,11 +26,11 @@ export class ContentSecurityPolicyModule implements AppModule {
 
     const isDev = !import.meta.env.PROD;
 
-    // 标准宽松策略：允许自身、内联脚本/样式、eval、data/blob 协议、https 外部资源；
-    // 开发环境下额外允许 ws:// 和 http: 以支持 Vite HMR 和本地开发服务器
+    // 开发态：允许自身、内联脚本/样式、eval、data/blob 协议、https/http 与 ws:（支持 Vite HMR 和本地开发服务器）；
+    // 生产态：收紧策略，移除 unsafe-eval 与通配 https:，仅放行必要自身源、内联样式与静态媒体
     const cspPolicy = isDev
       ? "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https: http: ws:;"
-      : "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:;";
+      : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self';";
 
     defaultSession.webRequest.onHeadersReceived((details, callback) => {
       const responseHeaders = { ...details.responseHeaders };

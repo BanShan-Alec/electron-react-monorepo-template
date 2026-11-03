@@ -1,100 +1,47 @@
 ---
-title: 配置项归属（Configuration-map）
-description: 一个值该改哪、改完何时生效、有什么副作用——身份字段、环境变量、开发端口、运行时常量与用户偏好的六层归属地图。
+title: 全局配置速查字典（Configuration Cheat-Sheet）
+description: 一个值该改哪、何时生效、有什么副作用——身份、环境、端口、常量与偏好速查表。
 ---
 
-# 配置项归属（Configuration-map）
+# 全局配置速查字典（Configuration Cheat-Sheet）
 
-> **TL;DR**：一个值只有一个 owner——身份在根 `package.json`、构建在 `build/`、环境差异在 `.env`、开发编排在 `scripts/dev.ts`、常量在 `shared`/`main`、用户偏好在 ConfigStore。
+> **TL;DR**：一个配置只有一个所有者（Single Owner）——应用身份在根 `package.json`、构建脚本在 `build/`、环境差异在 `.env`、开发编排在 `scripts/dev.ts`、业务常量在 `shared`、用户偏好在 `ConfigStore`。
 
-## 要解决的坑
+## 1. 六层配置归属法则
 
-配置散落在六个地方：根 `package.json`、`.env`、`build/`、`scripts/dev.ts`、`shared`/`main` 的常量目录、`userData/config.json`。想改一个值，先要回答三个问题：改哪个文件、改完要不要重启或重建、会不会连带迁走用户数据。
-
-最容易踩的是把「构建期」和「运行时」混为一谈：改了 `.env` 以为重启就生效，或者改了 `productName` 不知道 `userData` 目录会跟着搬家。
-
-## 本仓库的解法
-
-### 一个值只有一个 owner：六层归属
-
-| 层 | 位置 | 管什么 | 生效时机 |
+| 配置层级 | 存储载体 | 包含范围 | 生效机制与时机 |
 | :--- | :--- | :--- | :--- |
-| 应用身份 / OTA 坐标 | 根 `package.json` | 应用名、appId、版本、GitHub 仓库 | 构建期 + 打包期 |
-| 构建期基础设施 | `build/*.ts` | 环境加载、路径、external、Sentry、打包 | 构建期 |
-| 环境差异 | `.env` / shell / CI | DSN、发布通道、API 地址、阈值 | 构建期内联 + 运行时覆盖 |
-| 开发态编排 | `scripts/dev.ts` 的 `config` | dev server 端口、CDP/inspect 开关、watch 与重启 | `pnpm dev` / `preview` |
-| 运行时常量 | `packages/shared/src/constants`、`packages/main/src/constants` | 窗口几何、启动时值、超时、日志策略 | 编译进产物 |
-| 用户偏好 | `userData/config.json` | 主题、语言、托盘、自动更新 | 运行时持久化 |
+| **应用身份 / OTA 坐标** | 根 `package.json` | `name`、`productName`、`appId`、`repository` | 构建期与物理打包期注入 |
+| **构建基础设施** | `build/*.ts` | 打包平台、资源拷贝、签名证书、Sentry 上传 | `pnpm build:*` 打包期执行 |
+| **环境差异变量** | 根 `.env` / Shell | `API_BASE_URL`、发布通道、日志级别、DSN | 构建期内联快照 + 运行时参数覆盖 |
+| **开发态编排** | `scripts/dev.ts` | Vite 端口、CDP 远程调试、主进程断点端口 | `pnpm dev` / `preview` 启动时 |
+| **跨端契约常量** | `packages/shared` | 默认窗口几何宽高、IPC 通道名、安全白名单 | 源码编译进产物（需重启构建） |
+| **用户偏好设置** | `userData/config.json` | 主题深浅模式、多语言 Locale、开机自启 | 运行时读写（通过 IPC 瞬时生效） |
 
-原则是「一个值只有一个 owner」：工具自己的 schema 文件（electron-builder / Vite / Playwright / Biome）保留原位，只把「值」抽出来共享，不要为了集中而合并文件。
+## 2. 常见改动速查表（Cheat-Sheet）
 
-### 常见改动速查
+| 想改什么 | 修改文件与字段 | 生效命令 / 时机 | 潜在影响与避坑要点 |
+| :--- | :--- | :--- | :--- |
+| **应用展示名** | 根 `package.json` ➔ `productName` | 重新构建打包 | **高危**：会改变操作系统 `userData` 目录路径，旧用户数据与日志不会自动迁移 |
+| **应用包名 / 资产名** | 根 `package.json` ➔ `name` | 重新构建打包 | 必须为小写字母及中划线，`verify:prebuild` 静态门禁强制拦截 |
+| **系统应用 ID** | 根 `package.json` ➔ `appId` | 重新打包 | 影响 Windows 桌面通知 AUMID 与 macOS 应用唯一标识，发布后切勿随意变更 |
+| **前端品牌主色** | `packages/renderer/src/styles/design-tokens.ts` | Vite 实时热更 | Ant Design 主题算法与 CSS 变量作用域会自动联动派生浅/深色板 |
+| **API 请求基础地址** | 根 `.env` ➔ `API_BASE_URL` | 重新启动开发/构建 | 生产环境可在运行期通过 `APP_API_BASE_URL` 系统环境变量免打包动态覆盖 |
+| **开发态渲染端口** | `scripts/dev.ts` ➔ `config.rendererPort` | 重启 `pnpm dev` | 端口被占时启动预检会交互式提示释放，并自动通知主进程连接真实端口 |
+| **主进程源码级断点** | `scripts/dev.ts` ➔ `config.mainInspectPort` | 取消注释并重启 | 启动时会传入 `--inspect-brk=9229`，终端阻塞等待 VS Code 等 IDE 附加 |
+| **渲染层 CDP 端口** | `scripts/dev.ts` ➔ `config.rendererCdpPort` | 注释即关闭并重启 | 注释后将关闭 9222 端口并移除启动日志，启动预检不再扫描该端口 |
+| **打包体积限制阈值** | 根 `.env` ➔ `MAX_ASAR_SIZE_MB` | 下次运行打包 | CI 门禁检查打包产物体积是否超标，超过阈值立即阻断发版流水线 |
+| **Sentry 异常上报源** | 根 `.env` ➔ `SENTRY_DSN` | 打包构建时生效 | CI 流程需在 GitHub Secrets 配置 `SENTRY_AUTH_TOKEN` 以支持 SourceMap 上传 |
+| **外链打开域名白名单** | `packages/shared/src/constants/security.ts` | 重新构建主进程 | 拦截非白名单链接通过系统默认浏览器唤起，防止桌面端钓鱼攻击 |
+| **应用安装包图标** | `build/resources/icon.{ico,icns,png}` | 重新打包生效 | Windows 必须包含 256x256 多分辨率 ico，macOS 必须为 1024x1024 包含 Retina 的 icns |
+| **默认窗口几何尺寸** | `packages/shared/src/constants/window.ts` | 重新构建生效 | 首次启动生效；已有运行记录时优先从 `userData/window-state.json` 恢复记忆几何 |
+| **系统托盘图标与行为** | `packages/main/src/modules/tray/index.module.ts` | 重启主进程生效 | macOS 托盘需遵循黑白高对比度 Template 图标规范，Windows 需考虑高 DPI 缩放 |
 
-| 想改什么 | 改哪里 | 怎么生效 |
-| :--- | :--- | :--- |
-| 应用显示名 | 根 `package.json` `productName` | 重新构建 |
-| 品牌主色 | `packages/renderer/src/styles/design-tokens.ts` 的 `BRAND_PRIMARY` | 重新构建；浅/深、hover、浅色底由 antd 算法派生 |
-| CSS 变量作用域 | `packages/renderer/src/styles/design-tokens.ts` 的 `CSS_VAR_KEY` | `applyColorScheme()` 自动挂到 `<html>`，改 key 需同步 antd `cssVar.key` |
-| App ID / 仓库 | `appId` / `repository.url` | 重新打包 |
-| API 地址 | `.env` `API_BASE_URL` 或运行时 `APP_API_BASE_URL` | 构建 / 重启 |
-| Sentry | `.env` DSN，CI 配 `SENTRY_AUTH_TOKEN` | 打包生效 |
-| asar 阈值 | `.env` `MAX_ASAR_SIZE_MB`（详见[分包与体积门禁（Chunk + Asar）](/security/bundle-budget)） | 下次打包 |
-| 主进程新依赖 | `pnpm --filter @app/main add [-D]`（详见[依赖管理（Monorepo）](/engineering/dependency-management) FAQ） | 默认内联；需运行时 `require` 的加入 `external` |
-| 外链白名单 | `packages/shared/src/constants/security.ts` | 重建 main |
-| 打包平台 / 图标 | `build/electron-builder.ts`、`build/resources/` | 重新打包 |
-| Vite dev server 端口 | `scripts/dev.ts` 的 `config.rendererPort` | 重启 `pnpm dev` |
-| CDP 端口 | `scripts/dev.ts` 的 `config.rendererCdpPort`（注释即关闭） | 重启 |
-| 主进程 inspect 端口 | `scripts/dev.ts` 的 `config.mainInspectPort`（默认注释） | 重启 |
-| 开发 / 生产构建模式 | `package.json` scripts 的 `MODE` | 重启 / 重新构建 |
-| E2E 超时与并发 | `.config/playwright.config.ts` | 下次运行 e2e |
-| CI 必过检查 | GitHub 分支保护 + `.github/CICD.md`（五个 required checks） | 仓库设置 |
+## 3. 桌面端避坑注意事项
 
-### 身份字段的连锁反应
-
-→ 源码：[build/lib/app-identity.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/lib/app-identity.ts)
-
-| 字段 | 作用 | 改动影响 |
-| :--- | :--- | :--- |
-| `name` | 产物文件名、OTA 资产名 | 必须全小写中划线，`verify:prebuild` 会拦 |
-| `productName` | 窗口标题、托盘、快捷方式、Header | 还决定 `userData` / 日志目录名，改了会「搬家」 |
-| `appId` | Windows AUMID、macOS Bundle ID | 发布后不要随便改，影响通知归属与安装身份 |
-| `version` | 安装包版本、Sentry release | 走 `changelogen` 发版流程（见[发版流水线（Changelogen）](/delivery/release-pipeline)） |
-| `repository.url` | OTA 发布源（owner/repo） | 自动解析，不再支持 `.env` 覆盖 |
-
-怎么配：直接改根 `package.json`，然后 `pnpm build:win`（macOS / Linux 换成 `build:mac` / `build:linux`）。开发态窗口标题也会跟着变——标题由 renderer 在构建期注入 `productName`。
-
-### 开发态配置
-
-开发编排全部在 `scripts/dev.ts` 的一个可注释 `config` 对象里：
-
-| 配置项 | 默认值 | 作用 |
-| :--- | :--- | :--- |
-| `rendererPort` | `5173` | Vite renderer dev server 端口；`strictPort` 下被占用会交给启动预检处理 |
-| `rendererCdpPort` | `9222` | 传给 Electron 的 `--remote-debugging-port`，供外部 CDP 客户端连接 |
-| `mainInspectPort` | 默认注释关闭（示例 `9229`） | 主进程 `--inspect-brk` 断点端口；注释掉即关闭 |
-
-- **MODE**：`pnpm dev` 注入 `development`，`pnpm preview` 注入 `production`；Vite build mode 跟随 `MODE`（机制见[开发编排（Vite + Electron）](/dx/dev-orchestration)）。`rendererPort` 只在开发态使用——preview 一次性构建后直接启动，不起 dev server。
-- **端口占用**：开发态启动前逐个探测；交互环境提示是否结束占用进程，非交互环境直接失败，不会静默复用旧实例（见[启动预检（Single-instance + Port）](/dx/startup-preflight)）。
-- **调试开关**：`mainInspectPort`、`rendererCdpPort` 注释掉即关闭对应能力，启动日志与命令行参数会一起跳过（见[远程调试端口（CDP）](/dx/debug-port)）。
-
-### 运行时常量 vs 用户偏好
-
-- **运行时常量**（`packages/shared/src/constants`、`packages/main/src/constants`）直接编译进产物：改完必须重建对应包，`pnpm dev` 下的 HMR 不会自动带上主进程常量。shared 变更会经依赖传递，建议 `pnpm build` 或至少重建 main / renderer。
-- **用户偏好**（`ConfigStore`，引擎 electron-store）通过设置页 / IPC 修改，持久化在 `userData/config.json`，运行时生效、无需重建；读盘由 shared 的 zod schema 整体校验，损坏即重置默认值（见[配置持久化（Electron-store）](/main/config-persistence)）。
-- `userData` 目录名由 `productName` 派生——这也是改显示名会「搬家」的原因。
-
-## 怎么抄
-
-以「改三类配置」为例，三步：
-
-1. **改身份**：直接改根 `package.json` 的 `name` / `productName` / `appId` / `version` / `repository.url`，然后 `pnpm build:win`（macOS / Linux 换成对应平台命令）；`name` 必须全小写中划线，`verify:prebuild` 会拦。
-2. **改环境差异**：构建期默认值写 `.env`；运行时覆盖用 `APP_<KEY>`（如 `APP_API_BASE_URL`）；渲染层统一读 `window.__APP_ENV__`（注入链路见[环境变量管理（Dotenv）](/engineering/env-vars)）。
-3. **改开发编排**：端口与调试开关改 `scripts/dev.ts` 的 `config`；`MODE` 由 `package.json` scripts 注入，不要写进 `.env`。
-
-注意点：
-
-- `.env` 是构建期默认值，不是运行时读取文件；运行时想覆盖必须用 `APP_<KEY>`。
-- 渲染进程不读 `.env`（Vite 只暴露 `VITE_` 前缀），本项目统一走 `window.__APP_ENV__`。
-- `MODE` ≠ `app.isPackaged`：前者是开发/生产行为语义，后者是物理打包态；`preview` 是「未打包但生产行为」。
-- 改 `productName` 会迁移用户数据目录（`userData`、日志、`config.json`、`Local State`），发版前要想清楚。
-- 窗口位置与尺寸的持久化不在这里配，见[窗口位置与尺寸（Window-state）](/ui/window-state)。
+- **`MODE` 与 `app.isPackaged` 的物理差异**：
+  - `MODE=production` 控制的是逻辑行为（加载静态 HTML、开启生产 CSP）；`app.isPackaged` 控制的是物理打包态（ASAR 打包、自动更新真实拉取）。`pnpm preview` 是「未打包但运行生产行为」，切勿把两者混用。
+- **运行时修改配置走 `ConfigStore`**：
+  - 用户的暗黑主题、语言偏好等数据属于用户运行时数据，严禁通过修改代码文件或 `.env` 实现，必须经由 `@app/shared` 的 Zod 契约持久化在 `userData/config.json` 中。
+- **修改 `@app/shared` 常量跨包生效**：
+  - 路径别名（paths）已全部映射至源码 `src/*`，但在修改 shared 常量后，若在纯 `pnpm preview` 状态，请确保重新构建受影响的 Main 与 Renderer 包。

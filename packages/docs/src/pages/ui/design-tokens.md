@@ -1,108 +1,81 @@
 ---
 title: 设计规范与令牌（Design Tokens）
-description: 从 BRAND_PRIMARY 到 Tailwind 类的三层 token 链路，以及让规范不跑偏的三道门禁。
+description: 单一品牌色种子派生全套色阶，三层 Token 管道映射与门禁拦截机制。
 ---
 
 # 设计规范与令牌（Design Tokens）
 
-> **TL;DR**：从 BRAND_PRIMARY 到 Tailwind 类的三层 token 链路，以及让规范不跑偏的三道门禁。
+> **TL;DR**：全仓色彩源于唯一种子 `BRAND_PRIMARY`；经 Ant Design 官方算法派生 `--ant-*` 变量，映射为项目语义变量后由 Tailwind `@theme inline` 消费；`applyColorScheme` 挂载在 `<html>` 确保 Portal 浮层正常继承。
 
-## 要解决的坑
+## 1. 选型理由
 
-规范不是写在文档里就会生效的。没有 token 约束时，界面会从四个方向慢慢跑偏：
+桌面端界面最容易在维护中演变为“视觉灾难”：
+1. **硬编码色值泛滥**：业务组件充斥 `#10b981`、`text-white`，切暗黑模式时半边页面失控。
+2. **Portal 浮层掉色**：下拉菜单或模态弹窗挂载在 `document.body` 根节点，脱离局部作用域导致样式丢失。
+3. **组件库补丁破碎**：在全局写大量的 `.ant-card { ... }` 覆盖样式，一旦组件库小版本升级全盘崩溃。
 
-| 跑偏方式 | 典型写法 | 后果 |
-| --- | --- | --- |
-| 硬编码颜色 | `#10b981`、`text-white` | 换品牌/切主题时半边变色 |
-| 任意值 | `text-[11px]`、`p-[13px]` | 不在任何阶上，规范失去约束力 |
-| 直接改组件库 | `.ant-card { ... }`、`:global` | antd 升级即碎，样式补丁越积越多 |
-| 双源手抄 | 同一色值在 CSS 与 TS 各写一份 | 一处改一处漏，肉眼看不出来 |
-
-## 本仓库的解法
-
-颜色只有一个种子：`BRAND_PRIMARY`。它同时喂给 antd 和布局壳，但两边**不共享 CSS 变量**，而是共享同一次算法输出。
-
+工程建立了严格的单向 Token 派生管道：
 ```text
-BRAND_PRIMARY
-  ├─ getAntdThemeConfig(mode) → ConfigProvider
-  │     algorithm + cssVar.key = 'css-var-app' + colorPrimary
-  │       → antd 注入 .css-var-app { --ant-* } → antd 组件 token
-  │
-  └─ applyColorScheme(mode) → <html data-theme class="css-var-app">
-          → index.css :root { --color-*: var(--ant-*) }
-              → @theme inline → Tailwind 类 → 布局壳 / 自研组件
+BRAND_PRIMARY (唯一品牌种子)
+    │
+    ▼
+Ant Design 算法 (getAntdThemeConfig) ──> 注入 .css-var-app { --ant-* }
+    │
+    ▼
+项目语义层 (index.css :root)          ──> 映射 --color-* 变量
+    │
+    ▼
+Tailwind v4 (@theme inline)          ──> 生成 bg-background, text-primary 等工具类
 ```
 
-三层变量各司其职：
+## 2. 核心配置代码（单一真源）
 
-| 层 | 变量 | 谁生成 | 谁消费 |
-| --- | --- | --- | --- |
-| antd token | `--ant-*` | antd cssVar（`ConfigProvider`） | antd 组件、项目语义层 |
-| 项目语义 | `--color-*` | `index.css` 的 `@layer base :root` | Tailwind 别名、`base.css` |
-| Tailwind 别名 | `--color-background` 等 | `@theme inline` | 工具类 → 布局壳 / 自研组件 |
+### 全局色彩与作用域切换原子函数（applyColorScheme）
 
-代表性的三条映射：
+上层 `useAppStore` 解析出最终的 `ThemeMode`（`'light' | 'dark'`），由原子函数挂载至 `<html>` 根节点：
 
-- `--color-primary` → `--ant-color-primary`
-- `--color-bg-sunken` → `--ant-color-fill-alter`
-- `--color-danger` → `--ant-color-error`（项目叫 danger，antd 叫 error）
+→ 源码：[packages/renderer/src/styles/design-tokens.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/styles/design-tokens.ts)
 
-→ 源码：[design-tokens.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/styles/design-tokens.ts) · [index.css](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/styles/index.css)
+```ts
+export const BRAND_PRIMARY = '#1677ff';
+export const CSS_VAR_KEY = 'css-var-app';
 
-这一步把「改品牌」从两处手抄压成一个种子：改 `BRAND_PRIMARY`，antd 组件与布局壳同时变色。完整机制见[样式与令牌（Tailwind-CSS）](/ui/tailwind)与[组件库（Antd）](/ui/antd)。
+export function applyColorScheme(mode: ThemeMode): void {
+  const root = document.documentElement;
+  root.dataset.theme = mode;
+  root.classList.toggle('dark', mode === 'dark');
+  root.classList.add(CSS_VAR_KEY);
+}
+```
 
-## 怎么遵守
+### 三层映射体系与 Tailwind v4 适配
 
-写 UI 时只消费最后一层，不碰中间层：
+→ 源码：[packages/renderer/src/styles/index.css](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/styles/index.css)
 
-| 不要 | 要 |
-| --- | --- |
-| `#10b981`、`text-[11px]` | `bg-success`、`text-xs` |
-| 组件里写 `var(--ant-*)` | `bg-background`、`text-foreground`、`border-border` |
-| 直接 antd `Card` + `glass-card` | `AppCard` |
-| 直接 antd `Tag` 承载状态 | `StatusTag`（中性字 + 语义色圆点） |
-| `.ant-*` / `:global` 覆盖 | `antd-theme.ts` / `ConfigProvider` |
+```css
+@layer theme, base, antd, components, utilities;
 
-改动的正确入口：
+@layer base {
+  :root {
+    --color-primary: var(--ant-color-primary);
+    --color-bg-primary: var(--ant-color-bg-container);
+    --color-text-primary: var(--ant-color-text);
+    --color-border: var(--ant-color-border);
+  }
+}
 
-| 想改什么 | 改哪里 |
-| --- | --- |
-| 品牌主色 | `styles/design-tokens.ts` 的 `BRAND_PRIMARY` |
-| 新增一个语义色 | `index.css` 的 `@layer base :root` + 必要的 `@theme` 别名 |
-| 非 antd 颜色（滚动条 / 语法高亮 / 窗口画布） | `tokens.css` |
-| antd 组件外观 | `antd-theme.ts` / `ConfigProvider` |
-| 新组件 | 语义类；卡片用 `AppCard`，状态用 `StatusTag` |
+@theme inline {
+  --color-background: var(--color-bg-primary);
+  --color-foreground: var(--color-text-primary);
+  --color-border: var(--color-border);
+}
+```
 
-完整的五条纪律与 12 个系统见 [DESIGN.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/docs/DESIGN.md)。
+## 3. 桌面端避坑注意事项
 
-## 防跑偏的三道门禁
-
-| 门禁 | 命令 | 拦什么 |
-| --- | --- | --- |
-| 单测 | `pnpm test` | `--ant-*` 目标缺失、`--window-*` 与 antd `colorBgLayout/colorText` 不一致 |
-| 预构建 | `pnpm verify:prebuild` | `text-[Npx]`、种子外 hex、组件里直接 `var(--ant-*)` |
-| 端到端 | `pnpm test:e2e` | `<html>` 缺 `css-var-app`、`--color-primary` 为空、portal 丢色 |
-
-单测用 SSR 提取 antd 的 cssVar 块，逐个断言项目引用的 `--ant-*` 都存在；e2e 在 `settings.spec` 里断言变量、antd 按钮背景与自定义 portal 的继承。
-
-## 静默失败案例
-
-- **类不在 `<html>`**：把 `css-var-app` 挂到 app wrapper 时，`createPortal(..., document.body)` 的自定义浮层在作用域外，背景变透明、深色下黑字，无报错。→ `applyColorScheme()` 统一挂到 `<html>`。
-- **变量链路断**：`var(--color-*)` 解析不到时，`background-color` 直接失效为透明，没有 warning。→ 单测校验每个引用目标都存在。
-- **antd token 改名**：CSS 里的 `--ant-*` 是字符串，改名没有编译错误。→ 单测逐个断言目标存在，升级 antd 时先报警。
-
-## 派生应用换品牌
-
-只改 `BRAND_PRIMARY`，不要动 `tokens.css` 或手写 `--ant-*`。antd 会自动派生 hover、浅色底与深色主题；如果连 `colorBgLayout` / `colorText` 也改了，记得同步 `tokens.css` 的 `--window-bg` / `--window-fg`（它们只负责 React 渲染前的窗口画布）。
-
-## 注意点
-
-- `cssVar.key` 是**类名本身**，不是前缀：本项目用 `css-var-app`，不要改成 `app`（会得到 `.app`）。
-- `--window-*` 只用于 `html, body` 的首帧画布，不要拿它当业务颜色。
-- 组件里禁止直接写 `var(--ant-*)`；`pnpm verify:prebuild` 会拦。
-
-## 指针
-
-- 配置项归属（改什么值去哪）：[配置项归属（Configuration-map）](/dx/configuration-map)
-- 组件库主题装配：[组件库（Antd）](/ui/antd)
-- Tailwind 层序与 `@theme`：[样式与令牌（Tailwind-CSS）](/ui/tailwind)
+- **作用域类名必须挂在 `<html>` 根节点**：
+  - 如果把 `css-var-app` 挂在 React 的 `#root` 节点，所有由 `createPortal(..., document.body)` 渲染的 Select 下拉框、Modal 对话框和 Tooltip 都会脱离变量作用域，在深色模式下变成透明背景与黑色文字。
+- **`cssVar.key` 是完整的类名而非前缀**：
+  - Ant Design 配置项中 `cssVar: { key: 'css-var-app' }` 生成的直接是 `.css-var-app` 类选择器，不要只传 `app`（否则会生成 `.app`）。
+- **业务代码禁止直读 `--ant-*` 变量**：
+  - 组件业务样式统一消费 Tailwind 语义类（如 `bg-background`、`text-foreground`）或通用组件包装器（如 `AppCard`），严禁在 CSS 中硬编码 `var(--ant-*)`。静态预检门禁（`pnpm verify:prebuild`）会扫描并拦截违规写法。

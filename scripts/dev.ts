@@ -1,4 +1,5 @@
 import { type ChildProcess, execSync, spawn } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import electronPath from 'electron';
@@ -232,9 +233,27 @@ async function runPreview(): Promise<void> {
       cwd: ROOT_DIR,
     });
   } else {
-    console.warn(
-      `${LOG_PREFIX} --skip-build: artifact check skipped, app may run without a window`,
+    // 检查核心产物完整性，缺失直接退出并输出清晰指引，杜绝启动僵尸进程
+    const mainArtifact = path.join(ROOT_DIR, 'packages', 'main', 'dist', 'index.cjs');
+    const rendererArtifact = path.join(
+      ROOT_DIR,
+      'packages',
+      'renderer',
+      'dist',
+      'src',
+      'entries',
+      'home',
+      'index.html',
     );
+    if (!fs.existsSync(mainArtifact) || !fs.existsSync(rendererArtifact)) {
+      console.error(
+        `${LOG_PREFIX} ❌ --skip-build 失败: 运行所需构建产物缺失。\n` +
+          `  - 主进程产物: ${fs.existsSync(mainArtifact) ? '✅ 存在' : `❌ 缺失 (${mainArtifact})`}\n` +
+          `  - 渲染层产物: ${fs.existsSync(rendererArtifact) ? '✅ 存在' : `❌ 缺失 (${rendererArtifact})`}\n` +
+          `  请先执行 \`pnpm preview\` (自动触发构建) 或 \`pnpm build\` 生成产物。`,
+      );
+      process.exit(1);
+    }
   }
 
   console.log(

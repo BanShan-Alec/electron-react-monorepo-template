@@ -85,12 +85,12 @@ export default defineConfig({
         chunkFileNames: 'assets/[name]-[hash].js',
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            // 1. 最稳定核心运行时：React 系列
-            if (id.includes('react') || id.includes('scheduler')) {
+            // 1. 最稳定核心运行时：React 核心包（精准路径匹配，避免 @lingui/react 等外围库污染）
+            if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) {
               return 'vendor-react';
             }
             // 2. UI 框架：Ant Design 及其样式/图标/底层 RC 库
-            if (id.includes('antd') || id.includes('@ant-design') || id.includes('rc-')) {
+            if (/[\\/]node_modules[\\/](antd|@ant-design|rc-[a-z0-9-]+)[\\/]/.test(id)) {
               return 'vendor-antd';
             }
           }

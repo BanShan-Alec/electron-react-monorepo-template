@@ -1,53 +1,74 @@
 ---
 title: 首次关闭确认（Close-confirmation）
-description: 首次关闭窗口时询问关闭窗口留在系统托盘或退出应用，记住选择并保留设置页反悔入口；无人响应时保持等待，不自动关闭。
+description: 拦截主窗口首次关闭事件，交互确认托盘常驻或彻底退出，配置持久化与设置页反悔入口。
 ---
 
 # 首次关闭确认（Close-confirmation）
 
-> **TL;DR**：首次关闭窗口时询问关闭窗口留在系统托盘或退出应用，记住选择并保留设置页反悔入口；无人响应时保持等待，不自动关闭。
+> **TL;DR**：主进程拦截主窗口的首次点击关闭事件，唤起确认弹窗由用户决策是「最小化到托盘」还是「彻底退出应用」；该选择持久化至用户配置中，并在设置页面提供随时反悔的修改开关。
 
-## 要解决的坑
+## 1. 选型理由
 
-桌面应用的标题栏关闭按钮通常只表示关闭窗口，但用户容易把它理解为退出应用。若直接把「关闭窗口」绑定到退出，后台任务和托盘常驻体验会被意外中断；若默认常驻托盘，又可能让用户误以为应用已经退出。
+桌面应用的关闭按钮（右上角 `X`）存在认知分歧：
+- 用户期望关闭窗口后后台继续同步或保留托盘通知，直接退出应用会造成业务中断。
+- 若默认静默最小化到托盘，部分用户会误以为程序卡死或无法彻底关闭。
 
-## 本仓库的解法
+工程通过「首次关闭拦截确认 + 偏好记忆 + 设置页反悔」提供人性化体验。
 
-### 主进程拦截首次关闭
+## 2. 核心配置代码
 
-→ 源码：[packages/main/src/modules/window/index.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/index.module.ts) · [packages/shared/src/schemas/config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/schemas/config.ts)
+### 主进程首次关闭拦截
 
-主进程在窗口 `close` 事件中检查 `closeBehaviorConfirmed`。首次关闭时调用 `preventDefault()`，再通过受限 preload API 通知渲染层展示选择框。关闭前的偏好保存在现有本地配置中：
+主进程监听窗口 `close` 事件，未确认时拦截默认行为并向渲染端广播 `WINDOW_CLOSE_REQUESTED`：
 
-- 选择「留在托盘」会保存 `minimizeToTray: true`。
-- 选择「退出应用」会保存 `minimizeToTray: false`。
-- 两个选择都会保存 `closeBehaviorConfirmed: true`，之后继续复用既有关闭逻辑。
-- 取消不会写入偏好，再次关闭时会重新询问。
+→ 源码：[packages/main/src/modules/window/index.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/index.module.ts)
 
-主窗口关闭后会销毁窗口实例，应用继续驻留系统托盘；点击托盘图标会重建并打开主窗口。设置页的「关闭后保留在托盘」开关仍可随时修改该偏好；用户操作开关也会标记关闭行为已确认。
+```ts
+browserWindow.on('close', (event) => {
+  if (this.closeGuardBypass) {
+    this.closeGuardBypass = false;
+    return; // 放行自然销毁
+  }
 
-选择「退出应用」时，若更新正在下载，会先取消下载再退出；只有选择「留在托盘」时下载才继续。
+  const store = getAppConfigStore();
+  const confirmed = store.get('closeBehaviorConfirmed');
 
-### 弹窗与重复关闭
+  // 若尚未确认过偏好，拦截默认关闭并派发询问事件
+  if (!confirmed) {
+    event.preventDefault();
+    this.closeRequestPending = true;
+    sendToWindow(WINDOW_IDS.HOME, IPC_CHANNELS.WINDOW_CLOSE_REQUESTED);
+    return;
+  }
 
-→ 源码：[packages/renderer/src/components/close-behavior/CloseBehaviorDialog/index.tsx](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/components/close-behavior/CloseBehaviorDialog/index.tsx) · [packages/preload/src/index.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/src/index.ts)
+  // 已确认偏好：若为退出应用，按需终止在途下载并退出；若退守托盘则放行窗口销毁
+});
+```
 
-renderer 使用 antd 弹窗：一句标题、一句说明，底部右下角两枚按钮「退出应用」与「留在托盘」。右上角 X 是取消入口；Esc 和遮罩都不能关闭弹窗，只有点击 X 才撤销本次询问。弹窗垂直居中，初始焦点放在「留在托盘」上。renderer 注册就绪时会补发一次待处理请求，避免启动早期事件丢失。
+### 渲染端交互弹窗与决策回传（closeRespond）
 
-关闭请求没有超时兜底：无人响应时窗口保持打开，弹窗继续等待；弹窗打开期间重复点击关闭只会重新推送请求，由渲染层的单例守卫保证不会叠加弹窗。
+前端接收到关闭请求后唤起 Ant Design 对话框，由用户决定策略并通过受限 API 回传：
 
-## 怎么验证
+→ 源码：[packages/renderer/src/components/close-behavior/CloseBehaviorDialog/index.tsx](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/components/close-behavior/CloseBehaviorDialog/index.tsx)
 
-→ 源码：[e2e/close-behavior.spec.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/e2e/close-behavior.spec.ts)
+```tsx
+const respond = async (choice: CloseBehaviorChoice) => {
+  currentModal?.destroy();
+  // 经请求层向主进程提交用户决策（'window' | 'quit' | 'cancel'）
+  await callIpc('window:close-respond', window.api.window.closeRespond, [choice]);
+};
 
-端到端用例以全新 `userData` 冷启动，覆盖：选择关闭窗口并核对配置落盘、取消后仍存活且再次关闭会重问、弹窗打开时重复点关闭不会叠加、下载中选择退出会结束进程。改动主进程后运行 `pnpm test:e2e:build`，确保测试使用最新构建产物。
+// 订阅主进程发送的首次关闭拦截信号
+const unsubscribe = window.api.window.onCloseRequested(showPrompt);
+```
 
-## 怎么抄
+主进程接收到 `'window'`（留在托盘）或 `'quit'`（退出）后，将配置持久化至 `userData/config.json`，并置位 `closeBehaviorConfirmed: true`，后续关闭不再弹窗。
 
-1. 将「是否已经确认」与实际关闭策略分开持久化；已有设置项继续作为用户之后修改策略的入口。
-2. 在主进程窗口 `close` 事件里拦截首次关闭，窗口生命周期决策留在主进程。
-3. 通过 preload 暴露单向关闭请求订阅和受校验的选择回传，不直接向 renderer 暴露 Electron 对象。
-4. 给 renderer 事件订阅加就绪握手；无响应时保留待处理请求，重复点击关闭重发请求，由渲染层保证单弹窗。
-5. 分别验证三种选择、配置落盘和超时后弹窗仍可操作。
+## 3. 桌面端避坑注意事项
 
-关闭行为依赖系统标题栏的窗口关闭事件；原生标题栏定制见[原生窗口体验（WCO）](/ui/wco)，窗口恢复与尺寸管理见[窗口位置与尺寸（Window-state）](/ui/window-state)。
+- **无人确认时绝不自动超时关闭**：
+  - 关闭确认请求不设置任何超时自动放行兜底。如果用户离开电脑或未作选择，窗口必须保持原状，防止意外丢失尚未保存的业务数据。
+- **防止重复点击引发弹窗堆叠**：
+  - 用户在弹窗展开期间若连续重复点击窗口右上角 `X`，渲染进程内聚单例守卫（`if (currentModal) return;`），拦截多余的展示请求，保证界面仅存在一个模态框。
+- **退出时终止在途下载**：
+  - 用户若选择「彻底退出应用」，主进程在销毁前会主动取消正在后台进行的 OTA 安装包下载任务，释放文件句柄并清理临时碎片。

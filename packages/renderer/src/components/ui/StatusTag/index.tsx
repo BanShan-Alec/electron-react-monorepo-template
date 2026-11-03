@@ -14,7 +14,7 @@ const TONE_DOT_CLASS: Record<StatusTone, string> = {
 
 // 可抽离的逻辑处理函数/组件
 
-const _StatusTag = (props: IStatusTagProps) => {
+const _StatusTag = (props: StatusTagProps) => {
   // 变量声明、解构
   const { tone, children } = props;
 
@@ -31,12 +31,9 @@ const _StatusTag = (props: IStatusTagProps) => {
 };
 
 // props 类型定义
-interface IStatusTagProps {
+export interface StatusTagProps {
   tone: StatusTone;
   children: ReactNode;
 }
 
-const StatusTag = memo(_StatusTag);
-
-export { StatusTag };
-export default StatusTag;
+export const StatusTag = memo(_StatusTag);

@@ -9,7 +9,7 @@ import { StartupReadyNotifier } from '@/components/startup/StartupReadyNotifier'
 import { initSentry } from '@/lib/sentry';
 import { useAppStore } from '@/stores/useAppStore';
 import { applyColorScheme } from '@/styles/design-tokens';
-import App from './App.tsx';
+import { App } from './App.tsx';
 
 initSentry();
 // 生命周期叙事：每次文档加载即落盘（preload 先于页面脚本执行，logger 全局已就绪）

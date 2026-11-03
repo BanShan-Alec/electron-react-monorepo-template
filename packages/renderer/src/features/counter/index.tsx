@@ -27,4 +27,3 @@ function CounterFeature() {
 }
 
 export { CounterFeature };
-export default CounterFeature;

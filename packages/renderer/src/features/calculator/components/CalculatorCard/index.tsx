@@ -17,7 +17,7 @@ const OPERATOR_OPTIONS: { label: string; value: CalcOperator }[] = [
 
 // 可抽离的逻辑处理函数/组件
 
-const _CalculatorCard = (props: ICalculatorCardProps) => {
+const _CalculatorCard = (props: CalculatorCardProps) => {
   useLingui();
   // 变量声明、解构
   const { a, b, op, onAChange, onBChange, onOpChange, result, error, isLoading, onCalculate } =
@@ -93,7 +93,7 @@ const _CalculatorCard = (props: ICalculatorCardProps) => {
 };
 
 // props 类型定义
-interface ICalculatorCardProps {
+interface CalculatorCardProps {
   a: number;
   b: number;
   op: CalcOperator;
@@ -106,7 +106,4 @@ interface ICalculatorCardProps {
   onCalculate: () => void;
 }
 
-const CalculatorCard = memo(_CalculatorCard);
-
-export { CalculatorCard };
-export default CalculatorCard;
+export const CalculatorCard = memo(_CalculatorCard);

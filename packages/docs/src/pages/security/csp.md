@@ -1,45 +1,44 @@
 ---
 title: 内容安全策略（CSP）
-description: CSP 响应头统一注入，外链与页面内跳转各有一层白名单，判定只在主进程。
+description: 生产态收紧 CSP 响应头，外链与页面导航双白名单拦截，判定权纯归主进程。
 ---
 
 # 内容安全策略（CSP）
 
-> **TL;DR**：CSP 响应头统一注入，外链与页面内跳转各有一层白名单，判定只在主进程。
+> **TL;DR**：生产环境彻底剔除 `'unsafe-eval'` 与通配 `https:`，仅放行自身同源、内联样式与静态媒体；开发态按需放行 Vite HMR 的 `ws:` 协议；窗口外链拦截并仅转交系统浏览器，页面跳转拦截非放行 Origin。
 
-## 要解决的坑
+## 1. 选型理由
 
-Electron 的默认配置是「能跑」，不是「防住」：
+Electron 默认未开启严格安全策略时，渲染进程面临严重安全隐患：
+1. **XSS 穿透与 RCE 风险**：一旦渲染层存在 XSS 漏洞，注入脚本可任意加载外部远程恶意脚本，并结合 `eval()` 执行恶意代码。
+2. **窗口任意导航（Phishing）**：恶意脚本可通过 `window.open` 或修改 `window.location` 将当前窗口重定向到钓鱼网站，伪造登录界面窃取凭证。
 
-- 渲染层能 `fetch` 任意源、`window.open` 任意页面，能加载什么、能跳去哪里完全不可控
+工程采取「分环境严格 CSP 头 + 外链/导航主进程双白名单」构建安全护城河。
 
-## 本仓库的解法
+## 2. 核心配置代码
 
-### 内容与外链管控：CSP + 导航与外链双白名单
+### 生产与开发双分流 CSP 响应头注入
 
-「能加载什么」由 CSP 管，「能跳去哪里」由两层白名单管，三者都是主进程模块，渲染层无法自行放开。
-
-**CSP 响应头注入**——统一在 session 层拦截响应：
+主进程在全局网络请求（`onHeadersReceived`）统一拦截并追加 CSP 响应头：
 
 → 源码：[packages/main/src/modules/security/csp.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/security/csp.ts)
 
 ```ts
 const isDev = !import.meta.env.PROD;
 
-// 标准宽松策略：允许自身、内联脚本/样式、eval、data/blob 协议、https 外部资源；
-// 开发环境下额外允许 ws:// 和 http: 以支持 Vite HMR 和本地开发服务器
+// 开发态：放行 ws: 与 http: 以保障 Vite HMR 热更；
+// 生产态：收紧策略，剔除 unsafe-eval 与通配 https:，仅放行必要自身源、内联样式与静态媒体
 const cspPolicy = isDev
   ? "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https: http: ws:;"
-  : "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:;";
+  : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self';";
 
 defaultSession.webRequest.onHeadersReceived((details, callback) => {
   const responseHeaders = { ...details.responseHeaders };
-
-  // 检查响应中是否已存在 CSP 头（大小写不敏感匹配）
   const existingKey = Object.keys(responseHeaders).find(
     (key) => key.toLowerCase() === 'content-security-policy',
   );
 
+  // 追加策略，不破坏上游自带安全头
   if (existingKey) {
     const existingVal = responseHeaders[existingKey];
     const existingArray = Array.isArray(existingVal) ? existingVal : [existingVal];
@@ -47,115 +46,37 @@ defaultSession.webRequest.onHeadersReceived((details, callback) => {
   } else {
     responseHeaders['Content-Security-Policy'] = [cspPolicy];
   }
-
   callback({ responseHeaders });
 });
-
-this.logger.info(`Content-Security-Policy configured (isDev=${isDev}): ${cspPolicy}`);
 ```
 
-两个设计点：一是开发/生产两套策略，dev 额外放行 `ws:` 和 `http:` 给 Vite HMR 用，生产态收掉；二是已有 CSP 头是**追加**而不是覆盖，不破坏上游自带策略。要注意这套 CSP 是「默认防线」而非严格白名单——生产态仍允许 `https:` 外部资源和内联脚本，需要更严的项目应在此基础上收紧。
+### 窗口外链拦截（setWindowOpenHandler 恒拒绝）
 
-**外链白名单**——`window.open` 一律拒绝开新窗，只挑白名单里的源交给系统浏览器：
+无论点击何种链接，`setWindowOpenHandler` 一律返回 `{ action: 'deny' }`，仅匹配白名单时委托系统默认浏览器打开：
 
 → 源码：[packages/main/src/modules/security/external-urls.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/security/external-urls.ts)
 
 ```ts
-app.on('web-contents-created', (_, contents) => {
-  contents.setWindowOpenHandler(({ url }) => {
-    try {
-      const parsedUrl = new URL(url);
-
-      // 仅允许安全的网络协议
-      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-        this.logger.warn(`Blocked non-http(s) protocol navigation: ${url}`);
-        return { action: 'deny' };
+contents.setWindowOpenHandler(({ url }) => {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      if (ALLOWED_EXTERNAL_URLS.includes(parsed.origin)) {
+        shell.openExternal(url);
       }
-
-      if (this.externalUrls.has(parsedUrl.origin)) {
-        shell.openExternal(url).catch((err) => {
-          this.logger.error('Failed to open external URL:', err);
-        });
-      } else {
-        this.logger.warn(
-          `Blocked opening of a disallowed external origin: ${parsedUrl.origin}`,
-        );
-      }
-    } catch (err) {
-      this.logger.warn(`Malformed or invalid URL received: ${url}`, err);
     }
-
-    // Prevent creating a new window.
-    return { action: 'deny' };
-  });
+  } catch {}
+  return { action: 'deny' }; // 应用内恒不开启不受控的新窗口
 });
 ```
 
-注意兜底逻辑：不管 URL 长什么样、是否在白名单里，`setWindowOpenHandler` 恒返回 `{ action: 'deny' }`——应用内永远不会冒出新窗口，白名单只决定「要不要转交系统浏览器」。
+页面内导航通过 `contents.on('will-navigate')` 拦截，非放行 Origin 直接 `event.preventDefault()`。
 
-白名单本体是 shared 里的常量，判定权只在主进程：
+## 3. 桌面端避坑注意事项
 
-→ 源码：[packages/shared/src/constants/security.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/constants/security.ts)
-
-```ts
-export const ALLOWED_EXTERNAL_URLS = [
-  'https://github.com',
-  'https://vite.dev',
-  'https://react.dev',
-] as const;
-```
-
-**导航白名单**——页面内跳转同样设卡，非白名单 origin 直接 `preventDefault`：
-
-→ 源码：[packages/main/src/modules/security/block-origins.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/security/block-origins.ts)
-
-```ts
-contents.on('will-navigate', (event, url) => {
-  const parsed = new URL(url);
-  if (parsed.protocol === 'file:') {
-    return;
-  }
-
-  const { origin } = parsed;
-  if (this.allowedOrigins.has(origin)) {
-    return;
-  }
-
-  // Prevent navigation
-  event.preventDefault();
-
-  this.logger.warn(`Blocked navigating to disallowed origin: ${origin}`);
-});
-```
-
-装配处在主进程入口，白名单按环境区分：开发态放行 Vite dev server，生产态只放行本地页面自身（`file://` 与 `'null'`）：
-
-→ 源码：[packages/main/src/index.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/index.ts)
-
-```ts
-.init(
-  allowInternalOrigins(
-    new Set(
-      devServer
-        ? [new URL(devServer).origin]
-        : [
-            initConfig.windows.home instanceof URL ? initConfig.windows.home.origin : 'file://',
-            'null',
-          ],
-    ),
-  ),
-)
-.init(allowExternalUrls(new Set(ALLOWED_EXTERNAL_URLS)));
-```
-
-## 怎么抄
-
-以新增外链为例：
-
-1. **外链先入白名单**：域名加进 shared 的 `ALLOWED_EXTERNAL_URLS`；需要页面内跳转的 origin 加进 `allowInternalOrigins` 的集合；渲染层不做也不做任何放行判定
-
-注意点：
-
-- CSP 是追加不是覆盖——response 里已有多份 CSP 时它们同时生效，别指望后注入的策略能放开上游收紧的规则
-- 这套 CSP 是默认防线，生产态仍放行 `https:` 与内联脚本；有更高要求的场景应在此基础上逐源收紧
-- 外链与导航的判定只在主进程：白名单常量虽放 shared，渲染层拿到的永远是「点链接」这一个动作，没有绕过判定面的通道
+- **CSP 是“追加叠加”而非覆盖**：
+  - 响应头中若已存在第三方或上游自带的 CSP，追加注入意味着规则将按照两者交集**更加收紧**，后注入的策略绝不可能放开前者的限制。
+- **第三方外部资源放行规范**：
+  - 若生产业务需要请求特定的第三方 API 或加载外部头像 CDN，切勿简单恢复 `https:` 全量通配，必须在 `connect-src` 或 `img-src` 中逐个按确切域名加入白名单。
+- **安全判定权纯归主进程**：
+  - 渲染进程不具备任何自行修改 CSP 或打开外链的权限。白名单虽定义在 `@app/shared`，但消费与裁决永远由主进程原生事件闭环执行。

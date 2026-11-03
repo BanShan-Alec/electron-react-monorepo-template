@@ -8,7 +8,7 @@ import { EllipsisText } from '@/components/ui/EllipsisText';
 
 // 可抽离的逻辑处理函数/组件
 
-const _Header = (props: IHeaderProps) => {
+const _Header = (props: HeaderProps) => {
   useLingui();
   const [location, navigate] = useLocation();
 
@@ -83,11 +83,8 @@ const _Header = (props: IHeaderProps) => {
 // props 类型定义
 export type HeaderTab = '/dashboard' | '/architecture';
 
-interface IHeaderProps {
+export interface HeaderProps {
   onTabChange?: (tab: HeaderTab) => void;
 }
 
-const Header = memo(_Header);
-
-export { Header };
-export default Header;
+export const Header = memo(_Header);

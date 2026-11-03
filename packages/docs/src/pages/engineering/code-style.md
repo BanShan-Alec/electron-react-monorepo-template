@@ -1,75 +1,80 @@
 ---
 title: 代码规范与风格（Biome）
-description: "Biome 一份配置接管格式、检查与 import 排序，桶文件、`export *`、循环导入直接报错。"
+description: Biome 统一接管代码格式化、Lint 与导入排序，架构红线升格为编译期硬性阻断。
 ---
 
 # 代码规范与风格（Biome）
 
-> **TL;DR**：Biome 一份配置接管格式、检查与 import 排序，桶文件、`export *`、循环导入直接报错
+> **TL;DR**：用 Biome 彻底替换传统的 ESLint + Prettier 链条，一份配置统一格式、检查与 import 排序；将禁止桶文件、禁止全量重导出、禁止循环依赖配置为 `error` 级刚性门禁。
 
-## 要解决的坑
+## 1. 选型理由
 
-- Prettier 管格式、ESLint 管检查，import 排序还得再配一个插件，三套配置互相打架，规则形同虚设
+传统 Web 前端工程通常需要混合 Prettier（格式化）、ESLint（代码检查）、eslint-plugin-import（排序）等多套工具，在 Monorepo 场景下往往遇到规则冲突、配置臃肿及本地检查慢等问题。
 
-## 本仓库的解法
+项目采用 Biome 作为统一工具，核心考量：
+- **极速反馈**：全仓数百个 TypeScript 文件的全量扫描与修复均在数百毫秒内完成。
+- **架构级红线拦截**：将「禁止无意义的桶文件」与「禁止循环引用」升格为硬性门禁，从根源杜绝编译依赖图错乱。
+- **单一事实源**：统一收敛在 `.config/biome.json`，消灭多配置互相打架的局面。
 
-### Biome 单工具：格式、检查、import 排序三合一
+## 2. 核心配置代码
+
+### 架构红线规则声明
 
 → 源码：[.config/biome.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.config/biome.json)
 
 ```json
-"linter": {
-  "enabled": true,
-  "rules": {
-    "preset": "recommended",
-    "performance": {
-      "noBarrelFile": "error",
-      "noReExportAll": "error"
-    },
-    "suspicious": {
-      "noImportCycles": "error"
-      // ...其余为个别规则的开关项（noExplicitAny、noConfusingVoidType 等）
-    }
-  }
-},
-"assist": {
-  "enabled": true,
-  "actions": {
-    "source": {
-      "organizeImports": "on"
-    }
-  }
-}
-```
-
-Prettier + ESLint + import 插件的三套配置换成 Biome 一份 JSON：缩进、引号、行宽在 `formatter` 段，架构红线升到 `error` 级——桶文件（`noBarrelFile`）、`export *`（`noReExportAll`）、循环导入（`noImportCycles`）直接编译不过关。检查规则还能承载架构约束，比如禁掉绕过统一请求层的 hook：
-
-```json
-"noRestrictedImports": {
-  "options": {
-    "paths": {
-      "ahooks": {
-        "message": "禁用直接引用 ahooks useRequest；请求一律使用 src/hooks/useManualRequest.ts",
-        "importNames": ["useRequest"]
+{
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "performance": {
+        "noBarrelFile": "error",
+        "noReExportAll": "error"
+      },
+      "suspicious": {
+        "noImportCycles": "error"
+      },
+      "correctness": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "ahooks": {
+                "message": "禁用直接引用 ahooks useRequest；请求一律使用 src/hooks/useManualRequest.ts",
+                "importNames": ["useRequest"]
+              }
+            }
+          }
+        }
       }
     }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": { "organizeImports": "on" }
+    }
   }
 }
 ```
 
-工具约定俗成放 `.config/` 目录而不是仓库根，根目录只留业务与发布配置；因为配置不在默认位置，所有命令显式带 `--config-path`：
+### 命令统一调用与 Git 暂存拦截
+
+由于配置文件统一收敛在 `.config/`，命令需显式携带配置路径：
 
 ```json
 "lint": "biome check --config-path=.config .",
 "lint:fix": "biome check --write --config-path=.config ."
 ```
 
-本地防护靠 husky + lint-staged：`pre-commit` 钩子执行 `pnpm exec lint-staged`，只对暂存文件跑 `biome check --write`，提交即修复；同一套命令在 CI 的 lint job 里全量复跑，本地跳过钩子也绕不过门禁。
+本地由 `husky` + `lint-staged` 在提交时自动对暂存区文件执行格式化与检查，CI 阶段执行全量检测。
 
-## 怎么抄
+## 3. 桌面端避坑注意事项
 
-1. **Biome**：配置放 `.config/biome.json`，命令带 `--config-path`，husky + lint-staged 管提交、CI 管兜底
-
-注意点：
-
-- Biome 与 commitlint 的配置都在 `.config/`，从默认位置挪走之后，所有调用点（脚本、husky、CI）都要显式带路径，漏一处本地与 CI 行为就不一致
+- **桶文件与组件实体的辨析**：
+  - Biome 的 `noBarrelFile` 旨在拦截只包含 `export * from './xxx'` 的聚合重导出文件。组件文件夹下的本体实现（如 `CounterCard/index.tsx` 本身包含完整渲染逻辑）不是桶文件，受规范保护。
+- **杜绝双导出（Dual-export）反模式**：
+  - 组件与工具统一使用具名导出（`export const CounterCard = ...`），严禁在文件末尾同时追加 `export default CounterCard`，避免多途径导入导致类型命名漂移与 Tree-shaking 失败。
+- **IDE 插件路径指定**：
+  - 由于配置文件位于 `.config/biome.json`，若 VS Code 或 Cursor 未能自动识别，请在 `.vscode/settings.json` 中配置 `"biome.lsp.bin"` 或指定配置文件相对路径。

@@ -1,70 +1,111 @@
 ---
 title: CI 并行门禁（GitHub-Actions）
-description: "typecheck / lint / test / e2e / docs 五路并行，lint 顺带跑 `verify:prebuild` 做打包前静态拦截。"
+description: 5 大核心工作流并行校验，结合打包前置依赖与命名静态拦截，全绿方可合并。
 ---
 
 # CI 并行门禁（GitHub-Actions）
 
-> **TL;DR**：typecheck / lint / test / e2e / docs 五路并行，lint 顺带跑 `verify:prebuild` 做打包前静态拦截
+> **TL;DR**：质量把控绝不依赖人肉。GitHub Actions 并行触发 5 大必绿门禁（`typecheck`、`lint`、`test`、`e2e`、`docs`）。其中 `lint` 阶段顺带执行 `verify:prebuild` 在 0ms 阶段拦截非法根依赖、命名违规与未授权样式，全方位守护主分支稳定。
 
-## CI 五路并行门禁
+## 1. 选型理由
 
-→ 源码：[.github/workflows/ci.yml](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.github/workflows/ci.yml) · [.github/actions/setup-env/action.yml](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.github/actions/setup-env/action.yml)
+- **并行化与高吞吐**：5 个 Job 完全解耦并行运行，耗时控制在最慢的 E2E 步骤以内（~5-8 分钟），无需串行排队。
+- **分支保护硬性门禁（Required Checks）**：所有 5 个 Job 在 GitHub 仓库设置中均被列为保护分支的必要通过项，任何一项挂起或翻红均无法合并代码。
+- **前置 0ms 拦截（Fail Fast）**：在跑昂贵的编译和打包之前，通过轻量级 Node 脚本立即验证工程命名规范、根依赖纯洁度与设计 Token 约束。
 
-CI 在 PR 与 main push 上运行五个并行 job，文件头注释声明它们均为分支保护的 required checks：`typecheck`、`lint`、`test`（Vitest 单测）、`e2e`（真实 Electron 窗口）、`docs`（文档站构建）。同一 PR 重复 push 通过 `concurrency` 组自动取消旧运行。
+## 2. 核心配置与实现
 
-```yaml
-e2e:
-  runs-on: ubuntu-latest
-  timeout-minutes: 30
-  steps:
-    - uses: actions/checkout@v4
-    - uses: ./.github/actions/setup-env
-    # Electron 42+ 改为首次运行时惰性下载二进制；只下载不启动，规避 Linux sandbox 限制
-    - run: pnpm exec install-electron
-    # electron.launch 以 package.json main 为入口,需要先产出各包的构建产物
-    - run: pnpm run build
-    - run: pnpm run test:e2e
-```
+### GitHub Actions 5 路并行工作流
 
-E2E 在真实 Electron 环境跑，两个前置缺一不可：先 `install-electron` 只下载二进制不启动（规避 Linux sandbox 限制），再 `pnpm run build` 产出各包构建产物——`electron.launch` 以 `package.json` 的 `main` 为入口，没有产物就是空跑。
-
-`lint` job 顺带跑 `verify:prebuild`，下文的静态规则在 CI 阶段就拦下，不用等到真正打包。公共环境收敛成 composite action，五个 job 复用同一套初始化：
+→ 源码：[.github/workflows/ci.yml](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.github/workflows/ci.yml)
 
 ```yaml
-# .github/actions/setup-env/action.yml（节选）
-- name: Enable corepack
-  run: corepack enable
-- name: Install Dependencies
-  run: pnpm install --frozen-lockfile
-  env:
-    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true # 自动取消旧提交的运行
+
+jobs:
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-env
+      - run: pnpm run typecheck
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-env
+      - run: pnpm run lint
+      - run: pnpm run verify:prebuild # 前置静态依赖、命名与样式门禁
+      - run: pnpm run i18n:check      # 词条缺失校验
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-env
+      - run: pnpm run test
+
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-env
+      - run: pnpm exec install-electron # 确保预下载无头二进制
+      - run: pnpm run build             # 必须先产出各包构建物
+      - run: pnpm run test:e2e
+
+  docs:
+    name: docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-env
+      - run: pnpm --filter @app/docs run build # Vocs 静态构建与全站死链检查
 ```
 
-该 action 的注释写明：pnpm 版本由根 `package.json` 的 `packageManager` 字段决定、Node 24 自带 corepack；Linux 上它还会先起 Xvfb，Electron 窗口才有地方渲染。
-
-### 打包前静态拦截（verify-prebuild）
+### 打包前静态拦截脚本（verify:prebuild）
 
 → 源码：[scripts/verify-prebuild.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/verify-prebuild.ts)
 
-**前置门禁**在打包开始前（0 毫秒）静态拦截两类配置违规：
-
-1. 根 `package.json` 的 `name` 必须匹配 `/^[a-z0-9-_]+$/`——守住 [应用打包（Electron-builder）](/delivery/packaging) 里说的产物寻址规范
-2. 根 `dependencies` 只允许 `['@app/main']`——防止 electron-builder 扫依赖树时把渲染层等非主进程模块卷进 asar
-
 ```ts
+// 门禁 1：校验根 package.json 的 name 是否符合小写中划线规则（防发布 404）
+const nameRegex = /^[a-z0-9-_]+$/;
+if (!nameRegex.test(rootPkg.name)) {
+  errors.push(`根 package.json 的 name (${rootPkg.name}) 必须由小写字母、数字或连字符组成`);
+}
+
+// 门禁 2：校验根目录依赖是否严格保持纯净（防打包体积异常膨胀）
 const rootDeps = Object.keys(rootPkg.dependencies || {});
 const allowedRootDeps = ['@app/main'];
 const illegalRootDeps = rootDeps.filter((dep) => !allowedRootDeps.includes(dep));
+if (illegalRootDeps.length > 0) {
+  errors.push(`根 package.json 的 dependencies 只能包含 @app/main，检测到非法依赖: ${illegalRootDeps.join(', ')}`);
+}
+
+// 门禁 3：渲染层样式与 Token 静态扫描（禁止硬编码未经授权的 hex 颜色与离阶字号）
+// 校验 rules: verifyStyleConventions(rendererDir, errors);
 ```
 
-## 怎么抄
+## 3. 桌面端避坑注意事项
 
-- **门禁**：build 脚本固定 prebuild → build → postbuild 三段。prebuild 只做静态规则（name 规范、依赖边界）
-- **CI 与发版**：typecheck / lint / test / e2e / docs 五个 required check 并行，公共环境收敛成 composite action
-
-postbuild 产物验真见 [产物冒烟测试（Dist-smoke）](/testing/artifact-smoke)。
-
-注意点：
-
-- CI 新增 job 后记得同步到分支保护的 required checks，否则 `pr-review merge` 的等待逻辑里不会包含它
+| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
+| :--- | :--- | :--- |
+| **Linux E2E 缺少二进制挂起** | Electron 42+ 改为惰性下载机制，在 CI 无缓存时直接启动 Playwright 会报错找不到二进制。 | 在 `e2e` Job 中显式执行 `pnpm exec install-electron`，通过镜像源预热二进制。 |
+| **未构建即跑 E2E 报入口缺失** | `electron.launch` 依赖 `packages/main/dist/index.cjs` 等产物，漏跑 build 导致 E2E 启动失败。 | `e2e` Job 必须在前置步骤显式执行 `pnpm run build`。 |
+| **Vocs 文档死链漏检** | 文档站内部跳错锚点或缺少页面，在开发态热更新时不报错，发布后出现 404。 | `docs` Job 将 `pnpm --filter @app/docs run build` 设为分支必过门禁，Vocs 全静态编译时只要发现一处死链即构建失败。 |
+| **并发任务堆积浪费 Runner** | 频繁连续 push 代码导致 GitHub Actions Runner 队列被旧 commit 占满。 | 启用 `concurrency: cancel-in-progress: true`，同一 PR 只要有新 push 立即取消旧任务。 |

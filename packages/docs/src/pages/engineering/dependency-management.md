@@ -1,22 +1,22 @@
 ---
 title: 依赖管理（Monorepo）
-description: pnpm workspace + catalog 收拢公共工具链版本，根目录依赖白名单由 CI 门禁守住，Node 与 pnpm 版本一并钉死。
+description: pnpm workspace + catalog 收拢版本，根依赖硬性白名单由 CI 门禁拦截，严格隔离打包体积。
 ---
 
 # 依赖管理（Monorepo）
 
-> **TL;DR**：pnpm workspace + catalog 收拢公共工具链版本，根目录依赖白名单由 CI 门禁守住，Node 与 pnpm 版本一并钉死
+> **TL;DR**：公共依赖统一声明在 `pnpm-workspace.yaml` 的 `catalog:`；根目录 `dependencies` 仅允许 `@app/main`，违规安装直接中断构建；Electron 二进制由 `postinstall` 惰性按需拉取。
 
-## 要解决的坑
+## 1. 选型理由
 
-一个 Electron + React 的 monorepo 长大之后，工程层面的问题会集中爆发：
+在多包 Electron 工程中，依赖管理往往引发三大灾难：
+1. **版本漂移**：各包独立声明 TypeScript、Vite、Zod 版本，升级时逐个搜索替换，极易造成局部版本不兼容。
+2. **打包体积失控**：开发者顺手在根目录安装运行时库，打包工具（如 electron-builder）默认递归收集根目录依赖，导致未使用的依赖被全量打包进 `app.asar`。
+3. **供应链构建风险与幻影依赖**：第三方依赖的安装脚本可能存在隐蔽风险；而扁平化依赖结构允许代码悄悄 `import` 未声明的次级依赖。
 
-- 五六个包各配各的 TypeScript，`strict` 开关和路径别名改一处漏四处；typescript、vite 这类公共依赖在每个包里各写一个版本号，升一次级要全局搜索替换
-- 根目录 `package.json` 是最方便塞依赖的地方，随手一装，electron-builder 打包时整棵依赖树被卷进 `app.asar`，体积悄悄翻倍
+## 2. 核心配置代码
 
-## 本仓库的解法
-
-### pnpm workspace 多包隔离 + catalog 统一版本
+### pnpm workspace 与依赖版本收拢
 
 → 源码：[pnpm-workspace.yaml](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/pnpm-workspace.yaml)
 
@@ -30,174 +30,59 @@ catalog:
   zod: ^4.5.4
   '@types/node': ^24.19.2
   vitest: ^5.0.3
-```
 
-所有业务包收进 `packages/*`，公共工具链版本在 `catalog:` 一处声明，各包引用时只写协议名不写版本号：
-
-→ 源码：[packages/main/package.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/package.json)
-
-```json
-"devDependencies": {
-  "typescript": "catalog:",
-  "vite": "catalog:",
-  "vitest": "catalog:",
-  "zod": "catalog:"
-  // ...另有 @app/preload、@app/shared 等 workspace 依赖与 Sentry、electron-log 等条目从略
-}
-```
-
-升级 TypeScript 就是改 `pnpm-workspace.yaml` 一行，所有引用它的包同时生效，不存在「A 包 5.x、B 包 6.x」的版本漂移。隔离布局与安装策略同样收在 `pnpm-workspace.yaml`——pnpm 12 起 `.npmrc` 只读 registry 与 auth，其余设置一律走 workspace 文件：
-
-→ 源码：[pnpm-workspace.yaml](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/pnpm-workspace.yaml)
-
-```yaml
 nodeLinker: isolated
 autoInstallPeers: true
 publicHoistPattern:
   - '@node-usb/*'
   - '*usb*'
 
-minimumReleaseAge: 1440
-
 allowBuilds:
   '@sentry/cli': true
   'electron-winstaller': true
   esbuild: true
-  es5-ext: true
-  vue-demi: true
 ```
 
-`nodeLinker: isolated` 让没写进 `package.json` 的「幻影依赖」在编译期就报错，唯一的例外是原生二进制包（`usb` 系）按模式提升，保证 `.node` 文件能被 electron-builder 收集到。版本锁定还有一层：根 `package.json` 的 `"packageManager": "pnpm@12.15.0"` 与 `engines` 字段（`node >= 24`、`pnpm ^12`）把「用哪个包管理器、哪个 Node」也固化下来。
+各包在引用公共工具链时，版本号直接使用 `"catalog:"`，版本升级仅需修改 `pnpm-workspace.yaml` 一处。
 
-### 根目录依赖白名单 + CI 门禁
+### 根目录依赖硬性白名单门禁（单一真源）
 
-→ 源码：[package.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/package.json)
-
-```json
-"dependencies": {
-  "@app/main": "workspace:*"
-}
-```
-
-根 `package.json` 的 `dependencies` 只允许一个包——负责装配的主进程包。electron、electron-builder、biome 这些工具链全部放 `devDependencies`，因为 electron-builder 收集生产依赖时只看 `dependencies`，根目录塞得越少，`app.asar` 越干净。
-
-光有约定不够，门禁脚本在打包前静态拦截：
+为防止根目录被随意塞入运行时依赖污染最终安装包，项目设置了预打包静态校验：
 
 → 源码：[scripts/verify-prebuild.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/verify-prebuild.ts)
 
 ```ts
-// 2. 根目录 package.json dependencies 边界校验（防退化门禁）
+// 根目录 package.json dependencies 边界校验（防退化门禁）
 const rootDeps = Object.keys(rootPkg.dependencies || {});
 const allowedRootDeps = ['@app/main'];
 
 const illegalRootDeps = rootDeps.filter((dep) => !allowedRootDeps.includes(dep));
+if (illegalRootDeps.length > 0) {
+  console.error(`[verify:prebuild] 根目录 package.json 存在非法生产依赖: ${illegalRootDeps.join(', ')}`);
+  console.error('[verify:prebuild] 生产依赖只能声明在对应子包中，根目录仅允许包含 @app/main');
+  process.exit(1);
+}
 ```
 
-违规依赖直接让构建失败退出（`process.exit(1)`），错误信息里写清楚「应该挪到 devDependencies」。这个脚本挂在 CI 的 lint job 里，PR 阶段就拦下：
+### Electron 预编译二进制惰性下载与镜像隔离
 
-→ 源码：[.github/workflows/ci.yml](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.github/workflows/ci.yml)
-
-```yaml
-lint:
-  # ...name / runs-on / timeout-minutes 从略
-  steps:
-    # ...checkout 与 setup-env 两步从略
-    - run: pnpm run lint
-    - run: pnpm run verify:prebuild
-```
-
-依赖治理还有第三道闸——pnpm 的安装脚本审批。pnpm 12 的 `strictDepBuilds` 默认开启：没列入 `allowBuilds` 却带构建脚本的依赖会直接让安装失败（`ERR_PNPM_IGNORED_BUILDS`），而不是静默跳过——本仓库被「electron 二进制静默缺失」坑过，快速失败正是要的状态。审批清单住在 `pnpm-workspace.yaml`（见上文），新依赖撞错时用 `pnpm ignored-builds` 列出全部待审批包、`pnpm approve-builds <包名>` 逐个审批，决策落回 `allowBuilds`——供应链面上多了一层「知情同意」。
-
-第四道闸管一个审批管不了的例外：electron 42+ 起 npm 包不带 install 生命周期脚本（二进制惰性下载），全新工作区装完不带 dist，`require('electron')` 直接报错——`allowBuilds` 对它无效，因为根本没有脚本可审批。解法是根 `package.json` 的 postinstall 一行 `cross-env ELECTRON_MIRROR=… install-electron`：安装后调用官方安装器，版本/dist 判定由它自己完成（就绪约 100ms 空转，缺失命中机器级 zip 缓存约 2 秒）。二进制下载源也收进仓库——这条命令里的 `ELECTRON_MIRROR` 指向 npmmirror，国内安装开箱走镜像。镜像必须限定在 postinstall 进程内：`@electron/get` 的查找顺序把 npm 注入的 `npm_package_config_electron_mirror`（`package.json` 的 `config.electron_mirror`）与 `npm_config_electron_mirror`（`.npmrc`）排在调用方显式 URL 之前，写在那些地方会连 electron-builder 打包 macOS DMG 用的 dmgbuild 辅助包一起劫持到 electron 镜像路径，下载 404。CI 侧 setup-env 用 `actions/cache` 预热三平台缓存目录，消掉每个 job 重复下载的带宽与抖动，e2e job 另留显式步骤作保险：
-
-→ 源码：[package.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/package.json)（postinstall 一行 + ELECTRON_MIRROR 镜像）
-
-### Node 版本与包管理器锁定
-
-catalog 管的是依赖版本，Node 与 pnpm 本身的版本另有一套钉子。本地 Node 大版本写在 `.nvmrc`，只有一行：
-
-→ 源码：[.nvmrc](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.nvmrc)
-
-```text
-24
-```
-
-根 `package.json` 再把范围与包管理器版本写进元数据，`packageManager` 精确到小版本：
+自 Electron 42+ 起，npm 包不再自带 postinstall 下载脚本，全新 clone 项目若缺失二进制会导致本地 `require('electron')` 抛错。仓库在根目录声明安全的惰性拉取：
 
 → 源码：[package.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/package.json)
 
 ```json
-  "packageManager": "pnpm@12.15.0",
-  "main": "node_modules/@app/main/dist/index.cjs",
-  "engines": {
-    "node": ">=24.0.0",
-    "pnpm": "^12.0.0"
-  },
+"scripts": {
+  "postinstall": "cross-env ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ install-electron"
+}
 ```
 
-`engines` 只声明支持范围（`node >= 24.0.0`、`pnpm ^12.0.0`），真正决定装哪个 pnpm 的是 `packageManager`。CI 里没有单独的 pnpm 安装步骤：composite action 先用 `actions/setup-node@v4` 装 Node 24，再 `corepack enable`，之后 `pnpm` 命令由 corepack 按 `packageManager` 字段拉起对应版本；装依赖固定走 `--frozen-lockfile`，`pnpm-lock.yaml` 与 `package.json` 对不上就直接失败，CI 不会顺手改写锁文件。`COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'` 关掉 corepack 首次下载 pnpm 时的交互确认：
+## 3. 桌面端避坑注意事项
 
-→ 源码：[.github/actions/setup-env/action.yml](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.github/actions/setup-env/action.yml)
-
-```yaml
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '24'
-
-    # pnpm 版本由根 package.json 的 packageManager 字段决定,Node 24 自带 corepack
-    - name: Enable corepack
-      run: corepack enable
-      shell: bash
-
-    - name: Install Dependencies
-      run: pnpm install --frozen-lockfile
-      shell: bash
-      env:
-        COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
-        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-```
-
-`.npmrc` 现在只剩 `registry=https://registry.npmmirror.com` 一行固定下载源，隔离布局与审批清单都已迁去 `pnpm-workspace.yaml`。Node 大版本、pnpm 精确版本、下载源都落在仓库里，换机器或换 CI runner 不会装出另一套工具链。
-
-## 怎么抄
-
-1. **workspace 骨架**：`pnpm-workspace.yaml` 收包、把 typescript/vite 等公共版本放进 `catalog:`，各包一律 `"catalog:"` 引用；隔离布局（`nodeLinker`）与提升模式（`publicHoistPattern`）也写在同一文件，`.npmrc` 只留 registry
-2. **依赖白名单**：根 `dependencies` 只留装配包，写 `verify-prebuild` 脚本校验，挂进 CI 的 lint job；`allowBuilds` 按需放行安装脚本，撞 `ERR_PNPM_IGNORED_BUILDS` 时用 `pnpm approve-builds` 审批；electron 二进制用 postinstall 一行 `install-electron` 兜底，CI 侧缓存其机器级 zip 目录
-
-注意点：
-
-- 第三方运行时依赖只进子包的 `dependencies`（如 `packages/main` 的 `electron-updater`），根目录出现第二个 `dependencies` 条目就是门禁失败
-- 公共工具链（`typescript`、`vite`、`zod`、`@types/node`、`vitest`）的版本只出现在 `pnpm-workspace.yaml` 的 `catalog:`，包内一律 `"catalog:"` 引用；业务依赖版本声明在各自的包里（如 `packages/main` 的 `electron-updater`、`usb`），同一依赖被多个包共用时应升入 catalog，避免两包各钉一个版本
-
-## FAQ
-
-### 主进程新增第三方依赖放哪里？
-
-```bash
-pnpm --filter @app/main add <pkg-name>
-```
-
-默认会被编译期内联。只有该库必须在运行时 `require`（含原生 addon、读取自身文件布局或动态加载）时，才需要把实际 specifier（含子路径）加入 `packages/main/vite.config.ts` 的 `rolldownOptions.external`。装完跑一次 `pnpm verify:prebuild`：根目录 `name` 规范与 `dependencies` 边界仍会被校验。
-
-### 主进程新增轻量纯 JS 工具库（希望直接打进 index.cjs）？
-
-```bash
-pnpm --filter @app/main add -D <pkg-name>
-```
-
-不需要改 `external`：主进程构建是 `ssr: { noExternal: true }`，除显式 external 清单外的模块都会被编译进 bundle——`electron-log` 放在 `devDependencies` 就是这个原因。
-
-### 渲染进程新增前端库或业务工具？
-
-按常规 Web 习惯即可：
-
-```bash
-# 业务代码使用的库
-pnpm --filter @app/renderer add lodash-es dayjs
-
-# 仅开发期使用的 Vite 插件或类型
-pnpm --filter @app/renderer add -D vite-plugin-xxx @types/xxx
-```
-
-渲染进程不需要任何 Electron 特殊配置：构建产物只搬运 dist，依赖分类与普通前端项目一致。
+- **新依赖安装归属规则**：
+  - **主进程纯 JS 工具库**：如无需运行时特殊查找，使用 `pnpm --filter @app/main add -D <pkg>`，打包时直接内联进 `index.cjs`。
+  - **主进程外部运行依赖 / 原生模块**：如需运行时 `require`（例如 `usb`），声明在 `packages/main` 的 `dependencies`，并在 `packages/main/vite.config.ts` 的 `rolldownOptions.external` 声明外置。
+  - **渲染层前端库**：按常规前端项目使用 `pnpm --filter @app/renderer add <pkg>`，由 Vite 单独完成打包。
+- **镜像环境变量切勿注入全局 `.npmrc`**：
+  - 不要把 `ELECTRON_MIRROR` 写进 `.npmrc` 或系统环境变量。`@electron/get` 会优先读取该变量，在打包 macOS DMG 时连带劫持辅助工具（如 `dmgbuild`），导致下载请求指向错误的 Electron 镜像目录而引发 404 崩溃。
+- **Native 原生模块提升**：
+  - 若使用包含 `.node` 二进制文件的库（如 `@node-usb`），必须在 `pnpm-workspace.yaml` 的 `publicHoistPattern` 中显式放行提升，否则打包工具无法正确拷贝原生动态库。
