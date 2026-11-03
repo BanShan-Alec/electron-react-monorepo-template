@@ -9,6 +9,8 @@ export default defineConfig({
   title: 'Electron React Template',
   description: '常见 Electron 坑位的解法目录：每个解法都有本仓库经过发版验证的真实实现可抄',
   // favicon 共用应用图标。注意：iconUrl 是原样引用、不会自动补 basePath，子路径部署必须带前缀。
+  // public/icon.png 是 build/resources/icon.png 的手工副本（docs 独立部署，必须自带 public 资源）；
+  // 换品牌图标时两处一起复制，主源与导出步骤见 build/electron-builder.ts。
   // 不配 logoUrl：Logo 组件配了它就只渲染图不渲染文字，导航栏会剩一颗孤立小图标、
   // 与侧栏 _slots.tsx SidebarHeader 的「图+品牌名」行重叠；品牌展示统一交给 SidebarHeader。
   iconUrl: '/electron-react-monorepo-template/icon.png',

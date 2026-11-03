@@ -84,7 +84,8 @@ export class TrayManager implements AppModule {
           icon = nativeImage.createEmpty();
         } else {
           if (process.platform === 'darwin') {
-            icon.setTemplateImage(true);
+            // 不标记为 template image：模板图只读 alpha 通道，会把不透明的蓝底与白闪电
+            // 压成同一个实心圆角方块，闪电直接消失；这里保留全彩品牌图标。
             icon = icon.resize({ width: 16, height: 16, quality: 'best' });
           } else if (process.platform === 'win32') {
             icon = icon.resize({ width: 32, height: 32, quality: 'best' });

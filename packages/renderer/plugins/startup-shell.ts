@@ -7,7 +7,8 @@ import { build, normalizePath } from 'vite';
  * 启动壳构建期内联插件 (specs/first-screen-loading.md §4.7 / ADR-0002)
  *
  * dev 与 build 走同一 transformIndexHtml，替换两个占位符：
- * - `<!-- __APP_STARTUP_LOGO__ -->` ← src/assets/startup-logo.svg 文件原文直读
+ * - `<!-- __APP_STARTUP_LOGO__ -->` ← src/assets/logo.svg 文件原文直读
+ *   （该文件同时是应用图标 / docs 图标的主源，导出步骤见 build/electron-builder.ts）
  * - `<!-- __APP_STARTUP_COORDINATOR__ -->` ← src/startup/coordinator.ts 打包的经典 IIFE
  *   内联 `<script>`（含其 import 的 @app/shared 纯常量），物理位置先于 main.tsx
  *
@@ -35,7 +36,7 @@ export function startupShellInlinePlugin(options: StartupShellInlinePluginOption
   const { root } = options;
   const indexEntry = normalizePath(path.resolve(root, 'src/entries/home/index.html')).toLowerCase();
   const coordinatorEntry = path.resolve(root, 'src/startup/coordinator.ts');
-  const logoFile = path.resolve(root, 'src/assets/startup-logo.svg');
+  const logoFile = path.resolve(root, 'src/assets/logo.svg');
 
   const bundleCoordinator = async (minify: boolean): Promise<string> => {
     // 程序化内存打包：空插件管线 + rolldown 原生 TS 转译；@app/shared 经

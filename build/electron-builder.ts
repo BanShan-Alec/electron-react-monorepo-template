@@ -11,6 +11,18 @@ const ROOT_DIR = join(__dirname, '..');
 const resolvedOwner = APP_IDENTITY.repositoryOwner || 'local';
 const resolvedRepo = APP_IDENTITY.repositoryName || 'app';
 
+/**
+ * 品牌图标主源：packages/renderer/src/assets/logo.svg
+ * 低频变更，不引入生成脚本；改主源后手工同步：
+ * 1. 从 SVG 导出 512×512 PNG → build/resources/icon.png（Linux 应用图标 / README / docs 副本源）
+ * 2. 从 SVG 逐尺寸导出 16/20/24/32/40/48/64/128/256 PNG，打包为 build/resources/icon.ico
+ *    （Windows 应用图标 + NSIS installer/uninstaller/header + Windows 托盘）
+ * 3. 从 SVG 导出 1024×1024 PNG，生成 build/resources/icon.icns（macOS 应用图标）
+ * 4. 复制 icon.png → packages/docs/public/icon.png（docs 独立部署，必须自带 public 副本）
+ * 5. Header 的 logo-compact.svg 与 favicon.svg 只同步 path，不重新导出
+ * 工具不限：resvg / Inkscape 导出 PNG，png-to-ico / ImageMagick 生成 ICO，png2icons / iconutil 生成 ICNS。
+ */
+
 const config: Configuration = {
   appId: APP_IDENTITY.appId,
   productName: APP_IDENTITY.productName,
