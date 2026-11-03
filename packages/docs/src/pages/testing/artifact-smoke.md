@@ -72,7 +72,6 @@ export async function verifyPostbuild(options: PostbuildVerificationOptions = {}
 
       app.on('window', (p) => p.on('pageerror', recordPageError));
       const page = await app.firstWindow();
-      page.on('pageerror', recordPageError);
 
       // 核心断言：必须等待启动协调器揭幕成功，坚决不用脆弱的 #root
       await page.waitForSelector('body.app-startup-ready', { timeout: 15000 });

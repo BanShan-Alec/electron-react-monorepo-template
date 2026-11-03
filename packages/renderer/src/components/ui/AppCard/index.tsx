@@ -22,6 +22,6 @@ const _AppCard = (props: AppCardProps) => {
 };
 
 // props 类型定义
-export type AppCardProps = Omit<CardProps, 'classNames' | 'styles'>;
+export interface AppCardProps extends Omit<CardProps, 'classNames' | 'styles'> {}
 
 export const AppCard = memo(_AppCard);

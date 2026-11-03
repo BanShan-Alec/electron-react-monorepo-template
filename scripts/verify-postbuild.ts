@@ -252,7 +252,11 @@ async function verifyPostbuild(options: PostbuildVerificationOptions = {}): Prom
     try {
       console.log('⏳ [verify-postbuild] 等待主窗口就绪...');
       const pageErrors: Error[] = [];
+      const errorFingerprints = new Set<string>();
       const recordPageError = (err: Error) => {
+        const fingerprint = `${err.name}:${err.message}\n${err.stack ?? ''}`;
+        if (errorFingerprints.has(fingerprint)) return;
+        errorFingerprints.add(fingerprint);
         pageErrors.push(err);
         console.error('❌ [verify-postbuild] 捕获到页面未处理异常 (pageerror):', err);
       };
@@ -262,7 +266,6 @@ async function verifyPostbuild(options: PostbuildVerificationOptions = {}): Prom
       });
 
       const page = await app.firstWindow();
-      page.on('pageerror', recordPageError);
 
       const title = await page.title();
       console.log(`🪟 [verify-postbuild] 主窗口捕获成功: title="${title}"`);

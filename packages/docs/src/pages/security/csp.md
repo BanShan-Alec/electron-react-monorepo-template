@@ -26,11 +26,16 @@ Electron 默认未开启严格安全策略时，渲染进程面临严重安全�
 ```ts
 const isDev = !import.meta.env.PROD;
 
+// 动态提取配置的 API 网关 Origin（若配置则追加放行）
+const apiBaseUrl = getEnv('API_BASE_URL');
+const apiOrigin = getValidOrigin(apiBaseUrl);
+const connectSrc = apiOrigin ? `'self' ${apiOrigin}` : "'self'";
+
 // 开发态：放行 ws: 与 http: 以保障 Vite HMR 热更；
-// 生产态：收紧策略，剔除 unsafe-eval 与通配 https:，仅放行必要自身源、内联样式与静态媒体
+// 生产态：收紧策略，剔除 unsafe-eval，放行首屏协调器内联脚本与静态媒体，并动态放行 apiBaseUrl
 const cspPolicy = isDev
   ? "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https: http: ws:;"
-  : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self';";
+  : `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src ${connectSrc};`;
 
 defaultSession.webRequest.onHeadersReceived((details, callback) => {
   const responseHeaders = { ...details.responseHeaders };
