@@ -1,89 +1,27 @@
 # @app/shared AGENTS.md — 跨端契约层规则（AI 必读）
 
-> 人类向概览见 [README.md](./README.md)；全局红线与全仓任务路由见 [根 AGENTS.md](../../AGENTS.md)。
-> 本文件是该包规则的唯一真源：README 不再承载目录架构 / 设计原则 / 命名规范 / SOP。
+> 全局红线与全仓任务路由见 [根 AGENTS.md](../../AGENTS.md)。本文件为该包规则唯一真源。
 
-## 1. 目录架构
+## 1. 四层职能架构与导出契约
 
-代码按**技术职能水平分层**，业务领域在各层内进行垂直切分，文件命名统一采用 `kebab-case`：
+代码按技术职能水平分层，业务领域在各层内垂直切分，文件命名一律采用 `kebab-case.ts`：
 
-```
-packages/shared/
-├── package.json             # exports 子路径映射（无根入口，无桶文件）
-├── tsconfig.json
-└── src/
-    ├── constants/           # 系统级常量与枚举
-    │   ├── env.ts           #   统一运行环境常量 (APP_ENV)
-    │   ├── error-codes.ts   #   统一语义化错误码 (SCREAMING_SNAKE_CASE)
-    │   ├── ipc-channels.ts  #   IPC 通信通道常量定义
-    │   ├── startup.ts       #   启动就绪与协调器契约常量
-    │   └── windows.ts       #   窗口 ID 常量定义
-    ├── types/               # 纯 TypeScript 接口定义（零运行时体积）
-    │   ├── env.ts           #   运行环境契约类型与标志位 (AppEnv, EnvFlags)
-    │   ├── result.ts        #   全栈通用 Result<T> 响应包装器
-    │   ├── api.ts           #   Window.api (ElectronApi) 跨端调用契约
-    │   ├── logger.ts        #   渲染进程全局 logger 的 IPC 契约
-    │   ├── startup.ts       #   启动就绪快照与主进程就绪载荷
-    │   ├── telemetry.ts     #   追踪契约（SpanContext / TraceCarrier / TracedIpcPayload）
-    │   ├── system.ts        #   系统与硬件信息返回接口
-    │   ├── counter.ts       #   计数器领域返回接口
-    │   ├── calculator.ts    #   计算器领域返回接口
-    │   ├── diagnostics.ts   #   诊断与行为返回接口
-    │   ├── dialog.ts        #   原生对话框返回接口
-    │   └── updater.ts       #   自动更新状态、进度与发布信息
-    ├── schemas/             # Zod 运行时数据校验模型及派生输入类型
-    │   ├── counter.ts       #   计数器输入 Schema 与 StepInput
-    │   ├── calculator.ts    #   计算器入参 Schema 与 CalculateInput
-    │   ├── config.ts        #   应用配置 Schema、类型及默认值 DEFAULT_CONFIG
-    │   ├── diagnostics.ts   #   日志与操作入参 Schema 及推导类型
-    │   ├── dialog.ts        #   原生文件/目录对话框配置入参 Schema
-    │   ├── shell.ts         #   Shell 唤起入参 Schema 与类型
-    │   └── updater.ts       #   更新状态/进度/快照 Schema 及推导类型
-    └── utils/               # 跨端纯函数工具（零 Electron 依赖）
-        ├── env-packer.ts        # 运行时环境编解码（XOR 掩码 + Base64URL，--app-meta= 参数）
-        └── w3c-trace-context.ts # W3C traceparent 生成 / 解析 / 序列化
-```
+| 目录层级 | 核心职责 | 规范与依赖约束 | 子路径导出与消费方式 |
+| :--- | :--- | :--- | :--- |
+| `constants/` | 系统级常量与跨域枚举 | `SCREAMING_SNAKE_CASE` 常量，领域特定默认值就近维护在对应 schema | `@app/shared/constants/<domain>` |
+| `types/` | 纯 TypeScript 接口（零运行时体积） | 纯返回结构体与 `Result<T>` / `ElectronApi` 顶层抽象；无需运行时校验 | `@app/shared/types/<domain>` |
+| `schemas/` | Zod 运行时数据校验模型 | 输入参数必须由 Zod 驱动；`z.infer` 推导类型**必须且仅允许**就近导出 | `@app/shared/schemas/<domain>` |
+| `utils/` | 跨端纯函数工具 | 零 Electron/Node 依赖，包含环境编解码 (`env-packer`) 与 W3C Trace 序列化 | `@app/shared/utils/<util>` |
 
-## 2. 核心设计原则
+- **子路径直出与绝对禁止桶文件**：`package.json` 通过子路径 `exports` 直出具体文件，无根入口；严禁新增任何 `index.ts` 聚合导出或 `export *`（Biome `noBarrelFile` 硬拦截）。消费方必须按需直达具体文件。
 
-### 2.1 Schema 与推导类型就近原则
-- **输入参数校验规则必须由 Zod 驱动**，禁止手写重复的 TypeScript 类型。
-- 凡是由 `z.infer<typeof schema>` 推导出的类型，**必须且仅允许**在其对应的 `schemas/*.ts` 文件内定义并导出。
-- 确保"运行时入参校验逻辑"与"编译期类型安全"拥有唯一的源头。
+## 2. 核心契约与环境流转
 
-### 2.2 纯返回接口归入 `types/`
-- 仅作为主进程返回给渲染端的结构体（如 `PingResult`、`CalculateResult`、`FileDialogResult`），因无需在 IPC 入口执行逆向运行时反序列化校验，作为纯 TypeScript `interface` 或 `type` 归入 `types/` 对应领域文件中。
-- 顶层通用抽象（如 `Result<T>` 契约模型与 `ElectronApi` 全局桥接对象接口）维护在 `types/result.ts` 与 `types/api.ts`。
+1. **Schema 唯一真源**：入参校验逻辑与编译期类型完全由 Zod 统一派生，禁止手写重复的 TypeScript 类型。
+2. **纯返回接口隔离**：仅作为 IPC 返回结果的结构体归入 `types/`，避免将无校验需求的实体引入 Zod 运行时打包开销。
+3. **环境跨端序列化**：运行环境以 `MODE` 为单一事实源。`utils/env-packer.ts` 保持纯粹 Base64URL 序列化契约，主进程挂载启动参数，preload 解包并 `Object.freeze` 注入 `window.__APP_ENV__`。详见 [环境变量管理（Dotenv）](../../packages/docs/src/pages/engineering/env-vars.md)。
 
-### 2.3 常量职责切分
-- **系统级/跨域常量**（如 `ErrorCode`、`IPC_CHANNELS`）：维护在 `constants/` 目录下。
-- **领域特定默认值**（如 `DEFAULT_CONFIG`）：与领域 Schema 强相关，就近维护在对应的 `schemas/*.ts` 文件内。
-
-### 2.4 子路径直出与桶文件禁令
-- 内部物理拆分，**不设顶层统一入口**：`package.json` 通过子路径 `exports` 直出具体文件：
-  ```json
-  "exports": {
-    "./constants/*": "./src/constants/*.ts",
-    "./schemas/*": "./src/schemas/*.ts",
-    "./types/*": "./src/types/*.ts",
-    "./utils/*": "./src/utils/*.ts"
-  }
-  ```
-- 消费端（`main`、`preload`、`renderer`）按需直达具体文件。主进程与 preload 为 CJS 出包、无 tree-shaking，根入口会把整张契约图（含 schemas→zod）拖进 require 链，故取消根桶：
-  ```ts
-  import { ErrorCode } from '@app/shared/constants/error-codes';
-  import { calculateInputSchema } from '@app/shared/schemas/calculator';
-  import type { CalculateResult } from '@app/shared/types/calculator';
-  ```
-- **严禁桶文件**（全局红线 2 的本包形态）：不得新增任何 `index.ts` 聚合导出，不得使用 `export *`（由 Biome `performance.noBarrelFile` / `noReExportAll` 强制）。确需引入桶文件的唯一合法流程见 [CONTRIBUTING.md](../../CONTRIBUTING.md)。
-
-### 2.5 运行环境事实标准与跨端门面契约
-- **单一事实源**：在 `constants/env.ts` 与 `types/env.ts` 中定义 `APP_ENV`（`'development' | 'production' | 'test'`）与 `AppEnv` 类型。
-- **门面消费**：主进程 (`packages/main/src/env.ts`) 提供权威读取门面；渲染进程经 `window.__APP_ENV__` 同步消费（类型声明见 `packages/renderer/src/env.d.ts`）。运行环境以 `MODE` 变量为唯一驱动源，严禁业务代码直接读取原生 `process.env.*`。
-- **跨端传递**：运行时环境由 `utils/env-packer.ts` 编解码，主进程经 `additionalArguments` 注入、preload 解包冻结后暴露，改配置不触发重新编译。
-- **详细规范**：参见文档站 [环境变量管理（Dotenv）](../docs/src/pages/engineering/env-vars.md)。
-
-## 3. 命名规范与风格
+## 3. 命名规范
 
 | 类别 | 规范 | 示例 |
 | :--- | :--- | :--- |
@@ -92,56 +30,25 @@ packages/shared/
 | **Zod Schema** | `camelCase` + 后缀 `Schema` | `calculateInputSchema`, `stepInputSchema` |
 | **TypeScript 类型/接口** | `PascalCase` | `Result<T>`, `CalculateInput`, `CalculateResult`, `ElectronApi` |
 
-## 4. 新增业务领域开发范式 (SOP)
+## 4. 新增业务领域开发范式 (SOP 紧凑签名)
 
-当在主进程和渲染端新增功能（以新增 `notes` 领域为例）时，请严格遵照以下步骤：
+以新增 `notes` 领域为例，无需在任何聚合文件中登记，直接在四个分层创建对应文件：
 
-### 步骤 1：定义运行时校验 Schema 与入参类型
-在 `src/schemas/notes.ts` 中创建：
 ```ts
-import { z } from 'zod';
-
-export const createNoteInputSchema = z.object({
-  title: z.string().min(1, '标题不能为空').max(100),
-  content: z.string().default(''),
-});
-
+// 1. 入参校验与推导类型 (schemas/notes.ts):
+export const createNoteInputSchema = z.object({ title: z.string().min(1).max(100), content: z.string().default('') });
 export type CreateNoteInput = z.infer<typeof createNoteInputSchema>;
-```
-无需在任何聚合文件中登记；消费方直接从 `@app/shared/schemas/notes` 导入。
 
-### 步骤 2：定义纯返回接口（如有）
-在 `src/types/notes.ts` 中创建：
-```ts
-export interface NoteItem {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: number;
-}
-```
-同样无需登记；消费方直接从 `@app/shared/types/notes` 导入。
+// 2. 纯返回接口 (types/notes.ts):
+export interface NoteItem { id: string; title: string; content: string; createdAt: number; }
 
-### 步骤 3：注册 IPC 通道
-在 `src/constants/ipc-channels.ts` 中追加：
-```ts
-export const IPC_CHANNELS = {
-  // ... 其他通道
-  NOTES_CREATE: 'notes:create',
-  NOTES_LIST: 'notes:list',
-} as const;
+// 3. 通道声明 (constants/ipc-channels.ts):
+NOTES_CREATE: 'notes:create', NOTES_LIST: 'notes:list'
+
+// 4. 全局 Bridge 契约扩充 (types/api.ts):
+export interface ElectronApi { notes: { create: (input: CreateNoteInput) => Promise<Result<NoteItem>>; }; }
 ```
 
-### 步骤 4：扩充全局 Bridge API 契约
-在 `src/types/api.ts` 中引入对应类型并扩充 `ElectronApi`：
-```ts
-export interface ElectronApi {
-  // ... 其他领域
-  notes: {
-    create: (input: CreateNoteInput) => Promise<Result<NoteItem>>;
-    list: () => Promise<Result<NoteItem[]>>;
-  };
-}
-```
+## 5. 提交前门禁
 
-完成上述步骤后，主进程 Controller 可直接使用 `createNoteInputSchema.safeParse` 强校验，Preload 即可对齐 `apiBridge` 实现，Renderer 即可获得强类型自动补全与类型检查。
+根目录执行：`pnpm typecheck`（确保跨端契约类型 100% 匹配）。
