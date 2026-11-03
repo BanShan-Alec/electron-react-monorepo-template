@@ -1,6 +1,22 @@
 # Changelog
 
 
+## v1.12.1
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.12.0...v1.12.1)
+
+### 💅 代码重构 (Refactoring)
+
+- **assets:** 收敛 logo 资产来源与命名 ([#72](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/72))
+
+### 📖 文档更新 (Documentation)
+
+- **all:** 全站文档极简速查清单重构与代码单一真源对齐 ([#73](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/73))
+
+### ❤️ Contributors
+
+- 半山Alec ([@BanShan-Alec](https://github.com/BanShan-Alec))
+
 ## v1.12.0
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.11.1...v1.12.0)
