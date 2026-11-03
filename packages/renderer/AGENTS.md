@@ -74,14 +74,67 @@ const { runAsync: runOp } = useManualRequest(async (action: CounterAction) => {
 - **三层刚性拦截**：类型层（`Omit` 剔除自动触发配置项）、Lint 层（`noRestrictedImports` 禁止直连 `ahooks` `useRequest`）与 CI 门禁。防抖请用 `useDebounceFn`，轮询请用 `useInterval`。
 - **日志纪律**：开发态打印 channel + 耗时 + 结果；生产态仅输出单行 `console.info`。严禁在日志中打印包含敏感路径与 URL 的入参 body。
 
-## 5. 组件书写约定
+## 5. 组件书写约定与七段式语义模板
 
-- **一组件一文件夹**：组件一律为 `Xxx/index.tsx`（PascalCase 目录），文件夹名为组件名；`index.tsx` 为组件本体实现而非桶文件，不触发 Biome `noBarrelFile`。
-- **Props 接口规范**：Props 类型必须使用 `export interface XxxProps` 声明（空 props 统一采用 `export type XxxProps = Record<string, never>`），禁止裸写行内字面量。
-- **附属物就近原则**：组件私有 hook、样式与辅助函数维护在组件目录内；跨组件共享的上提顶层，hook 保持扁平 `useXxx.ts`。
-- **七段式模板**：私有常量 ➔ 纯函数 ➔ 属性解构 ➔ State ➔ IPC/异步 ➔ 数据派生 ➔ 事件处理 ➔ Effect ➔ JSX 渲染。
-- **导出与 Memo 规范**：展示卡片统一使用具名导出并包裹 `memo`（`export const X = memo(_X)`，杜绝 `export default` 双导出）；入口容器组件使用 `export { XFeature }`，不套 memo。
-- **别名与契约引用**：`@/` 指向 `packages/renderer/src/*`，跨端契约只消费 `@app/shared`，严禁反向依赖。
+### 1. 结构与导出纪律
+- **一组件一文件夹**：组件一律为 `Xxx/index.tsx`（PascalCase 目录，本体实现而非桶文件，不触发 Biome `noBarrelFile`）。
+- **Props 接口规范**：Props 类型必须使用 `export interface XxxProps` 声明（空 props 统一采用 `export type XxxProps = Record<string, never>`），禁止行内字面量。
+- **导出与 Memo 规范**：展示卡片统一使用具名导出并包裹 `memo`（`export const X = memo(_X)`，杜绝 `export default`）；入口容器组件使用 `export { XFeature }`，不套 memo。
+- **附属物就近原则**：组件私有 hook、样式与辅助函数维护在组件目录内；跨组件共享的上提顶层。别名 `@/` 指向 `src/*`，跨端契约仅消费 `@app/shared`。
+
+### 2. 组件代码七段式语义模板
+组件源码必须严格按以下语义块自上而下单向布局，禁止状态、异步与副作用穿插混杂：
+
+```tsx
+// 1. 私有常量（模块级静态配置，组件外声明避免 re-render 重复分配内存）
+const DEFAULT_PAGE_SIZE = 20;
+
+// 2. 可抽离的纯逻辑/子渲染函数（无外部 hook 依赖，便于单独单测）
+function formatItem(item: Item) { return ...; }
+
+// 3. 组件本体（私有命名 _Xxx）
+const _UserCard = (props: UserCardProps) => {
+  useLingui(); // 多语言响应订阅
+
+  // ① 变量声明、解构（Props 属性、全局 Store / Context）
+  const { title, userId, onRefresh } = props;
+  const { message } = App.useApp();
+
+  // ② 组件状态（useState, useRef, useReducer 等本地可变状态）
+  const [filterText, setFilterText] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // ③ 网络IO / 异步操作（useIpc, useManualRequest 等通信 Hooks）
+  const { data, loading, runAsync } = useIpc('user.get', window.api.user.get);
+
+  // ④ 数据转换 / 派生（useMemo 纯计算、UI 格式化映射）
+  const filteredList = useMemo(() => ..., [data, filterText]);
+
+  // ⑤ 逻辑处理函数（事件响应回调、交互处理 handler）
+  const handleItemClick = (id: string) => { ... };
+
+  // ⑥ 组件 Effect（useEffect 外部系统同步、事件监听与清理）
+  useEffect(() => { ... }, [userId]);
+
+  // ⑦ 组件渲染（返回单一或片段 JSX 结构）
+  return <AppCard title={title}>...</AppCard>;
+};
+
+// 4. Props 类型定义（必须具名 export interface）
+export interface UserCardProps {
+  title: string;
+  userId: string;
+  onRefresh?: () => void;
+}
+
+// 5. 导出与 Memo（展示组件统一 memo 包装具名导出）
+export const UserCard = memo(_UserCard);
+```
+
+> **语义分块纪律**：
+> 1. **静态在外、动态在内**：常量与纯函数必须提取到组件函数体外部，不占用重渲染开销。
+> 2. **单向线性流**：函数体内严格遵循 `解构 ➔ State ➔ IO ➔ 派生 ➔ Handlers ➔ Effect ➔ JSX`。
+> 3. **无内容占位**：纯展示卡片若无“网络IO”或“Effect”，可保留单行注释占位或自然跳过，但绝不可颠倒相对顺序。
 
 ## 6. 国际化 (i18n)
 
