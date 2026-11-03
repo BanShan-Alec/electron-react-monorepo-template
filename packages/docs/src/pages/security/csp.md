@@ -79,6 +79,10 @@ contents.setWindowOpenHandler(({ url }) => {
 
 ## 3. 桌面端避坑注意事项
 
+- **首屏协调器内联脚本与 `script-src` 阻断**：
+  - 首屏启动协调器（Coordinator）作为轻量原生 IIFE 脚本直接内联在 `index.html` 中以实现零白屏揭幕。若生产态 CSP 误收紧为 `script-src 'self'`（遗漏 `'unsafe-inline'`），Chromium 会静默拦截该内联脚本执行，导致首屏揭幕永远无法完成（`body.app-startup-ready` 缺失），最终引发 Playwright E2E 或 postbuild 验真全量超时挂死。因此生产态必须保留 `'unsafe-inline'` 或采用 hash 校验。
+- **动态提取并放行 `API_BASE_URL` Origin**：
+  - 生产态下若渲染进程需直接发起 API 网络请求，严禁粗暴声明通配符 `connect-src https:`。主进程应通过 `getValidOrigin(getEnv('API_BASE_URL'))` 动态解析合法 Origin 并注入到 CSP 的 `connect-src 'self' ${apiOrigin}` 中，兼顾安全性与跨环境灵活性。
 - **CSP 是“追加叠加”而非覆盖**：
   - 响应头中若已存在第三方或上游自带的 CSP，追加注入意味着规则将按照两者交集**更加收紧**，后注入的策略绝不可能放开前者的限制。
 - **第三方外部资源放行规范**：

@@ -70,6 +70,8 @@ contextBridge.exposeInMainWorld('__APP_ENV__', Object.freeze(runtimeEnv ?? {}));
 
 ## 3. 桌面端避坑注意事项
 
+- **启动参数序列化契约保持纯粹直传**：
+  - `packRuntimeEnv` 与 `unpackRuntimeEnv` 保持纯粹的 Base64URL 直传序列化契约，不介入多余的 trim 或隐式类型转换。空字符串或缺失字段的兜底与有效性校验统一交由消费业务端自行规范判定（如 `apiBaseUrl || '/'`）。
 - **严禁向启动参数注入 Secret 机密凭据**：
   - 窗口启动参数（`additionalArguments`）可通过操作系统任务管理器、Process Explorer 或进程命令行探针直接明文/Base64查看。因此，代码签名私钥、OAuth Client Secret、CI Auth Token 等机密信息严禁放入 `AppRuntimeEnv`。
   - **机密凭证的正规出处**：打包证书与发布 Token 统一走 GitHub Actions Secrets / CI 环境变量并在 `build/` 打包脚本中消费；业务敏感调用推荐由后端鉴权代理或主进程安全内存中按需拉取，不入客户端启动参数。

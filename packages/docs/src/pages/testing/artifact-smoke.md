@@ -65,14 +65,26 @@ export async function verifyPostbuild(options: PostbuildVerificationOptions = {}
 
     try {
       const pageErrors: Error[] = [];
+      const errorFingerprints = new Set<string>();
+      const attachedPages = new WeakSet<Page>();
+
       const recordPageError = (err: Error) => {
+        const fingerprint = `${err.name}:${err.message}\n${err.stack ?? ''}`;
+        if (errorFingerprints.has(fingerprint)) return;
+        errorFingerprints.add(fingerprint);
         pageErrors.push(err);
         console.error('❌ [verify-postbuild] 捕获到页面未处理异常 (pageerror):', err);
       };
 
-      app.on('window', (p) => p.on('pageerror', recordPageError));
+      const attachPage = (p: Page) => {
+        if (attachedPages.has(p)) return;
+        attachedPages.add(p);
+        p.on('pageerror', recordPageError);
+      };
+
+      app.on('window', attachPage);
       const page = await app.firstWindow();
-      page.on('pageerror', recordPageError);
+      attachPage(page);
 
       // 核心断言：必须等待启动协调器揭幕成功，坚决不用脆弱的 #root
       await page.waitForSelector('body.app-startup-ready', { timeout: 15000 });
@@ -105,6 +117,7 @@ if (!values['skip-verify']) {
 | 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
 | :--- | :--- | :--- |
 | **禁止 `#root` 假阳性** | 若仅断言 `#root`，React 抛出全局语法错误导致白屏时，由于 index.html 预置了该 DOM 节点，冒烟测试依然判定为成功通过。 | 必须断言 `body.app-startup-ready` 协调器类名挂载（React 首帧 commit 且主进程双门禁解锁后注入），并全局捕获 `pageerror` 堆栈。 |
+| **首次窗口与多窗口异常去重** | Playwright 的 `app.on('window')` 无法捕获在此之前已创建的窗口，故需显式监听 `firstWindow()`；若两处均挂载监听，同一异常会被触发两次导致计数翻倍误报。 | 使用 `WeakSet<Page>` 确保每个窗口只注册一次监听，并结合 `errorFingerprints` 对错误内容幂等去重。 |
 | **单实例锁污染** | 若直接拉起产物而未传独立配置，测试实例会尝试激活本地已运行的开发态进程并立即退出，导致冒烟误报或挂死。 | 每次必须通过 `fs.mkdtempSync` 创建独立的 `tempUserDataDir` 并于 `finally` 强制安全清理。 |
 | **无头 CI 平台隔离** | Linux 交叉编译构建出的 Windows exe 或 macOS 无头 runner 强行 `electron.launch` 会直接触发 SIGSEGV。 | `process.platform !== artifact.platform` 时显式安全跳过启动测试，但 ASAR 静态体积门禁照常执行。 |
 | **ASAR 产物发现差异** | 各系统产物路径不同（Windows 在 `win-unpacked/*.exe`，macOS 在 `mac*/*.app/Contents/MacOS/*`）。 | `detectUnpackedArtifact` 集中抹平平台路径差异，统一返回 `{ executablePath, asarPath, platform }`。 |

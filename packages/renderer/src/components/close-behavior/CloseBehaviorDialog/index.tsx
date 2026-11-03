@@ -35,13 +35,23 @@ const _CloseBehaviorDialog = (_props: CloseBehaviorDialogProps) => {
         keyboard: false,
         okCancel: false,
         focusable: { autoFocusButton: null },
+        afterOpenChange: (open) => {
+          if (open) {
+            trayActionRef.current?.focus();
+          }
+        },
         onCancel: () => {
           void respond('cancel');
         },
         footer: () => (
           <div className="flex justify-end gap-2 pt-4">
             <Button onClick={() => void respond('quit')}>{t`退出应用`}</Button>
-            <Button ref={trayActionRef} type="primary" onClick={() => void respond('window')}>
+            <Button
+              ref={trayActionRef}
+              autoFocus
+              type="primary"
+              onClick={() => void respond('window')}
+            >
               {t`留在托盘`}
             </Button>
           </div>
@@ -64,6 +74,6 @@ const _CloseBehaviorDialog = (_props: CloseBehaviorDialogProps) => {
   return null;
 };
 
-type CloseBehaviorDialogProps = Record<string, never>;
+export type CloseBehaviorDialogProps = Record<string, never>;
 
 export const CloseBehaviorDialog = memo(_CloseBehaviorDialog);

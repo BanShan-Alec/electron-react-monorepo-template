@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { _electron as electron } from '@playwright/test';
+import { _electron as electron, type Page } from '@playwright/test';
 import { getRepoEnvValue, loadRepoEnv } from '../build/lib/env.ts';
 import { getDistDir } from '../build/lib/repo-paths.ts';
 
@@ -253,6 +253,8 @@ async function verifyPostbuild(options: PostbuildVerificationOptions = {}): Prom
       console.log('⏳ [verify-postbuild] 等待主窗口就绪...');
       const pageErrors: Error[] = [];
       const errorFingerprints = new Set<string>();
+      const attachedPages = new WeakSet<Page>();
+
       const recordPageError = (err: Error) => {
         const fingerprint = `${err.name}:${err.message}\n${err.stack ?? ''}`;
         if (errorFingerprints.has(fingerprint)) return;
@@ -261,12 +263,16 @@ async function verifyPostbuild(options: PostbuildVerificationOptions = {}): Prom
         console.error('❌ [verify-postbuild] 捕获到页面未处理异常 (pageerror):', err);
       };
 
-      app.on('window', (p) => {
+      const attachPage = (p: Page) => {
+        if (attachedPages.has(p)) return;
+        attachedPages.add(p);
         p.on('pageerror', recordPageError);
-      });
+      };
+
+      app.on('window', attachPage);
 
       const page = await app.firstWindow();
-      page.on('pageerror', recordPageError);
+      attachPage(page);
 
       const title = await page.title();
       console.log(`🪟 [verify-postbuild] 主窗口捕获成功: title="${title}"`);

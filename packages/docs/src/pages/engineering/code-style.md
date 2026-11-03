@@ -72,6 +72,8 @@ description: Biome 统一接管代码格式化、Lint 与导入排序，架构�
 
 ## 3. 桌面端避坑注意事项
 
+- **组件 Props 统一采用 interface 导出**：
+  - UI 组件的 Props 类型统一使用 `export interface XxxProps extends ...` 声明，禁止裸写未命名的行内类型字面量，以便于扩展和统一代码风格。
 - **桶文件与组件实体的辨析**：
   - Biome 的 `noBarrelFile` 旨在拦截只包含 `export * from './xxx'` 的聚合重导出文件。组件文件夹下的本体实现（如 `CounterCard/index.tsx` 本身包含完整渲染逻辑）不是桶文件，受规范保护。
 - **杜绝双导出（Dual-export）反模式**：
