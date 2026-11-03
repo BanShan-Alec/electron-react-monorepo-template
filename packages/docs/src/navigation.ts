@@ -126,9 +126,10 @@ export const SIDEBAR_GROUPS: NavigationGroup[] = [
     text: 'AI 协同',
     collapsed: true,
     items: [
-      { text: 'AI 评审闭环（Open-code-review）', link: '/ai/review-loop' },
       { text: 'AI 协作者约定（Agents.md）', link: '/ai/collaboration-convention' },
+      { text: '全栈端到端功能开发（Fullstack-SOP）', link: '/ai/fullstack-sop' },
       { text: 'AI 友好代码约定（Reference-style）', link: '/ai/friendly-conventions' },
+      { text: 'AI 评审闭环（Open-code-review）', link: '/ai/review-loop' },
     ],
   },
 ];

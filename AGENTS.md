@@ -35,7 +35,7 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 
 | 任务 | 先读 | 再查 |
 | --- | --- | --- |
-| 新增业务域（shared→preload→main→renderer 全链路） | 四包的 AGENTS.md | README「全栈端到端功能开发 SOP」 |
+| 新增业务域（shared→preload→main→renderer 全链路） | 四包的 AGENTS.md | packages/docs/src/pages/ai/fullstack-sop.md |
 | 模块装配 / 启动流程 / 运行时 | main/AGENTS.md | packages/docs/src/pages/architecture/module-lifecycle.md · packages/docs/src/pages/architecture/layering.md |
 | 运行环境 / MODE / env 门面 | shared/AGENTS.md | packages/docs/src/pages/engineering/env-vars.md · packages/docs/src/pages/dx/dev-orchestration.md |
 | 依赖拓扑 / 打包隔离 / external | main/AGENTS.md | packages/docs/src/pages/engineering/dependency-management.md |
