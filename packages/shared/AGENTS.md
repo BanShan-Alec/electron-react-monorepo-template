@@ -30,23 +30,50 @@
 | **Zod Schema** | `camelCase` + 后缀 `Schema` | `calculateInputSchema`, `stepInputSchema` |
 | **TypeScript 类型/接口** | `PascalCase` | `Result<T>`, `CalculateInput`, `CalculateResult`, `ElectronApi` |
 
-## 4. 新增业务领域开发范式 (SOP 紧凑签名)
+## 4. 新增业务领域开发范式 (SOP 骨架)
 
-以新增 `notes` 领域为例，无需在任何聚合文件中登记，直接在四个分层创建对应文件：
+以新增 `notes` 领域为例，无需在任何聚合文件中登记，直接在四个分层创建或追加对应契约：
 
-```ts
-// 1. 入参校验与推导类型 (schemas/notes.ts):
-export const createNoteInputSchema = z.object({ title: z.string().min(1).max(100), content: z.string().default('') });
+```typescript
+// 1. 运行时校验与推导类型 (src/schemas/notes.ts):
+import { z } from 'zod';
+
+export const createNoteInputSchema = z.object({
+  title: z.string().min(1, '标题不能为空').max(100),
+  content: z.string().default(''),
+});
 export type CreateNoteInput = z.infer<typeof createNoteInputSchema>;
 
-// 2. 纯返回接口 (types/notes.ts):
-export interface NoteItem { id: string; title: string; content: string; createdAt: number; }
+// 2. 纯返回接口定义 (src/types/notes.ts):
+export interface NoteItem {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: number;
+}
 
-// 3. 通道声明 (constants/ipc-channels.ts):
-NOTES_CREATE: 'notes:create', NOTES_LIST: 'notes:list'
+// 3. 通道常量声明 (src/constants/ipc-channels.ts):
+export const IPC_CHANNELS = {
+  // ... 其他通道
+  NOTES_CREATE: 'notes:create',
+  NOTES_LIST: 'notes:list',
+} as const;
 
-// 4. 全局 Bridge 契约扩充 (types/api.ts):
-export interface ElectronApi { notes: { create: (input: CreateNoteInput) => Promise<Result<NoteItem>>; }; }
+// 4. 全局 Bridge API 契约扩充 (src/types/api.ts):
+export interface ElectronApi {
+  // ... 其他领域
+  notes: {
+    create: (input: CreateNoteInput) => Promise<Result<NoteItem>>;
+  };
+}
+```
+
+### 消费端按需直达示范（严禁通过根桶导入）
+```typescript
+// 主进程与 preload 为 CJS 打包、无 tree-shaking，按需直达具体文件可防止整包契约与 Zod 拖入运行时
+import { ErrorCode } from '@app/shared/constants/error-codes';
+import { createNoteInputSchema } from '@app/shared/schemas/notes';
+import type { NoteItem } from '@app/shared/types/notes';
 ```
 
 ## 5. 提交前门禁

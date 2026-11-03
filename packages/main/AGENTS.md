@@ -28,28 +28,74 @@
 - **反向依赖 Renderer 源码** — 主进程代码仅消费 `@app/shared`，严禁 import 渲染层源码（唯一例外：`index.ts` 装配时经 `require.resolve` 动态定位编译产物 HTML 物理路径）。
 - **漏配 external 导致打包污染** — 主进程生产依赖必须 100% 在 `packages/main/vite.config.ts` 的 `rolldownOptions.external` 中排除（门禁：CI `pnpm verify:prebuild` 拦截；`@sentry/electron` 经 `ssr.noExternal` 主动内联除外）。
 
-## 4. 新增业务领域开发范式 (SOP 紧凑签名)
+## 4. 新增业务领域开发范式 (SOP 代码骨架)
 
-完整开发指南见 [架构分层与生命周期](../../packages/docs/src/pages/architecture/layering.md)。开发新领域时仅需遵循紧凑骨架：
+完整开发指南见 [架构分层与生命周期](../../packages/docs/src/pages/architecture/layering.md)。开发新领域时严格按以下三步骨架编写：
 
+### Step 1: 编写 Service (`services/<domain>.service.ts` - 纯逻辑单例，零 IPC 依赖)
 ```typescript
-// 1. Service (services/<domain>.service.ts - 纯逻辑单例，零 IPC 依赖):
+import { AppError } from '../errors/AppError';
+import { ErrorCode } from '@app/shared/constants/error-codes';
+import type { CreateNoteInput } from '@app/shared/schemas/notes';
+import type { NoteItem } from '@app/shared/types/notes';
+
 export class NotesService {
-  async create(input: CreateNoteInput): Promise<NoteItem> { /* 纯逻辑 */ return { id: 'note-1', ...input }; }
+  async create(input: CreateNoteInput): Promise<NoteItem> {
+    if (!input.title) {
+      throw new AppError('Title is required', ErrorCode.VALIDATION_ERROR);
+    }
+    // 纯业务逻辑 / 文件持久化 / 系统 API 调用
+    return { id: 'note-1', title: input.title, content: input.content, createdAt: Date.now() };
+  }
 }
+
 export const notesService = new NotesService();
+```
 
-// 2. Controller (controllers/<domain>.controller.ts - 参数校验 + handleTraced + 异常包装):
+### Step 2: 编写 Controller (`controllers/<domain>.controller.ts` - 校验 + handleTraced + 结果包装)
+```typescript
+import { ErrorCode } from '@app/shared/constants/error-codes';
+import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
+import { createNoteInputSchema } from '@app/shared/schemas/notes';
+import type { NoteItem } from '@app/shared/types/notes';
+import type { Result } from '@app/shared/types/result';
+import { handleTraced } from '../telemetry/ipc-tracer';
+import { notesService } from '../services/notes.service';
+import { catchToResult, failResult, successResult } from './utils';
+
 export function registerNotesControllers(): void {
-  handleTraced(IPC_CHANNELS.NOTES_CREATE, async (_event, rawInput: unknown): Promise<Result<NoteItem>> => {
-    const parseResult = createNoteInputSchema.safeParse(rawInput ?? {});
-    if (!parseResult.success) return failResult(parseResult.error.issues[0].message, ErrorCode.VALIDATION_ERROR);
-    try { return successResult(await notesService.create(parseResult.data)); } catch (err) { return catchToResult(err); }
-  });
+  handleTraced(
+    IPC_CHANNELS.NOTES_CREATE,
+    async (_event, rawInput: unknown): Promise<Result<NoteItem>> => {
+      // 1. Zod 严格校验入参（第二形参 rawInput 为 preload 解包后的纯净载荷）
+      const parseResult = createNoteInputSchema.safeParse(rawInput ?? {});
+      if (!parseResult.success) {
+        return failResult(parseResult.error.issues[0].message, ErrorCode.VALIDATION_ERROR);
+      }
+      // 2. 业务调用与统一 Result 包装
+      try {
+        const result = await notesService.create(parseResult.data);
+        return successResult(result);
+      } catch (err) {
+        return catchToResult(err);
+      }
+    },
+  );
 }
+```
 
-// 3. 集中挂载 (controllers/index.ts):
-export function registerAllControllers(): void { registerNotesControllers(); }
+> **链路追踪与唯一豁免**：
+> - **必须走 `handleTraced`**：负责解包 `__trace_carrier`、创建 `ipc.receive:<channel>` span 并记录执行耗时与成败。严禁裸写 `ipcMain.handle`（会静默丢失追踪）。
+> - **架构唯一豁免**：`IPC_CHANNELS.DIAGNOSTICS_LOG` 作为日志落盘底层管道，**严禁**包裹 `handleTraced`，避免日志双写引发 span 循环自噪与递归死锁！
+
+### Step 3: 在 `controllers/index.ts` 集中登记挂载
+```typescript
+import { registerNotesControllers } from './notes.controller';
+
+export function registerAllControllers(): void {
+  // ...已有 controllers
+  registerNotesControllers();
+}
 ```
 
 ## 5. 提交前门禁
