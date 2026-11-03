@@ -266,6 +266,7 @@ async function verifyPostbuild(options: PostbuildVerificationOptions = {}): Prom
       });
 
       const page = await app.firstWindow();
+      page.on('pageerror', recordPageError);
 
       const title = await page.title();
       console.log(`🪟 [verify-postbuild] 主窗口捕获成功: title="${title}"`);
