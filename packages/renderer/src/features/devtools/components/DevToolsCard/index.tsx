@@ -1,4 +1,10 @@
-import { CodeOutlined, GithubOutlined, StopOutlined, ToolOutlined } from '@ant-design/icons';
+import {
+  BookOutlined,
+  CodeOutlined,
+  GithubOutlined,
+  StopOutlined,
+  ToolOutlined,
+} from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Button } from 'antd';
@@ -7,26 +13,27 @@ import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
 import { statusBoxClass } from '@/lib/classNames';
 
-// 私有常量
+// 1. 私有常量
 
-// 可抽离的逻辑处理函数/组件
+// 2. 可抽离的逻辑处理函数/组件
 
+// 3. 组件本体实现
 const _DevToolsCard = (props: DevToolsCardProps) => {
   useLingui();
-  // 变量声明、解构
-  const { actionMessage, onToggleDevTools, onOpenDocs, onOpenBlockedUrl } = props;
+  // ① 变量声明、解构
+  const { actionMessage, onToggleDevTools, onOpenDocs, onOpenGithub, onOpenBlockedUrl } = props;
 
-  // 组件状态
+  // ② 组件状态
 
-  // 网络IO
+  // ③ 网络IO
 
-  // 数据转换
+  // ④ 数据转换
 
-  // 逻辑处理函数
+  // ⑤ 逻辑处理函数
 
-  // 组件Effect
+  // ⑥ 组件Effect
 
-  // 组件渲染
+  // ⑦ 组件渲染
   return (
     <AppCard
       title={
@@ -42,7 +49,10 @@ const _DevToolsCard = (props: DevToolsCardProps) => {
           <Button type="primary" size="small" icon={<CodeOutlined />} onClick={onToggleDevTools}>
             {t`开关 DevTools`}
           </Button>
-          <Button size="small" icon={<GithubOutlined />} onClick={onOpenDocs}>
+          <Button size="small" icon={<BookOutlined />} onClick={onOpenDocs}>
+            {t`打开项目文档站`}
+          </Button>
+          <Button size="small" icon={<GithubOutlined />} onClick={onOpenGithub}>
             {t`打开 GitHub 页面`}
           </Button>
           <Button
@@ -60,12 +70,14 @@ const _DevToolsCard = (props: DevToolsCardProps) => {
   );
 };
 
-// props 类型定义
-interface DevToolsCardProps {
+// 4. Props 类型定义
+export interface DevToolsCardProps {
   actionMessage: string;
   onToggleDevTools: () => void;
   onOpenDocs: () => void;
+  onOpenGithub: () => void;
   onOpenBlockedUrl: () => void;
 }
 
+// 5. 导出与 Memo 包装
 export const DevToolsCard = memo(_DevToolsCard);

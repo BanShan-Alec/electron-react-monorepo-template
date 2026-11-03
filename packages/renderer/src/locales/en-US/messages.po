@@ -355,6 +355,10 @@ msgstr "Open log folder"
 msgid "打开更新窗口失败"
 msgstr "Couldn't open the update window"
 
+#: src/features/devtools/components/DevToolsCard/index.tsx
+msgid "打开项目文档站"
+msgstr "Open project docs"
+
 #: src/components/close-behavior/CloseBehaviorDialog/index.tsx
 msgid "提交关闭选择失败"
 msgstr "Couldn't save the close choice"

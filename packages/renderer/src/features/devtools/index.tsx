@@ -9,8 +9,13 @@ import { useDevTools } from './hooks/useDevTools';
  */
 function DevToolsFeature() {
   // 变量声明、解构
-  const { actionMessage, handleToggleDevTools, handleOpenDocs, handleOpenBlockedUrl } =
-    useDevTools();
+  const {
+    actionMessage,
+    handleToggleDevTools,
+    handleOpenDocs,
+    handleOpenGithub,
+    handleOpenBlockedUrl,
+  } = useDevTools();
 
   // 组件渲染
   return (
@@ -18,6 +23,7 @@ function DevToolsFeature() {
       actionMessage={actionMessage}
       onToggleDevTools={handleToggleDevTools}
       onOpenDocs={handleOpenDocs}
+      onOpenGithub={handleOpenGithub}
       onOpenBlockedUrl={handleOpenBlockedUrl}
     />
   );

@@ -8,4 +8,5 @@ export const ALLOWED_EXTERNAL_URLS = [
   'https://github.com',
   'https://vite.dev',
   'https://react.dev',
+  'https://banshan-alec.github.io',
 ] as const;

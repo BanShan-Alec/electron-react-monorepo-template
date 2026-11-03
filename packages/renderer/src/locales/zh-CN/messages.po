@@ -355,6 +355,10 @@ msgstr "打开日志目录"
 msgid "打开更新窗口失败"
 msgstr "打开更新窗口失败"
 
+#: src/features/devtools/components/DevToolsCard/index.tsx
+msgid "打开项目文档站"
+msgstr "打开项目文档站"
+
 #: src/components/close-behavior/CloseBehaviorDialog/index.tsx
 msgid "提交关闭选择失败"
 msgstr "提交关闭选择失败"

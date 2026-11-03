@@ -6,6 +6,9 @@ import { useManualRequest } from '@/hooks/useManualRequest';
 import { callIpc } from '@/lib/ipc';
 
 // 私有常量
+const PROJECT_DOCS_URL = 'https://banshan-alec.github.io/electron-react-monorepo-template/';
+const GITHUB_URL = 'https://github.com';
+const BLOCKED_TEST_URL = 'https://example.com';
 type DevToolsAction = { kind: 'toggleDevTools' } | { kind: 'openUrl'; url: string };
 
 // 可抽离的逻辑处理函数/组件
@@ -67,17 +70,22 @@ export function useDevTools() {
   };
 
   const handleOpenDocs = () => {
-    void runDevToolsAction({ kind: 'openUrl', url: 'https://github.com' }).catch(() => {});
+    void runDevToolsAction({ kind: 'openUrl', url: PROJECT_DOCS_URL }).catch(() => {});
+  };
+
+  const handleOpenGithub = () => {
+    void runDevToolsAction({ kind: 'openUrl', url: GITHUB_URL }).catch(() => {});
   };
 
   const handleOpenBlockedUrl = () => {
-    void runDevToolsAction({ kind: 'openUrl', url: 'https://example.com' }).catch(() => {});
+    void runDevToolsAction({ kind: 'openUrl', url: BLOCKED_TEST_URL }).catch(() => {});
   };
 
   return {
     actionMessage,
     handleToggleDevTools,
     handleOpenDocs,
+    handleOpenGithub,
     handleOpenBlockedUrl,
   };
 }
