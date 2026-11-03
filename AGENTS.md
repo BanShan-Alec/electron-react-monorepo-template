@@ -50,11 +50,17 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 | 测试 / 排错 / 提 PR / 触发 review | 全局红线 | packages/docs/src/pages/ai/review-loop.md · CONTRIBUTING §二 |
 | 发版流程 / tag / changelogen | 全局红线 | .github/CICD.md |
 
-## 5. 常用命令（根目录执行）
+## 5. 开发流与验证门禁矩阵（根目录执行）
 
-`pnpm dev` / `preview`（`start` 为 `preview` 别名） · `pnpm test` · `pnpm test:e2e` · `pnpm lint` / `lint:fix` ·
-`pnpm typecheck` · `pnpm i18n:extract` / `i18n:check` · `pnpm build:unpack` / `build:win` / `build:mac` /
-`build:linux` · `pnpm docs:dev` / `docs:build` · `pnpm verify:prebuild` · `pnpm pr-review <pull|trigger|create|status|merge>`
+| 研发场景 | 机器门禁判据与组合命令 | 拦截重点与避坑指南 |
+| :--- | :--- | :--- |
+| **日常编码闭环** | `pnpm typecheck` · `pnpm lint` · `pnpm test` | 快速增量校验，单测覆盖 19 个核心测试套件与 101 个用例 |
+| **PR 提交前全量门禁** | `pnpm typecheck && pnpm lint && pnpm test && pnpm verify:prebuild` | 必须全绿方可提 PR；CI 将执行相同流水线阻断合并 |
+| **PR 生命周期管理** | `pnpm pr-review <create\|status\|pull\|trigger\|merge>` | 统一收敛命令，严禁手写散装 gh 命令；实现审阅与合并闭环 |
+| **pr-review 模块改动** | `pnpm test:pr-review` | ⚠️ **关键判据**：根 `pnpm test` 排除了本包，改动后必须单独执行此命令！ |
+| **多语言文案变动** | `pnpm i18n:extract` ➔ 补译 ➔ `pnpm i18n:check` | `messages.po` 缺少英译将直接导致 CI 失败 |
+| **文档站内容变动** | `pnpm docs:dev`（本地预览）· `pnpm docs:build`（静态构建） | 构建包含死链检测与 SSG 静态生成 |
+| **发版与分发预检** | `pnpm verify:prebuild` · `pnpm build:unpack` | 检查主进程 external 依赖隔离，验证打包产物完整性 |
 
 ## 6. 指针
 
