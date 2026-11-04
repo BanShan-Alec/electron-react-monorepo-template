@@ -113,8 +113,8 @@ const _UserCard = (props: UserCardProps) => {
   // ③ 网络IO / 异步操作（useIpc, useManualRequest 等通信 Hooks）
   const { data, loading, runAsync } = useIpc('user.get', window.api.user.get);
 
-  // ④ 数据转换 / 派生（useMemo 纯计算、UI 格式化映射）
-  const filteredList = useMemo(() => ..., [data, filterText]);
+  // ④ 数据转换 / 派生（React Compiler 自动记忆化推导，无需手动 useMemo）
+  const filteredList = data?.filter((item) => item.name.includes(filterText)) ?? [];
 
   // ⑤ 逻辑处理函数（事件响应回调、交互处理 handler）
   const handleItemClick = (id: string) => { ... };

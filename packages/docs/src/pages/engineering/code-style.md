@@ -15,6 +15,7 @@ description: Biome 统一接管代码格式化、Lint 与导入排序，架构�
 项目采用 Biome 作为统一工具，核心考量：
 - **极速反馈**：全仓数百个 TypeScript 文件的全量扫描与修复均在数百毫秒内完成。
 - **架构级红线拦截**：将「禁止无意义的桶文件」与「禁止循环引用」升格为硬性门禁，从根源杜绝编译依赖图错乱。
+- **全格式统一纳管**：升级至 Biome 2.6+，不仅覆盖 TS/JS/JSX 与 JSON/JSONC，更原生纳管全仓 Markdown（`.md`）与 YAML（`.yml`/`.yaml`）资产的格式化，彻底淘汰多套零散格式化工具。
 - **单一事实源**：统一收敛在 `.config/biome.json`，消灭多配置互相打架的局面。
 
 ## 2. 核心配置代码
@@ -66,10 +67,21 @@ description: Biome 统一接管代码格式化、Lint 与导入排序，架构�
 
 ```json
 "lint": "biome check --config-path=.config .",
-"lint:fix": "biome check --write --config-path=.config ."
+"lint:fix": "biome check --write --config-path=.config .",
+"format": "biome format --write --config-path=.config ."
 ```
 
-本地由 `husky` + `lint-staged` 在提交时自动对暂存区文件执行格式化与检查，CI 阶段执行全量检测。
+本地由 `husky` + `lint-staged` 在提交时自动对暂存区所有受支持格式（代码、JSON、Markdown 与 YAML）执行格式化与检查：
+
+```json
+"lint-staged": {
+  "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc,md,yml,yaml}": [
+    "biome check --write --config-path=.config --no-errors-on-unmatched"
+  ]
+}
+```
+
+CI 阶段执行全量 `pnpm lint` 刚性检测。
 
 ## 3. 桌面端避坑注意事项
 

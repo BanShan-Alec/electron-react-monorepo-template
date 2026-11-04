@@ -18,6 +18,7 @@
 - **语句结尾**：强制显式分号（`semicolons: "always"`）
 - **尾随逗号**：多行自动补充（`trailingCommas: "all"`）
 - **Import 组织**：自动按依赖类型与字典序整理导入顺序
+- **全仓多格式纳管**：Biome 2.6+ 统一负责 JS/TS/JSX、JSON/JSONC 以及全仓 Markdown（`.md`）与 YAML（`.yml`/`.yaml`）资产的格式化与校验，无需额外引入 Prettier
 
 ### 2. 常用开发指令
 
@@ -108,7 +109,7 @@ PR 标题沿用本节 Conventional Commits 格式（squash 后即 main 提交信
 代码提交时将自动触发两道质量守卫：
 
 1. **Pre-commit 钩子 (`.husky/pre-commit`)**：
-   - 触发 `lint-staged`，对本次暂存区（Git Staged）的文件运行 `biome check --write`。
+   - 触发 `lint-staged`，对本次暂存区（Git Staged）的文件（涵盖代码、JSON、Markdown 与 YAML）运行 `biome check --write --no-errors-on-unmatched`。
    - 自动格式化被修改的文件，若存在无法自动修复的语法/Lint 报错则中断提交。
 2. **Commit-msg 钩子 (`.husky/commit-msg`)**：
    - 触发 `commitlint` 检验提交信息：必须符合 Conventional Commits 规范且**必须包含简体中文说明**。
@@ -195,7 +196,7 @@ main 受分支保护禁直推，发版走 PR 形态：
 
 ### 3. catalog 版本收敛
 
-安装的包命中 `pnpm-workspace.yaml` 的 `catalog:`（如 `typescript` / `vite` / `zod` / `react`）时，`pnpm add` 自动使用 `catalog:` 协议，真实版本收敛到 workspace 根。需在 `package.json` 写死版本、不跟随 catalog 时，指定与 catalog 不同的版本即可（catalog 中没有的包自然写成普通 semver 区间）：
+安装的包命中 `pnpm-workspace.yaml` 的 `catalog:`（如 `typescript` / `vite` / `zod` / `react` / `@types/react` / `tailwindcss`）时，`pnpm add` 自动使用 `catalog:` 协议，真实版本收敛到 workspace 根。需在 `package.json` 写死版本、不跟随 catalog 时，指定与 catalog 不同的版本即可（catalog 中没有的包自然写成普通 semver 区间）：
 
 ```bash
 pnpm add -Dw zod@4.7.1
