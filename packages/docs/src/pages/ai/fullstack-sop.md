@@ -1,4 +1,5 @@
 ---
+
 title: 全栈端到端功能开发（Fullstack-SOP）
 description: 遵循 shared ➔ preload ➔ main ➔ renderer 单向流转闭环，类型安全与链路追踪一气呵成。
 ---
@@ -18,20 +19,27 @@ description: 遵循 shared ➔ preload ➔ main ➔ renderer 单向流转闭环�
 以新增 `notes` 领域为例，严格按以下四步流水线开发：
 
 ### Step 1: 契约层（`@app/shared` - 跨端唯一真源）
+
 → 规范直链：[packages/shared/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/AGENTS.md)
 ```ts
 // 1. schemas/notes.ts: 入参校验与推导类型
-export const createNoteInputSchema = z.object({ title: z.string().min(1), content: z.string().default('') });
+export const createNoteInputSchema = z.object({
+  title: z.string().min(1),
+  content: z.string().default(''),
+});
 export type CreateNoteInput = z.infer<typeof createNoteInputSchema>;
 
 // 2. constants/ipc-channels.ts: 通道常量
 export const IPC_CHANNELS = { NOTES_CREATE: 'notes:create' } as const;
 
 // 3. types/api.ts: 扩充全局 ElectronApi 契约
-export interface ElectronApi { notes: { create: (input: CreateNoteInput) => Promise<Result<NoteItem>>; }; }
+export interface ElectronApi {
+  notes: { create: (input: CreateNoteInput) => Promise<Result<NoteItem>> };
+}
 ```
 
 ### Step 2: 安全桥接层（`@app/preload` - 零逻辑透明转发）
+
 → 规范直链：[packages/preload/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/AGENTS.md)
 ```ts
 // src/index.ts: 经 invokeTraced 透明包装并暴露给 window.api
@@ -41,6 +49,7 @@ export const apiBridge: ElectronApi = {
 ```
 
 ### Step 3: 主进程核心层（`@app/main` - 业务执行与入参校验）
+
 → 规范直链：[packages/main/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/AGENTS.md)
 ```ts
 // 1. services/notes.service.ts: 纯数据逻辑单例（零 IPC 依赖）
@@ -55,6 +64,7 @@ handleTraced(IPC_CHANNELS.NOTES_CREATE, async (_event, rawInput: unknown) => {
 ```
 
 ### Step 4: 渲染展示层（`@app/renderer` - 响应式调用与七段式渲染）
+
 → 规范直链：[packages/renderer/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/AGENTS.md)
 ```tsx
 // features/notes/hooks/useNotes.ts: 消费统一封装的 useIpc
@@ -65,8 +75,8 @@ const { runAsync, loading } = useIpc('notes.create', window.api.notes.create);
 
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
-| :--- | :--- | :--- |
-| **Controller 遗漏集中登记** | 主进程写了 Controller 却未在 `controllers/index.ts` 中注册，调用抛出 `No handler registered`。 | 必须在 `registerAllControllers()` 中显式挂载，严禁裸写分散监听。 |
-| **IPC 返回裸 Error 对象** | 未捕获 Promise rejection 跨进程传递，渲染端收到空对象 `{}` 导致调试困难与白屏崩溃。 | 必须使用 `catchToResult(err)` 统一包装为带 `ErrorCode` 的 `Result<T>`。 |
-| **渲染层异步未走 manual-only** | 使用第三方库默认轮询或自动防抖，桌面端后台常驻时疯狂空转消耗 CPU 与电量。 | 统一采用 `useManualRequest` 或 `useIpc`，显式由用户交互或特定 Hook 触发。 |
+| 避坑要点                       | 事故表现与原因                                                                                 | 本仓库对齐方案                                                            |
+| :----------------------------- | :--------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------ |
+| **Controller 遗漏集中登记**    | 主进程写了 Controller 却未在 `controllers/index.ts` 中注册，调用抛出 `No handler registered`。 | 必须在 `registerAllControllers()` 中显式挂载，严禁裸写分散监听。          |
+| **IPC 返回裸 Error 对象**      | 未捕获 Promise rejection 跨进程传递，渲染端收到空对象 `{}` 导致调试困难与白屏崩溃。            | 必须使用 `catchToResult(err)` 统一包装为带 `ErrorCode` 的 `Result<T>`。   |
+| **渲染层异步未走 manual-only** | 使用第三方库默认轮询或自动防抖，桌面端后台常驻时疯狂空转消耗 CPU 与电量。                      | 统一采用 `useManualRequest` 或 `useIpc`，显式由用户交互或特定 Hook 触发。 |

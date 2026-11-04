@@ -7,16 +7,16 @@
 
 `src/` 下代码严格按所有权与副作用分层，常规文件结构如下：
 
-| 目录 | 核心职责 | 依赖与可见性约束 |
-| :--- | :--- | :--- |
-| `entries/` | 多窗口独立挂载入口（MPA 架构：`home/`, `updater/`） | 仅做顶层根节点挂载与全局 Provider 装配 |
-| `features/` | 业务域实现（共 11 个自包含域） | 外部仅允许引用域入口 `index.tsx`，域间禁止互相 import |
-| `components/` | 跨 feature 复用的通用 UI（`ui/` 展示原子，`layout/` 全局骨架） | 一组件一文件夹（`Xxx/index.tsx`），被 2 个以上域共用才上提 |
-| `hooks/` | 跨域基础 hooks（`useManualRequest`, `useIpc`, `useTheme`） | 请求与应用级状态抽象，禁止在业务组件中直连原生 ahooks |
-| `lib/` | 跨域底层能力（`ipc.ts` 契约解构与追踪、`classNames.ts`、`sentry.ts`） | 纯工具函数与全局运行时初始化 |
-| `locales/` | LinguiJS 国际化模块（`zh-CN`, `en-US` 字典与 `dynamicActivate`） | 中文源码作为 msgid（Source-as-Key），运行时按需加载语言包 Chunk |
-| `startup/` | 首屏启动壳协调器（构建期内联注入 `index.html`） | 三门禁齐备后结算并挂载 `body.app-startup-ready` |
-| `stores/` | 全局 Zustand 状态（主题、语言等跨窗口/跨域状态） | 仅存放全应用级公共状态 |
+| 目录          | 核心职责                                                              | 依赖与可见性约束                                                |
+| :------------ | :-------------------------------------------------------------------- | :-------------------------------------------------------------- |
+| `entries/`    | 多窗口独立挂载入口（MPA 架构：`home/`, `updater/`）                   | 仅做顶层根节点挂载与全局 Provider 装配                          |
+| `features/`   | 业务域实现（共 11 个自包含域）                                        | 外部仅允许引用域入口 `index.tsx`，域间禁止互相 import           |
+| `components/` | 跨 feature 复用的通用 UI（`ui/` 展示原子，`layout/` 全局骨架）        | 一组件一文件夹（`Xxx/index.tsx`），被 2 个以上域共用才上提      |
+| `hooks/`      | 跨域基础 hooks（`useManualRequest`, `useIpc`, `useTheme`）            | 请求与应用级状态抽象，禁止在业务组件中直连原生 ahooks           |
+| `lib/`        | 跨域底层能力（`ipc.ts` 契约解构与追踪、`classNames.ts`、`sentry.ts`） | 纯工具函数与全局运行时初始化                                    |
+| `locales/`    | LinguiJS 国际化模块（`zh-CN`, `en-US` 字典与 `dynamicActivate`）      | 中文源码作为 msgid（Source-as-Key），运行时按需加载语言包 Chunk |
+| `startup/`    | 首屏启动壳协调器（构建期内联注入 `index.html`）                       | 三门禁齐备后结算并挂载 `body.app-startup-ready`                 |
+| `stores/`     | 全局 Zustand 状态（主题、语言等跨窗口/跨域状态）                      | 仅存放全应用级公共状态                                          |
 
 ## 2. 分层依据
 
@@ -31,14 +31,17 @@
 ## 3. Feature 规范
 
 ### 1. 入口驱动与胶水容器
+
 每个 feature 的 `index.tsx` 是**唯一**允许被外部 import 的文件，只导出顶层入口组件。外部严禁出现深层路径引用（如 `@/features/<domain>/hooks/...`）。
 入口只负责“调用本域 hook 并向卡片传递 props”。一旦入口里出现条件分支、跨 feature 组合或数据计算，说明域边界划分有误，应当拆分而非往入口里堆砌逻辑。
 
 ### 2. 状态下沉与共享提取
+
 hook 实例化必须落在 feature 内部。没有跨域共享需求就不上提——在 App.tsx 集中实例化所有 hook 会让壳层与各个域强耦合，随业务增长线性劣化。
 不要预先抽取公共代码。只有当第二个消费者真实出现时，才把 UI 提到 `components/`、把纯函数提到 `lib/`、把 hook 提到 `hooks/`。
 
 ### 3. 多卡片与子域组织（`sections/`）
+
 一个域允许返回 Fragment 渲染多张卡片，拆分或合并域的标准在于两张卡片是否共享同一份状态与生命周期。
 默认保持扁平。只有当父域需统一控制二级子域的显隐、权限或展示时，才允许二级目录 `sections/`，每个 section 自包含：
 - 外部只允许 `import { XFeature } from "@/features/x"`，出现 `@/features/x/sections/...` 即为越界。
@@ -61,14 +64,15 @@ const { runAsync: runOp } = useManualRequest(async (action: CounterAction) => {
 });
 ```
 
-| 场景 | 推荐用法 |
-| :--- | :--- |
-| 一次请求对一个 channel | `useIpc(channel, window.api.x.y)` |
-| 一个动作路由到多个 channel | `useManualRequest(service)`，内部调用 `callIpc(...)` |
-| 失败属于正常业务流程（如用户取消） | 业务 hook 内自行处理为状态，不抛出为 IpcError |
-| 非 Result 形态的 API（如 `getPathForFile`） | 直接调用，不走 IPC 包装层 |
+| 场景                                        | 推荐用法                                             |
+| :------------------------------------------ | :--------------------------------------------------- |
+| 一次请求对一个 channel                      | `useIpc(channel, window.api.x.y)`                    |
+| 一个动作路由到多个 channel                  | `useManualRequest(service)`，内部调用 `callIpc(...)` |
+| 失败属于正常业务流程（如用户取消）          | 业务 hook 内自行处理为状态，不抛出为 IpcError        |
+| 非 Result 形态的 API（如 `getPathForFile`） | 直接调用，不走 IPC 包装层                            |
 
 ### manual-only 铁律
+
 - 异步请求一律使用 `useManualRequest`（`manual: true` 硬编码），请求发起必须显式调用 `run()/runAsync()`。
 - **一切自动触发能力一律禁止**：禁止使用 `refreshDeps`、轮询 `pollingInterval`、聚焦刷新 `refreshOnWindowFocus` 或自动防抖节流。触发必须写在明处（事件处理函数或显式 `useEffect`）。
 - **三层刚性拦截**：类型层（`Omit` 剔除自动触发配置项）、Lint 层（`noRestrictedImports` 禁止直连 `ahooks` `useRequest`）与 CI 门禁。防抖请用 `useDebounceFn`，轮询请用 `useInterval`。
@@ -77,12 +81,14 @@ const { runAsync: runOp } = useManualRequest(async (action: CounterAction) => {
 ## 5. 组件书写约定与七段式语义模板
 
 ### 1. 结构与导出纪律
+
 - **一组件一文件夹**：组件一律为 `Xxx/index.tsx`（PascalCase 目录，本体实现而非桶文件，不触发 Biome `noBarrelFile`）。
 - **Props 接口规范**：Props 类型必须使用 `export interface XxxProps` 声明（空 props 统一采用 `export type XxxProps = Record<string, never>`），禁止行内字面量。
 - **导出与 Memo 规范**：展示卡片统一使用具名导出并包裹 `memo`（`export const X = memo(_X)`，杜绝 `export default`）；入口容器组件使用 `export { XFeature }`，不套 memo。
 - **附属物就近原则**：组件私有 hook、样式与辅助函数维护在组件目录内；跨组件共享的上提顶层。别名 `@/` 指向 `src/*`，跨端契约仅消费 `@app/shared`。
 
 ### 2. 组件代码七段式语义模板
+
 组件源码必须严格按以下语义块自上而下单向布局，禁止状态、异步与副作用穿插混杂：
 
 ```tsx
@@ -107,8 +113,8 @@ const _UserCard = (props: UserCardProps) => {
   // ③ 网络IO / 异步操作（useIpc, useManualRequest 等通信 Hooks）
   const { data, loading, runAsync } = useIpc('user.get', window.api.user.get);
 
-  // ④ 数据转换 / 派生（useMemo 纯计算、UI 格式化映射）
-  const filteredList = useMemo(() => ..., [data, filterText]);
+  // ④ 数据转换 / 派生（React Compiler 自动记忆化推导，无需手动 useMemo）
+  const filteredList = data?.filter((item) => item.name.includes(filterText)) ?? [];
 
   // ⑤ 逻辑处理函数（事件响应回调、交互处理 handler）
   const handleItemClick = (id: string) => { ... };

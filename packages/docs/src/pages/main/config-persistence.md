@@ -1,4 +1,5 @@
 ---
+
 title: 配置持久化（Electron-store）
 description: 运行期偏好落盘至 userData，Zod Schema 强校验、坏文件自愈与跨窗口广播。
 ---

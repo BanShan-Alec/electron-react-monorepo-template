@@ -1,4 +1,5 @@
 ﻿---
+
 title: 端到端断言策略（Shell-stub + Tolerance）
 description: 启动期全面打桩系统级 shell 模块，断言只锁协议与最终态，窗口几何与跨进程恢复保留物理容差。
 ---
@@ -71,9 +72,9 @@ test('AC-2 壳物理退场：ready 后 ≤1000ms #loading 从 DOM 物理卸载',
 
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
-| :--- | :--- | :--- |
-| **`shell` 模块泄露导致挂死** | Linux Xvfb 下 `shell.openExternal` 唤起 Firefox 孤儿进程，进程持有 stdout 管道导致 Playwright Worker teardown 永远无法到达 EOF。 | 启动后立即通过 `electronApp.evaluate` 覆盖 `openExternal`、`openPath` 和 `showItemInFolder` 为内存打桩函数。 |
-| **绝对等值断言翻红** | 断言 `expect(bounds.width).toBe(1024)`，在 Windows 上实测返回 1032（含 +8px 隐式阴影边框），导致 CI 随机翻红。 | 涉及操作系统窗口几何尺寸断言，统一使用 `Math.abs(actual - expected) <= tolerance`（工作区 10px，重启恢复 2px）。 |
-| **过度断言动画微观帧** | 断言 CSS 过渡期第 160ms 时的 opacity 为 0.45，CI 虚拟机 CPU 抢占抖动必挂。 | E2E 仅断言最终状态（如稳定后 `opacity === '1'`）与兜底超时时间（如 `STARTUP_REACT_FALLBACK_MS`），不过度干预过渡态。 |
-| **日志因果一致性验证** | 仅验证 UI 不验证日志落盘，生产环境丢日志难以排查。 | 真实 IPC 交互后，直接调用 `fs.readFileSync` 校验 `userData/logs/main.log` 与 `traces.ndjson` 中的真实行因果关联。 |
+| 避坑要点                     | 事故表现与原因                                                                                                                   | 本仓库对齐方案                                                                                                       |
+| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------- |
+| **`shell` 模块泄露导致挂死** | Linux Xvfb 下 `shell.openExternal` 唤起 Firefox 孤儿进程，进程持有 stdout 管道导致 Playwright Worker teardown 永远无法到达 EOF。 | 启动后立即通过 `electronApp.evaluate` 覆盖 `openExternal`、`openPath` 和 `showItemInFolder` 为内存打桩函数。         |
+| **绝对等值断言翻红**         | 断言 `expect(bounds.width).toBe(1024)`，在 Windows 上实测返回 1032（含 +8px 隐式阴影边框），导致 CI 随机翻红。                   | 涉及操作系统窗口几何尺寸断言，统一使用 `Math.abs(actual - expected) <= tolerance`（工作区 10px，重启恢复 2px）。     |
+| **过度断言动画微观帧**       | 断言 CSS 过渡期第 160ms 时的 opacity 为 0.45，CI 虚拟机 CPU 抢占抖动必挂。                                                       | E2E 仅断言最终状态（如稳定后 `opacity === '1'`）与兜底超时时间（如 `STARTUP_REACT_FALLBACK_MS`），不过度干预过渡态。 |
+| **日志因果一致性验证**       | 仅验证 UI 不验证日志落盘，生产环境丢日志难以排查。                                                                               | 真实 IPC 交互后，直接调用 `fs.readFileSync` 校验 `userData/logs/main.log` 与 `traces.ndjson` 中的真实行因果关联。    |

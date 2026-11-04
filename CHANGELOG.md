@@ -1,6 +1,5 @@
 # Changelog
 
-
 ## v1.12.1
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.12.0...v1.12.1)
@@ -38,7 +37,7 @@
 
 ### 💅 代码重构 (Refactoring)
 
-- **dx:** ⚠️  根命令对齐 electron-vite ([#69](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/69))
+- **dx:** ⚠️ 根命令对齐 electron-vite ([#69](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/69))
 
 ### 📖 文档更新 (Documentation)
 
@@ -273,7 +272,6 @@
 
 ## v1.1.0
 
-
 ### 🚀 新增特性 (Features)
 
 - 初始化项目首次提交 (v1.0.0) ([7b340e6](https://github.com/BanShan-Alec/electron-react-monorepo-template/commit/7b340e6))
@@ -400,4 +398,3 @@
 
 - 半山Alec <627649674@qq.com>
 - Wengzehua <627649674@qq.com>
-

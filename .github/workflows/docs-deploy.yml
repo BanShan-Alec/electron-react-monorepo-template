@@ -7,8 +7,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'packages/docs/**'
-      - '.github/workflows/docs-deploy.yml'
+      - "packages/docs/**"
+      - ".github/workflows/docs-deploy.yml"
   workflow_dispatch:
 
 # Pages 发布不能中途取消(取消已开始的发布会留下半更新站点),排队执行

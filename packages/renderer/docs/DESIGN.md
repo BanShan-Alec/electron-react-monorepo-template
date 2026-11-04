@@ -18,20 +18,20 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 
 ## 2. 十二个系统
 
-| 系统 | 取值 | 规则 |
-| --- | --- | --- |
-| font-size | 12 / 14 / 16 / 24 / 36（`text-xs/sm/base/2xl/4xl`） | 禁止 `text-[Npx]`；UI 最小 12px |
-| font-weight | 400 / 500 / 600 | 700 只出现在 antd 组件内部；正文不加粗 |
-| line-height | 默认；标题 `leading-tight`；长文/代码 `leading-relaxed` | 不逐处手调 |
-| color | 文字三档 + 语义四色（§3） | 语义色不做正文前景 |
-| margin / padding | Tailwind 4px 阶（Tabs 底边对缝允许 `-mb-px`） | 组间距 > 组内距 |
-| width | 看板 `max-w-7xl`；架构 `max-w-5xl` | 同页不混用两种内容列宽 |
-| height | 控件 28（SM）/ 32；卡片随内容 | 行内等高由 `AppCard` body flex 承担 |
-| box-shadow | `.app-card` 一组三级投影，hover 时加深 | 不另写自定义阴影 |
-| border-radius | 4（logo）/ 6（图标块）/ 8（卡片、面板）/ full（圆点） | 内层半径 = 外层 − padding |
-| border-width | 统一 1px | 更弱的分隔用透明度（`/40`、`/60`），不用更细的 px |
-| opacity | 表面/描边只用 10/20/30/40/60/80 | 文字不用 alpha 造灰，取三档文字色 |
-| z-index | 30（sticky header）/ 50（overlay） | 新增层级先登记，禁止 9999 |
+| 系统             | 取值                                                    | 规则                                              |
+| ---------------- | ------------------------------------------------------- | ------------------------------------------------- |
+| font-size        | 12 / 14 / 16 / 24 / 36（`text-xs/sm/base/2xl/4xl`）     | 禁止 `text-[Npx]`；UI 最小 12px                   |
+| font-weight      | 400 / 500 / 600                                         | 700 只出现在 antd 组件内部；正文不加粗            |
+| line-height      | 默认；标题 `leading-tight`；长文/代码 `leading-relaxed` | 不逐处手调                                        |
+| color            | 文字三档 + 语义四色（§3）                               | 语义色不做正文前景                                |
+| margin / padding | Tailwind 4px 阶（Tabs 底边对缝允许 `-mb-px`）           | 组间距 > 组内距                                   |
+| width            | 看板 `max-w-7xl`；架构 `max-w-5xl`                      | 同页不混用两种内容列宽                            |
+| height           | 控件 28（SM）/ 32；卡片随内容                           | 行内等高由 `AppCard` body flex 承担               |
+| box-shadow       | `.app-card` 一组三级投影，hover 时加深                  | 不另写自定义阴影                                  |
+| border-radius    | 4（logo）/ 6（图标块）/ 8（卡片、面板）/ full（圆点）   | 内层半径 = 外层 − padding                         |
+| border-width     | 统一 1px                                                | 更弱的分隔用透明度（`/40`、`/60`），不用更细的 px |
+| opacity          | 表面/描边只用 10/20/30/40/60/80                         | 文字不用 alpha 造灰，取三档文字色                 |
+| z-index          | 30（sticky header）/ 50（overlay）                      | 新增层级先登记，禁止 9999                         |
 
 ### 文案与膨胀
 
@@ -65,7 +65,7 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 ### 状态标签：`StatusTag`
 
 ```tsx
-<StatusTag tone="warning">延迟稍高</StatusTag>
+<StatusTag tone="warning">延迟稍高</StatusTag>;
 ```
 
 中性文字 + 6px 语义色圆点；颜色只是辅助，文字本身能读。

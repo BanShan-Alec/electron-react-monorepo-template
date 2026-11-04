@@ -1,4 +1,5 @@
 ﻿---
+
 title: 源码映射隔离（Source-map）
 description: 生产环境采用 hidden 模式生成 SourceMap，平台上传后就地物理删除，ASAR 全局排除。
 ---
@@ -44,7 +45,7 @@ plugins: [
       filesToDeleteAfterUpload: ['dist/**/*.map'],
     },
   }),
-]
+];
 ```
 
 ### 第三道防线：打包阶段绝对排除兜底
@@ -61,14 +62,14 @@ files: [
   '!**/node_modules/**/*.d.ts',
   '!**/node_modules/**/*.d.cts',
   '!**/node_modules/**/*.d.mts',
-]
+];
 ```
 
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
-| :--- | :--- | :--- |
-| **`sourceMappingURL` 注释泄露** | 使用 `sourcemap: true`，生成的 JS 包含映射注释，被终端反编译工具直接识别。 | 全仓生产配置必须使用 `'hidden'`。 |
-| **本地打包残留 `.map` 被打入 ASAR** | 本地未配置 Sentry Token 打包时，跳过上传导致 `.map` 依然留在 `dist/` 中。 | `build/electron-builder.ts` 的 `files` 规则硬性包含 `'!**/*.map'`，打包时自动抹除。 |
-| **Sentry 插件在本地开发报错** | 本地开发未配置环境变量导致构建器报缺少 AuthToken 失败。 | 显式声明 `disable: !sentryOptions.sentryAuthToken`，未配置时静默降级为纯构建。 |
-| **类型声明暴露接口结构** | 第三方库中的 `.d.ts` 大量打入 ASAR，逆向工程师可轻松推测内部 IPC 协议。 | 打包白名单一并排除 `'!**/node_modules/**/*.d.ts*'`，进一步瘦身 ASAR 并加固安全。 |
+| 避坑要点                            | 事故表现与原因                                                             | 本仓库对齐方案                                                                      |
+| :---------------------------------- | :------------------------------------------------------------------------- | :---------------------------------------------------------------------------------- |
+| **`sourceMappingURL` 注释泄露**     | 使用 `sourcemap: true`，生成的 JS 包含映射注释，被终端反编译工具直接识别。 | 全仓生产配置必须使用 `'hidden'`。                                                   |
+| **本地打包残留 `.map` 被打入 ASAR** | 本地未配置 Sentry Token 打包时，跳过上传导致 `.map` 依然留在 `dist/` 中。  | `build/electron-builder.ts` 的 `files` 规则硬性包含 `'!**/*.map'`，打包时自动抹除。 |
+| **Sentry 插件在本地开发报错**       | 本地开发未配置环境变量导致构建器报缺少 AuthToken 失败。                    | 显式声明 `disable: !sentryOptions.sentryAuthToken`，未配置时静默降级为纯构建。      |
+| **类型声明暴露接口结构**            | 第三方库中的 `.d.ts` 大量打入 ASAR，逆向工程师可轻松推测内部 IPC 协议。    | 打包白名单一并排除 `'!**/node_modules/**/*.d.ts*'`，进一步瘦身 ASAR 并加固安全。    |

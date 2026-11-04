@@ -29,9 +29,13 @@ export function useSystemInfo() {
     },
   });
 
-  // 逻辑处理函数
+  // 逻辑处理函数（createIdleRefresh 内部包含请求锁闭包状态，需保持实例引用单例）
   const fetchSystemInfoRef = useRef(fetchSystemInfoAsync);
-  fetchSystemInfoRef.current = fetchSystemInfoAsync;
+  useEffect(() => {
+    fetchSystemInfoRef.current = fetchSystemInfoAsync;
+  });
+
+  // biome-ignore lint/nursery/useReactCompiler: closure invokes ref.current asynchronously during idle polling, not in render
   const refreshWhenIdle = useMemo(() => createIdleRefresh(() => fetchSystemInfoRef.current()), []);
 
   // 组件Effect

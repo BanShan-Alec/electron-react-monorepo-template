@@ -1,4 +1,5 @@
 ---
+
 title: 单元测试（Vitest）
 description: 借助 Vitest 原生 ESM 与别名推导秒级执行 19 套件，纯逻辑常量直连与边界值断言。
 ---
@@ -43,7 +44,12 @@ export default defineConfig({
       : ['packages/**/tests/unit/**/*.test.ts', 'packages/**/tests/**/*.test.ts'],
     exclude: isBenchmark
       ? ['**/node_modules/**', '**/dist/**']
-      : ['**/node_modules/**', '**/dist/**', 'packages/main/tests/benchmark/**', 'packages/pr-review/**'],
+      : [
+          '**/node_modules/**',
+          '**/dist/**',
+          'packages/main/tests/benchmark/**',
+          'packages/pr-review/**',
+        ],
   },
 });
 ```
@@ -66,15 +72,17 @@ describe('truncateRenderedLine', () => {
     // 核心设计：直接引用源码 RENDERER_LINE_MAX_LENGTH 常量，而非在测试里硬编码 2000
     expect(result.length).toBe(RENDERER_LINE_MAX_LENGTH);
     expect(result.endsWith(expectedSuffix)).toBe(true);
-    expect(result.startsWith('x'.repeat(RENDERER_LINE_MAX_LENGTH - expectedSuffix.length))).toBe(true);
+    expect(result.startsWith('x'.repeat(RENDERER_LINE_MAX_LENGTH - expectedSuffix.length))).toBe(
+      true,
+    );
   });
 });
 ```
 
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
-| :--- | :--- | :--- |
-| **测试硬编码破坏真源** | 测试中手写常量（如 `expect(len).toBe(2000)`），源码常量调整后测试未同步修改发生误报或漏报。 | 测试文件直接 import 源码中的业务常量（如 `RENDERER_LINE_MAX_LENGTH`、`WINDOW_IDS` 等），真源联动。 |
-| **工作目录漂移风险** | Vitest 配置写在根目录依赖 `process.cwd()`，当在子包目录下执行或从外部目录执行时找不到测试用例。 | 配置文件放在 `.config/vitest.config.ts`，基于 `findRepoRoot(configDir)` 物理推导 monorepo 根路径。 |
-| **单测环境过度庞大** | 为测试一个工具函数引入 jsdom / happy-dom，CI 执行时间翻倍甚至偶发内存泄漏。 | 单元测试环境严格锁定为 `node`；DOM、渲染和 CSS 行为统一由 Playwright 真实窗口矩阵验证。 |
+| 避坑要点               | 事故表现与原因                                                                                  | 本仓库对齐方案                                                                                     |
+| :--------------------- | :---------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------- |
+| **测试硬编码破坏真源** | 测试中手写常量（如 `expect(len).toBe(2000)`），源码常量调整后测试未同步修改发生误报或漏报。     | 测试文件直接 import 源码中的业务常量（如 `RENDERER_LINE_MAX_LENGTH`、`WINDOW_IDS` 等），真源联动。 |
+| **工作目录漂移风险**   | Vitest 配置写在根目录依赖 `process.cwd()`，当在子包目录下执行或从外部目录执行时找不到测试用例。 | 配置文件放在 `.config/vitest.config.ts`，基于 `findRepoRoot(configDir)` 物理推导 monorepo 根路径。 |
+| **单测环境过度庞大**   | 为测试一个工具函数引入 jsdom / happy-dom，CI 执行时间翻倍甚至偶发内存泄漏。                     | 单元测试环境严格锁定为 `node`；DOM、渲染和 CSS 行为统一由 Playwright 真实窗口矩阵验证。            |

@@ -6,12 +6,12 @@
 
 Vocs 2 纯静态站（`full-static`），部署于 GitHub Pages（前缀 `/electron-react-monorepo-template/`）。常规目录结构见文件树，此处仅记录**环境查不到的隐形陷阱与单一真源**：
 
-| 文件 / 路径 | 角色与规则 | 隐形陷阱 / 机器门禁 |
-| :--- | :--- | :--- |
-| `src/navigation.ts` | 侧栏与首页目录**唯一真源** | 漏登记则页面线上不可达；有且只能有一条对应 `link` |
-| `vocs.config.ts` | 静态构建配置 | `iconUrl` 必须手动自带 `/electron-react-monorepo-template/` 前缀 |
-| `scripts/vocs-windows-fix.*` | Win32 路径转义补丁 | Windows 本地 `dev`/`build` 必须经 `node --import` 预加载（上游 wevm/vocs#674 修复前勿删） |
-| `src/pages.gen.ts` / `dist/` | 构建派生临时产物 | 严禁手改、严禁提交入库（Git 门禁） |
+| 文件 / 路径                  | 角色与规则                 | 隐形陷阱 / 机器门禁                                                                       |
+| :--------------------------- | :------------------------- | :---------------------------------------------------------------------------------------- |
+| `src/navigation.ts`          | 侧栏与首页目录**唯一真源** | 漏登记则页面线上不可达；有且只能有一条对应 `link`                                         |
+| `vocs.config.ts`             | 静态构建配置               | `iconUrl` 必须手动自带 `/electron-react-monorepo-template/` 前缀                          |
+| `scripts/vocs-windows-fix.*` | Win32 路径转义补丁         | Windows 本地 `dev`/`build` 必须经 `node --import` 预加载（上游 wevm/vocs#674 修复前勿删） |
+| `src/pages.gen.ts` / `dist/` | 构建派生临时产物           | 严禁手改、严禁提交入库（Git 门禁）                                                        |
 
 - **唯一门禁命令**：`pnpm docs:build`（退出码 0 为通过）。Markdown 不受 Biome 拦截，死链与 MDX 语法全由此把关。
 - **本地预览**：`pnpm docs:dev`（端口 5174）。
@@ -19,15 +19,18 @@ Vocs 2 纯静态站（`full-static`），部署于 GitHub Pages（前缀 `/elect
 ## 2. 页面规范
 
 ### 1. 元信息（Frontmatter & TL;DR）
+
 - `title`：形如「中文名（English-tag）」，英文标签供按技术栈切片检索。
 - `description`：一句话结论，同时注入 `llms.txt`、搜索索引与卡片 meta。
 - 正文首行 `# <title>` 与 frontmatter 严格一致，紧随 `> **TL;DR**：<一句话结论>`。
 
 ### 2. 页面骨架：极简速查清单三段式
+
 全站页面（**唯一例外：`src/pages/index.mdx` 自定义首页，不套用三段式**）篇幅严格控制在 1-2 屏（40-90 行）：
 
 ````md
 ---
+
 title: <中文名>（<English-tag>）
 description: <一句话结论，与 TL;DR 一致>
 ---
@@ -37,16 +40,20 @@ description: <一句话结论，与 TL;DR 一致>
 > **TL;DR**：<技术选型核心取舍与解决痛点>
 
 ## 1. 选型理由
+
 <阐述为什么选型该方案、痛点与架构动因，直切核心不写空话>
 
 ## 2. 核心配置代码
+
 ### <机制/配置模块名>
+
 → 源码：[packages/.../file.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/.../file.ts)
 ```ts
 // 真实源码摘录，严禁凭记忆臆造
 ```
 
 ## 3. 桌面端避坑注意事项
+
 <!-- 包含事故表现与方案对比时优先三列表格（避坑要点｜事故表现与原因｜本仓库对齐方案）；规则陈述用加粗列表 -->
 ````
 

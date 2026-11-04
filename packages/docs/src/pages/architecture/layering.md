@@ -1,4 +1,5 @@
 ---
+
 title: 分层架构（Controller / Service）
 description: IPC 事件收敛于 Controller，核心业务封装在 Service，脱离 Electron 依赖实现纯 Node 单测。
 ---
@@ -25,20 +26,23 @@ Controller 负责路由分发、Zod 参数合法性校验，并将异常收敛�
 
 ```ts
 export function registerCounterControllers(): void {
-  handleTraced(IPC_CHANNELS.COUNTER_INCREMENT, async (stepInput): Promise<Result<CounterResult>> => {
-    try {
-      // 1. Zod 校验入参，非法入参直接阻断
-      const parsed = stepInputSchema.safeParse(stepInput);
-      if (!parsed.success) {
-        return failResult(ErrorCode.INVALID_ARGUMENT, '步长参数格式错误');
-      }
+  handleTraced(
+    IPC_CHANNELS.COUNTER_INCREMENT,
+    async (stepInput): Promise<Result<CounterResult>> => {
+      try {
+        // 1. Zod 校验入参，非法入参直接阻断
+        const parsed = stepInputSchema.safeParse(stepInput);
+        if (!parsed.success) {
+          return failResult(ErrorCode.INVALID_ARGUMENT, '步长参数格式错误');
+        }
 
-      // 2. 委托纯业务 Service 处理
-      return successResult(counterService.increment(parsed.data.step));
-    } catch (err) {
-      return catchToResult(err);
-    }
-  });
+        // 2. 委托纯业务 Service 处理
+        return successResult(counterService.increment(parsed.data.step));
+      } catch (err) {
+        return catchToResult(err);
+      }
+    },
+  );
 }
 ```
 

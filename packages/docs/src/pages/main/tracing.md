@@ -1,4 +1,5 @@
 ---
+
 title: 全链路追踪（W3C-trace）
 description: W3C traceparent 从 Preload 穿透主进程，AsyncLocalStorage 维持上下文。
 ---
@@ -15,24 +16,63 @@ description: W3C traceparent 从 Preload 穿透主进程，AsyncLocalStorage 维
 
 工程采用纯函数实现的 W3C Trace Context 规范，零外部 SDK 实现跨端穿透。
 
-## 2. 核心配置代码
+## 2. 核心机制
 
-### Preload 自动注入 Trace Carrier
+```mermaid
+sequenceDiagram
+    box LightBlue 渲染进程（Renderer）
+        participant R as Renderer
+    end
+    box LightYellow Preload 桥接层（sandbox 边界）
+        participant P as Preload
+    end
+    box LightGreen 主进程（信任域）
+        participant M as Main
+        participant ALS as AsyncLocalStorage
+    end
+    box LightGray 落盘产物
+        participant L as main.log
+        participant T as traces.ndjson
+    end
 
-所有业务 IPC 请求自动生成 W3C 标准上下文并作为不可见元数据随载荷下发：
+    R->>P: invokeTraced(channel, data)
+    P->>M: ipcRenderer.invoke(channel, { __trace_carrier, data })
+    M->>M: handleTraced 解包 + tracer.extract(carrier)
+    M->>ALS: startActiveSpan → storage.run(context, fn)
+    ALS-->>M: getActiveContext() 返回当前 SpanContext
+    M->>L: injectTraceHook 前缀 [trace_id:… span_id:…]
+    M->>T: onSpanEnd 追加 SpanRecord（NDJSON）
+    M-->>P: Result 浅克隆注入 traceId
+    P-->>R: 返回 Result
+```
+
+链路只有一条主线：Preload 在 `invokeTraced` 里生成 `traceId` / `spanId` 并序列化成 W3C `traceparent`，塞进 `__trace_carrier`；主进程 `handleTraced` 解包后 `extract` 出父上下文，交给 `Tracer.startActiveSpan` 在 `AsyncLocalStorage` 里 `run`；此后这条异步调用链上的日志前缀、Span 落盘、返回值注入都从同一份上下文取值。
+
+### 关键实现：Preload 生成并注入 traceparent
+
+所有业务 IPC 请求都由 `invokeTraced` 生成 W3C 标准上下文，作为不可见元数据随载荷下发；`callOptions` 一并透传，供主进程决定是否记录成功 Span：
 
 → 源码：[packages/preload/src/telemetry/ipc-tracer.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/src/telemetry/ipc-tracer.ts)
 
 ```ts
-export async function invokeTraced<R = unknown, T = unknown>(channel: string, data?: T): Promise<R> {
+export async function invokeTraced<R = unknown, T = unknown>(
+  channel: string,
+  data?: T,
+  callOptions?: IpcCallOptions,
+): Promise<R> {
+  const traceId = generateTraceId();
+  const spanId = generateSpanId();
   const traceparent = serializeTraceParent({
-    traceId: generateTraceId(),
-    spanId: generateSpanId(),
+    traceId,
+    spanId,
     traceFlags: '01',
   });
 
   const payload: TracedIpcPayload<T | undefined> = {
-    __trace_carrier: { traceparent },
+    __trace_carrier: {
+      traceparent,
+    },
+    callOptions,
     data,
   };
 
@@ -40,34 +80,60 @@ export async function invokeTraced<R = unknown, T = unknown>(channel: string, da
 }
 ```
 
-### 主进程 handleTraced 解包与 AsyncLocalStorage 续接
+### 关键实现：主进程解包并在 AsyncLocalStorage 中续接
 
-主进程解包上游上下文，并利用 Node 官方 `AsyncLocalStorage` 隐式向下游深层函数传递：
+`handleTraced` 注册 `ipcMain.handle`：先用 `isTracedIpcPayload` 判断入参是否带 `__trace_carrier`，带则 `tracer.extract` 还原父上下文，再交给 `tracer.startActiveSpan` 建立 `ipc.receive:` 子 Span。续接的关键只有一句 `this.storage.run(manualSpan.context, ...)`——把 SpanContext 绑定到当前异步调用链，handler 内部任意深度的异步函数都能通过 `getActiveContext()` 取到。
+
+→ 源码：[packages/main/src/telemetry/ipc-tracer.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/telemetry/ipc-tracer.ts)
+
+节选：`Tracer` 类的 `startActiveSpan` 方法（`storage` 是同类中的 `private readonly` 字段）：
 
 → 源码：[packages/main/src/telemetry/tracer.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/telemetry/tracer.ts)
 
 ```ts
-// 利用 AsyncLocalStorage 让 handler 内部的任意异步调用自动感知当前 Span
-private readonly storage = new AsyncLocalStorage<SpanContext>();
+  public async startActiveSpan<T>(
+    name: string,
+    options: SpanOptions | undefined,
+    fn: (span: ISpanScope) => Promise<T> | T,
+  ): Promise<T> {
+    const manualSpan = this.startManualSpan(name, options);
 
-return this.storage.run(manualSpan.context, async () => {
-  try {
-    const result = await fn(span);
-    manualSpan.end('OK');
-    return result;
-  } catch (err) {
-    manualSpan.recordException(err);
-    manualSpan.end('ERROR');
-    throw err;
+    return this.storage.run(manualSpan.context, async () => {
+      const state: { status: 'OK' | 'ERROR' } = { status: 'OK' };
+      const span: ISpanScope = {
+        context: manualSpan.context,
+        setStatus: (status) => {
+          state.status = status;
+          manualSpan.setStatus(status);
+        },
+        setAttributes: (attributes) => manualSpan.setAttributes(attributes),
+        addEvent: (name, attributes) => manualSpan.addEvent(name, attributes),
+        recordException: (error) => {
+          state.status = 'ERROR';
+          manualSpan.recordException(error);
+        },
+      };
+
+      try {
+        const result = await fn(span);
+        if (options?.recordSuccess !== false || state.status === 'ERROR') {
+          manualSpan.end(state.status);
+        }
+        return result;
+      } catch (err) {
+        manualSpan.recordException(err);
+        manualSpan.end('ERROR');
+        throw err;
+      }
+    });
   }
-});
 ```
 
-### 三大出口闭环消费
+### 三个出口：日志前缀、NDJSON、Result.traceId
 
-1. **主进程日志前缀**：活跃上下文存在时，`main.log` 每行日志自动前缀 `[trace_id:xxxx span_id:yyyy]`。
-2. **遥测落盘**：Span 结束时以 NDJSON 格式增量写入 `traces.ndjson`，支持毫秒级拓扑还原。
-3. **结果回注**：业务返回 `Result<T>` 自动注入该 `traceId`，渲染层报错时直接打印该 ID。
+1. **主进程日志前缀**：活跃上下文存在时，electron-log hook `injectTraceHook` 从 `getActiveContext()` 取值，`main.log` 每行日志自动前缀 `[trace_id:xxxx span_id:yyyy]`。
+2. **遥测落盘**：Span 结束时 `onSpanEnd` 监听器把 `SpanRecord` 以单行 JSON 写入 `traces.ndjson`，支持毫秒级拓扑还原。
+3. **结果回注**：业务返回带 `success` 字段的 `Result` 时，`handleTraced` 浅克隆注入 `traceId`（不改原对象），渲染层报错时直接打印该 ID。
 
 ## 3. 桌面端避坑注意事项
 

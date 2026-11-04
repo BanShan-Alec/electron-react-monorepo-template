@@ -83,22 +83,22 @@ electron-react-monorepo-template/
 
 ## 🚀 快速开始
 
-| 依赖 | 版本要求 |
-| :--- | :--- |
-| Node.js | >= 24.0.0 |
-| pnpm | ^12.0.0（仓库锁定 pnpm@12.15.0） |
+| 依赖    | 版本要求                         |
+| :------ | :------------------------------- |
+| Node.js | >= 24.0.0                        |
+| pnpm    | ^12.0.0（仓库锁定 pnpm@12.15.0） |
 
 ```bash
 pnpm install   # 安装工作区依赖（.npmrc 已内置 npmmirror 镜像加速）
 pnpm dev       # 开发模式：Vite DevServer + Electron 双进程热重载
 ```
 
-| 命令 | 用途 |
-| :--- | :--- |
-| `pnpm dev` | 开发模式（Vite + Electron 热重载） |
-| `pnpm preview` | 生产预览（构建三包后以生产形态启动；`pnpm start` 为等价别名） |
-| `pnpm build:win` / `:mac` / `:linux` | 分平台打包安装包 |
-| `pnpm test` / `pnpm test:e2e` | Vitest 单元测试 / Playwright 桌面端 E2E |
+| 命令                                 | 用途                                                          |
+| :----------------------------------- | :------------------------------------------------------------ |
+| `pnpm dev`                           | 开发模式（Vite + Electron 热重载）                            |
+| `pnpm preview`                       | 生产预览（构建三包后以生产形态启动；`pnpm start` 为等价别名） |
+| `pnpm build:win` / `:mac` / `:linux` | 分平台打包安装包                                              |
+| `pnpm test` / `pnpm test:e2e`        | Vitest 单元测试 / Playwright 桌面端 E2E                       |
 
 完整命令清单见 [CONTRIBUTING.md](CONTRIBUTING.md) 与根 `package.json` 的 `scripts`。从模板派生自己的应用，按[配置项归属（Configuration-map）](packages/docs/src/pages/dx/configuration-map.md)替换应用名、App ID、图标与发布源。
 

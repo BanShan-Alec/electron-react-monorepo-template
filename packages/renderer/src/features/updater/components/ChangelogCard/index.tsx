@@ -2,7 +2,7 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Tag } from 'antd';
 import type React from 'react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { AppCard } from '@/components/ui/AppCard';
 import { callIpc } from '@/lib/ipc';
 
@@ -80,12 +80,10 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
   const hasNotes = Boolean(releaseNotes && releaseNotes.length > 0);
   const isLongNotes = Boolean(releaseNotes && releaseNotes.length > 4);
 
-  const normalizedNotes = useMemo(() => {
-    return (releaseNotes ?? []).map((note, index) => ({
-      id: `${index}-${note}`,
-      text: note,
-    }));
-  }, [releaseNotes]);
+  const normalizedNotes = (releaseNotes ?? []).map((note, index) => ({
+    id: `${index}-${note}`,
+    text: note,
+  }));
 
   return (
     <AppCard

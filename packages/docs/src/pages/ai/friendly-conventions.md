@@ -1,4 +1,5 @@
 ---
+
 title: AI 友好代码约定（Reference-style）
 description: 拒绝空洞说教，提供开箱即用的 AI 约束提示词、7 段式组件骨架、Zod 契约与中文提交正则。
 ---
@@ -63,7 +64,9 @@ const _CounterCard = (props: CounterCardProps) => {
   return (
     <div className="p-4 border rounded">
       <span>{formattedStep}</span>
-      <button type="button" onClick={() => handleSelect(5)}>设为5</button>
+      <button type="button" onClick={() => handleSelect(5)}>
+        设为5
+      </button>
     </div>
   );
 };
@@ -109,9 +112,9 @@ rules: {
 
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
-| :--- | :--- | :--- |
-| **注释骨架缺失导致 Diff 污染** | AI 每次随意放置 `useState` 和 `useEffect`，同一个组件多次迭代导致 Git diff 无法看清真实改动。 | 7 段式注释骨架即使段内无代码，也必须保留注释占位，形成固定的上下文锚点。 |
-| **过度手动使用 useMemo** | AI 在 React 19 环境下仍机械地给所有函数套 `useCallback`，代码冗长且徒增闭包开销。 | 本仓库已开启 **React Compiler** 自动记忆化，禁止 AI 编写样板式 `useMemo` / `useCallback`。 |
-| **Commit 校验不可判定** | 仅口头要求“提交写清楚”，导致出现大量无意义的 `git commit -m "fix"`。 | Commitlint 规则强制拦截无中文提交，Husky 挂钩校验失败立即中断 commit。 |
-| **随意引入桶文件导出** | AI 习惯新建 `index.ts` 并写 `export * from './xxx'`，导致模块加载变慢。 | Biome 规则开启 `"noBarrelFile": "error"` 与 `"noReExportAll": "error"`，硬性阻断。 |
+| 避坑要点                       | 事故表现与原因                                                                                | 本仓库对齐方案                                                                             |
+| :----------------------------- | :-------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------- |
+| **注释骨架缺失导致 Diff 污染** | AI 每次随意放置 `useState` 和 `useEffect`，同一个组件多次迭代导致 Git diff 无法看清真实改动。 | 7 段式注释骨架即使段内无代码，也必须保留注释占位，形成固定的上下文锚点。                   |
+| **过度手动使用 useMemo**       | AI 在 React 19 环境下仍机械地给所有函数套 `useCallback`，代码冗长且徒增闭包开销。             | 本仓库已开启 **React Compiler** 自动记忆化，禁止 AI 编写样板式 `useMemo` / `useCallback`。 |
+| **Commit 校验不可判定**        | 仅口头要求“提交写清楚”，导致出现大量无意义的 `git commit -m "fix"`。                          | Commitlint 规则强制拦截无中文提交，Husky 挂钩校验失败立即中断 commit。                     |
+| **随意引入桶文件导出**         | AI 习惯新建 `index.ts` 并写 `export * from './xxx'`，导致模块加载变慢。                       | Biome 规则开启 `"noBarrelFile": "error"` 与 `"noReExportAll": "error"`，硬性阻断。         |

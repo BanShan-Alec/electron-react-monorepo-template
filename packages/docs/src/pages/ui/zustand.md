@@ -1,4 +1,5 @@
 ---
+
 title: 全局状态（Zustand）
 description: 采用单一无 Provider 的 Zustand Store，主题与语言按需精准订阅。
 ---
@@ -22,10 +23,10 @@ description: 采用单一无 Provider 的 Zustand Store，主题与语言按需�
 
 ```ts
 interface AppState {
-  themeMode: ThemeMode;          // 'system' | 'light' | 'dark'
-  resolvedTheme: ResolvedTheme;  // 实际物理渲染主题：'light' | 'dark'
+  themeMode: ThemeMode; // 'system' | 'light' | 'dark'
+  resolvedTheme: ResolvedTheme; // 实际物理渲染主题：'light' | 'dark'
   setThemeMode: (mode: ThemeMode) => void;
-  language: LanguageMode;        // 'system' | 'zh-CN' | 'en-US'
+  language: LanguageMode; // 'system' | 'zh-CN' | 'en-US'
   setLanguage: (lang: LanguageMode) => void;
 }
 

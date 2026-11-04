@@ -1,4 +1,5 @@
 ---
+
 title: 编译配置继承（Tsconfig）
 description: "@app/tsconfig 集中管理 base/node/react 三档，各包仅保留 extends 与 include。"
 ---
@@ -40,6 +41,7 @@ Electron Monorepo 在 TypeScript 编译层面天生具备多态性：
   }
 }
 ```
+
 - **`node.json`**：继承 `base.json`，追加 `"types": ["node", "vite/client"]`，供 `main`、`preload`、`pr-review` 及构建脚本使用。
 - **`react.json`**：继承 `base.json`，启用 `"jsx": "react-jsx"`、`"lib": ["DOM", "DOM.Iterable", "ES2023"]`，供 `renderer` 与组件包使用。
 

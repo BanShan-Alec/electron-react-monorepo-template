@@ -1,4 +1,5 @@
 ---
+
 title: 路径稳健性（Relative-path）
 description: 向上定位仓库根（findRepoRoot），运行期资源依赖 Node 图与资源锚点，防工作目录偏移。
 ---

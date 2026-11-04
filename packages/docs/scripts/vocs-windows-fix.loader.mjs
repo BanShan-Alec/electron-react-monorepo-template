@@ -47,7 +47,9 @@ const VITE_PLUGINS_MODULE_SUFFIX = '/vocs/dist/internal/vite-plugins.js';
 //
 // Same backslash-eating as Bug 2: Rolldown receives `H:electron-app-temp5...`
 // and fails to resolve the import. `JSON.stringify` emits a correct literal.
+// biome-ignore lint/suspicious/noTemplateCurlyInString: patch target literal
 const STYLES_TARGET = "import styles from '${stylesPath}?url';";
+// biome-ignore lint/suspicious/noTemplateCurlyInString: patch target literal
 const STYLES_PATCHED = "import styles from ${JSON.stringify(stylesPath + '?url')};";
 
 // Bug 3 — `getPagesFromDir` (vocs/dist/internal/llms.js) builds llms.txt page

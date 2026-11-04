@@ -1,4 +1,5 @@
 ---
+
 title: 崩溃上报（Sentry）
 description: 严格收窄激活条件，渲染进程崩溃由主进程兜底代报，关闭噪音埋点。
 ---
@@ -45,7 +46,9 @@ app.on('render-process-gone', (_event, _webContents, details) => {
   if (appLifecycle.isQuitting || details.reason === 'clean-exit') return;
 
   Sentry.captureException(
-    new Error(`[Renderer Crash] process gone: reason=${details.reason}, exitCode=${details.exitCode}`),
+    new Error(
+      `[Renderer Crash] process gone: reason=${details.reason}, exitCode=${details.exitCode}`,
+    ),
     {
       level: 'fatal',
       tags: {

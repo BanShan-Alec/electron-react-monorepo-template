@@ -1,4 +1,5 @@
 ---
+
 title: 依赖管理（Monorepo）
 description: pnpm workspace + catalog 收拢版本，根依赖硬性白名单由 CI 门禁拦截，严格隔离打包体积。
 ---
@@ -22,28 +23,33 @@ description: pnpm workspace + catalog 收拢版本，根依赖硬性白名单由
 
 ```yaml
 packages:
-  - 'packages/*'
+  - "packages/*"
 
 catalog:
   typescript: ^6.0.0
-  vite: ^8.0.0
+  vite: ^8.3.5
   zod: ^4.5.4
-  '@types/node': ^24.19.2
-  vitest: ^5.0.3
+  react: ^19.3.1
+  react-dom: ^19.3.1
+  "@types/react": ^19.2.14
+  "@types/react-dom": ^19.2.3
+  "@types/node": ^24.19.2
+  vitest: ^5.1.0
+  tailwindcss: ^4.3.4
 
 nodeLinker: isolated
 autoInstallPeers: true
 publicHoistPattern:
-  - '@node-usb/*'
-  - '*usb*'
+  - "@node-usb/*"
+  - "*usb*"
 
 allowBuilds:
-  '@sentry/cli': true
-  'electron-winstaller': true
+  "@sentry/cli": true
+  "electron-winstaller": true
   esbuild: true
 ```
 
-各包在引用公共工具链时，版本号直接使用 `"catalog:"`，版本升级仅需修改 `pnpm-workspace.yaml` 一处。
+各包在引用公共工具链与跨包核心库（如 TypeScript、React 生态、TailwindCSS 等）时，版本号直接使用 `"catalog:"`，版本升级仅需修改 `pnpm-workspace.yaml` 一处。
 
 ### 根目录依赖硬性白名单门禁（单一真源）
 
@@ -58,7 +64,9 @@ const allowedRootDeps = ['@app/main'];
 
 const illegalRootDeps = rootDeps.filter((dep) => !allowedRootDeps.includes(dep));
 if (illegalRootDeps.length > 0) {
-  console.error(`[verify:prebuild] 根目录 package.json 存在非法生产依赖: ${illegalRootDeps.join(', ')}`);
+  console.error(
+    `[verify:prebuild] 根目录 package.json 存在非法生产依赖: ${illegalRootDeps.join(', ')}`,
+  );
   console.error('[verify:prebuild] 生产依赖只能声明在对应子包中，根目录仅允许包含 @app/main');
   process.exit(1);
 }

@@ -1,4 +1,5 @@
 ---
+
 title: 多窗口入口（MPA）
 description: 采用 MPA 架构隔离主窗口与更新弹窗，Vite 双物理入口与精确 manualChunks 分包。
 ---

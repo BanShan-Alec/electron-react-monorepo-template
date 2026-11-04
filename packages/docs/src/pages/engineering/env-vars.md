@@ -1,6 +1,7 @@
 ---
+
 title: 环境变量管理（Dotenv）
-description: 根 .env 单一加载入口，白名单快照经启动参数透传，渲染层安全获取冻结的 __APP_ENV__。
+description: 根 .env 单一加载入口，白名单快照经启动参数透传，渲染层安全获取冻结的 **APP_ENV**。
 ---
 
 # 环境变量管理（Dotenv）
@@ -14,22 +15,51 @@ Electron 项目的环境变量经常面临以下痛点：
 2. **渲染进程孤岛**：渲染进程受沙箱隔离，无法直接读取 Node 的 `process.env`。
 3. **安全泄露隐患**：若将包含证书凭证的构建期变量整体注入客户端，极易导致安全资产泄漏。
 
-为此，工程建立了严格的单向管道链路：
-```
-根 .env ──loadRepoEnv──> process.env ──白名单编译过滤──> 主进程 getEnv()
-     └──packRuntimeEnv──> --app-meta= 启动参数 ──> Preload 解包 ──> window.__APP_ENV__ ──> 渲染层
+为此，工程建立了严格的单向管道链路（流程图见 §2）：构建期把根 `.env` 的白名单快照编译进主进程，主进程再把它序列化进窗口启动参数，Preload 解包后冻结注入渲染层。
+
+## 2. 核心机制
+
+```mermaid
+flowchart LR
+  subgraph build["构建期 · Node / Vite"]
+    envFile["根 .env"]
+    loadRepoEnv["loadRepoEnv()"]
+    whitelist["ALLOWED_ENV_KEYS"]
+    defineEnv["define __ENV_DEFAULTS__"]
+    envFile --> loadRepoEnv --> whitelist --> defineEnv
+  end
+  subgraph main["主进程"]
+    getEnv["getEnv()"]
+    snapshot["getRuntimeEnvSnapshot()"]
+    packed["packRuntimeEnv()"]
+    appMeta["--app-meta= 启动参数"]
+    getEnv --> snapshot --> packed --> appMeta
+  end
+  subgraph preload["Preload · 沙箱"]
+    unpack["unpackRuntimeEnv()"]
+    expose["__APP_ENV__ 冻结"]
+    unpack --> expose
+  end
+  subgraph renderer["渲染层"]
+    consume["window.__APP_ENV__"]
+  end
+  external["外部注入 shell / CI"] -->|"process.env 优先"| getEnv
+  defineEnv -->|"编译期常量"| getEnv
+  appMeta -->|"additionalArguments"| unpack
+  expose -->|"contextBridge"| consume
 ```
 
-## 2. 核心配置代码
+### 关键实现
 
-### 环境变量加载策略（只补空位，绝不反向覆盖）
+#### ① 构建期：加载根 `.env`，只补空位
+
+`applyRepoEnv` 只补齐缺失键，已存在的外部注入（shell / CI）始终优先：
 
 → 源码：[build/lib/env.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/lib/env.ts)
 
 ```ts
 export function applyRepoEnv(env: RepoEnv): void {
   for (const [key, value] of Object.entries(env.values)) {
-    // 只有当前环境中未定义该变量时才补齐，保证命令行或 CI 注入最高优先级
     if (process.env[key] === undefined) {
       process.env[key] = value;
     }
@@ -37,34 +67,40 @@ export function applyRepoEnv(env: RepoEnv): void {
 }
 ```
 
-### 跨进程快照序列化与还原（Base64URL JSON）
+#### ② 主进程：快照打包为 `--app-meta=` 启动参数
 
-主进程在拉起 `BrowserWindow` 时，将非机密的环境快照序列化并拼接入 `additionalArguments`：
+创建窗口时 `getPackedEnvArgument()` 拼上 `--app-meta=` 前缀塞进 `additionalArguments`；编解码本身用 `TextEncoder` + `btoa` 实现，Node 与 Preload 沙箱通用（`toBase64Url` / `fromBase64Url` 为同文件辅助函数）。
 
 → 源码：[packages/shared/src/utils/env-packer.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/utils/env-packer.ts)
 
 ```ts
 export function packRuntimeEnv(env: AppRuntimeEnv): string {
   const jsonStr = JSON.stringify(env);
-  const base64 = Buffer.from(jsonStr, 'utf-8').toString('base64url');
-  return `${APP_ENV_ARG_PREFIX}${base64}`;
+  const bytes = new TextEncoder().encode(jsonStr);
+  return toBase64Url(bytes);
 }
 
-export function unpackRuntimeEnv(arg: string): AppRuntimeEnv | null {
-  const base64 = arg.slice(APP_ENV_ARG_PREFIX.length);
-  const jsonStr = Buffer.from(base64, 'base64url').toString('utf-8');
+export function unpackRuntimeEnv(encodedStr: string): AppRuntimeEnv {
+  const bytes = fromBase64Url(encodedStr);
+  const jsonStr = new TextDecoder().decode(bytes);
   return JSON.parse(jsonStr) as AppRuntimeEnv;
 }
 ```
 
-Preload 在主进程窗口脚本执行前完成解包，并通过 `contextBridge` 注入主世界：
+#### ③ Preload：解包、冻结、注入主世界
 
 → 源码：[packages/preload/src/index.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/src/index.ts)
 
 ```ts
 const metaArg = process.argv.find((arg) => arg.startsWith(APP_ENV_ARG_PREFIX));
-const runtimeEnv = metaArg ? unpackRuntimeEnv(metaArg) : null;
-
+let runtimeEnv: AppRuntimeEnv | null = null;
+if (metaArg) {
+  try {
+    runtimeEnv = unpackRuntimeEnv(metaArg.slice(APP_ENV_ARG_PREFIX.length));
+  } catch (err) {
+    console.error('[preload] Failed to unpack runtime env from additionalArguments:', err);
+  }
+}
 contextBridge.exposeInMainWorld('__APP_ENV__', Object.freeze(runtimeEnv ?? {}));
 ```
 

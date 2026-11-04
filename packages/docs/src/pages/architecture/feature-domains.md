@@ -1,4 +1,5 @@
 ---
+
 title: 功能域组织（Features）
 description: 渲染层采用自包含领域目录（Features），域间禁止跨层引用，删功能即删目录。
 ---
@@ -59,10 +60,16 @@ export function CounterFeature() {
 
 ```tsx
 <Switch>
-  <Route path="/dashboard"><DashboardFeature /></Route>
-  <Route path="/architecture"><ArchitectureFeature /></Route>
-  <Route path="/*"><Redirect to="/dashboard" replace /></Route>
-</Switch>
+  <Route path="/dashboard">
+    <DashboardFeature />
+  </Route>
+  <Route path="/architecture">
+    <ArchitectureFeature />
+  </Route>
+  <Route path="/*">
+    <Redirect to="/dashboard" replace />
+  </Route>
+</Switch>;
 ```
 
 ## 3. 桌面端避坑注意事项

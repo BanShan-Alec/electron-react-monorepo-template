@@ -1,4 +1,5 @@
 ---
+
 title: 首屏体验（Startup-orchestration）
 description: 动画、React 首帧与主进程就绪三路门禁协调揭幕，内联启动壳顶住白屏空窗期。
 ---
@@ -16,24 +17,50 @@ description: 动画、React 首帧与主进程就绪三路门禁协调揭幕，�
 
 传统社区实践常采用 `show: false` 配合 `ready-to-show` 事件再呈现窗口，但这会导致用户双击桌面图标后在数百毫秒内没有任何物理界面出现，产生严重的“假死未启动”迟滞感。本项目刻意采用**「窗口创建即显示 + 底色对齐 + 裸 DOM 启动壳即刻呈现」**，在首帧瞬间给用户即时视觉反馈，再由启动协调器进行三道门禁汇流与超时兜底。
 
-## 2. 核心配置代码
+## 2. 核心机制
 
-### 三路就绪门禁与揭幕逻辑
+```mermaid
+flowchart TB
+  subgraph renderer["渲染进程"]
+    StartupReadyNotifier["StartupReadyNotifier<br/>React 首帧 commit"]
+    animation["animation 门禁<br/>animationend"]
+    react["react 门禁<br/>app-react-startup-ready"]
+    main["main 门禁"]
+    settleGate["settleGate(id)"]
+    tryFinishStartup["tryFinishStartup()"]
+    APP_STARTUP_READY_CLASS["揭幕<br/>body.app-startup-ready"]
+    STARTUP_ANIMATION_FALLBACK_MS["超时 1s"]
+    STARTUP_REACT_FALLBACK_MS["超时 3s"]
+    STARTUP_MAIN_FALLBACK_MS["超时 5s"]
+  end
+  subgraph preload["preload · api.startup"]
+    getSnapshot["getSnapshot()<br/>先拉快照"]
+    APP_STARTUP_MAIN_READY_EVENT["APP_STARTUP_MAIN_READY_EVENT<br/>后事件补推"]
+  end
+  subgraph mainProcess["主进程 · startup-readiness.module"]
+    startupReadiness["enable() 置 mainReady<br/>并广播"]
+  end
+  StartupReadyNotifier --> react
+  animation & react & main --> settleGate
+  STARTUP_ANIMATION_FALLBACK_MS & STARTUP_REACT_FALLBACK_MS & STARTUP_MAIN_FALLBACK_MS -.-> settleGate
+  settleGate --> tryFinishStartup
+  tryFinishStartup --> APP_STARTUP_READY_CLASS
+  startupReadiness -->|"快照"| getSnapshot
+  startupReadiness -->|"推送"| APP_STARTUP_MAIN_READY_EVENT
+  getSnapshot -->|"先拉"| main
+  APP_STARTUP_MAIN_READY_EVENT -->|"后推"| main
+```
 
-协调器作为构建期插件直接内联至 `index.html`，先于 React 执行：
+协调器由构建期插件 `startup-shell` 打包为经典 IIFE 内联进 `index.html`，先于 React 执行。它维护门禁注册表：`pendingGates` 初始装齐 `animation` / `react` / `main`，每路就绪调用一次 `settleGate`；集合清空后由 `tryFinishStartup` 统一揭幕，`finished` 保证只执行一次。
+
+### 关键实现：门禁结算与揭幕
 
 → 源码：[packages/renderer/src/startup/coordinator.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/startup/coordinator.ts)
 
 ```ts
-type GateId = 'animation' | 'react' | 'main';
-
-let finished = false;
-const pendingGates = new Set<GateId>(['animation', 'react', 'main']);
-
 const tryFinishStartup = () => {
   if (finished || pendingGates.size > 0) return;
   finished = true;
-  // 揭幕：向 body 挂载就绪标志，触发 CSS 交叉淡入动画
   document.body.classList.add(APP_STARTUP_READY_CLASS);
   window.setTimeout(
     () => document.getElementById(LOADING_ELEMENT_ID)?.remove(),
@@ -48,23 +75,7 @@ const settleGate = (id: GateId) => {
 };
 ```
 
-### 主进程就绪「先拉后推」双通道防漏
-
-主进程模块就绪信号可能在渲染层监听器挂载前就已发出。协调器在执行首期通过预拉取快照，晚到信号再由事件补推：
-
-```ts
-const bridge = window.api?.startup;
-if (!bridge) {
-  settleGate('main'); // 无 Bridge 环境（如纯浏览器调试）不阻塞揭幕
-} else {
-  // 1. 先查快照（若主进程已就绪直接放行）
-  bridge.getSnapshot().then((s) => { if (s.mainReady) settleGate('main'); });
-  // 2. 监听补推
-  window.addEventListener(APP_STARTUP_MAIN_READY_EVENT, () => settleGate('main'), { once: true });
-  // 3. 超时兜底（5 秒）
-  window.setTimeout(() => settleGate('main'), STARTUP_MAIN_FALLBACK_MS);
-}
-```
+主进程门禁最容易漏信号：主进程侧 [startup-readiness.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/startup-readiness.module.ts) 的 `enable()` 在窗口创建前就完成并广播，监听器可能尚未挂载；preload 侧 [index.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/src/index.ts) 在求值期即预取快照。协调器因此「先拉后推」——先调 `api.startup.getSnapshot()` 取快照，`mainReady` 为真立即放行；再监听 `APP_STARTUP_MAIN_READY_EVENT` 补推；最后以 `STARTUP_MAIN_FALLBACK_MS`（5s）兜底。无 `api.startup` 的纯浏览器调试环境直接放行，不阻塞揭幕。
 
 ## 3. 桌面端避坑注意事项
 
