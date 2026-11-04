@@ -1,3 +1,5 @@
+import { PROJECT_DOCS_ORIGIN } from './docs';
+
 /**
  * 安全策略常量（主进程独占）
  *
@@ -8,5 +10,5 @@ export const ALLOWED_EXTERNAL_URLS = [
   'https://github.com',
   'https://vite.dev',
   'https://react.dev',
-  'https://banshan-alec.github.io',
+  PROJECT_DOCS_ORIGIN,
 ] as const;

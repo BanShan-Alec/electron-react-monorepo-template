@@ -1,3 +1,4 @@
+import { PROJECT_DOCS_URL } from '@app/shared/constants/docs';
 import { ALLOWED_EXTERNAL_URLS } from '@app/shared/constants/security';
 import { describe, expect, it } from 'vitest';
 import { ExternalUrls, isAllowedExternalUrl } from '../../src/modules/security/external-urls';
@@ -8,9 +9,7 @@ describe('external-urls security policy', () => {
     new ExternalUrls(new Set(ALLOWED_EXTERNAL_URLS));
 
     // 项目文档站白名单
-    expect(
-      isAllowedExternalUrl('https://banshan-alec.github.io/electron-react-monorepo-template/'),
-    ).toBe(true);
+    expect(isAllowedExternalUrl(PROJECT_DOCS_URL)).toBe(true);
 
     // 已有的 GitHub / Vite / React 白名单
     expect(isAllowedExternalUrl('https://github.com/BanShan-Alec')).toBe(true);

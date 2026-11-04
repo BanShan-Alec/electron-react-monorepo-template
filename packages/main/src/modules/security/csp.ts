@@ -1,8 +1,10 @@
+import { PROJECT_DOCS_ORIGIN } from '@app/shared/constants/docs';
 import { session } from 'electron';
 import type { AppModule } from '../../AppModule';
 import { getEnv } from '../../env';
 import type { ModuleContext } from '../../ModuleContext';
 import { getLogManager } from '../log.module';
+import { buildCspPolicy, shouldInjectCsp } from './csp-policy';
 
 function getValidOrigin(urlStr: string | undefined): string | null {
   if (!urlStr) return null;
@@ -43,16 +45,25 @@ export class ContentSecurityPolicyModule implements AppModule {
     // 动态提取 API 网关 Origin，若配置则允许渲染进程 connect-src 跨域直连
     const apiBaseUrl = getEnv('API_BASE_URL');
     const apiOrigin = getValidOrigin(apiBaseUrl);
-    const connectSrc = apiOrigin ? `'self' ${apiOrigin}` : "'self'";
 
     // 开发态：允许自身、内联脚本/样式、eval、data/blob 协议、https/http 与 ws:（支持 Vite HMR 和本地开发服务器）；
-    // 生产态：收紧策略，移除 unsafe-eval，放行必要自身源、首屏协调器内联脚本 ('unsafe-inline')、内联样式与静态媒体，并动态放行 apiBaseUrl
-    const cspPolicy = isDev
-      ? "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https: http: ws:;"
-      : `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src ${connectSrc};`;
+    // 生产态：收紧策略，移除 unsafe-eval，放行必要自身源、首屏协调器内联脚本 ('unsafe-inline')、内联样式与静态媒体，
+    // 动态放行 apiBaseUrl，并显式放行文档站 origin 的 frame-src（否则跨源 iframe 被 default-src 'self' 拦掉）
+    const cspPolicy = buildCspPolicy({
+      isDev,
+      apiOrigin,
+      docsOrigin: PROJECT_DOCS_ORIGIN,
+    });
 
     defaultSession.webRequest.onHeadersReceived((details, callback) => {
       const responseHeaders = { ...details.responseHeaders };
+
+      // CSP 是文档级策略：只注入主框架。子框架（文档站 iframe）不能被套上应用 CSP，
+      // 其运行时依赖 eval，套上后会 EvalError 白屏
+      if (!shouldInjectCsp(details.resourceType)) {
+        callback({ responseHeaders });
+        return;
+      }
 
       // 检查响应中是否已存在 CSP 头（大小写不敏感匹配）
       const existingKey = Object.keys(responseHeaders).find(

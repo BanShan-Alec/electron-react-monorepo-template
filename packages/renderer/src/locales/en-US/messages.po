@@ -223,6 +223,10 @@ msgstr "Save example"
 msgid "可用内存 / 总内存"
 msgstr "Memory (free / total)"
 
+#: src/features/docs/components/DocsView/index.tsx
+msgid "在浏览器中打开"
+msgstr "Open in browser"
+
 #: src/features/native-dialogs/components/DialogCard/index.tsx
 msgid "在资源管理器中定位"
 msgstr "Show in folder"
@@ -386,6 +390,18 @@ msgstr "Collapse"
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "文件或目录不存在: {selectedPath}"
 msgstr "File or folder not found: {selectedPath}"
+
+#: src/components/layout/Header/index.tsx
+msgid "文档站"
+msgstr "Docs"
+
+#: src/features/docs/components/DocsView/index.tsx
+msgid "文档站加载中…"
+msgstr "Loading documentation…"
+
+#: src/features/docs/components/DocsView/index.tsx
+msgid "文档站加载超时"
+msgstr "Documentation loading timed out"
 
 #: src/features/updater/index.tsx
 msgid "新版本已完成下载，重启应用后即可完成升级。"
@@ -671,6 +687,7 @@ msgstr "Restart and install"
 msgid "重置为 0"
 msgstr "Reset"
 
+#: src/features/docs/components/DocsView/index.tsx
 #: src/features/updater/index.tsx
 msgid "重试"
 msgstr "Retry"
@@ -686,3 +703,7 @@ msgstr "Blocked external link (example.com)"
 #: src/components/layout/ErrorBoundary/index.tsx
 msgid "页面出错啦~"
 msgstr "Something went wrong~"
+
+#: src/features/docs/components/DocsView/index.tsx
+msgid "项目文档站"
+msgstr "Project documentation"

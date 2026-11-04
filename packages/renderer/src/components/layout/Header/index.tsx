@@ -15,7 +15,9 @@ const _Header = (props: HeaderProps) => {
   // 变量声明、解构
   const activeTab: HeaderTab = location.startsWith('/architecture')
     ? '/architecture'
-    : '/dashboard';
+    : location.startsWith('/docs')
+      ? '/docs'
+      : '/dashboard';
 
   // 组件状态
 
@@ -26,6 +28,7 @@ const _Header = (props: HeaderProps) => {
   const tabItems = [
     { key: '/dashboard', label: t`总览看板` },
     { key: '/architecture', label: t`架构全貌` },
+    { key: '/docs', label: t`文档站` },
   ];
 
   // 逻辑处理函数
@@ -81,7 +84,7 @@ const _Header = (props: HeaderProps) => {
 };
 
 // props 类型定义
-export type HeaderTab = '/dashboard' | '/architecture';
+export type HeaderTab = '/dashboard' | '/architecture' | '/docs';
 
 export interface HeaderProps {
   onTabChange?: (tab: HeaderTab) => void;

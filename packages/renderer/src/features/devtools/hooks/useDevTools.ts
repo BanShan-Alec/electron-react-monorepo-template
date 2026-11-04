@@ -1,4 +1,5 @@
 import { t } from '@lingui/core/macro';
+import { PROJECT_DOCS_URL } from '@shared/constants/docs';
 import type { PerformActionInput } from '@shared/schemas/diagnostics';
 import { App } from 'antd';
 import { useState } from 'react';
@@ -6,7 +7,6 @@ import { useManualRequest } from '@/hooks/useManualRequest';
 import { callIpc } from '@/lib/ipc';
 
 // 私有常量
-const PROJECT_DOCS_URL = 'https://banshan-alec.github.io/electron-react-monorepo-template/';
 const GITHUB_URL = 'https://github.com';
 const BLOCKED_TEST_URL = 'https://example.com';
 type DevToolsAction = { kind: 'toggleDevTools' } | { kind: 'openUrl'; url: string };
