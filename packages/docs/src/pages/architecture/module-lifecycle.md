@@ -16,36 +16,48 @@ description: 采用 ModuleRunner 微内核将系统能力解耦为可插拔模�
 
 ## 2. 核心机制
 
-`initApp` 里的 `.init()` 链就是真实初始化时序：`init()` 对每个模块立即调用 `enable()`，同步完成的部分当场执行；返回的 Promise 从调用点就开始跑，只是被接到链尾，`await moduleRunner` 会等链上所有 Promise 落定。下图按代码顺序排列全部模块，箭头标出两处不能调换的因果依赖。
+`initApp` 里的 `.init()` 链就是真实初始化时序：`init()` 对每个模块立即调用 `enable()`，同步完成的部分当场执行；返回的 Promise 从调用点就开始跑，只是被接到链尾，`await moduleRunner` 会等链上所有 Promise 落定。下图按代码顺序分阶段排列全部模块，箭头标出两处不能调换的因果依赖。
 
 ```mermaid
-flowchart TB
-  subgraph main["主进程（Main）"]
+flowchart LR
+  subgraph foundation["基础设施"]
     direction TB
     LOG["createLogModule()<br/>日志双写"]
     SENTRY["createSentryModule()<br/>崩溃监控"]
     CONFIG["createConfigModule()<br/>偏好持久化"]
     THEME["createNativeThemeModule()<br/>原生主题"]
+    LOG -->|"最先装配：后续模块异常均可落盘"| SENTRY
+    SENTRY --> CONFIG --> THEME
+  end
+
+  subgraph runtime["通信与就绪"]
+    direction TB
     IPC["createIPCModule()<br/>控制器路由"]
     READY["createStartupReadinessModule()<br/>就绪闩锁"]
+    IPC --> READY
+  end
+
+  subgraph windows["窗口与系统生命周期"]
+    direction TB
     WIN["createWindowManagerModule()<br/>主窗口"]
     UPDATER_WIN["createUpdaterWindowModule()<br/>更新窗口"]
     TRAY["createTrayModule()<br/>系统托盘"]
     SINGLE["disallowMultipleAppInstance()<br/>单实例锁"]
     TERM["terminateAppOnLastWindowClose()<br/>末窗退出"]
-    subgraph security["主进程安全加固（信任边界）"]
-      direction TB
-      CSP["createContentSecurityPolicyModule()<br/>CSP 响应头"]
-      ORIGIN["allowInternalOrigins()<br/>内部来源白名单"]
-      EXT["allowExternalUrls()<br/>外链白名单"]
-    end
+    WIN --> UPDATER_WIN --> TRAY --> SINGLE --> TERM
   end
 
-  LOG -->|"最先装配：后续模块异常均可落盘"| SENTRY
-  SENTRY --> CONFIG --> THEME --> IPC --> READY
-  READY -->|"就绪信号先于窗口创建"| WIN
-  WIN --> UPDATER_WIN --> TRAY --> SINGLE --> TERM
-  TERM --> CSP --> ORIGIN --> EXT
+  subgraph security["主进程安全加固（信任边界）"]
+    direction TB
+    CSP["createContentSecurityPolicyModule()<br/>CSP 响应头"]
+    ORIGIN["allowInternalOrigins()<br/>内部来源白名单"]
+    EXT["allowExternalUrls()<br/>外链白名单"]
+    CSP --> ORIGIN --> EXT
+  end
+
+  foundation --> runtime
+  runtime -->|"就绪信号先于窗口创建"| windows
+  windows --> security
 ```
 
 ### 极简模块协议（AppModule）

@@ -125,3 +125,227 @@
 [data-v-ask-ai-container] {
   display: none;
 }
+
+/* #region Mermaid */
+/* 1. 自然尺寸：Vocs 默认给 svg 设 max-w-full，1840px 宽的时序图会被压到 743px，
+   16px 字实际只剩 ~6px。改为保留 viewBox 自然宽度，宽图在容器内横向滚动；
+   同时给整张图加「点击放大」的可发现性。 */
+[data-v-mermaid-container] {
+  position: relative;
+}
+
+[data-v-mermaid] {
+  max-height: 320px;
+  overflow: auto;
+  align-items: flex-start;
+  justify-content: flex-start;
+  cursor: zoom-in;
+}
+
+[data-v-mermaid] svg {
+  flex: none;
+  max-width: none !important;
+  height: auto;
+}
+
+/* 放大提示与底部渐隐放在 container 上，框内滚动时两者保持固定。 */
+[data-v-mermaid-container][data-mermaid-zoomable]::before {
+  content: "点击放大";
+  display: block;
+  width: fit-content;
+  margin: 0 0 6px auto;
+  padding: 2px 8px;
+  border: 1px solid var(--border-color-primary);
+  border-radius: 999px;
+  background: var(--background-color-surface);
+  color: var(--text-color-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.78;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+[data-v-mermaid-container][data-mermaid-zoomable]:hover::before {
+  opacity: 1;
+}
+
+[data-v-mermaid-container][data-mermaid-scrollable="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  height: 56px;
+  background: linear-gradient(to bottom, transparent, var(--background-color-primary));
+  pointer-events: none;
+}
+
+[data-v-mermaid]:focus-visible {
+  outline: 2px solid var(--vocs-color-accent);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+/* 2. 主题：mermaid 默认淡紫 #ECECFF / 紫边 #9370DB / 淡黄 cluster 与 Vocs 的中性色
+   冲突；统一换成站点令牌，深浅色由 light-dark 自动跟随。 */
+[data-v-mermaid] .node rect,
+[data-v-mermaid] .node circle,
+[data-v-mermaid] .node ellipse,
+[data-v-mermaid] .node polygon,
+[data-v-mermaid] .node path,
+[data-v-mermaid] .actor,
+[data-v-mermaid] .labelBox,
+[data-v-mermaid] .statediagram-state .basic.label-container,
+[data-v-mermaid] .statediagram-note .basic.label-container {
+  fill: var(--background-color-surface) !important;
+  stroke: var(--vocs-color-gray9) !important;
+}
+
+/* sequenceDiagram 的 box 背景是 rect.rect + fill="LightBlue/LightYellow/..." */
+[data-v-mermaid] rect.rect {
+  fill: var(--background-color-surfaceTint) !important;
+  stroke: var(--vocs-color-gray9) !important;
+}
+
+[data-v-mermaid] text {
+  fill: var(--text-color-primary) !important;
+  text-rendering: geometricPrecision;
+}
+
+[data-v-mermaid] .cluster rect {
+  fill: var(--background-color-surfaceTint) !important;
+  stroke: var(--vocs-color-gray9) !important;
+}
+
+[data-v-mermaid] .nodeLabel,
+[data-v-mermaid] .label,
+[data-v-mermaid] .labelText,
+[data-v-mermaid] .messageText,
+[data-v-mermaid] .loopText,
+[data-v-mermaid] .noteText,
+[data-v-mermaid] .cluster-label .nodeLabel,
+[data-v-mermaid] text.actor > tspan,
+[data-v-mermaid] .edgeLabel,
+[data-v-mermaid] .edgeLabel .label {
+  color: var(--text-color-primary) !important;
+  fill: var(--text-color-primary) !important;
+}
+
+[data-v-mermaid] .edgePath .path,
+[data-v-mermaid] .flowchart-link,
+[data-v-mermaid] .transition,
+[data-v-mermaid] .messageLine0,
+[data-v-mermaid] .messageLine1,
+[data-v-mermaid] .actor-line,
+[data-v-mermaid] .loopLine {
+  stroke: var(--vocs-color-gray9) !important;
+}
+
+[data-v-mermaid] .marker,
+[data-v-mermaid] .marker path {
+  fill: var(--vocs-color-gray9) !important;
+  stroke: var(--vocs-color-gray9) !important;
+}
+
+[data-v-mermaid] .edgeLabel rect,
+[data-v-mermaid] .labelBkg {
+  fill: var(--background-color-primary) !important;
+}
+
+[data-v-mermaid] .note,
+[data-v-mermaid] .note rect {
+  fill: var(--background-color-surfaceMuted) !important;
+  stroke: var(--vocs-color-gray9) !important;
+}
+
+[data-v-mermaid] .state-start,
+[data-v-mermaid] .state-end {
+  fill: var(--vocs-color-accent) !important;
+  stroke: var(--vocs-color-accent) !important;
+}
+
+/* 3. 点击放大：<dialog> 全屏预览，工具栏支持适应宽度 / 100% / 放大 / 缩小。 */
+/* 根滚动条在 ::backdrop 的绘制区域之外，遮罩盖不到；打开时锁住页面滚动，
+   滚动条不再渲染，关闭后移除 class 恢复。 */
+html.mermaid-zoom-open,
+html.mermaid-zoom-open body {
+  overflow: hidden;
+}
+
+.mermaid-zoom-dialog {
+  width: min(96vw, 1600px);
+  max-width: 96vw;
+  height: 90vh;
+  max-height: 90vh;
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-color-primary);
+  border-radius: 12px;
+  background: var(--background-color-primary);
+  color: var(--text-color-primary);
+}
+
+.mermaid-zoom-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.mermaid-zoom-dialog:not([open]) {
+  display: none;
+}
+
+.mermaid-zoom-dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+
+.mermaid-zoom-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color-primary);
+  background: var(--background-color-primary);
+}
+
+.mermaid-zoom-toolbar button {
+  padding: 4px 10px;
+  border: 1px solid var(--border-color-primary);
+  border-radius: 6px;
+  background: var(--background-color-surface);
+  color: var(--text-color-primary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.mermaid-zoom-toolbar button:hover {
+  background: var(--background-color-surfaceTint);
+}
+
+.mermaid-zoom-stage {
+  display: block !important;
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow: hidden;
+  padding: 16px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.mermaid-zoom-stage:active {
+  cursor: grabbing;
+}
+
+.mermaid-zoom-stage::after {
+  content: none !important;
+}
+
+.mermaid-zoom-stage svg {
+  max-width: none !important;
+  height: auto;
+}
+/* #endregion */
