@@ -1,6 +1,40 @@
 import { defineConfig } from 'vocs/config';
 import { BASE_PATH, SIDEBAR } from './src/navigation';
 
+// Vocs 不设置 NODE_ENV（build 时 config 先于 Vite 赋值被加载），
+// 文档站脚本固定是 `cli.js dev|build`，因此用 argv 判断 dev。
+const isDev = process.argv[2] === 'dev';
+
+// 文档站离线：注册 sw.js，并在 SW 就绪后把当前页 HTML 与已加载资源补进缓存。
+// 首次访问时 SW 尚未控制页面，首屏资源不会被 fetch 事件截到，需要这一步。
+const SW_REGISTER_SCRIPT = `
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker
+    .register(${JSON.stringify(`${BASE_PATH}sw.js`)}, {
+      scope: ${JSON.stringify(BASE_PATH)},
+      updateViaCache: 'none',
+    })
+    .then(function () {
+      return navigator.serviceWorker.ready;
+    })
+    .then(function (registration) {
+      const assets = performance
+        .getEntriesByType('resource')
+        .map(function (entry) { return entry.name; })
+        .filter(function (url) { return url.indexOf(location.origin) === 0; });
+      if (registration.active) {
+        registration.active.postMessage({
+          type: 'CACHE_URLS',
+          html: location.href,
+          assets: assets,
+        });
+      }
+    })
+    .catch(function () {});
+})();
+`;
+
 export default defineConfig({
   // 注意：必须从 vocs/config 子路径导入。主入口会拉起 React 组件链，
   // 其中的 ~icons 虚拟包在配置加载阶段无法解析（见 packages/docs 迁移记录）。
@@ -16,6 +50,8 @@ export default defineConfig({
   iconUrl: '/electron-react-monorepo-template/icon.png',
   // 默认 dynamic 是 Node 服务形态；GitHub Pages 纯静态托管必须显式 full-static
   renderStrategy: 'full-static',
+  // dev 不注入注册脚本，避免 SW 缓存 Vocs HMR 资源
+  ...(isDev ? {} : { head: { script: [{ innerHTML: SW_REGISTER_SCRIPT }] } }),
   socials: [
     {
       icon: 'github',

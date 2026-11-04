@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { ContentSecurityPolicyModule } from '@app/main/modules/security/csp';
+import { PROJECT_DOCS_ORIGIN } from '@app/shared/constants/docs';
 import { session } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -21,6 +22,11 @@ vi.mock('electron', () => {
     },
   };
 });
+
+type HeadersReceivedDetails = {
+  responseHeaders: Record<string, string | string[]>;
+  resourceType?: string;
+};
 
 describe('ContentSecurityPolicyModule', () => {
   let mockApp: EventEmitter;
@@ -62,12 +68,12 @@ describe('ContentSecurityPolicyModule', () => {
       mockApp.emit('ready');
 
       const listener = onHeadersReceivedSpy.mock.calls[0][0] as (
-        details: { responseHeaders: Record<string, string | string[]> },
+        details: HeadersReceivedDetails,
         callback: (response: { responseHeaders: Record<string, string | string[]> }) => void,
       ) => void;
 
       let callbackResult: { responseHeaders: Record<string, string | string[]> } | undefined;
-      listener({ responseHeaders: {} }, (res) => {
+      listener({ responseHeaders: {}, resourceType: 'mainFrame' }, (res) => {
         callbackResult = res;
       });
 
@@ -78,14 +84,36 @@ describe('ContentSecurityPolicyModule', () => {
 
       const activePolicy = (cspHeaders as string[])[0];
       expect(activePolicy).toBe(
-        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self';",
+        `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-src ${PROJECT_DOCS_ORIGIN};`,
       );
       expect(activePolicy).toContain("script-src 'self' 'unsafe-inline'");
       expect(activePolicy).not.toContain("'unsafe-eval'");
-      expect(activePolicy).not.toContain('https:');
+      expect(activePolicy).not.toContain('ws:');
     } finally {
       (import.meta.env as { PROD: boolean }).PROD = originalProd;
     }
+  });
+
+  it('does not inject CSP into subframes', () => {
+    const cspModule = new ContentSecurityPolicyModule();
+    cspModule.enable({
+      app: mockApp as unknown as Electron.App,
+    } as unknown as import('@app/main/ModuleContext').ModuleContext);
+
+    mockApp.emit('ready');
+
+    const listener = onHeadersReceivedSpy.mock.calls[0][0] as (
+      details: HeadersReceivedDetails,
+      callback: (response: { responseHeaders: Record<string, string | string[]> }) => void,
+    ) => void;
+
+    let callbackResult: { responseHeaders: Record<string, string | string[]> } | undefined;
+    listener({ responseHeaders: {}, resourceType: 'subFrame' }, (res) => {
+      callbackResult = res;
+    });
+
+    expect(callbackResult).toBeDefined();
+    expect(callbackResult?.responseHeaders['Content-Security-Policy']).toBeUndefined();
   });
 
   it('dynamically injects valid API_BASE_URL origin into production connect-src', () => {
@@ -103,12 +131,12 @@ describe('ContentSecurityPolicyModule', () => {
       mockApp.emit('ready');
 
       const listener = onHeadersReceivedSpy.mock.calls[0][0] as (
-        details: { responseHeaders: Record<string, string | string[]> },
+        details: HeadersReceivedDetails,
         callback: (response: { responseHeaders: Record<string, string | string[]> }) => void,
       ) => void;
 
       let callbackResult: { responseHeaders: Record<string, string | string[]> } | undefined;
-      listener({ responseHeaders: {} }, (res) => {
+      listener({ responseHeaders: {}, resourceType: 'mainFrame' }, (res) => {
         callbackResult = res;
       });
 
@@ -137,12 +165,12 @@ describe('ContentSecurityPolicyModule', () => {
       mockApp.emit('ready');
 
       const listener = onHeadersReceivedSpy.mock.calls[0][0] as (
-        details: { responseHeaders: Record<string, string | string[]> },
+        details: HeadersReceivedDetails,
         callback: (response: { responseHeaders: Record<string, string | string[]> }) => void,
       ) => void;
 
       let callbackResult: { responseHeaders: Record<string, string | string[]> } | undefined;
-      listener({ responseHeaders: {} }, (res) => {
+      listener({ responseHeaders: {}, resourceType: 'mainFrame' }, (res) => {
         callbackResult = res;
       });
 
@@ -170,14 +198,20 @@ describe('ContentSecurityPolicyModule', () => {
     mockApp.emit('ready');
 
     const listener = onHeadersReceivedSpy.mock.calls[0][0] as (
-      details: { responseHeaders: Record<string, string | string[]> },
+      details: HeadersReceivedDetails,
       callback: (response: { responseHeaders: Record<string, string | string[]> }) => void,
     ) => void;
 
     let callbackResult: { responseHeaders: Record<string, string | string[]> } | undefined;
-    listener({ responseHeaders: { 'content-security-policy': 'existing-header' } }, (res) => {
-      callbackResult = res;
-    });
+    listener(
+      {
+        responseHeaders: { 'content-security-policy': 'existing-header' },
+        resourceType: 'mainFrame',
+      },
+      (res) => {
+        callbackResult = res;
+      },
+    );
 
     expect(callbackResult).toBeDefined();
     const headers = callbackResult?.responseHeaders['content-security-policy'];

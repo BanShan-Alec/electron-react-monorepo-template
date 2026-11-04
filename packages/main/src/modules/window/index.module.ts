@@ -10,6 +10,7 @@ import type { ModuleContext } from '../../ModuleContext';
 import { updaterService } from '../../services/updater.service';
 import { getAppConfigStore } from '../config.module';
 import { getLogManager } from '../log.module';
+import { attachDocsEmbedStyle } from './docs-embed';
 import { getTitleBarOverlayOptions, getWindowBackgroundColor } from './titlebar-overlay';
 import { getUpdaterWindowModule } from './updater-window.module';
 import {
@@ -126,6 +127,10 @@ export class WindowManager implements AppModule {
 
     // 注册到 window-registry 唯一事实源
     registerWindow(WINDOW_IDS.HOME, browserWindow);
+
+    // 文档站 iframe 主题切换器隐藏：只挂 home 窗口，按 frame URL 精确匹配
+    attachDocsEmbedStyle(browserWindow.webContents);
+
     browserWindow.on('closed', () => {
       this.closeRequestPending = false;
       this.closeGuardBypass = false;

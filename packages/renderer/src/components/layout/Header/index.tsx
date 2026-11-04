@@ -7,15 +7,18 @@ import logoCompact from '@/assets/logo-compact.svg?url';
 import { EllipsisText } from '@/components/ui/EllipsisText';
 
 // 可抽离的逻辑处理函数/组件
+function resolveActiveTab(location: string): HeaderTab {
+  if (location.startsWith('/architecture')) return '/architecture';
+  if (location.startsWith('/docs')) return '/docs';
+  return '/dashboard';
+}
 
 const _Header = (props: HeaderProps) => {
   useLingui();
   const [location, navigate] = useLocation();
 
   // 变量声明、解构
-  const activeTab: HeaderTab = location.startsWith('/architecture')
-    ? '/architecture'
-    : '/dashboard';
+  const activeTab = resolveActiveTab(location);
 
   // 组件状态
 
@@ -26,6 +29,7 @@ const _Header = (props: HeaderProps) => {
   const tabItems = [
     { key: '/dashboard', label: t`总览看板` },
     { key: '/architecture', label: t`架构全貌` },
+    { key: '/docs', label: t`文档站` },
   ];
 
   // 逻辑处理函数
@@ -81,7 +85,7 @@ const _Header = (props: HeaderProps) => {
 };
 
 // props 类型定义
-export type HeaderTab = '/dashboard' | '/architecture';
+export type HeaderTab = '/dashboard' | '/architecture' | '/docs';
 
 export interface HeaderProps {
   onTabChange?: (tab: HeaderTab) => void;
