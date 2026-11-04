@@ -43,7 +43,38 @@ targetLogger.error('业务调用失败', { error: err.message });
 排障四步走：
 1. 打开 `renderer-home.log`，定位报错行，提取方括号内的 `[trace_id:xxxx]`；
 2. 打开 `main.log`，全文搜索该 `trace_id`，立即找到主进程对应该请求的执行堆栈；
-3. 若需排查执行耗时瓶颈，前往 `traces.ndjson` 过滤该 `trace_id` 查看每个 Span 的毫秒级耗时。
+3. 若需排查执行耗时瓶颈，前往 `traces.ndjson` 过滤该 `trace_id` 查看每个 Span 的毫秒级耗时；
+4. 也可在命令行直接检索：Git Bash 用 `grep <trace_id> logs/main.log`，PowerShell 用 `Select-String <trace_id> logs\main.log`。
+
+### 实战：一次真实排障
+
+下面是本仓开发态一次真实运行的完整记录：home 窗口请求打开外链 `https://example.com`，被主进程外链白名单拦截。三个文件里的同一个 `trace_id`，串出这次调用的完整证据链。
+
+**渲染端最先落盘**——`[ipc]` 前缀说明这是请求层统一捕获的业务失败，`2.7ms` 是渲染端计时：
+
+```text
+[2026-10-20 17:03:55.865] [error] [trace_id:2611dd45ea5ca5a37b97c91eb46e504a] [Renderer] [home] [ipc] diagnostics.performAction failed 2.7ms {
+  name: 'Error',
+  message: 'Disallowed external URL: https://example.com',
+  stack: 'Error: Disallowed external URL: https://example.com\n' +
+    '    at async Object.<anonymous> (http://localhost:5173/src/features/devtools/hooks/useDevTools.ts:18:16)'
+}
+```
+
+主进程紧接着两行：`Handling` 是入口登记，`failed` 行带出真正的拒绝原因与 `Result.code`：
+
+```text
+[2026-10-20 17:03:55.862] [debug] [trace_id:2611dd45ea5ca5a37b97c91eb46e504a span_id:2fd06c93e53731f5] [IPC] [home] Handling diagnostics:perform-action
+[2026-10-20 17:03:55.864] [warn]  [trace_id:2611dd45ea5ca5a37b97c91eb46e504a span_id:2fd06c93e53731f5] [IPC] [home] diagnostics:perform-action failed (0.6ms): Disallowed external URL: https://example.com [code: INVALID_ARGUMENT]
+```
+
+`traces.ndjson` 里同一 trace 的 Span：`status: ERROR`、总耗时 `1.83ms`，`events.business_error` 里是结构化的错误码与消息，机器可检索：
+
+```text
+{"type":"span","name":"ipc.receive:diagnostics:perform-action","trace_id":"2611dd45ea5ca5a37b97c91eb46e504a","span_id":"2fd06c93e53731f5","parent_id":"5d50e42213267f2f","start_time":1792487035862,"duration_ms":1.83,"status":"ERROR","attributes":{"ipc.channel":"diagnostics:perform-action","rpc.system":"electron-ipc","window.id":1,"window.name":"home","app.result_success":false,"app.result_code":"INVALID_ARGUMENT"},"events":[{"name":"business_error","time_ms":1792487035864,"attributes":{"error.message":"Disallowed external URL: https://example.com","error.code":"INVALID_ARGUMENT"}}]}
+```
+
+注意时间戳：主进程 `debug`（`.862`）比渲染端 `error`（`.865`）更早落盘——渲染端的失败日志要等 IPC 返回后才写。两端各记各的视角，靠 `trace_id` 而不是时间对齐。
 
 ## 3. 桌面端避坑注意事项
 
