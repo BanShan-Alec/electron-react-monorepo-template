@@ -121,34 +121,16 @@ html::-webkit-scrollbar-corner {
   }
 }
 
-/* 侧栏目录滚动条：悬停显示的 6px 细条，默认完全不可见。
-   侧栏是次级导航，全站 14px 通栏滚动条在这里太重；仅覆盖目录栏，
-   页面根滚动条保持 14px（与 renderer 对齐的决定不变）。
-   Firefox 没有 hover-reveal 的 CSS 手段，直接隐藏（滚轮/键盘仍可滚）。 */
+/* 侧栏目录滚动条：只做透明（轨道/滑块透明，视觉隐藏），粗细沿用全站 14px；
+   Firefox 直接隐藏（滚轮/键盘仍可滚）。页面根滚动条保持 14px 不变。 */
+aside[data-v-sidebar-container]::-webkit-scrollbar-thumb {
+  background-color: transparent;
+}
+
 @supports not selector(::-webkit-scrollbar) {
   aside[data-v-sidebar-container] {
     scrollbar-width: none;
   }
-}
-
-aside[data-v-sidebar-container]::-webkit-scrollbar {
-  width: 6px;
-}
-
-aside[data-v-sidebar-container]::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-aside[data-v-sidebar-container]::-webkit-scrollbar-thumb {
-  background-color: transparent;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  background-clip: padding-box;
-}
-
-aside[data-v-sidebar-container]:hover::-webkit-scrollbar-thumb,
-aside[data-v-sidebar-container]:focus-within::-webkit-scrollbar-thumb {
-  background-color: light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.12));
 }
 
 /* 代码组横向滚动条：与全局同几何（renderer 没有按组件开小灶的先例） */
