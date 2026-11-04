@@ -34,14 +34,89 @@
   }
 }
 
-/* 滚动条：Vocs 默认 *{ scrollbar-color: light-dark(gray10, gray7) } 的 thumb
-   偏重。定稿 = 浅色比浏览器默认浅两档、深色比浏览器默认深两档（灰阶刻度）：
-   浏览器默认浅色 thumb ≈#c1c1c1（L≈0.80，介于 gray10/gray11 之间）→ 上两档取
-   gray12（L 0.933）；深色默认 ≈#6e6e6e（L≈0.52，≈gray7）→ 下两档取 gray5
-   （L 0.26，贴近深色背景、滚动条退居背景）。本文件经 userStyles 排在核心
-   CSS 之后，同选择器同优先级天然覆盖。 */
-* {
-  scrollbar-color: light-dark(var(--vocs-color-gray12), var(--vocs-color-gray5)) transparent;
+/* 滚动条：与 renderer 完全对齐（packages/renderer/src/styles/base.css 的全局
+   ::-webkit-scrollbar 规则），内嵌 tab 与网页版同观感。几何 = 14px 总宽、轨道
+   透明，3px 透明 border + background-clip 收出视觉 8px 滑块与 4px 视觉圆角；
+   三态取 antd 中性 alpha 梯度（浅色 .15/.25/.45，深色 .18/.25/.45），light-dark
+   跟随站点主题（iframe 内跟随 nativeTheme）。
+
+   两个必须：① Vocs 核心在 vocs_base 给 * 设了 scrollbar-width: thin +
+   scrollbar-color，Chromium 里两者非 auto 会整体禁用 ::-webkit-scrollbar 伪元素，
+   故复位成 auto；规则入 components 层（晚于 vocs_base、早于 utilities），
+   vocs:scrollbar-none 这类工具类仍能正常隐藏滚动条。
+   ② markdown.css 的代码组滚动条规则是「层外裸样式」，压过任何 layer，故对
+   [data-v-code-group-list] 单独出层覆盖（同选择器、本文件靠后，源序取胜）。 */
+@layer components {
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+
+  *::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
+    border: 3px solid transparent;
+    border-radius: 7px;
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: light-dark(rgba(0, 0, 0, 0.25), rgba(255, 255, 255, 0.25));
+  }
+
+  *::-webkit-scrollbar-thumb:active {
+    background-color: light-dark(rgba(0, 0, 0, 0.45), rgba(255, 255, 255, 0.45));
+  }
+
+  /* Windows 自定义滚动条默认带步进箭头按钮，显式隐藏 */
+  *::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Firefox 不认 ::-webkit-scrollbar：保留原有细条 + 灰阶作为兜底 */
+  @supports not selector(::-webkit-scrollbar) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: light-dark(var(--vocs-color-gray12), var(--vocs-color-gray5)) transparent;
+    }
+  }
+}
+
+/* 代码组横向滚动条：与全局同几何（renderer 没有按组件开小灶的先例） */
+[data-v-code-group-list] {
+  scrollbar-width: auto;
+  scrollbar-color: auto;
+}
+
+[data-v-code-group-list]::-webkit-scrollbar {
+  height: 14px;
+}
+
+[data-v-code-group-list]::-webkit-scrollbar-thumb {
+  background-color: light-dark(rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.18));
+  border: 3px solid transparent;
+  border-radius: 7px;
+  background-clip: padding-box;
+}
+
+[data-v-code-group-list]::-webkit-scrollbar-thumb:hover {
+  background-color: light-dark(rgba(0, 0, 0, 0.25), rgba(255, 255, 255, 0.25));
+}
+
+[data-v-code-group-list]::-webkit-scrollbar-thumb:active {
+  background-color: light-dark(rgba(0, 0, 0, 0.45), rgba(255, 255, 255, 0.45));
 }
 
 /* 隐藏 Ask AI 浮动气泡（用户指定 CSS 隐藏、不改页面 frontmatter）：底部
