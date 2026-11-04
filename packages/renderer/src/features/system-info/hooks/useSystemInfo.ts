@@ -1,7 +1,7 @@
 import { t } from '@lingui/core/macro';
 import { useInterval } from 'ahooks';
 import { App } from 'antd';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useIpc } from '@/hooks/useIpc';
 import { createIdleRefresh } from '../lib/createIdleRefresh';
 
@@ -30,10 +30,7 @@ export function useSystemInfo() {
   });
 
   // 逻辑处理函数
-  const refreshWhenIdle = useMemo(
-    () => createIdleRefresh(fetchSystemInfoAsync),
-    [fetchSystemInfoAsync],
-  );
+  const refreshWhenIdle = createIdleRefresh(fetchSystemInfoAsync);
 
   // 组件Effect
   useEffect(() => {

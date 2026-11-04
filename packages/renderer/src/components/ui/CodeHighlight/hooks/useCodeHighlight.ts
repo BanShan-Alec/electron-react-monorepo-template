@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import {
   createRangesFromTokens,
   type HighlightTokenType,
@@ -13,7 +13,7 @@ import {
  * 将代码高亮 Range 注册到 CSS Custom Highlight API 的通用 Hook
  */
 export function useCodeHighlight(containerRef: RefObject<HTMLElement | null>, code: string): void {
-  const tokens = useMemo(() => tokenizeCode(code), [code]);
+  const tokens = tokenizeCode(code);
   const rangesRef = useRef<Map<HighlightTokenType, Range[]>>(new Map());
 
   useLayoutEffect(() => {
