@@ -94,6 +94,33 @@
   }
 }
 
+/* 根滚动条：轨道显式铺页面底色。Vocs 在 vocs_base 给 * 设了
+   scrollbar-width: thin + scrollbar-color（轨道 transparent）；根滚动条一旦走原生
+   绘制，轨道就是浏览器灰，与正文底色不同。根上复位 auto 保证 ::-webkit-scrollbar
+   生效，再显式铺 --background-color-primary；mermaid 预览框同理。 */
+html {
+  scrollbar-width: auto;
+  scrollbar-color: auto;
+}
+
+html::-webkit-scrollbar-track,
+html::-webkit-scrollbar-corner {
+  background: var(--background-color-primary);
+}
+
+[data-v-mermaid]::-webkit-scrollbar-track,
+[data-v-mermaid]::-webkit-scrollbar-corner {
+  background: var(--background-color-primary);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: light-dark(var(--vocs-color-gray10), var(--vocs-color-gray6))
+      var(--background-color-primary);
+  }
+}
+
 /* 代码组横向滚动条：与全局同几何（renderer 没有按组件开小灶的先例） */
 [data-v-code-group-list] {
   scrollbar-width: auto;
