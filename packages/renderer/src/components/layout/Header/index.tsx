@@ -7,17 +7,18 @@ import logoCompact from '@/assets/logo-compact.svg?url';
 import { EllipsisText } from '@/components/ui/EllipsisText';
 
 // 可抽离的逻辑处理函数/组件
+function resolveActiveTab(location: string): HeaderTab {
+  if (location.startsWith('/architecture')) return '/architecture';
+  if (location.startsWith('/docs')) return '/docs';
+  return '/dashboard';
+}
 
 const _Header = (props: HeaderProps) => {
   useLingui();
   const [location, navigate] = useLocation();
 
   // 变量声明、解构
-  const activeTab: HeaderTab = location.startsWith('/architecture')
-    ? '/architecture'
-    : location.startsWith('/docs')
-      ? '/docs'
-      : '/dashboard';
+  const activeTab = resolveActiveTab(location);
 
   // 组件状态
 

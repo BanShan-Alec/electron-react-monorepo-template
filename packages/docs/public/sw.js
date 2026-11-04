@@ -92,8 +92,9 @@ async function cacheUrl(cache, rawUrl, options) {
   try {
     const response = await fetch(url.href, options);
     if (response.ok) await cache.put(url.href, response);
-  } catch {
-    // 单个资源失败不影响其他资源
+  } catch (error) {
+    // 单个资源失败不影响其他资源，但保留排查线索
+    console.warn('[docs-sw] cache failed', url.href, error);
   }
 }
 

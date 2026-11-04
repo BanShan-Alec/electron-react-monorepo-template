@@ -19,7 +19,7 @@ const SW_REGISTER_SCRIPT = `
       return navigator.serviceWorker.ready;
     })
     .then(function (registration) {
-      var assets = performance
+      const assets = performance
         .getEntriesByType('resource')
         .map(function (entry) { return entry.name; })
         .filter(function (url) { return url.indexOf(location.origin) === 0; });

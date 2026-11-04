@@ -28,7 +28,13 @@ export function attachDocsEmbedStyle(contents: WebContents): void {
 
     void frame
       .executeJavaScript(INJECT_SCRIPT)
-      .then(() => logger.info('Docs embed style injected'))
+      .then((result: unknown) => {
+        if (result === 'injected') {
+          logger.info('Docs embed style injected');
+          return;
+        }
+        logger.debug('Docs embed style already exists');
+      })
       .catch((error: unknown) => logger.warn('Failed to inject docs embed style', error));
   });
 }
