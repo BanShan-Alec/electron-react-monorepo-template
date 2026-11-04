@@ -147,10 +147,13 @@ html::-webkit-scrollbar-corner {
 }
 
 /* 隐藏 Ask AI 浮动气泡（用户指定 CSS 隐藏、不改页面 frontmatter）：底部
-   「Ask AI...」触发栏。Ctrl+I 弹出的菜单 portal 与「Copy page for AI」按钮
-   保留不动。 */
+   「Ask AI...」触发栏。注意 Ctrl+I 的菜单锚定在这个触发器上，display:none
+   会把 --anchor-width 清零、菜单跑到视口左上角且宽度塌成 0（样式错乱）；
+   改用 visibility + pointer-events：气泡不可见不可点，占位还在，菜单照常
+   从原位向上弹出（Menu.Portal 渲染在 body，不受本规则影响）。 */
 [data-v-ask-ai-container] {
-  display: none;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* #region Mermaid */
