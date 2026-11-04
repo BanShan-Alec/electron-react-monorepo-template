@@ -21,7 +21,7 @@ description: 动画、React 首帧与主进程就绪三路门禁协调揭幕，�
 
 ```mermaid
 flowchart TB
-  subgraph renderer["渲染进程"]
+  subgraph renderer["渲染进程（Renderer）"]
     StartupReadyNotifier["StartupReadyNotifier<br/>React 首帧 commit"]
     animation["animation 门禁<br/>animationend"]
     react["react 门禁<br/>app-react-startup-ready"]
@@ -33,11 +33,11 @@ flowchart TB
     STARTUP_REACT_FALLBACK_MS["超时 3s"]
     STARTUP_MAIN_FALLBACK_MS["超时 5s"]
   end
-  subgraph preload["preload · api.startup"]
+  subgraph preload["Preload（隔离桥）· api.startup"]
     getSnapshot["getSnapshot()<br/>先拉快照"]
     APP_STARTUP_MAIN_READY_EVENT["APP_STARTUP_MAIN_READY_EVENT<br/>后事件补推"]
   end
-  subgraph mainProcess["主进程 · startup-readiness.module"]
+  subgraph mainProcess["主进程（Main）· startup-readiness.module"]
     startupReadiness["enable() 置 mainReady<br/>并广播"]
   end
   StartupReadyNotifier --> react
@@ -56,6 +56,8 @@ flowchart TB
 ### 关键实现：门禁结算与揭幕
 
 → 源码：[packages/renderer/src/startup/coordinator.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/startup/coordinator.ts)
+
+节选：`coordinator.ts` 的门禁结算与揭幕函数（`finished` / `pendingGates` / `GateId` 为同文件模块级状态）：
 
 ```ts
 const tryFinishStartup = () => {

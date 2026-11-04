@@ -16,11 +16,11 @@ description: 采用 ModuleRunner 微内核将系统能力解耦为可插拔模�
 
 ## 2. 核心机制
 
-`initApp` 里的 `.init()` 链就是真实初始化时序：模块的 `enable()` 同步返回则当场执行，返回 Promise 则挂到链尾，前一个落定才轮到下一个。下图按代码顺序排列全部模块，粗箭头标出两处不能调换的因果依赖。
+`initApp` 里的 `.init()` 链就是真实初始化时序：`init()` 对每个模块立即调用 `enable()`，同步完成的部分当场执行；返回的 Promise 从调用点就开始跑，只是被接到链尾，`await moduleRunner` 会等链上所有 Promise 落定。下图按代码顺序排列全部模块，箭头标出两处不能调换的因果依赖。
 
 ```mermaid
 flowchart TB
-  subgraph MAIN["主进程 · Main Process"]
+  subgraph main["主进程（Main）"]
     direction TB
     LOG["createLogModule()<br/>日志双写"]
     SENTRY["createSentryModule()<br/>崩溃监控"]
@@ -33,7 +33,7 @@ flowchart TB
     TRAY["createTrayModule()<br/>系统托盘"]
     SINGLE["disallowMultipleAppInstance()<br/>单实例锁"]
     TERM["terminateAppOnLastWindowClose()<br/>末窗退出"]
-    subgraph SEC["安全加固 · 信任边界"]
+    subgraph security["主进程安全加固（信任边界）"]
       direction TB
       CSP["createContentSecurityPolicyModule()<br/>CSP 响应头"]
       ORIGIN["allowInternalOrigins()<br/>内部来源白名单"]
@@ -41,9 +41,9 @@ flowchart TB
     end
   end
 
-  LOG ==>|"最先装配：后续模块异常均可落盘"| SENTRY
+  LOG -->|"最先装配：后续模块异常均可落盘"| SENTRY
   SENTRY --> CONFIG --> THEME --> IPC --> READY
-  READY ==>|"就绪信号先于窗口创建"| WIN
+  READY -->|"就绪信号先于窗口创建"| WIN
   WIN --> UPDATER_WIN --> TRAY --> SINGLE --> TERM
   TERM --> CSP --> ORIGIN --> EXT
 ```
@@ -62,9 +62,11 @@ export interface AppModule {
 
 ### 微内核链式驱动（ModuleRunner）
 
-`ModuleRunner` 维护一条顺序 Promise 执行链：`enable()` 同步返回则当场执行，返回 Promise 则接在链尾；它自身实现 `PromiseLike`，入口一句 `await moduleRunner` 即可收敛整条链。对外只导出 `createModuleRunner()` 工厂，`ModuleRunner` 类不直接暴露。
+`ModuleRunner` 维护一条顺序 Promise 执行链：`init()` 立即调用 `enable()`，返回 Promise 时把它接到链尾；它自身实现 `PromiseLike`，入口一句 `await moduleRunner` 即可收敛整条链。对外只导出 `createModuleRunner()` 工厂，`ModuleRunner` 类不直接暴露。
 
 → 源码：[packages/main/src/ModuleRunner.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/ModuleRunner.ts)
+
+节选：`ModuleRunner` 类（省略 import；工厂 `createModuleRunner()` 见文件末尾）：
 
 ```ts
 class ModuleRunner implements PromiseLike<void> {
@@ -98,6 +100,10 @@ class ModuleRunner implements PromiseLike<void> {
     };
   }
 }
+
+export function createModuleRunner() {
+  return new ModuleRunner();
+}
 ```
 
 ### 主进程入口的流水线装配
@@ -105,6 +111,8 @@ class ModuleRunner implements PromiseLike<void> {
 系统能力的启动完全声明式收拢在 `initApp` 中：加一个能力 = 新建 module 文件 + 流水线加一行；删掉 `createTrayModule()` 那一行，托盘连同它的原生事件订阅整体退场。
 
 → 源码：[packages/main/src/index.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/index.ts)
+
+节选：`initApp()` 内的装配链（省略函数签名与异常处理）：
 
 ```ts
 const moduleRunner = createModuleRunner()

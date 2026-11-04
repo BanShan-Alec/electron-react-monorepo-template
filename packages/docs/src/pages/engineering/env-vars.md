@@ -1,7 +1,7 @@
 ---
 
 title: 环境变量管理（Dotenv）
-description: 根 .env 单一加载入口，白名单快照经启动参数透传，渲染层安全获取冻结的 **APP_ENV**。
+description: 根 .env 单一加载入口，白名单快照经启动参数透传，渲染层安全获取冻结的 window.**APP_ENV**。
 ---
 
 # 环境变量管理（Dotenv）
@@ -28,19 +28,19 @@ flowchart LR
     defineEnv["define __ENV_DEFAULTS__"]
     envFile --> loadRepoEnv --> whitelist --> defineEnv
   end
-  subgraph main["主进程"]
+  subgraph main["主进程（Main）"]
     getEnv["getEnv()"]
     snapshot["getRuntimeEnvSnapshot()"]
     packed["packRuntimeEnv()"]
     appMeta["--app-meta= 启动参数"]
     getEnv --> snapshot --> packed --> appMeta
   end
-  subgraph preload["Preload · 沙箱"]
+  subgraph preload["Preload（隔离桥）"]
     unpack["unpackRuntimeEnv()"]
     expose["__APP_ENV__ 冻结"]
     unpack --> expose
   end
-  subgraph renderer["渲染层"]
+  subgraph renderer["渲染进程（Renderer）"]
     consume["window.__APP_ENV__"]
   end
   external["外部注入 shell / CI"] -->|"process.env 优先"| getEnv
@@ -90,6 +90,8 @@ export function unpackRuntimeEnv(encodedStr: string): AppRuntimeEnv {
 #### ③ Preload：解包、冻结、注入主世界
 
 → 源码：[packages/preload/src/index.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/src/index.ts)
+
+节选：运行时环境解包与注入（省略 import 与常量定义）：
 
 ```ts
 const metaArg = process.argv.find((arg) => arg.startsWith(APP_ENV_ARG_PREFIX));
