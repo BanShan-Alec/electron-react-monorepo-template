@@ -16,13 +16,12 @@ const LOAD_TIMEOUT_MS = 15_000;
 export function useDocsFrame() {
   const [status, setStatus] = useState<DocsFrameStatus>('loading');
   const [reloadKey, setReloadKey] = useState(0);
-  const loadStartedAtRef = useRef(Date.now());
+  const loadStartedAtRef = useRef(0);
   const timeoutRef = useRef<number | null>(null);
   const readyTimerRef = useRef<number | null>(null);
 
   // ① 组件Effect：首次挂载与每次重试重置状态并启动 15s 超时
   useEffect(() => {
-    setStatus('loading');
     loadStartedAtRef.current = Date.now();
 
     timeoutRef.current = window.setTimeout(() => {
