@@ -18,7 +18,7 @@ description: Biome 统一接管代码格式化、Lint 与导入排序，架构�
 - **全格式统一纳管**：升级至 Biome 2.6+，不仅覆盖 TS/JS/JSX 与 JSON/JSONC，更原生纳管全仓 Markdown（`.md`）与 YAML（`.yml`/`.yaml`）资产的格式化，彻底淘汰多套零散格式化工具。
 - **单一事实源**：统一收敛在 `.config/biome.json`，消灭多配置互相打架的局面。
 
-## 2. 核心配置代码
+## 2. 核心机制
 
 ### 架构红线规则声明
 

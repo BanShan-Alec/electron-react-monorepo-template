@@ -14,7 +14,7 @@ description: 采用轻量级 Wouter 驱动，useHashLocation 深度适配本地 
 1. **本地协议限制（`file://`）**：在生产打包态下，窗口通过 `file://` 协议加载本地静态 HTML。若使用传统的 Browser History API（路径路由），页面刷新或深层跳转时因缺乏后端 Web 服务器配合 rewrite，将直接触发物理文件 404 错误。Hash 路由（带有 `#`）完全在浏览器内存中解析，天然适配桌面端。
 2. **轻量与性能追求**：React Router 体积庞大且附带大量适用于 SSR 的上下文依赖。Wouter 极度轻巧（~2.1KB gzip），无侵入式 Provider，更适合资源敏感的客户端。
 
-## 2. 核心配置代码
+## 2. 核心机制
 
 ### 挂载 Hash 路由协议
 

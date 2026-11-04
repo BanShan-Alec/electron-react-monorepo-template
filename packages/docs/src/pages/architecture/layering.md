@@ -16,7 +16,7 @@ description: IPC 事件收敛于 Controller，核心业务封装在 Service，�
 
 为此，主进程建立单向依赖流：`IPC 事件 ──> Controller ──> Service`。
 
-## 2. 核心配置代码
+## 2. 核心机制
 
 ### Controller 职责：校验、调用与包装
 

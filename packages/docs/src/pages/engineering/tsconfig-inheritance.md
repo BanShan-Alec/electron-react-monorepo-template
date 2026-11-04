@@ -17,7 +17,7 @@ Electron Monorepo 在 TypeScript 编译层面天生具备多态性：
 
 若各包各自写 `tsconfig.json`，不仅数十行 `compilerOptions` 严重冗余，路径别名（paths）稍有不一致就会引发难以定位的跨包解析错误。
 
-## 2. 核心配置代码
+## 2. 核心机制
 
 ### 三档配置分层体系
 

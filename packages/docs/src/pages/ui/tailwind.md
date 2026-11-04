@@ -16,7 +16,7 @@ description: Tailwind v4 层序声明定覆盖规则，@theme inline 解决变�
 
 项目借助 Tailwind CSS v4 的原生 CSS 层机制，从底层规范两者的优先级。
 
-## 2. 核心配置代码
+## 2. 核心机制
 
 ### 显式层序声明与语义主题别名
 
