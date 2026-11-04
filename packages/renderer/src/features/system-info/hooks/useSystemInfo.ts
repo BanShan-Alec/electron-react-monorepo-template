@@ -1,7 +1,7 @@
 import { t } from '@lingui/core/macro';
 import { useInterval } from 'ahooks';
 import { App } from 'antd';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useIpc } from '@/hooks/useIpc';
 import { createIdleRefresh } from '../lib/createIdleRefresh';
 
@@ -29,11 +29,14 @@ export function useSystemInfo() {
     },
   });
 
-  // 逻辑处理函数（createIdleRefresh 内部包含请求锁闭包状态，需保持实例引用稳定）
-  const refreshWhenIdle = useMemo(
-    () => createIdleRefresh(fetchSystemInfoAsync),
-    [fetchSystemInfoAsync],
-  );
+  // 逻辑处理函数（createIdleRefresh 内部包含请求锁闭包状态，需保持实例引用单例）
+  const fetchSystemInfoRef = useRef(fetchSystemInfoAsync);
+  useEffect(() => {
+    fetchSystemInfoRef.current = fetchSystemInfoAsync;
+  });
+
+  // biome-ignore lint/nursery/useReactCompiler: closure invokes ref.current asynchronously during idle polling, not in render
+  const refreshWhenIdle = useMemo(() => createIdleRefresh(() => fetchSystemInfoRef.current()), []);
 
   // 组件Effect
   useEffect(() => {
