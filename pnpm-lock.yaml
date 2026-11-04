@@ -167,12 +167,21 @@ catalogs:
     '@types/node':
       specifier: ^24.19.2
       version: 24.19.2
+    '@types/react':
+      specifier: ^19.2.14
+      version: 19.3.0
+    '@types/react-dom':
+      specifier: ^19.2.3
+      version: 19.3.0
     react:
       specifier: ^19.3.1
       version: 19.3.1
     react-dom:
       specifier: ^19.3.1
       version: 19.3.1
+    tailwindcss:
+      specifier: ^4.3.4
+      version: 4.3.4
     typescript:
       specifier: ^6.0.0
       version: 6.0.3
@@ -271,13 +280,13 @@ importers:
         specifier: workspace:*
         version: link:../tsconfig
       '@types/react':
-        specifier: ^19.2.14
+        specifier: 'catalog:'
         version: 19.3.0
       '@types/react-dom':
-        specifier: ^19.2.3
+        specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
       tailwindcss:
-        specifier: ^4.3.4
+        specifier: 'catalog:'
         version: 4.3.4
       vite:
         specifier: 'catalog:'
@@ -429,10 +438,10 @@ importers:
         specifier: ^4.3.4
         version: 4.3.4(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
       '@types/react':
-        specifier: ^19.2.14
+        specifier: 'catalog:'
         version: 19.3.0
       '@types/react-dom':
-        specifier: ^19.2.3
+        specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
       '@vitejs/plugin-react':
         specifier: ^6.2.1
@@ -441,7 +450,7 @@ importers:
         specifier: ^0.156.0
         version: 0.156.0
       tailwindcss:
-        specifier: ^4.3.4
+        specifier: 'catalog:'
         version: 4.3.4
       typescript:
         specifier: 'catalog:'
