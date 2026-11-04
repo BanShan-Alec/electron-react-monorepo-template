@@ -6,12 +6,12 @@
 
 代码按技术职能水平分层，业务领域在各层内垂直切分，文件命名一律采用 `kebab-case.ts`：
 
-| 目录层级 | 核心职责 | 规范与依赖约束 | 子路径导出与消费方式 |
-| :--- | :--- | :--- | :--- |
-| `constants/` | 系统级常量与跨域枚举 | `SCREAMING_SNAKE_CASE` 常量，领域特定默认值就近维护在对应 schema | `@app/shared/constants/<domain>` |
-| `types/` | 纯 TypeScript 接口（零运行时体积） | 纯返回结构体与 `Result<T>` / `ElectronApi` 顶层抽象；无需运行时校验 | `@app/shared/types/<domain>` |
-| `schemas/` | Zod 运行时数据校验模型 | 输入参数必须由 Zod 驱动；`z.infer` 推导类型**必须且仅允许**就近导出 | `@app/shared/schemas/<domain>` |
-| `utils/` | 跨端纯函数工具 | 零 Electron/Node 依赖，包含环境编解码 (`env-packer`) 与 W3C Trace 序列化 | `@app/shared/utils/<util>` |
+| 目录层级     | 核心职责                           | 规范与依赖约束                                                           | 子路径导出与消费方式             |
+| :----------- | :--------------------------------- | :----------------------------------------------------------------------- | :------------------------------- |
+| `constants/` | 系统级常量与跨域枚举               | `SCREAMING_SNAKE_CASE` 常量，领域特定默认值就近维护在对应 schema         | `@app/shared/constants/<domain>` |
+| `types/`     | 纯 TypeScript 接口（零运行时体积） | 纯返回结构体与 `Result<T>` / `ElectronApi` 顶层抽象；无需运行时校验      | `@app/shared/types/<domain>`     |
+| `schemas/`   | Zod 运行时数据校验模型             | 输入参数必须由 Zod 驱动；`z.infer` 推导类型**必须且仅允许**就近导出      | `@app/shared/schemas/<domain>`   |
+| `utils/`     | 跨端纯函数工具                     | 零 Electron/Node 依赖，包含环境编解码 (`env-packer`) 与 W3C Trace 序列化 | `@app/shared/utils/<util>`       |
 
 - **子路径直出与绝对禁止桶文件**：`package.json` 通过子路径 `exports` 直出具体文件，无根入口；严禁新增任何 `index.ts` 聚合导出或 `export *`（Biome `noBarrelFile` 硬拦截）。消费方必须按需直达具体文件。
 
@@ -23,12 +23,12 @@
 
 ## 3. 命名规范
 
-| 类别 | 规范 | 示例 |
-| :--- | :--- | :--- |
-| **文件名** | `kebab-case.ts` | `error-codes.ts`, `ipc-channels.ts` |
-| **常量与枚举** | `SCREAMING_SNAKE_CASE` | `IPC_CHANNELS.CALCULATOR_CALCULATE`, `ErrorCode.VALIDATION_ERROR` |
-| **Zod Schema** | `camelCase` + 后缀 `Schema` | `calculateInputSchema`, `stepInputSchema` |
-| **TypeScript 类型/接口** | `PascalCase` | `Result<T>`, `CalculateInput`, `CalculateResult`, `ElectronApi` |
+| 类别                     | 规范                        | 示例                                                              |
+| :----------------------- | :-------------------------- | :---------------------------------------------------------------- |
+| **文件名**               | `kebab-case.ts`             | `error-codes.ts`, `ipc-channels.ts`                               |
+| **常量与枚举**           | `SCREAMING_SNAKE_CASE`      | `IPC_CHANNELS.CALCULATOR_CALCULATE`, `ErrorCode.VALIDATION_ERROR` |
+| **Zod Schema**           | `camelCase` + 后缀 `Schema` | `calculateInputSchema`, `stepInputSchema`                         |
+| **TypeScript 类型/接口** | `PascalCase`                | `Result<T>`, `CalculateInput`, `CalculateResult`, `ElectronApi`   |
 
 ## 4. 新增业务领域开发范式 (SOP 骨架)
 
@@ -69,6 +69,7 @@ export interface ElectronApi {
 ```
 
 ### 消费端按需直达示范（严禁通过根桶导入）
+
 ```typescript
 // 主进程与 preload 为 CJS 打包、无 tree-shaking，按需直达具体文件可防止整包契约与 Zod 拖入运行时
 import { ErrorCode } from '@app/shared/constants/error-codes';

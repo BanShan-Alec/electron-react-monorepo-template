@@ -1,4 +1,5 @@
 ---
+
 title: 设计规范与令牌（Design Tokens）
 description: 单一品牌色种子派生全套色阶，三层 Token 管道映射与门禁拦截机制。
 ---

@@ -12,8 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write       # 必须为 write，以支持 resolve_outdated 自动关闭已修复的 review threads
-  pull-requests: write  # 发表 review 与 summary
+  contents: write # 必须为 write，以支持 resolve_outdated 自动关闭已修复的 review threads
+  pull-requests: write # 发表 review 与 summary
   issues: write
 
 jobs:
@@ -59,25 +59,25 @@ jobs:
           llm_auth_token: ${{ secrets.OCR_LLM_TOKEN }}
           llm_model: ${{ secrets.OCR_LLM_MODEL }}
           # step_plan 端点走 anthropic messages 协议（/v1/messages），显式声明避免留空被歧义解析
-          llm_use_anthropic: 'true'
+          llm_use_anthropic: "true"
           # Step Fun 按 key 限并发（limit 5），OCR 多分组并行会 429 partial，压到 4 留余量
-          review_concurrency: '4'
+          review_concurrency: "4"
 
           # ===== 输出与语言配置 =====
-          language: 'Chinese'
+          language: "Chinese"
 
           # ===== 增量审查配置 =====
-          checkpoint_range: 'true'     # 记录检查点，仅对最新 push 的 commits 进行增量审查
-          incremental: 'true'          # 行内评论不重复覆盖历史位置
+          checkpoint_range: "true" # 记录检查点，仅对最新 push 的 commits 进行增量审查
+          incremental: "true" # 行内评论不重复覆盖历史位置
 
           # ===== 评论治理与看板配置 =====
-          stream_progress: 'true'      # 实时流式输出审查进度至 Actions 控制台日志，避免静默等待
-          sticky_summary: 'true'       # 置顶单一看板并原地更新，避免 PR 评论刷屏
-          route_severity_below: ''     # 关闭向 Summary 倾倒 Low 建议，避免把看板变成垃圾桶
-          resolve_outdated: 'true'     # 代码修复后，自动 resolve 对应的旧 review threads
+          stream_progress: "true" # 实时流式输出审查进度至 Actions 控制台日志，避免静默等待
+          sticky_summary: "true" # 置顶单一看板并原地更新，避免 PR 评论刷屏
+          route_severity_below: "" # 关闭向 Summary 倾倒 Low 建议，避免把看板变成垃圾桶
+          resolve_outdated: "true" # 代码修复后，自动 resolve 对应的旧 review threads
 
           # 关闭内部无天数限制的上传，改由后续步骤托管
-          upload_artifacts: 'false'
+          upload_artifacts: "false"
 
       # ===== 自定义 Artifact 保存策略（保留 1 天）=====
       - name: Upload Review Artifact (1 day retention)

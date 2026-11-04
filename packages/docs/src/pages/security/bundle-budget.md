@@ -1,4 +1,5 @@
 ---
+
 title: 分包与体积门禁（Chunk + Asar）
 description: 渲染层按稳定性分块，前置校验根依赖白名单，后置硬门禁实测 ASAR 体积。
 ---
@@ -61,7 +62,9 @@ const maxAsarSizeMb = Number(getRepoEnvValue(repoEnv, 'MAX_ASAR_SIZE_MB') || 10)
 if (asarSizeMb > maxAsarSizeMb) {
   // 输出体积构成分析（占比 + TOP 5 最大文件）
   printAsarCompositionBreakdown(asarPath);
-  throw new Error(`❌ asar 体积超标 (${asarSizeMb.toFixed(2)} MB > ${maxAsarSizeMb} MB)，构建中断！`);
+  throw new Error(
+    `❌ asar 体积超标 (${asarSizeMb.toFixed(2)} MB > ${maxAsarSizeMb} MB)，构建中断！`,
+  );
 }
 ```
 

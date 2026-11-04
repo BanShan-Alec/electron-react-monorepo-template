@@ -1,4 +1,5 @@
 ---
+
 title: 首次关闭确认（Close-confirmation）
 description: 拦截主窗口首次关闭事件，交互确认托盘常驻或彻底退出，配置持久化与设置页反悔入口。
 ---

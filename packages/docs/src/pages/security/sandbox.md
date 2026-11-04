@@ -1,4 +1,5 @@
 ---
+
 title: 渲染进程沙箱（Sandbox）
 description: webPreferences 写死沙箱隔离四件套，主窗口与辅助弹窗一视同仁。
 ---
@@ -25,10 +26,10 @@ Electron 历史上最严重的漏洞多源于沙箱配置不严：
 const browserWindow = new BrowserWindow({
   // ...窗口几何与样式配置
   webPreferences: {
-    nodeIntegration: false,    // 1. 彻底禁用渲染层 Node.js 能力
-    contextIsolation: true,   // 2. 开启上下文隔离（Preload 与页面脚本独立上下文）
-    sandbox: true,            // 3. 开启 Chromium 操作系统级进程沙箱
-    webviewTag: false,        // 4. 彻底禁用内嵌 <webview> 标签防止嵌套逃逸
+    nodeIntegration: false, // 1. 彻底禁用渲染层 Node.js 能力
+    contextIsolation: true, // 2. 开启上下文隔离（Preload 与页面脚本独立上下文）
+    sandbox: true, // 3. 开启 Chromium 操作系统级进程沙箱
+    webviewTag: false, // 4. 彻底禁用内嵌 <webview> 标签防止嵌套逃逸
     preload: this.preload.path,
     additionalArguments: [getPackedEnvArgument()],
   },

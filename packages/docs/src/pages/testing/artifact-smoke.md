@@ -1,4 +1,5 @@
 ---
+
 title: 产物冒烟测试（Dist-smoke）
 description: 打包后真实拉起解包产物，断言启动揭幕门禁并捕获运行时异常，环境受限显式跳过。
 ---
@@ -29,8 +30,11 @@ import { getDistDir } from '../build/lib/repo-paths.ts';
 
 export async function verifyPostbuild(options: PostbuildVerificationOptions = {}): Promise<void> {
   const repoEnv = loadRepoEnv(__dirname, 'production');
-  const distDir = options.distDir ? path.resolve(repoEnv.rootDir, options.distDir) : getDistDir(repoEnv.rootDir);
-  const maxAsarSizeMb = options.maxAsarSizeMb ?? Number(getRepoEnvValue(repoEnv, 'MAX_ASAR_SIZE_MB') || 10);
+  const distDir = options.distDir
+    ? path.resolve(repoEnv.rootDir, options.distDir)
+    : getDistDir(repoEnv.rootDir);
+  const maxAsarSizeMb =
+    options.maxAsarSizeMb ?? Number(getRepoEnvValue(repoEnv, 'MAX_ASAR_SIZE_MB') || 10);
 
   const artifact = detectUnpackedArtifact(distDir);
   if (!artifact) {
@@ -41,12 +45,16 @@ export async function verifyPostbuild(options: PostbuildVerificationOptions = {}
   const asarStat = fs.statSync(artifact.asarPath);
   const asarSizeMb = asarStat.size / (1024 * 1024);
   if (asarSizeMb > maxAsarSizeMb) {
-    throw new Error(`[verify-postbuild] asar 体积超标 (${asarSizeMb.toFixed(2)} MB > ${maxAsarSizeMb} MB)`);
+    throw new Error(
+      `[verify-postbuild] asar 体积超标 (${asarSizeMb.toFixed(2)} MB > ${maxAsarSizeMb} MB)`,
+    );
   }
 
   // 2. 跨平台宿主与桌面显示服务兼容性守卫
   if (process.platform !== artifact.platform) {
-    console.warn(`⚠️ [verify-postbuild] 目标平台 (${artifact.platform}) 与宿主不一致，跳过真实启动测试。`);
+    console.warn(
+      `⚠️ [verify-postbuild] 目标平台 (${artifact.platform}) 与宿主不一致，跳过真实启动测试。`,
+    );
     return;
   }
   if (process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) {
@@ -59,7 +67,12 @@ export async function verifyPostbuild(options: PostbuildVerificationOptions = {}
   try {
     const app = await electron.launch({
       executablePath: artifact.executablePath,
-      args: [`--user-data-dir=${tempUserDataDir}`, '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage'],
+      args: [
+        `--user-data-dir=${tempUserDataDir}`,
+        '--no-sandbox',
+        '--disable-gpu',
+        '--disable-dev-shm-usage',
+      ],
       timeout: 30000,
     });
 
@@ -114,10 +127,10 @@ if (!values['skip-verify']) {
 
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
-| :--- | :--- | :--- |
-| **禁止 `#root` 假阳性** | 若仅断言 `#root`，React 抛出全局语法错误导致白屏时，由于 index.html 预置了该 DOM 节点，冒烟测试依然判定为成功通过。 | 必须断言 `body.app-startup-ready` 协调器类名挂载（React 首帧 commit 且主进程双门禁解锁后注入），并全局捕获 `pageerror` 堆栈。 |
-| **首次窗口与多窗口异常去重** | Playwright 的 `app.on('window')` 无法捕获在此之前已创建的窗口，故需显式监听 `firstWindow()`；若两处均挂载监听，同一异常会被触发两次导致计数翻倍误报。 | 使用 `WeakSet<Page>` 确保每个窗口只注册一次监听，并结合 `errorFingerprints` 对错误内容幂等去重。 |
-| **单实例锁污染** | 若直接拉起产物而未传独立配置，测试实例会尝试激活本地已运行的开发态进程并立即退出，导致冒烟误报或挂死。 | 每次必须通过 `fs.mkdtempSync` 创建独立的 `tempUserDataDir` 并于 `finally` 强制安全清理。 |
-| **无头 CI 平台隔离** | Linux 交叉编译构建出的 Windows exe 或 macOS 无头 runner 强行 `electron.launch` 会直接触发 SIGSEGV。 | `process.platform !== artifact.platform` 时显式安全跳过启动测试，但 ASAR 静态体积门禁照常执行。 |
-| **ASAR 产物发现差异** | 各系统产物路径不同（Windows 在 `win-unpacked/*.exe`，macOS 在 `mac*/*.app/Contents/MacOS/*`）。 | `detectUnpackedArtifact` 集中抹平平台路径差异，统一返回 `{ executablePath, asarPath, platform }`。 |
+| 避坑要点                     | 事故表现与原因                                                                                                                                        | 本仓库对齐方案                                                                                                                |
+| :--------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------- |
+| **禁止 `#root` 假阳性**      | 若仅断言 `#root`，React 抛出全局语法错误导致白屏时，由于 index.html 预置了该 DOM 节点，冒烟测试依然判定为成功通过。                                   | 必须断言 `body.app-startup-ready` 协调器类名挂载（React 首帧 commit 且主进程双门禁解锁后注入），并全局捕获 `pageerror` 堆栈。 |
+| **首次窗口与多窗口异常去重** | Playwright 的 `app.on('window')` 无法捕获在此之前已创建的窗口，故需显式监听 `firstWindow()`；若两处均挂载监听，同一异常会被触发两次导致计数翻倍误报。 | 使用 `WeakSet<Page>` 确保每个窗口只注册一次监听，并结合 `errorFingerprints` 对错误内容幂等去重。                              |
+| **单实例锁污染**             | 若直接拉起产物而未传独立配置，测试实例会尝试激活本地已运行的开发态进程并立即退出，导致冒烟误报或挂死。                                                | 每次必须通过 `fs.mkdtempSync` 创建独立的 `tempUserDataDir` 并于 `finally` 强制安全清理。                                      |
+| **无头 CI 平台隔离**         | Linux 交叉编译构建出的 Windows exe 或 macOS 无头 runner 强行 `electron.launch` 会直接触发 SIGSEGV。                                                   | `process.platform !== artifact.platform` 时显式安全跳过启动测试，但 ASAR 静态体积门禁照常执行。                               |
+| **ASAR 产物发现差异**        | 各系统产物路径不同（Windows 在 `win-unpacked/*.exe`，macOS 在 `mac*/*.app/Contents/MacOS/*`）。                                                       | `detectUnpackedArtifact` 集中抹平平台路径差异，统一返回 `{ executablePath, asarPath, platform }`。                            |

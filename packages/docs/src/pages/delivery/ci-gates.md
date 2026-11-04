@@ -1,4 +1,5 @@
 ---
+
 title: CI 并行门禁（GitHub-Actions）
 description: 5 大核心工作流并行校验，结合打包前置依赖与命名静态拦截，全绿方可合并。
 ---
@@ -49,7 +50,7 @@ jobs:
       - uses: ./.github/actions/setup-env
       - run: pnpm run lint
       - run: pnpm run verify:prebuild # 前置静态依赖、命名与样式门禁
-      - run: pnpm run i18n:check      # 词条缺失校验
+      - run: pnpm run i18n:check # 词条缺失校验
 
   test:
     name: test
@@ -66,7 +67,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-env
       - run: pnpm exec install-electron # 确保预下载无头二进制
-      - run: pnpm run build             # 必须先产出各包构建物
+      - run: pnpm run build # 必须先产出各包构建物
       - run: pnpm run test:e2e
 
   docs:
@@ -94,7 +95,9 @@ const rootDeps = Object.keys(rootPkg.dependencies || {});
 const allowedRootDeps = ['@app/main'];
 const illegalRootDeps = rootDeps.filter((dep) => !allowedRootDeps.includes(dep));
 if (illegalRootDeps.length > 0) {
-  errors.push(`根 package.json 的 dependencies 只能包含 @app/main，检测到非法依赖: ${illegalRootDeps.join(', ')}`);
+  errors.push(
+    `根 package.json 的 dependencies 只能包含 @app/main，检测到非法依赖: ${illegalRootDeps.join(', ')}`,
+  );
 }
 
 // 门禁 3：渲染层样式与 Token 静态扫描（禁止硬编码未经授权的 hex 颜色与离阶字号）
@@ -103,9 +106,9 @@ if (illegalRootDeps.length > 0) {
 
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
-| :--- | :--- | :--- |
-| **Linux E2E 缺少二进制挂起** | Electron 42+ 改为惰性下载机制，在 CI 无缓存时直接启动 Playwright 会报错找不到二进制。 | 在 `e2e` Job 中显式执行 `pnpm exec install-electron`，通过镜像源预热二进制。 |
-| **未构建即跑 E2E 报入口缺失** | `electron.launch` 依赖 `packages/main/dist/index.cjs` 等产物，漏跑 build 导致 E2E 启动失败。 | `e2e` Job 必须在前置步骤显式执行 `pnpm run build`。 |
-| **Vocs 文档死链漏检** | 文档站内部跳错锚点或缺少页面，在开发态热更新时不报错，发布后出现 404。 | `docs` Job 将 `pnpm --filter @app/docs run build` 设为分支必过门禁，Vocs 全静态编译时只要发现一处死链即构建失败。 |
-| **并发任务堆积浪费 Runner** | 频繁连续 push 代码导致 GitHub Actions Runner 队列被旧 commit 占满。 | 启用 `concurrency: cancel-in-progress: true`，同一 PR 只要有新 push 立即取消旧任务。 |
+| 避坑要点                      | 事故表现与原因                                                                               | 本仓库对齐方案                                                                                                    |
+| :---------------------------- | :------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------- |
+| **Linux E2E 缺少二进制挂起**  | Electron 42+ 改为惰性下载机制，在 CI 无缓存时直接启动 Playwright 会报错找不到二进制。        | 在 `e2e` Job 中显式执行 `pnpm exec install-electron`，通过镜像源预热二进制。                                      |
+| **未构建即跑 E2E 报入口缺失** | `electron.launch` 依赖 `packages/main/dist/index.cjs` 等产物，漏跑 build 导致 E2E 启动失败。 | `e2e` Job 必须在前置步骤显式执行 `pnpm run build`。                                                               |
+| **Vocs 文档死链漏检**         | 文档站内部跳错锚点或缺少页面，在开发态热更新时不报错，发布后出现 404。                       | `docs` Job 将 `pnpm --filter @app/docs run build` 设为分支必过门禁，Vocs 全静态编译时只要发现一处死链即构建失败。 |
+| **并发任务堆积浪费 Runner**   | 频繁连续 push 代码导致 GitHub Actions Runner 队列被旧 commit 占满。                          | 启用 `concurrency: cancel-in-progress: true`，同一 PR 只要有新 push 立即取消旧任务。                              |

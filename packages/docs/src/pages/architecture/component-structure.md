@@ -1,4 +1,5 @@
 ---
+
 title: 组件目录结构（Component-folder）
 description: 组件统一采用一组件一文件夹（Xxx/index.tsx），私有资产同目录收敛，澄清组件本体非桶文件。
 ---
@@ -38,11 +39,7 @@ const _CounterCard = (props: CounterCardProps) => {
   useLingui();
   const { count, step, onStepChange, isUpdating, onIncrement, onDecrement, onReset } = props;
 
-  return (
-    <Card title={t`IPC 计数器 (Counter)`}>
-      {/* 渲染逻辑 */}
-    </Card>
-  );
+  return <Card title={t`IPC 计数器 (Counter)`}>{/* 渲染逻辑 */}</Card>;
 };
 
 // 接口命名禁止 I 前缀，统一采用 <ComponentName>Props

@@ -1,4 +1,5 @@
 ---
+
 title: 主进程单元测试（EventEmitter）
 description: 将业务逻辑与系统依赖解耦，纯逻辑脱壳秒测，生命周期模块通过 EventEmitter 与边界打桩。
 ---
@@ -75,7 +76,9 @@ describe('ApplicationTerminatorOnLastWindowClose', () => {
     } as unknown as ReturnType<typeof configModule.getAppConfigStore>);
 
     const terminator = new ApplicationTerminatorOnLastWindowClose();
-    terminator.enable({ app: mockApp } as unknown as import('@app/main/ModuleContext').ModuleContext);
+    terminator.enable({
+      app: mockApp,
+    } as unknown as import('@app/main/ModuleContext').ModuleContext);
 
     // 3. 手动发射系统事件，断言是否触发 quit 行为
     mockApp.emit('window-all-closed');
@@ -86,9 +89,9 @@ describe('ApplicationTerminatorOnLastWindowClose', () => {
 
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
-| :--- | :--- | :--- |
-| **滥用全局 Mock 库** | 使用 `jest-electron` 或全局重写 `electron` 导出，容易导致单例方法互相串台、甚至阻碍正常打包解析。 | 严禁全局重写 `electron`；在模块实例化时以参数形式传入 `ModuleContext`，单测中仅需提供轻量 `EventEmitter` 即可驱动。 |
-| **纯逻辑未剥离系统依赖** | 把更新错误码判断、日志行截断等纯函数直接塞入包含 `BrowserWindow` 的 Controller 中，导致单测必须先初始化原生图形栈。 | 逻辑强行下沉到 Service / Utils 纯函数中，单测直接测试输入输出，Controller 仅负责 IPC 路由转发。 |
-| **异步 Mock 未清理** | `vi.spyOn(module, 'fn')` 在测试用例之间互相污染，下一个用例偶发失败。 | 规范在 `afterEach` 中显式执行 `vi.restoreAllMocks()`，保持测试隔离。 |
-| **混淆单测与 E2E 边界** | 试图在 Vitest 中测试“点击窗口最小化按钮窗口隐藏”，导致测试极度脆弱。 | 纯逻辑与生命周期状态流转归 Vitest 单测（毫秒级）；窗口真实视觉/系统托盘弹出全部交给 Playwright E2E。 |
+| 避坑要点                 | 事故表现与原因                                                                                                      | 本仓库对齐方案                                                                                                      |
+| :----------------------- | :------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------ |
+| **滥用全局 Mock 库**     | 使用 `jest-electron` 或全局重写 `electron` 导出，容易导致单例方法互相串台、甚至阻碍正常打包解析。                   | 严禁全局重写 `electron`；在模块实例化时以参数形式传入 `ModuleContext`，单测中仅需提供轻量 `EventEmitter` 即可驱动。 |
+| **纯逻辑未剥离系统依赖** | 把更新错误码判断、日志行截断等纯函数直接塞入包含 `BrowserWindow` 的 Controller 中，导致单测必须先初始化原生图形栈。 | 逻辑强行下沉到 Service / Utils 纯函数中，单测直接测试输入输出，Controller 仅负责 IPC 路由转发。                     |
+| **异步 Mock 未清理**     | `vi.spyOn(module, 'fn')` 在测试用例之间互相污染，下一个用例偶发失败。                                               | 规范在 `afterEach` 中显式执行 `vi.restoreAllMocks()`，保持测试隔离。                                                |
+| **混淆单测与 E2E 边界**  | 试图在 Vitest 中测试“点击窗口最小化按钮窗口隐藏”，导致测试极度脆弱。                                                | 纯逻辑与生命周期状态流转归 Vitest 单测（毫秒级）；窗口真实视觉/系统托盘弹出全部交给 Playwright E2E。                |

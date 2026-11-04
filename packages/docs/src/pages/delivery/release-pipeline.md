@@ -1,4 +1,5 @@
 ---
+
 title: 发版流水线（Changelogen）
 description: 本地 changelogen 提版锁定 tag，CI 三平台并行纯构建，由单一发布任务统一汇聚产物。
 ---
@@ -40,7 +41,7 @@ name: Release App
 
 on:
   push:
-    tags: ['v*']
+    tags: ["v*"]
   workflow_dispatch: # 手动触发仅构建不发布，用于验证流水线
 
 jobs:
@@ -106,9 +107,9 @@ jobs:
 
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
-| :--- | :--- | :--- |
-| **CI 自动改版本导致回滚冲突** | 在 GitHub Actions 中跑 `npm version` 并 push，多人协作或重试任务时会造成提交历史分叉。 | 铁律：CI 不修改 `package.json`，版本号以本地 `changelogen` 产出且已打入 tag 的提交为准。 |
-| **产物未齐就暴露给用户** | 某个平台先构建完立即创建 Release，用户或自动升级客户端尝试拉取其他平台安装包遭遇 404。 | 构建阶段全传 `-p never`，待 Windows、macOS、Linux 三个 job 全部成功后，才由独立的 `publish` job 统一发版。 |
-| **OTA 关键索引丢失** | 仅将 `.exe` 或 `.dmg` 上传到 Release，遗漏了 `latest.yml` 与 `*.blockmap`，导致已安装客户端无法检查更新与差分下载。 | `release-artifacts/*` 全量包含升级元数据，并设置 `if-no-files-found: error` 严防静默漏传。 |
-| **分支保护与发版权限** | `GITHUB_TOKEN` 缺少写权限导致 Release 创建失败。 | `release.yml` 显式声明 `permissions: contents: write`。 |
+| 避坑要点                      | 事故表现与原因                                                                                                      | 本仓库对齐方案                                                                                             |
+| :---------------------------- | :------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------- |
+| **CI 自动改版本导致回滚冲突** | 在 GitHub Actions 中跑 `npm version` 并 push，多人协作或重试任务时会造成提交历史分叉。                              | 铁律：CI 不修改 `package.json`，版本号以本地 `changelogen` 产出且已打入 tag 的提交为准。                   |
+| **产物未齐就暴露给用户**      | 某个平台先构建完立即创建 Release，用户或自动升级客户端尝试拉取其他平台安装包遭遇 404。                              | 构建阶段全传 `-p never`，待 Windows、macOS、Linux 三个 job 全部成功后，才由独立的 `publish` job 统一发版。 |
+| **OTA 关键索引丢失**          | 仅将 `.exe` 或 `.dmg` 上传到 Release，遗漏了 `latest.yml` 与 `*.blockmap`，导致已安装客户端无法检查更新与差分下载。 | `release-artifacts/*` 全量包含升级元数据，并设置 `if-no-files-found: error` 严防静默漏传。                 |
+| **分支保护与发版权限**        | `GITHUB_TOKEN` 缺少写权限导致 Release 创建失败。                                                                    | `release.yml` 显式声明 `permissions: contents: write`。                                                    |

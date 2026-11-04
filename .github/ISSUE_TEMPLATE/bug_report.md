@@ -1,4 +1,5 @@
 ---
+
 name: Bug report / 缺陷报告
 about: 帮我们改进应用 / Help us improve the app
 title: ''

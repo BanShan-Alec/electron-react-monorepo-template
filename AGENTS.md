@@ -22,45 +22,45 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 
 ## 3. 包索引（规则真源在各包 AGENTS.md）
 
-| 包 | 职责 | 规则文件 |
-| --- | --- | --- |
-| `@app/main` | 主进程：Controller/Service 分层、窗口与系统生命周期 | [packages/main/AGENTS.md](packages/main/AGENTS.md) |
-| `@app/preload` | 安全桥接层：contextBridge 暴露 `window.api` | [packages/preload/AGENTS.md](packages/preload/AGENTS.md) |
-| `@app/renderer` | React 界面层：Feature 驱动 + LinguiJS | [packages/renderer/AGENTS.md](packages/renderer/AGENTS.md)（视觉另见 [DESIGN.md](packages/renderer/docs/DESIGN.md)） |
-| `@app/shared` | 跨端契约单一事实源：Schema / 通道 / 类型 | [packages/shared/AGENTS.md](packages/shared/AGENTS.md) |
-| `@app/pr-review` | PR 生命周期与 OCR 审查工具链 | [packages/pr-review/AGENTS.md](packages/pr-review/AGENTS.md) |
-| `@app/docs` | 解决方案合集文档站（Vocs，GitHub Pages 部署） | [packages/docs/AGENTS.md](packages/docs/AGENTS.md) |
+| 包               | 职责                                                | 规则文件                                                                                                             |
+| ---------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `@app/main`      | 主进程：Controller/Service 分层、窗口与系统生命周期 | [packages/main/AGENTS.md](packages/main/AGENTS.md)                                                                   |
+| `@app/preload`   | 安全桥接层：contextBridge 暴露 `window.api`         | [packages/preload/AGENTS.md](packages/preload/AGENTS.md)                                                             |
+| `@app/renderer`  | React 界面层：Feature 驱动 + LinguiJS               | [packages/renderer/AGENTS.md](packages/renderer/AGENTS.md)（视觉另见 [DESIGN.md](packages/renderer/docs/DESIGN.md)） |
+| `@app/shared`    | 跨端契约单一事实源：Schema / 通道 / 类型            | [packages/shared/AGENTS.md](packages/shared/AGENTS.md)                                                               |
+| `@app/pr-review` | PR 生命周期与 OCR 审查工具链                        | [packages/pr-review/AGENTS.md](packages/pr-review/AGENTS.md)                                                         |
+| `@app/docs`      | 解决方案合集文档站（Vocs，GitHub Pages 部署）       | [packages/docs/AGENTS.md](packages/docs/AGENTS.md)                                                                   |
 
 ## 4. 任务路由（先读包规则，再查深档）
 
-| 任务 | 先读 | 再查 |
-| --- | --- | --- |
-| 新增业务域（shared→preload→main→renderer 全链路） | 四包的 AGENTS.md | packages/docs/src/pages/ai/fullstack-sop.md |
-| 模块装配 / 启动流程 / 运行时 | main/AGENTS.md | packages/docs/src/pages/architecture/module-lifecycle.md · packages/docs/src/pages/architecture/layering.md |
-| 运行环境 / MODE / env 门面 | shared/AGENTS.md | packages/docs/src/pages/engineering/env-vars.md · packages/docs/src/pages/dx/dev-orchestration.md |
-| 依赖拓扑 / 打包隔离 / external | main/AGENTS.md | packages/docs/src/pages/engineering/dependency-management.md |
-| 路径管理 / 跨平台资源 / ASAR 避坑 | main/AGENTS.md | packages/docs/src/pages/security/path-robustness.md |
-| 打包产物 / 安装包 / OTA 升级 | main/AGENTS.md | packages/docs/src/pages/delivery/packaging.md · packages/docs/src/pages/delivery/auto-update.md |
-| renderer 页面 / 卡片 / 请求层 | renderer/AGENTS.md | — |
-| 文档站页面 / 导航 / 写作规范 | packages/docs/AGENTS.md | — |
-| 视觉 / token / 品牌定制 | renderer/docs/DESIGN.md | packages/docs/src/pages/ui/design-tokens.md |
-| 多语言词条与架构 | renderer/AGENTS.md | packages/docs/src/pages/ui/i18n.md |
-| 日志 / 异常 / 链路追踪 | .agents/rules/logging-specification.md | packages/docs/src/pages/main/logging.md · packages/docs/src/pages/main/tracing.md |
-| 首屏 / 启动壳 / WCO 标题栏 | main/AGENTS.md | packages/docs/src/pages/ui/first-screen.md · packages/docs/src/pages/ui/wco.md · packages/docs/src/pages/ui/window-state.md |
-| 测试 / 排错 / 提 PR / 触发 review | 全局红线 | packages/docs/src/pages/ai/review-loop.md · CONTRIBUTING §二 |
-| 发版流程 / tag / changelogen | 全局红线 | .github/CICD.md |
+| 任务                                              | 先读                                   | 再查                                                                                                                        |
+| ------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 新增业务域（shared→preload→main→renderer 全链路） | 四包的 AGENTS.md                       | packages/docs/src/pages/ai/fullstack-sop.md                                                                                 |
+| 模块装配 / 启动流程 / 运行时                      | main/AGENTS.md                         | packages/docs/src/pages/architecture/module-lifecycle.md · packages/docs/src/pages/architecture/layering.md                 |
+| 运行环境 / MODE / env 门面                        | shared/AGENTS.md                       | packages/docs/src/pages/engineering/env-vars.md · packages/docs/src/pages/dx/dev-orchestration.md                           |
+| 依赖拓扑 / 打包隔离 / external                    | main/AGENTS.md                         | packages/docs/src/pages/engineering/dependency-management.md                                                                |
+| 路径管理 / 跨平台资源 / ASAR 避坑                 | main/AGENTS.md                         | packages/docs/src/pages/security/path-robustness.md                                                                         |
+| 打包产物 / 安装包 / OTA 升级                      | main/AGENTS.md                         | packages/docs/src/pages/delivery/packaging.md · packages/docs/src/pages/delivery/auto-update.md                             |
+| renderer 页面 / 卡片 / 请求层                     | renderer/AGENTS.md                     | —                                                                                                                           |
+| 文档站页面 / 导航 / 写作规范                      | packages/docs/AGENTS.md                | —                                                                                                                           |
+| 视觉 / token / 品牌定制                           | renderer/docs/DESIGN.md                | packages/docs/src/pages/ui/design-tokens.md                                                                                 |
+| 多语言词条与架构                                  | renderer/AGENTS.md                     | packages/docs/src/pages/ui/i18n.md                                                                                          |
+| 日志 / 异常 / 链路追踪                            | .agents/rules/logging-specification.md | packages/docs/src/pages/main/logging.md · packages/docs/src/pages/main/tracing.md                                           |
+| 首屏 / 启动壳 / WCO 标题栏                        | main/AGENTS.md                         | packages/docs/src/pages/ui/first-screen.md · packages/docs/src/pages/ui/wco.md · packages/docs/src/pages/ui/window-state.md |
+| 测试 / 排错 / 提 PR / 触发 review                 | 全局红线                               | packages/docs/src/pages/ai/review-loop.md · CONTRIBUTING §二                                                                |
+| 发版流程 / tag / changelogen                      | 全局红线                               | .github/CICD.md                                                                                                             |
 
 ## 5. 开发流与验证门禁矩阵（根目录执行）
 
-| 研发场景 | 机器门禁判据与组合命令 | 拦截重点与避坑指南 |
-| :--- | :--- | :--- |
-| **日常编码闭环** | `pnpm typecheck` · `pnpm lint` · `pnpm test` | 快速增量校验，单测覆盖 19 个核心测试套件与 101 个用例 |
-| **PR 提交前全量门禁** | `pnpm typecheck && pnpm lint && pnpm test && pnpm verify:prebuild` | 必须全绿方可提 PR；CI 将执行相同流水线阻断合并 |
-| **PR 生命周期管理** | `pnpm pr-review <create\|status\|pull\|trigger\|merge>` | 统一收敛命令，严禁手写散装 gh 命令；实现审阅与合并闭环 |
-| **pr-review 模块改动** | `pnpm test:pr-review` | ⚠️ **关键判据**：根 `pnpm test` 排除了本包，改动后必须单独执行此命令！ |
-| **多语言文案变动** | `pnpm i18n:extract` ➔ 补译 ➔ `pnpm i18n:check` | `messages.po` 缺少英译将直接导致 CI 失败 |
-| **文档站内容变动** | `pnpm docs:dev`（本地预览）· `pnpm docs:build`（静态构建） | 构建包含死链检测与 SSG 静态生成 |
-| **发版与分发预检** | `pnpm verify:prebuild` · `pnpm build:unpack` | 检查主进程 external 依赖隔离，验证打包产物完整性 |
+| 研发场景               | 机器门禁判据与组合命令                                             | 拦截重点与避坑指南                                                     |
+| :--------------------- | :----------------------------------------------------------------- | :--------------------------------------------------------------------- |
+| **日常编码闭环**       | `pnpm typecheck` · `pnpm lint` · `pnpm test`                       | 快速增量校验，单测覆盖 19 个核心测试套件与 101 个用例                  |
+| **PR 提交前全量门禁**  | `pnpm typecheck && pnpm lint && pnpm test && pnpm verify:prebuild` | 必须全绿方可提 PR；CI 将执行相同流水线阻断合并                         |
+| **PR 生命周期管理**    | `pnpm pr-review <create\|status\|pull\|trigger\|merge>`            | 统一收敛命令，严禁手写散装 gh 命令；实现审阅与合并闭环                 |
+| **pr-review 模块改动** | `pnpm test:pr-review`                                              | ⚠️ **关键判据**：根 `pnpm test` 排除了本包，改动后必须单独执行此命令！ |
+| **多语言文案变动**     | `pnpm i18n:extract` ➔ 补译 ➔ `pnpm i18n:check`                     | `messages.po` 缺少英译将直接导致 CI 失败                               |
+| **文档站内容变动**     | `pnpm docs:dev`（本地预览）· `pnpm docs:build`（静态构建）         | 构建包含死链检测与 SSG 静态生成                                        |
+| **发版与分发预检**     | `pnpm verify:prebuild` · `pnpm build:unpack`                       | 检查主进程 external 依赖隔离，验证打包产物完整性                       |
 
 ## 6. 指针
 

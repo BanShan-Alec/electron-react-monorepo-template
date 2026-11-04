@@ -1,4 +1,5 @@
 ---
+
 title: 代码规范与风格（Biome）
 description: Biome 统一接管代码格式化、Lint 与导入排序，架构红线升格为编译期硬性阻断。
 ---

@@ -1,4 +1,5 @@
 ---
+
 title: React 组件编写规范（Code-partition + Hooks）
 description: 引入 React Compiler 自动记忆化，7 段式固定分区骨架、useManualRequest 显式约束与 IPC 订阅闭环。
 ---

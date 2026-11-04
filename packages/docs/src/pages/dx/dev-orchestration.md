@@ -1,4 +1,5 @@
 ---
+
 title: 开发编排（Vite + Electron）
 description: 单命令串联渲染层 dev server、preload 与主进程 watch 构建；生产预览校验产物并按进程树彻底清场。
 ---
@@ -26,6 +27,7 @@ Electron 项目的本地开发回路远比普通 Web 应用复杂：
 ```ts
 server.ws.send({ type: 'full-reload' });
 ```
+
 3. **Main 主进程**：代码重建完成后，杀掉旧的 Electron 实例并重载拉起：
 ```ts
 // packages/main 增量写入触发后
@@ -52,8 +54,14 @@ export async function killProcessTree(pid: number): Promise<void> {
     if (process.platform === 'win32') {
       execSync(`taskkill /pid ${pid} /T /F`, { stdio: 'ignore' });
     } else {
-      try { execSync(`pkill -TERM -P ${pid}`, { stdio: 'ignore' }); } catch {}
-      try { process.kill(-pid, 'SIGKILL'); } catch { process.kill(pid, 'SIGKILL'); }
+      try {
+        execSync(`pkill -TERM -P ${pid}`, { stdio: 'ignore' });
+      } catch {}
+      try {
+        process.kill(-pid, 'SIGKILL');
+      } catch {
+        process.kill(pid, 'SIGKILL');
+      }
     }
   } catch {}
 }

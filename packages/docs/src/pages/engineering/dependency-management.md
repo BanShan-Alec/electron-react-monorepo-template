@@ -1,4 +1,5 @@
 ---
+
 title: 依赖管理（Monorepo）
 description: pnpm workspace + catalog 收拢版本，根依赖硬性白名单由 CI 门禁拦截，严格隔离打包体积。
 ---
@@ -22,24 +23,24 @@ description: pnpm workspace + catalog 收拢版本，根依赖硬性白名单由
 
 ```yaml
 packages:
-  - 'packages/*'
+  - "packages/*"
 
 catalog:
   typescript: ^6.0.0
   vite: ^8.0.0
   zod: ^4.5.4
-  '@types/node': ^24.19.2
+  "@types/node": ^24.19.2
   vitest: ^5.0.3
 
 nodeLinker: isolated
 autoInstallPeers: true
 publicHoistPattern:
-  - '@node-usb/*'
-  - '*usb*'
+  - "@node-usb/*"
+  - "*usb*"
 
 allowBuilds:
-  '@sentry/cli': true
-  'electron-winstaller': true
+  "@sentry/cli": true
+  "electron-winstaller": true
   esbuild: true
 ```
 
@@ -58,7 +59,9 @@ const allowedRootDeps = ['@app/main'];
 
 const illegalRootDeps = rootDeps.filter((dep) => !allowedRootDeps.includes(dep));
 if (illegalRootDeps.length > 0) {
-  console.error(`[verify:prebuild] 根目录 package.json 存在非法生产依赖: ${illegalRootDeps.join(', ')}`);
+  console.error(
+    `[verify:prebuild] 根目录 package.json 存在非法生产依赖: ${illegalRootDeps.join(', ')}`,
+  );
   console.error('[verify:prebuild] 生产依赖只能声明在对应子包中，根目录仅允许包含 @app/main');
   process.exit(1);
 }

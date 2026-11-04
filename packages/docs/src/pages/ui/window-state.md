@@ -1,4 +1,5 @@
 ---
+
 title: 窗口位置与尺寸（Window-state）
 description: 首次启动自适应工作区居中，拔屏超屏保护回退，续启交由原生 windowStatePersistence 在构造期无感恢复。
 ---
@@ -30,8 +31,10 @@ export function resolveWindowBounds(
   const isMaximized = Boolean(persisted?.isMaximized);
 
   // 1. 历史尺寸超屏判定（例如 4K 拔线切回笔记本小屏幕）
-  const hasHistorySize = typeof persisted?.width === 'number' && persisted.width >= MIN_WINDOW_WIDTH;
-  const isOversized = hasHistorySize && (persisted.width! > workArea.width || persisted.height! > workArea.height);
+  const hasHistorySize =
+    typeof persisted?.width === 'number' && persisted.width >= MIN_WINDOW_WIDTH;
+  const isOversized =
+    hasHistorySize && (persisted.width! > workArea.width || persisted.height! > workArea.height);
 
   let width: number;
   let height: number;
@@ -67,7 +70,7 @@ export function resolveWindowBounds(
 
 ```ts
 new BrowserWindow({
-  name: WINDOW_IDS.HOME,                 // 唯一名称同时充当持久化索引键
+  name: WINDOW_IDS.HOME, // 唯一名称同时充当持久化索引键
   windowStatePersistence: this.keepState, // 开启官方持久化（原生构造期注入）
   ...initialBounds,
 });

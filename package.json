@@ -55,7 +55,7 @@
     "postinstall": "cross-env ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ install-electron"
   },
   "lint-staged": {
-    "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}": [
+    "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc,md,yml,yaml}": [
       "biome check --write --config-path=.config --no-errors-on-unmatched"
     ]
   },
@@ -63,7 +63,7 @@
     "@app/preload": "workspace:*",
     "@app/renderer": "workspace:*",
     "@app/tsconfig": "workspace:*",
-    "@biomejs/biome": "2.5.13",
+    "@biomejs/biome": "^2.6.4",
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
     "@playwright/test": "^1.64.1",

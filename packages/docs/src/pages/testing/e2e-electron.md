@@ -1,4 +1,5 @@
 ﻿---
+
 title: 端到端测试（Playwright）
 description: Playwright 官方 `_electron` 真实拉起无边框窗口，Worker 级全局单次启动夹具与强制串行执行。
 ---
@@ -54,9 +55,12 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
 → 源码：[e2e/helpers/electron.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/e2e/helpers/electron.ts)
 
 ```ts
-export async function launchElectronApp(options: LaunchElectronOptions = {}): Promise<ElectronTestContext> {
+export async function launchElectronApp(
+  options: LaunchElectronOptions = {},
+): Promise<ElectronTestContext> {
   const ownsUserDataDir = !options.userDataDir;
-  const tempUserDataDir = options.userDataDir ?? fs.mkdtempSync(path.join(os.tmpdir(), 'electron-e2e-'));
+  const tempUserDataDir =
+    options.userDataDir ?? fs.mkdtempSync(path.join(os.tmpdir(), 'electron-e2e-'));
 
   const electronApp = await electron.launch({
     args: [
@@ -99,15 +103,15 @@ export default defineConfig({
   testDir: path.join(ROOT_DIR, 'e2e'),
   timeout: 45000,
   fullyParallel: false, // 必须禁止并发
-  workers: 1,           // 必须单 Worker 运行，规避多窗口聚焦抢占与单例锁冲突
+  workers: 1, // 必须单 Worker 运行，规避多窗口聚焦抢占与单例锁冲突
 });
 ```
 
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
-| :--- | :--- | :--- |
-| **单例锁与数据竞争** | 若多用例共用默认系统 `userData`，已运行的本地开发进程会拦截测试实例启动并将其直接静默杀死。 | 每次测试运行必须动态生成隔离的 `electron-e2e-*` 临时目录；需测试“跨重启持久化”时显式传入相同的 `userDataDir`。 |
-| **多 Worker 并发冲突** | 若 `workers > 1`，多个 Electron 窗口抢占 OS 桌面焦点、互相争抢系统托盘图标和文件锁，断言大面积偶发失败。 | Playwright 配置文件中严格锁定 `workers: 1` 且 `fullyParallel: false`。 |
+| 避坑要点               | 事故表现与原因                                                                                              | 本仓库对齐方案                                                                                                                                                 |
+| :--------------------- | :---------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **单例锁与数据竞争**   | 若多用例共用默认系统 `userData`，已运行的本地开发进程会拦截测试实例启动并将其直接静默杀死。                 | 每次测试运行必须动态生成隔离的 `electron-e2e-*` 临时目录；需测试“跨重启持久化”时显式传入相同的 `userDataDir`。                                                 |
+| **多 Worker 并发冲突** | 若 `workers > 1`，多个 Electron 窗口抢占 OS 桌面焦点、互相争抢系统托盘图标和文件锁，断言大面积偶发失败。    | Playwright 配置文件中严格锁定 `workers: 1` 且 `fullyParallel: false`。                                                                                         |
 | **退出死锁与悬挂进程** | `electronApp.close()` 偶尔因未处理的异步 IPC 任务挂起，导致测试跑完后 CI 卡死直到整个 GitHub Actions 超时。 | 清理函数封装 `Promise.race`（5 秒限时），一旦超时立即调用跨平台 `killProcessTree`（Windows `taskkill /pid /T /F`，POSIX `pkill -9 -P`）并彻底摧毁 stdio 管道。 |
-| **Linux 共享内存溢出** | CI 虚拟机 `/dev/shm` 空间狭小，Chromium 渲染大 DOM 时崩溃退出（SIGBUS）。 | 启动参数固定传入 `--disable-dev-shm-usage` 与 `--no-sandbox`。 |
+| **Linux 共享内存溢出** | CI 虚拟机 `/dev/shm` 空间狭小，Chromium 渲染大 DOM 时崩溃退出（SIGBUS）。                                   | 启动参数固定传入 `--disable-dev-shm-usage` 与 `--no-sandbox`。                                                                                                 |

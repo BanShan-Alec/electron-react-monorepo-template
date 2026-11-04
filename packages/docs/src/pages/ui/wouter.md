@@ -1,4 +1,5 @@
 ---
+
 title: 路由（Wouter）
 description: 采用轻量级 Wouter 驱动，useHashLocation 深度适配本地 file:// 协议。
 ---
@@ -56,10 +57,16 @@ export const App = memo(() => (
     <NavigationLogger />
     <main className="flex-1 overflow-y-auto">
       <Switch>
-        <Route path="/dashboard"><DashboardFeature /></Route>
-        <Route path="/architecture"><ArchitectureFeature /></Route>
+        <Route path="/dashboard">
+          <DashboardFeature />
+        </Route>
+        <Route path="/architecture">
+          <ArchitectureFeature />
+        </Route>
         {/* 根路径与未知非法路径统一收敛重定向至 /dashboard */}
-        <Route path="/*"><Redirect to="/dashboard" replace /></Route>
+        <Route path="/*">
+          <Redirect to="/dashboard" replace />
+        </Route>
       </Switch>
     </main>
   </div>

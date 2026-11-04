@@ -1,4 +1,5 @@
 ---
+
 title: 提交信息规范（Commitlint）
 description: Commitlint 强制 Conventional Commits，并结合自定义规则要求描述必须包含中文。
 ---
@@ -31,7 +32,10 @@ const Configuration: UserConfig = {
           const { subject } = parsed;
           if (!subject) return [false, '提交说明（subject）不能为空'];
           const hasChinese = /[\u4e00-\u9fa5]/.test(subject);
-          return [hasChinese, '提交说明（subject）必须包含简体中文描述，例如: feat: 增加系统托盘功能'];
+          return [
+            hasChinese,
+            '提交说明（subject）必须包含简体中文描述，例如: feat: 增加系统托盘功能',
+          ];
         },
       },
     },
@@ -40,7 +44,19 @@ const Configuration: UserConfig = {
     'type-enum': [
       RuleConfigSeverity.Error,
       'always',
-      ['feat', 'fix', 'docs', 'style', 'refactor', 'perf', 'test', 'build', 'ci', 'chore', 'revert'],
+      [
+        'feat',
+        'fix',
+        'docs',
+        'style',
+        'refactor',
+        'perf',
+        'test',
+        'build',
+        'ci',
+        'chore',
+        'revert',
+      ],
     ],
     'subject-chinese': [RuleConfigSeverity.Error, 'always'],
     'subject-case': [RuleConfigSeverity.Disabled],

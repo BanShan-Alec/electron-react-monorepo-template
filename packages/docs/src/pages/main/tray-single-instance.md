@@ -1,4 +1,5 @@
 ---
+
 title: 托盘常驻与单实例（Tray + Single-instance）
 description: 单实例锁防多开与二次唤起，关闭窗口自然销毁退守托盘，原生菜单多语言映射。
 ---
@@ -27,7 +28,9 @@ export class SingleInstanceApp implements AppModule {
     const isSingleInstance = app.requestSingleInstanceLock();
     if (!isSingleInstance) {
       // 抢锁失败：已有实例在运行（可能在后台托盘常驻），记录日志并瞬间退出
-      getLogManager().scoped(this).warn('Cannot acquire single instance lock: another instance is running. Exiting.');
+      getLogManager()
+        .scoped(this)
+        .warn('Cannot acquire single instance lock: another instance is running. Exiting.');
       app.quit();
       process.exit(0);
     }

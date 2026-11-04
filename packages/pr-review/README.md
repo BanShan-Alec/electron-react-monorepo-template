@@ -10,13 +10,13 @@
 
 在项目根目录可通过 `pnpm pr-review <command>` 调用：
 
-| 指令 | 简写 | 详细说明 |
-| :--- | :--- | :--- |
-| `pnpm pr-review pull` | - | 拉取最新 CI 产物并在 `reviews/` 下生成 `pr-<PR>-round-<N>.md` 看板（分支未关联 PR 时为 `branch-<分支>-round-<N>.md`），自动清理超过 10 轮的旧看板 |
-| `pnpm pr-review trigger` | `review` | 在当前 PR 讨论区自动发表 `/review` 评论（等价于手动评论 `/review` 或 `/ocr`），触发 OpenCodeReview 增量扫描 |
-| `pnpm pr-review create` | `pr` | 运行前置检查（gh 已认证、工作区干净、非 main 分支），推送特性分支并基于 PR 模板自动创建 Pull Request |
-| `pnpm pr-review status` | - | 查看当前仓库 PR 与所有 checks 状态 |
-| `pnpm pr-review merge` | - | 先交互确认（`--yes` 跳过），再轮询等待分支保护门禁全绿（15s × 40 次上限），随后 squash 合并并清理远端分支 |
+| 指令                     | 简写     | 详细说明                                                                                                                                          |
+| :----------------------- | :------- | :------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm pr-review pull`    | -        | 拉取最新 CI 产物并在 `reviews/` 下生成 `pr-<PR>-round-<N>.md` 看板（分支未关联 PR 时为 `branch-<分支>-round-<N>.md`），自动清理超过 10 轮的旧看板 |
+| `pnpm pr-review trigger` | `review` | 在当前 PR 讨论区自动发表 `/review` 评论（等价于手动评论 `/review` 或 `/ocr`），触发 OpenCodeReview 增量扫描                                       |
+| `pnpm pr-review create`  | `pr`     | 运行前置检查（gh 已认证、工作区干净、非 main 分支），推送特性分支并基于 PR 模板自动创建 Pull Request                                              |
+| `pnpm pr-review status`  | -        | 查看当前仓库 PR 与所有 checks 状态                                                                                                                |
+| `pnpm pr-review merge`   | -        | 先交互确认（`--yes` 跳过），再轮询等待分支保护门禁全绿（15s × 40 次上限），随后 squash 合并并清理远端分支                                         |
 
 ---
 
@@ -35,21 +35,25 @@ flowchart TD
 ```
 
 ### 1.1 真增量审查 (`checkpoint_range: true`)
+
 - **初次开 PR**：从 `merge-base` 到最新 commit 进行全量审查。
 - **后续复查**：Bot 在置顶看板中记录上次审查的 commit 检查点。后续审查**仅对 `<checkpoint>..<new head>` 之间的纯增量提交进行扫描**，避免重复审查旧代码。
 - **不重复评论 (`incremental: true`)**：即使增量范围有交集，相同代码行也不会重复发送雷同评论。
 - **fail-closed 回退**：检查点标记缺失、基线移动等存疑场景下自动回退全量审查，不会静默漏看。
 
 ### 1.2 置顶动态看板 (`sticky_summary: true`)
+
 - Bot 首次运行会在 PR 讨论区发布一条带有隐式签名（`<!-- ocr-summary -->`）的看板。
 - 后续轮次的审查结果将通过 GitHub API **直接原地更新（PATCH）这一条看板**，避免反复发布主评论造成 PR 刷屏。
 
 ### 1.3 噪声治理（折叠路由已关闭）
+
 - **全部发现均以 Inline Comment 呈现**：Critical / High / Medium / Low 一律在代码差异行内生成评论，便于就地查阅与逐条处置。
 - **折叠路由显式关闭**：`route_severity_below` 已置空——不再把低危建议倾倒进置顶 Summary 的折叠区（早期配置曾为 `low`，已废弃），避免看板变成垃圾桶。
 - **控频改由三重机制承担**：`incremental` 相同代码行不重复评论、`resolve_outdated` 自动关闭已修复 Thread、Push 不自动触发（仅开 PR 与手动 `/review` 触发）。
 
 ### 1.4 自动关闭过时评论 (`resolve_outdated: true`)
+
 - 当你在后续 commit 中修改了原来报错的代码行后，GitHub 会自动将其标记为 `isOutdated`。
 - Bot 在下一轮审查确认该位置没有再次报错后，会自动调用 GraphQL API 将该 Review Thread 标记为 **Resolved**；人类回复过或已被新发现覆盖的 Thread 受保护，不会被自动关闭。
 
@@ -79,10 +83,13 @@ sequenceDiagram
 ```
 
 ### 协同步骤：
+
 1. **本地一键拉取最新轮次看板**：
+
    ```bash
    pnpm pr-review pull
    ```
+
    - 自动匹配当前分支关联 PR 的最新已完成 CI 产物；
    - 产物输出至 `packages/pr-review/reviews/pr-<PR编号>-round-<轮次>.md`；
    - 自动触发清理机制：整目录只保留最近 10 轮看板，多余历史看板自动剔除；
@@ -100,6 +107,7 @@ sequenceDiagram
      > “请根据 `packages/pr-review/reviews/pr-<PR编号>-round-<轮次>.md` 执行代码修复：对标记修复的项执行修复，勾选忽略或留有批注的遵照批注处置，完成后运行本地测试。”
 
 4. **一键提交并触发增量复查**：
+
    ```bash
    # 规范提交并推送到远端特性分支
    git push origin <branch>

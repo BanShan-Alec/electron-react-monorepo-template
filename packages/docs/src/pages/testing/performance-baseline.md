@@ -1,4 +1,5 @@
 ---
+
 title: 性能基线（Benchmark）
 description: 采用 JIT 预热与多轮中位数采样消除系统抖动，设置独立门禁守护高频遥测纳秒级开销。
 ---
@@ -59,7 +60,9 @@ describe('性能基准测试 (Tracer Benchmark)', () => {
       baselineSamples.push(await measurePerCall(work));
       tracedSamples.push(
         await measurePerCall((index) =>
-          tracer.startActiveSpan('benchmark.operation', { attributes: { index } }, () => work(index)),
+          tracer.startActiveSpan('benchmark.operation', { attributes: { index } }, () =>
+            work(index),
+          ),
         ),
       );
     }
@@ -94,16 +97,21 @@ export default defineConfig({
       : ['packages/**/tests/unit/**/*.test.ts', 'packages/**/tests/**/*.test.ts'],
     exclude: isBenchmark
       ? ['**/node_modules/**', '**/dist/**']
-      : ['**/node_modules/**', '**/dist/**', 'packages/main/tests/benchmark/**', 'packages/pr-review/**'],
+      : [
+          '**/node_modules/**',
+          '**/dist/**',
+          'packages/main/tests/benchmark/**',
+          'packages/pr-review/**',
+        ],
   },
 });
 ```
 
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点 | 事故表现与原因 | 本仓库对齐方案 |
-| :--- | :--- | :--- |
-| **单次粗暴采样翻红** | 仅循环 1000 次取一次 `performance.now()`，在 CI 共享 CPU 突发抖动时导致基线测试翻红。 | 必须引入 `WARMUP_ITERATIONS` 预热 JIT，并进行 5 轮采样计算 `median`（中位数），过滤毛刺值。 |
-| **断言过于严苛引发误报** | 将真实断言卡死在 0.1ms，在不同机器负荷下容易误触。 | 结合实际调度考量，基线断言保留 10x 宽松护栏（`< 1ms`），目标对齐 0.1ms，防止数量级性能滑坡。 |
-| **污染日常 CI 时效** | 若将耗时较长的基准测试混入 PR 必经的 `pnpm test`，会导致开发提交频繁等待。 | 通过 `BENCHMARK=true` 环境变量切分，日常门禁秒级通过，性能基准由专属命令 `pnpm test:bench` 驱动。 |
-| **测试逻辑与生产逻辑不同构** | 对照组和实验组执行的底层异步代码结构不一致，测出的仅仅是 Promise 封装本身的开销。 | 对照组与实验组必须同构循环，仅对比“有无追踪包裹”的差值（`traced - baseline`）。 |
+| 避坑要点                     | 事故表现与原因                                                                        | 本仓库对齐方案                                                                                    |
+| :--------------------------- | :------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------ |
+| **单次粗暴采样翻红**         | 仅循环 1000 次取一次 `performance.now()`，在 CI 共享 CPU 突发抖动时导致基线测试翻红。 | 必须引入 `WARMUP_ITERATIONS` 预热 JIT，并进行 5 轮采样计算 `median`（中位数），过滤毛刺值。       |
+| **断言过于严苛引发误报**     | 将真实断言卡死在 0.1ms，在不同机器负荷下容易误触。                                    | 结合实际调度考量，基线断言保留 10x 宽松护栏（`< 1ms`），目标对齐 0.1ms，防止数量级性能滑坡。      |
+| **污染日常 CI 时效**         | 若将耗时较长的基准测试混入 PR 必经的 `pnpm test`，会导致开发提交频繁等待。            | 通过 `BENCHMARK=true` 环境变量切分，日常门禁秒级通过，性能基准由专属命令 `pnpm test:bench` 驱动。 |
+| **测试逻辑与生产逻辑不同构** | 对照组和实验组执行的底层异步代码结构不一致，测出的仅仅是 Promise 封装本身的开销。     | 对照组与实验组必须同构循环，仅对比“有无追踪包裹”的差值（`traced - baseline`）。                   |
