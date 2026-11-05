@@ -72,6 +72,7 @@ export const SIDEBAR_GROUPS: NavigationGroup[] = [
       { text: '原生窗口体验（WCO）', link: '/ui/wco' },
       { text: '首次关闭确认（Close-confirmation）', link: '/ui/close-confirmation' },
       { text: '窗口位置与尺寸（Window-state）', link: '/ui/window-state' },
+      { text: '文档站离线缓存（Service-Worker）', link: '/ui/docs-tab-offline' },
     ],
   },
   {

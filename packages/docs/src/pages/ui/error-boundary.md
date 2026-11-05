@@ -57,6 +57,8 @@ flowchart TB
 
 → 源码：[packages/renderer/src/components/layout/ErrorBoundary/index.tsx](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/components/layout/ErrorBoundary/index.tsx)
 
+节选：`ErrorBoundary` 类（省略 `componentDidCatch`，见下节）：
+
 ```tsx
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {

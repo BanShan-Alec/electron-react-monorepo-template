@@ -16,7 +16,7 @@ description: 运行期偏好落盘至 userData，Zod Schema 强校验、坏文�
 
 工程通过 Zod 强类型 Schema 定义结合加载期双重自愈机制，确保配置链路坚不可摧。
 
-## 2. 核心配置代码
+## 2. 核心机制
 
 ### 单一真源 Schema 与默认值派生
 

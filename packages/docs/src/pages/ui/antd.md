@@ -14,7 +14,7 @@ description: Ant Design 五层 Provider 装配、StyleProvider layer 与官方�
 
 本工程的集成重点在于**解决 CSS-in-JS 样式特异性覆盖难题**与**打通全局色彩派生**。
 
-## 2. 核心配置代码
+## 2. 核心机制
 
 ### 标准五层 Provider 链式装配
 

@@ -6,7 +6,7 @@ description: 通道、入参与返回值在 @app/shared 统一定义，Zod 强�
 
 # 类型安全的 IPC 契约（Zod + ContextBridge）
 
-> **TL;DR**：通信通道、入参校验与统一响应结构全部收敛在 `@app/shared`；Zod Schema 在主进程 Controller 边界执行强校验，Preload 仅暴露白名单 `apiBridge`，绝不向渲染端泄露原生 `ipcRenderer`。
+> **TL;DR**：通信通道、入参校验与统一响应结构全部收敛在 `@app/shared`；Zod Schema 在主进程 Controller 边界执行强校验，Preload 只通过 `contextBridge` 暴露白名单 `apiBridge` 与只写日志的 `logger` 桥，绝不向渲染端泄露原生 `ipcRenderer`。
 
 ## 1. 选型理由
 
@@ -23,15 +23,15 @@ Electron 默认的 IPC 通信极其松散且危险：
 
 ```mermaid
 flowchart LR
-  subgraph R["Renderer 进程（不可信）"]
+  subgraph renderer["渲染进程（Renderer，不可信）"]
     UI["useCounter<br/>React Hook"]
     API["window.api<br/>ElectronApi 契约"]
   end
-  subgraph P["Preload 进程（隔离桥）"]
+  subgraph preload["Preload（隔离桥）"]
     BRIDGE["apiBridge<br/>白名单命名空间"]
     TRACE["invokeTraced<br/>注入 W3C traceparent"]
   end
-  subgraph M["Main 进程（可信）"]
+  subgraph main["主进程（Main，可信）"]
     HANDLE["handleTraced<br/>ipcMain.handle 包装"]
     ZOD["stepInputSchema.safeParse<br/>Zod 校验点"]
     SVC["counterService.increment"]
@@ -49,8 +49,6 @@ flowchart LR
   OK --> RESULT
   ZOD -->|"校验失败"| FAIL
   FAIL --> RESULT
-  classDef validate fill:#fff3cd,stroke:#b45309,stroke-width:2px,color:#111
-  class ZOD validate
 ```
 
 ### 关键实现
@@ -58,6 +56,8 @@ flowchart LR
 #### 契约集中收拢（单一事实源）
 
 → 源码：[packages/shared/src/constants/ipc-channels.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/constants/ipc-channels.ts)
+
+节选：仅展示 4 条通道，完整清单见源码：
 
 ```ts
 export const IPC_CHANNELS = {
@@ -86,9 +86,10 @@ export type Result<T> =
 
 → 源码：[packages/main/src/controllers/counter.controller.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/controllers/counter.controller.ts)
 
+节选：仅展示 `COUNTER_INCREMENT` 的注册，其余控制器同构（省略）：
+
 ```ts
 export function registerCounterControllers(): void {
-  // …COUNTER_GET / COUNTER_DECREMENT / COUNTER_RESET 注册略
   handleTraced(
     IPC_CHANNELS.COUNTER_INCREMENT,
     async (_event, rawInput: unknown): Promise<Result<CounterResult>> => {
@@ -108,7 +109,7 @@ export function registerCounterControllers(): void {
 
 #### Preload 白名单隔离代理
 
-节选 `apiBridge` 的 `counter` 命名空间，其余业务命名空间同构：
+节选：`apiBridge` 的 `counter` 命名空间，其余业务命名空间同构：
 
 → 源码：[packages/preload/src/index.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/src/index.ts)
 

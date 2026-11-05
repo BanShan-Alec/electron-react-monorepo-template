@@ -16,7 +16,7 @@ description: Commitlint 强制 Conventional Commits，并结合自定义规则�
 
 项目在标准规范之上，增加了**中文描述强制规则**，兼顾自动化脚本解析与开发团队直观可读性。
 
-## 2. 核心配置代码
+## 2. 核心机制
 
 ### Commitlint 规则与自定义中文插件
 

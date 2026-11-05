@@ -18,7 +18,7 @@ Electron 开发者常遇到两种极为隐蔽的“假死”现象：
 
 ```mermaid
 flowchart TD
-  subgraph DEV["pnpm dev · startDevServer"]
+  subgraph dev["pnpm dev · startDevServer"]
     A[dev 启动] --> B[ensureNoAppInstanceRunning]
     B --> C{findRunningAppInstances 命中?}
     C -->|否| G[ensurePortsAvailable]
@@ -33,18 +33,22 @@ flowchart TD
     I --> I2[killProcessTree 后等待 300ms]
     I2 --> J
   end
-  subgraph PREVIEW["pnpm preview · runPreview"]
+  subgraph preview["pnpm preview · runPreview"]
     K[preview 启动] --> L[仅 ensureNoAppInstanceRunning，跳过端口预检]
   end
 ```
 
 `startDevServer` 固定先 `ensureNoAppInstanceRunning`、后 `ensurePortsAvailable`；`runPreview` 只复用单实例预检，不启动 dev server，因此没有端口需要探测。非 TTY 时 `promptUserToKill` / `promptUserToKillInstances` 会在创建 readline 前直接抛错。两个入口都在 [scripts/dev.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/dev.ts)。
 
+脚本在 Win32 下先执行 `chcp 65001` 切换控制台代码页，避免 Git Bash 等终端的中文日志乱码（`scripts/dev.ts:32-37`）；仓库根由 `loadRepoEnv(__dirname)` 内部的 `findRepoRoot` 从脚本目录向上锁定，不依赖 `process.cwd()`（`scripts/dev.ts:11-15`、`build/lib/repo-paths.ts`）。
+
 ### 单实例探测
 
 Windows 分支用 PowerShell `Get-Process`：按 `APP_IDENTITY.productName` 匹配打包版，dev 实例则要求可执行文件路径落在本仓根目录下，避免误杀其他项目 / worktree。POSIX 分支用 `pgrep -f` 按同样的两个特征匹配：
 
 → 源码：[scripts/instance-guard.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/instance-guard.ts)
+
+节选：`findRunningAppInstances()` 内的匹配特征（省略函数体与平台分支）：
 
 ```ts
 const patterns = [`${repoRoot}/node_modules/electron/dist/electron`, APP_IDENTITY.productName];

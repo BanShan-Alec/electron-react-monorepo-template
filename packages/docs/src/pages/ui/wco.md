@@ -16,7 +16,7 @@ description: 采用 Window Controls Overlay，保留 Win11 贴靠与原生管理
 
 工程采用现代规范 **Window Controls Overlay (WCO)** 配合底层重绘守护，兼得现代无边框视觉与原生窗口稳健性。
 
-## 2. 核心配置代码
+## 2. 核心机制
 
 ### 跨平台分流配置
 

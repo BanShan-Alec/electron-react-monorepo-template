@@ -29,7 +29,7 @@ Ant Design 算法 (getAntdThemeConfig) ──> 注入 .css-var-app { --ant-* }
 Tailwind v4 (@theme inline)          ──> 生成 bg-background, text-primary 等工具类
 ```
 
-## 2. 核心配置代码（单一真源）
+## 2. 核心机制（单一真源）
 
 ### 全局色彩与作用域切换原子函数（applyColorScheme）
 

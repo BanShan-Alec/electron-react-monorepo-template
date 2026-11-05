@@ -9,6 +9,7 @@
     "build": "node --import ./scripts/vocs-windows-fix.mjs ./node_modules/vocs/dist/cli.js build"
   },
   "dependencies": {
+    "@panzoom/panzoom": "^4.6.2",
     "mermaid": "^11.0.0",
     "react": "catalog:",
     "react-dom": "catalog:",

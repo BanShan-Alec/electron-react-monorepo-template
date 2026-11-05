@@ -23,10 +23,10 @@ sequenceDiagram
     box LightBlue 渲染进程（Renderer）
         participant R as Renderer
     end
-    box LightYellow Preload 桥接层（sandbox 边界）
+    box LightYellow Preload（隔离桥，sandbox 边界）
         participant P as Preload
     end
-    box LightGreen 主进程（信任域）
+    box LightGreen 主进程（Main）
         participant M as Main
         participant ALS as AsyncLocalStorage
     end
@@ -37,7 +37,7 @@ sequenceDiagram
 
     R->>P: invokeTraced(channel, data)
     P->>M: ipcRenderer.invoke(channel, { __trace_carrier, data })
-    M->>M: handleTraced 解包 + tracer.extract(carrier)
+    M->>M: isTracedIpcPayload 守卫 → 解包并 extract 父上下文
     M->>ALS: startActiveSpan → storage.run(context, fn)
     ALS-->>M: getActiveContext() 返回当前 SpanContext
     M->>L: injectTraceHook 前缀 [trace_id:… span_id:…]
@@ -46,7 +46,7 @@ sequenceDiagram
     P-->>R: 返回 Result
 ```
 
-链路只有一条主线：Preload 在 `invokeTraced` 里生成 `traceId` / `spanId` 并序列化成 W3C `traceparent`，塞进 `__trace_carrier`；主进程 `handleTraced` 解包后 `extract` 出父上下文，交给 `Tracer.startActiveSpan` 在 `AsyncLocalStorage` 里 `run`；此后这条异步调用链上的日志前缀、Span 落盘、返回值注入都从同一份上下文取值。
+链路只有一条主线：Preload 在 `invokeTraced` 里生成 `traceId` / `spanId` 并序列化成 W3C `traceparent`，塞进 `__trace_carrier`；主进程 `handleTraced` 先用 `isTracedIpcPayload` 守卫判定载荷，命中才解包并 `extract` 出父上下文，再交给 `Tracer.startActiveSpan` 在 `AsyncLocalStorage` 里 `run`；此后这条异步调用链上的日志前缀、Span 落盘、返回值注入都从同一份上下文取值。
 
 ### 关键实现：Preload 生成并注入 traceparent
 
@@ -82,7 +82,7 @@ export async function invokeTraced<R = unknown, T = unknown>(
 
 ### 关键实现：主进程解包并在 AsyncLocalStorage 中续接
 
-`handleTraced` 注册 `ipcMain.handle`：先用 `isTracedIpcPayload` 判断入参是否带 `__trace_carrier`，带则 `tracer.extract` 还原父上下文，再交给 `tracer.startActiveSpan` 建立 `ipc.receive:` 子 Span。续接的关键只有一句 `this.storage.run(manualSpan.context, ...)`——把 SpanContext 绑定到当前异步调用链，handler 内部任意深度的异步函数都能通过 `getActiveContext()` 取到。
+`handleTraced` 注册 `ipcMain.handle`：先用 `isTracedIpcPayload` 判断入参是否符合包装规范，命中后读取 `data` / `recordSuccess`，并在 `__trace_carrier` 存在时 `tracer.extract` 还原父上下文，再交给 `tracer.startActiveSpan` 建立 `ipc.receive:` 子 Span。续接的关键只有一句 `this.storage.run(manualSpan.context, ...)`——把 SpanContext 绑定到当前异步调用链，handler 内部任意深度的异步函数都能通过 `getActiveContext()` 取到。
 
 → 源码：[packages/main/src/telemetry/ipc-tracer.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/telemetry/ipc-tracer.ts)
 
@@ -140,6 +140,6 @@ export async function invokeTraced<R = unknown, T = unknown>(
 - **日志管道本身严禁套用 traceparent**：
   - 日志传输通道 `IPC_CHANNELS.DIAGNOSTICS_LOG` 是唯一必须绕过 `handleTraced` 的特例。若日志管道自身也生成 Span 并打日志，将引发无休止的“日志生成遥测、遥测触发日志”的死循环自噪。
 - **高频成功轮询可关闭成功 Span 写入**：
-  - 对于心跳检测或秒级状态拉取，可在选项中配置 `recordSuccess: false`，仅在发生异常时才将 Span 写入 `traces.ndjson`，避免拓扑文件快速膨胀。
+  - 对于心跳检测或秒级状态拉取，可在选项中配置 `recordSuccess: false`，仅在发生异常时才将 Span 写入 `traces.ndjson`，避免拓扑文件快速膨胀。机制在 `startActiveSpan`：仅当 `recordSuccess !== false` 或状态为 `ERROR` 时才调用 `manualSpan.end`。
 - **跨进程排障黄金链路**：
   - 前端报错 ➔ 提取错误对象中的 `traceId` ➔ 在 `main.log` 全文检索该 ID ➔ 立即对齐主进程错误堆栈。
