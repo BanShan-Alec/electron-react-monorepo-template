@@ -20,6 +20,24 @@ function MermaidZoomLoader() {
   return null;
 }
 
+// 代码块复制按钮的顶部安全带：只给横向滚动的块打标记，短块排版不变。
+function CodeBlockOverflowLoader() {
+  useEffect(() => {
+    let cancelled = false;
+    void import('../lib/code-block-overflow')
+      .then(({ setupCodeBlockOverflow }) => {
+        if (!cancelled) setupCodeBlockOverflow();
+      })
+      .catch((error) => {
+        console.error('[code-block-overflow] setup failed', error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return null;
+}
+
 // 侧栏顶部品牌位：Vocs 的 Logo 组件配了 logoUrl 后只渲染图不渲染 title 文字，
 // 「图 + 品牌名同一行」的组合靠本 slot 补齐（导航栏 gutter 的纯图标此时会与之重叠，
 // 故 vocs.config.ts 不配 logoUrl，导航栏品牌完全由这里承担）。
@@ -27,6 +45,7 @@ export function SidebarHeader() {
   return (
     <>
       <MermaidZoomLoader />
+      <CodeBlockOverflowLoader />
       <Link to="/" className="flex items-center gap-2 no-underline py-1">
         <img
           src="/electron-react-monorepo-template/icon.png"
