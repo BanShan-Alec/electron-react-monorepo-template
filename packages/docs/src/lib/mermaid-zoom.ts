@@ -252,7 +252,7 @@ function onClick(event: MouseEvent): void {
   if (target.closest(`.${DIALOG_CLASS}`)) return;
   const wrap = target.closest(WRAP_SELECTOR);
   if (!wrap) return;
-  void open(wrap);
+  void open(wrap).catch((error) => console.error('[mermaid-zoom] open failed', error));
 }
 
 function onKeyDown(event: KeyboardEvent): void {
@@ -262,7 +262,7 @@ function onKeyDown(event: KeyboardEvent): void {
   const wrap = target.closest(WRAP_SELECTOR);
   if (!wrap) return;
   event.preventDefault();
-  void open(wrap);
+  void open(wrap).catch((error) => console.error('[mermaid-zoom] open failed', error));
 }
 
 export function setupMermaidZoom(): void {
