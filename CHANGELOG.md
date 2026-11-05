@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.13.1
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.13.0...v1.13.1)
+
+### 📖 文档更新 (Documentation)
+
+- **agents:** 解耦 AGENTS.md 文档站依赖并增补模板裁剪蓝图 ([#79](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/79))
+
+### 🤖 持续集成 (CI/CD)
+
+- **release:** 正文首行增加 CHANGELOG 导航链接
+
+### ❤️ Contributors
+
+- Wengzehua ([@BanShan-Alec](https://github.com/BanShan-Alec))
+- 半山Alec ([@BanShan-Alec](https://github.com/BanShan-Alec))
+
 ## v1.13.0
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.12.1...v1.13.0)
