@@ -158,19 +158,6 @@ aside[data-v-sidebar-container]::-webkit-scrollbar-thumb {
   background-color: light-dark(rgba(0, 0, 0, 0.45), rgba(255, 255, 255, 0.45));
 }
 
-/* 代码块复制按钮：按钮是 <pre> 的绝对定位子元素，会随内容横向滚动，
-   长代码时压在首行右端。给「出现横向滚动」的块预留顶部安全带
-   （data-code-overflow 由 src/lib/code-block-overflow.ts 标记），
-   短块 padding 不变；单行块 Vocs 把按钮垂直居中，一并钉回带内。 */
-pre.shiki[data-code-overflow="true"] {
-  padding-top: 44px;
-}
-
-pre.shiki[data-code-overflow="true"] > button[data-single-line="true"] {
-  top: 10px;
-  transform: none;
-}
-
 /* 隐藏 Ask AI 浮动气泡（用户指定 CSS 隐藏、不改页面 frontmatter）：底部
    「Ask AI...」触发栏。注意 Ctrl+I 的菜单锚定在这个触发器上，display:none
    会把 --anchor-width 清零、菜单跑到视口左上角且宽度塌成 0（样式错乱）；
