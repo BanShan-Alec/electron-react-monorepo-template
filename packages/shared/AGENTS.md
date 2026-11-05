@@ -19,7 +19,7 @@
 
 1. **Schema 唯一真源**：入参校验逻辑与编译期类型完全由 Zod 统一派生，禁止手写重复的 TypeScript 类型。
 2. **纯返回接口隔离**：仅作为 IPC 返回结果的结构体归入 `types/`，避免将无校验需求的实体引入 Zod 运行时打包开销。
-3. **环境跨端序列化**：运行环境以 `MODE` 为单一事实源。`utils/env-packer.ts` 保持纯粹 Base64URL 序列化契约，主进程挂载启动参数，preload 解包并 `Object.freeze` 注入 `window.__APP_ENV__`。详见 [环境变量管理（Dotenv）](../../packages/docs/src/pages/engineering/env-vars.md)。
+3. **环境跨端序列化**：运行环境以 `MODE` 为单一事实源。`utils/env-packer.ts` 保持纯粹 Base64URL 序列化契约，主进程挂载启动参数，preload 解包并 `Object.freeze` 注入 `window.__APP_ENV__`。
 
 ## 3. 命名规范
 

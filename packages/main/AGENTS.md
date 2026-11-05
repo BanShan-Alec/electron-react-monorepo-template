@@ -30,7 +30,7 @@
 
 ## 4. 新增业务领域开发范式 (SOP 代码骨架)
 
-完整开发指南见 [架构分层与生命周期](../../packages/docs/src/pages/architecture/layering.md)。开发新领域时严格按以下三步骨架编写：
+开发新领域时严格按以下三步骨架编写：
 
 ### Step 1: 编写 Service (`services/<domain>.service.ts` - 纯逻辑单例，零 IPC 依赖)
 

@@ -17,6 +17,7 @@ export const SIDEBAR_GROUPS: NavigationGroup[] = [
       { text: '什么是解决方案合集（Introduction）', link: '/introduction/what-is-this' },
       { text: '快速上手（Getting Started）', link: '/introduction/getting-started' },
       { text: '与 AI 协作（Agent-ready）', link: '/introduction/ai-collaboration' },
+      { text: '模板解耦与模块裁剪（Template-Ejection）', link: '/introduction/template-ejection' },
     ],
   },
   {

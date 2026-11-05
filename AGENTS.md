@@ -31,24 +31,30 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 | `@app/pr-review` | PR 生命周期与 OCR 审查工具链                        | [packages/pr-review/AGENTS.md](packages/pr-review/AGENTS.md)                                                         |
 | `@app/docs`      | 解决方案合集文档站（Vocs，GitHub Pages 部署）       | [packages/docs/AGENTS.md](packages/docs/AGENTS.md)                                                                   |
 
-## 4. 任务路由（先读包规则，再查深档）
+## 4. 全栈流转范式与任务路由
 
-| 任务                                              | 先读                                   | 再查                                                                                                                        |
-| ------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| 新增业务域（shared→preload→main→renderer 全链路） | 四包的 AGENTS.md                       | packages/docs/src/pages/ai/fullstack-sop.md                                                                                 |
-| 模块装配 / 启动流程 / 运行时                      | main/AGENTS.md                         | packages/docs/src/pages/architecture/module-lifecycle.md · packages/docs/src/pages/architecture/layering.md                 |
-| 运行环境 / MODE / env 门面                        | shared/AGENTS.md                       | packages/docs/src/pages/engineering/env-vars.md · packages/docs/src/pages/dx/dev-orchestration.md                           |
-| 依赖拓扑 / 打包隔离 / external                    | main/AGENTS.md                         | packages/docs/src/pages/engineering/dependency-management.md                                                                |
-| 路径管理 / 跨平台资源 / ASAR 避坑                 | main/AGENTS.md                         | packages/docs/src/pages/security/path-robustness.md                                                                         |
-| 打包产物 / 安装包 / OTA 升级                      | main/AGENTS.md                         | packages/docs/src/pages/delivery/packaging.md · packages/docs/src/pages/delivery/auto-update.md                             |
-| renderer 页面 / 卡片 / 请求层                     | renderer/AGENTS.md                     | —                                                                                                                           |
-| 文档站页面 / 导航 / 写作规范                      | packages/docs/AGENTS.md                | —                                                                                                                           |
-| 视觉 / token / 品牌定制                           | renderer/docs/DESIGN.md                | packages/docs/src/pages/ui/design-tokens.md                                                                                 |
-| 多语言词条与架构                                  | renderer/AGENTS.md                     | packages/docs/src/pages/ui/i18n.md                                                                                          |
-| 日志 / 异常 / 链路追踪                            | .agents/rules/logging-specification.md | packages/docs/src/pages/main/logging.md · packages/docs/src/pages/main/tracing.md                                           |
-| 首屏 / 启动壳 / WCO 标题栏                        | main/AGENTS.md                         | packages/docs/src/pages/ui/first-screen.md · packages/docs/src/pages/ui/wco.md · packages/docs/src/pages/ui/window-state.md |
-| 测试 / 排错 / 提 PR / 触发 review                 | 全局红线                               | packages/docs/src/pages/ai/review-loop.md · CONTRIBUTING §二                                                                |
-| 发版流程 / tag / changelogen                      | 全局红线                               | .github/CICD.md                                                                                                             |
+### 4.1 全栈端到端流水线（SOP）
+
+新增跨端业务领域严格遵照「契约先行、单向穿透」流水线，代码骨架由各包自包含实现：
+1. **契约先行 (`@app/shared`)**：在 `schemas/` 定义 Zod 入参模型与推导类型，在 `constants/ipc-channels.ts` 声明通道，在 `types/api.ts` 扩充 `ElectronApi`。
+2. **安全桥接 (`@app/preload`)**：在 `index.ts` 经 `invokeTraced` 包装透明转发至对应 IPC 通道，挂载至 `window.api`（严禁泄露 Node 原生模块）。
+3. **主进程处理 (`@app/main`)**：编写纯业务 `services/<domain>.service.ts`（单例无状态），在 `controllers/<domain>.controller.ts` 中通过 `handleTraced` 校验入参并调用 Service，统一返回 `Result<T>`，并在 `controllers/index.ts` 集中登记。
+4. **渲染层消费 (`@app/renderer`)**：在 `features/<domain>/hooks/` 统一通过 `useIpc` 或 `useManualRequest` 发起调用，卡片组件遵循七段式语义模板纯展示渲染。
+
+### 4.2 任务路由导航
+
+| 研发任务 / 关注点                              | 核心规则指引（唯一真源）                                                         |
+| :--------------------------------------------- | :------------------------------------------------------------------------------- |
+| 新增跨端业务域 (全栈 SOP)                      | 四包各自的 `AGENTS.md`（按上述 4.1 流水线顺序落地）                              |
+| 主进程模块装配 / 生命周期 / 托盘 / 窗口        | [packages/main/AGENTS.md](packages/main/AGENTS.md)                               |
+| 安全桥接 / contextBridge / IPC 追踪            | [packages/preload/AGENTS.md](packages/preload/AGENTS.md)                         |
+| 渲染层 Feature 划分 / manual-only / 组件七段式 | [packages/renderer/AGENTS.md](packages/renderer/AGENTS.md)                       |
+| 跨端契约 / Zod Schema / MODE 环境流转          | [packages/shared/AGENTS.md](packages/shared/AGENTS.md)                           |
+| 视觉 / 设计 Token / 品牌定制                   | [packages/renderer/docs/DESIGN.md](packages/renderer/docs/DESIGN.md)             |
+| 多语言词条与国际化 (LinguiJS)                  | [packages/renderer/AGENTS.md](packages/renderer/AGENTS.md) §6                    |
+| 日志输出 / 异常处理 / 链路追踪规范             | [.agents/rules/logging-specification.md](.agents/rules/logging-specification.md) |
+| PR 审查 / OpenCodeReview 工作流                | [.agents/skills/pr-review/SKILL.md](.agents/skills/pr-review/SKILL.md)           |
+| 工程规范 / Commit 纪律 / 路径推导              | [CONTRIBUTING.md](CONTRIBUTING.md)                                               |
 
 ## 5. 开发流与验证门禁矩阵（根目录执行）
 
