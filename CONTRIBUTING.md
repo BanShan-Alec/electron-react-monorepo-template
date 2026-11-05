@@ -149,17 +149,14 @@ main 受分支保护禁直推，发版走 PR 形态：
    ```
 4. GitHub Actions 将监听推送到远端的版本 Tag（如 `v1.1.0`），自动构建 Windows、macOS 与 Linux 原生安装包并发布到 GitHub Releases。
 
-### 3. GitHub Release 正文规范
+### 3. GitHub Release 正文
 
-Release 正文**不是**自动生成的 PR 列表，而是 CHANGELOG 中该版本段的原文：
+Release 正文由 GitHub 按本版合并的 PR 自动生成（`generate_release_notes`），标题为 `<productName> <tag>`，productName 读根 `package.json`（与安装包、快捷方式名同源）。
 
-- **来源**：CI 用 [`scripts/release-body.ts`](scripts/release-body.ts) 从 `CHANGELOG.md` 提取 `## vX.Y.Z` 段；标题为 `<productName> <tag>`，productName 读根 `package.json`（与安装包、快捷方式名同源）。
-- **清洗**：只去掉 `[compare changes]` 行与 `### ❤️ Contributors` 段；类型分组、条目措辞、行内 PR 链接全部保留。
-- **发版前 checklist**：
-  1. 抽查 CHANGELOG 该版本段——它就是用户看到的 release 页，条目应是用户能看懂的一句话；
-  2. 破坏性变更：changelogen 会在段尾自动生成 `#### ⚠️ Breaking Changes` 列表，发版时改写成 `### ⚠️ 行为变更` 并补迁移说明（v1.11.0 / v1.12.0 的做法），否则 release 页会出现重复条目；
-  3. tag 与段头严格一致（`vX.Y.Z`），否则正文回退为 CHANGELOG 链接并在 Actions 里留 warning。
-- **兜底**：流程不设硬门禁；缺段时发布一行 CHANGELOG 链接，不中断发版。
+- **PR 标题就是 release 条目**：写成用户能看懂的一句话（见 §二.4），这是正文质量唯一的杠杆。
+- **破坏性变更**：PR 标题加 `!`，迁移步骤写进 PR 正文——release 页只显示标题，细节靠条目里的 PR 链接。
+- **CHANGELOG 仍是完整档案**：release 页只列 PR；逐条变更与破坏性标记以 `CHANGELOG.md` 为准。
+- **不分组**：GitHub 的分类依赖 PR label；本仓不使用 label，因此列表是单组。需要分组时先补 label 策略，再加 `.github/release.yml`。
 - **不回填**：历史 release 保持原样，新规范从下一版开始。
 
 ---

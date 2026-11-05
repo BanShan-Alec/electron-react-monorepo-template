@@ -1,7 +1,6 @@
 # 发版流水线:本地 changelogen 提升版本并推送 v* tag 后自动触发,三平台构建并发布 GitHub Release。
 # CI 内不提升版本号——package.json 的版本由 changelogen 的发版提交保证与 tag 一致。
-# Release 正文 = CHANGELOG.md 中该 tag 的版本段(scripts/release-body.ts 提取并清洗),
-# 标题 = package.json 的 productName + tag;缺段时回退为 CHANGELOG 链接并打 warning。
+# Release 标题 = package.json 的 productName + tag;正文由 GitHub 按本版合并的 PR 自动生成。
 # 手动 dispatch 仅构建不发布,用于验证构建管线。
 name: Release App
 
@@ -78,18 +77,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-
       - name: Resolve release identity
         id: identity
         run: |
           echo "product_name=$(node -p "require('./package.json').productName")" >> "$GITHUB_OUTPUT"
-
-      - name: Extract release body
-        # --no-warnings:根 package.json 无 "type": "module",Node 直跑 .ts 会先按 CJS 试解析再重解析,产生噪音警告
-        run: node --no-warnings scripts/release-body.ts "${{ github.ref_name }}" --out release-body.md
 
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
@@ -100,9 +91,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
-          # 标题 = productName + tag;正文 = CHANGELOG 该版本段(见 CONTRIBUTING.md §四.3)
+          # 标题 = productName + tag;正文交给 GitHub 按合并的 PR 生成
           name: ${{ steps.identity.outputs.product_name }} ${{ github.ref_name }}
-          body_path: release-body.md
           files: release-artifacts/*
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

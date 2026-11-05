@@ -19,11 +19,7 @@ export default defineConfig({
     globals: true,
     include: isBenchmark
       ? ['packages/main/tests/benchmark/**/*.test.ts']
-      : [
-          'packages/**/tests/unit/**/*.test.ts',
-          'packages/**/tests/**/*.test.ts',
-          'scripts/**/*.test.ts',
-        ],
+      : ['packages/**/tests/unit/**/*.test.ts', 'packages/**/tests/**/*.test.ts'],
     exclude: isBenchmark
       ? ['**/node_modules/**', '**/dist/**']
       : [
