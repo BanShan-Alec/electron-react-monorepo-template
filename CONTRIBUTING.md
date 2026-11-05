@@ -100,7 +100,7 @@ feature 分支一律经 PR 合入 `main`：分支保护锁死五个 required che
 | `pnpm pr-review merge`  | 等门禁全绿 → squash 合并 → 删远端分支                     |
 | `pnpm pr-review status` | 当前仓库 PR 与 checks 概览                                |
 
-PR 标题沿用本节 Conventional Commits 格式（squash 后即 main 提交信息、进 changelog），分支首个提交的 subject 请按此措辞。
+PR 标题沿用本节 Conventional Commits 格式（squash 后即 main 提交信息、进 changelog），分支首个提交的 subject 请按此措辞。由于 changelog 按 PR 逐条生成、GitHub Release 正文直接取自 changelog，标题请写成用户能看懂的一句话；一个 PR 只做一件事，避免「顺便」混入无关改动。
 
 ---
 
@@ -148,6 +148,16 @@ main 受分支保护禁直推，发版走 PR 形态：
    git pull && git tag vX.Y.Z && git push origin vX.Y.Z
    ```
 4. GitHub Actions 将监听推送到远端的版本 Tag（如 `v1.1.0`），自动构建 Windows、macOS 与 Linux 原生安装包并发布到 GitHub Releases。
+
+### 3. GitHub Release 正文
+
+Release 正文由 GitHub 按本版合并的 PR 自动生成（`generate_release_notes`），标题为 `<productName> <tag>`，productName 读根 `package.json`（与安装包、快捷方式名同源）。
+
+- **PR 标题就是 release 条目**：写成用户能看懂的一句话（见 §二.4），这是正文质量唯一的杠杆。
+- **破坏性变更**：PR 标题加 `!`，迁移步骤写进 PR 正文——release 页只显示标题，细节靠条目里的 PR 链接。
+- **CHANGELOG 仍是完整档案**：release 页只列 PR；逐条变更与破坏性标记以 `CHANGELOG.md` 为准。
+- **不分组**：GitHub 的分类依赖 PR label；本仓不使用 label，因此列表是单组。需要分组时先补 label 策略，再加 `.github/release.yml`。
+- **不回填**：历史 release 保持原样，新规范从下一版开始。
 
 ---
 
