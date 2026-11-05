@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.13.0
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.12.1...v1.13.0)
+
+### 🚀 新增特性 (Features)
+
+- **compiler:** 全面适配 React Compiler 规范并升级 Biome 至 2.6 ([#76](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/76))
+- **docs:** 重构 mermaid 图预览与放大交互，统一文档写作规范 ([#77](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/77))
+
+### 📖 文档更新 (Documentation)
+
+- **agents:** 按七维度规范重构全仓 AGENTS.md 规则体系 ([#75](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/75))
+
+### ❤️ Contributors
+
+- 半山Alec ([@BanShan-Alec](https://github.com/BanShan-Alec))
+
 ## v1.12.1
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.12.0...v1.12.1)
