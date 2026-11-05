@@ -12,13 +12,10 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 
 ## 2. 全局红线（包无关，一句话可判定）
 
-1. **根目录禁增业务依赖**：根 `package.json` 的 `dependencies` 只能包含 `@app/main`。
-   （2026-10-18 立；门禁：CI `verify:prebuild`）
+1. **根目录禁增业务依赖**：根 `package.json` 的 `dependencies` 只能包含 `@app/main`。（门禁：CI `verify:prebuild`）
 2. **禁止桶文件**：不得新增只做重导出的 `index.ts`，严禁 `export *`；Biome `noBarrelFile` /
-   `noReExportAll` 为 error，不设白名单。组件 `Xxx/index.tsx`（一组件一文件夹的本体实现）不是桶文件，除外。
-   （2026-10-18 立；例外澄清见 [CONTRIBUTING.md](CONTRIBUTING.md) §一.3）
-3. **路径推导最佳实践（非阻断门禁）**：Node 脚本与构建配置推荐优先基于 `__dirname` / `import.meta.dirname` 推导绝对路径，避免依赖 `process.cwd()` 产生工作目录偏移风险；作为工程指导原则遵循，非硬性机械阻断门禁。
-   （2026-10-18 立；事由：桌面快捷方式启动时工作目录偏移；规范见 [CONTRIBUTING.md](CONTRIBUTING.md) §七）
+   `noReExportAll` 为 error，不设白名单。组件 `Xxx/index.tsx`（一组件一文件夹的本体实现）不是桶文件，除外。（例外澄清见 [CONTRIBUTING.md](CONTRIBUTING.md) §一.3）
+3. **路径推导最佳实践（非阻断门禁）**：Node 脚本与构建配置推荐优先基于 `__dirname` / `import.meta.dirname` 推导绝对路径，避免依赖 `process.cwd()` 产生工作目录偏移风险；作为工程指导原则遵循，非硬性机械阻断门禁。（事由：桌面快捷方式启动时工作目录偏移；规范见 [CONTRIBUTING.md](CONTRIBUTING.md) §七）
 
 ## 3. 包索引（规则真源在各包 AGENTS.md）
 
@@ -60,7 +57,7 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 
 | 研发场景               | 机器门禁判据与组合命令                                             | 拦截重点与避坑指南                                                     |
 | :--------------------- | :----------------------------------------------------------------- | :--------------------------------------------------------------------- |
-| **日常编码闭环**       | `pnpm typecheck` · `pnpm lint` · `pnpm test`                       | 快速增量校验，单测覆盖 19 个核心测试套件与 101 个用例                  |
+| **日常编码闭环**       | `pnpm typecheck` · `pnpm lint` · `pnpm test`                       | 快速增量校验，运行全仓核心单元测试套件                                 |
 | **PR 提交前全量门禁**  | `pnpm typecheck && pnpm lint && pnpm test && pnpm verify:prebuild` | 必须全绿方可提 PR；CI 将执行相同流水线阻断合并                         |
 | **PR 生命周期管理**    | `pnpm pr-review <create\|status\|pull\|trigger\|merge>`            | 统一收敛命令，严禁手写散装 gh 命令；实现审阅与合并闭环                 |
 | **pr-review 模块改动** | `pnpm test:pr-review`                                              | ⚠️ **关键判据**：根 `pnpm test` 排除了本包，改动后必须单独执行此命令！ |
