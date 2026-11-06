@@ -20,7 +20,7 @@ export function useAppConfig() {
     loading: isFetching,
     refresh: fetchConfig,
     run: fetchConfigRun,
-  } = useIpc('config.get', window.api.config.get, {
+  } = useIpc('config.get', {
     onSuccess: (data) => {
       setThemeMode(data.theme);
       setLanguage(data.language);
@@ -37,7 +37,7 @@ export function useAppConfig() {
   }, [fetchConfigRun]);
 
   // 网络IO（显式触发）—— 局部更新后回填
-  const { runAsync: updateConfigAsync } = useIpc('config.update', window.api.config.update, {
+  const { runAsync: updateConfigAsync } = useIpc('config.update', {
     onError: (err) => {
       const detail = err.message;
       message.error(t`更新偏好设置失败: ${detail}`);
@@ -45,20 +45,16 @@ export function useAppConfig() {
   });
 
   // 网络IO（显式触发）—— 恢复默认值后回填
-  const { runAsync: resetConfigAsync, loading: isResetting } = useIpc(
-    'config.reset',
-    window.api.config.reset,
-    {
-      onSuccess: (data) => {
-        setThemeMode(data.theme);
-        setLanguage(data.language);
-      },
-      onError: (err) => {
-        const detail = err.message;
-        message.error(t`恢复默认配置失败: ${detail}`);
-      },
+  const { runAsync: resetConfigAsync, loading: isResetting } = useIpc('config.reset', {
+    onSuccess: (data) => {
+      setThemeMode(data.theme);
+      setLanguage(data.language);
     },
-  );
+    onError: (err) => {
+      const detail = err.message;
+      message.error(t`恢复默认配置失败: ${detail}`);
+    },
+  });
 
   // 逻辑处理函数
   const handleUpdateConfig = async (partial: Partial<AppConfig>) => {

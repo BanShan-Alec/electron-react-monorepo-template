@@ -27,11 +27,7 @@ export function useDevTools() {
         action.kind === 'toggleDevTools'
           ? { action: 'toggleDevTools' }
           : { action: 'openUrl', url: action.url };
-      const data = await callIpc(
-        'diagnostics.performAction',
-        window.api.diagnostics.performAction,
-        [input],
-      );
+      const data = await callIpc('diagnostics.performAction', [input]);
       // 用户动作只记结果：成功行在此补（失败已被 logIpc 中心化记录，不重复记）
       if (action.kind === 'toggleDevTools') {
         logger.info('DevTools toggled');

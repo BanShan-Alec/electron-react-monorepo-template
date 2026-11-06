@@ -121,11 +121,9 @@ const _SettingsCard = (props: SettingsCardProps) => {
                 size="small"
                 onClick={() => {
                   // 检查动作内聚在 updater 窗口（开窗即查），此处只负责唤起窗口
-                  void callIpc('updater:open-window', window.api.updater.openWindow, []).catch(
-                    () => {
-                      message.error(t`打开更新窗口失败`);
-                    },
-                  );
+                  void callIpc('updater.openWindow').catch(() => {
+                    message.error(t`打开更新窗口失败`);
+                  });
                 }}
               >
                 {t`检查更新`}
