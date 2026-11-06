@@ -14,7 +14,7 @@ description: electron-builder 采用 TypeScript 类型化配置，应用身份�
 - **应用身份单一真源**：`appId`、`productName`、版本号与发布仓库坐标统一源自根 `package.json`，杜绝散落在不同文件中的手动复制和版本号漂移。
 - **产物寻址强安全保障**：`artifactName` 遵循 `${name}-${version}-${os}-${arch}.${ext}` 命名契约，防止因项目名称带空格导致 GitHub Releases 上传自动转点从而使 `latest.yml` 寻址 404。
 
-## 2. 核心配置与实现
+## 2. 核心机制
 
 ### TypeScript 打包配置与依赖放行
 

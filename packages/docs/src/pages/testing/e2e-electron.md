@@ -1,4 +1,4 @@
-﻿---
+---
 
 title: 端到端测试（Playwright）
 description: Playwright 官方 `_electron` 真实拉起无边框窗口，Worker 级全局单次启动夹具与强制串行执行。
@@ -14,7 +14,7 @@ description: Playwright 官方 `_electron` 真实拉起无边框窗口，Worker 
 - **大幅压缩冷启动开销**：Electron 每次冷启动耗时 1.5s~3s，如果每个测试文件甚至每个测试用例都重新启动一次，E2E 矩阵将膨胀至数十分钟。通过 Worker 级夹具实现整个套件单次冷启动复用。
 - **消除进程残留与僵尸状态**：桌面端测试若异常退出，残留的无头 Electron 进程会独占端口与单例锁，导致后续构建完全死锁。
 
-## 2. 核心配置与实现
+## 2. 核心机制
 
 ### Worker 级全局冷启动扩展夹具
 

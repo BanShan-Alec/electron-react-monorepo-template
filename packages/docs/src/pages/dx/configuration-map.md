@@ -1,10 +1,10 @@
 ---
 
-title: 全局配置速查字典（Configuration Cheat-Sheet）
+title: 配置项归属（Configuration-map）
 description: 一个值该改哪、何时生效、有什么副作用——身份、环境、端口、常量与偏好速查表。
 ---
 
-# 全局配置速查字典（Configuration Cheat-Sheet）
+# 配置项归属（Configuration-map）
 
 > **TL;DR**：一个配置只有一个所有者（Single Owner）——应用身份在根 `package.json`、构建脚本在 `build/`、环境差异在 `.env`、开发编排在 `scripts/dev.ts`、业务常量在 `shared`、用户偏好在 `ConfigStore`。
 
