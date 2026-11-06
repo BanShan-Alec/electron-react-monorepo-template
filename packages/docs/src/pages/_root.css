@@ -34,11 +34,11 @@
   }
 }
 
-/* 滚动条：与 renderer 完全对齐（packages/renderer/src/styles/base.css 的全局
-   ::-webkit-scrollbar 规则），内嵌 tab 与网页版同观感。几何 = 14px 总宽、轨道
-   透明，3px 透明 border + background-clip 收出视觉 8px 滑块与 4px 视觉圆角；
-   三态取 antd 中性 alpha 梯度（浅色 .15/.25/.45，深色 .18/.25/.45），light-dark
-   跟随站点主题（iframe 内跟随 nativeTheme）。
+/* 滚动条：与 renderer 对齐（packages/renderer/src/styles/base.css 的全局
+   ::-webkit-scrollbar 规则）。几何 = 14px 总宽、轨道透明，3px 透明 border +
+   background-clip 收出视觉 8px 滑块与 4px 视觉圆角；三态取 antd 中性 alpha 梯度
+   （浅色 .15/.25/.45，深色 .18/.25/.45），light-dark 跟随站点主题（iframe 内跟随
+   nativeTheme）。
 
    两个必须：① Vocs 核心在 vocs_base 给 * 设了 scrollbar-width: thin +
    scrollbar-color，Chromium 里两者非 auto 会整体禁用 ::-webkit-scrollbar 伪元素，
@@ -94,43 +94,42 @@
   }
 }
 
-/* 根滚动条：轨道显式铺页面底色。Vocs 在 vocs_base 给 * 设了
-   scrollbar-width: thin + scrollbar-color（轨道 transparent）；根滚动条一旦走原生
-   绘制，轨道就是浏览器灰，与正文底色不同。根上复位 auto 保证 ::-webkit-scrollbar
-   生效，再显式铺 --background-color-primary；mermaid 预览框同理。 */
+/* 根滚动条：轨道铺内容区底色。
+   三个必须：
+   ① 根滚动条的伪元素规则用 `body::` 前缀——实测完整站点上 `html::-webkit-scrollbar-*`
+   匹配不上（原规则带 !important 也从未生效过，这正是轨道颜色一直不对的根因），
+   `body::` / `*::` 立即生效；最小合成页会让 `html::` 生效，别拿合成页验证。
+   `*::` 虽也生效但会波及所有元素滚动条，故用 `body::` 精确命中。
+   ② var() 与 light-dark() 在 ::-webkit-scrollbar-* 伪元素里可用（thumb 规则即先例），
+   轨道直接用语义令牌 --background-color-surface，不写死色值。
+   ③ Vocs 是双色调布局——侧栏 [data-v-gutter-left] 露 :root 的
+   --background-color-primary（gray14/gray2），内容区由 [data-v-surface-bg] 定位层
+   铺 --background-color-surface（white/gray4）；根滚动条只在内容区右缘，所以轨道
+   取 surface 色而非 primary 色，否则亮色下 250 vs 255 会显出灰阶差。 */
 html {
   scrollbar-width: auto;
   scrollbar-color: auto;
 }
 
-html::-webkit-scrollbar-track,
-html::-webkit-scrollbar-corner {
-  background: var(--background-color-primary);
-}
-
-[data-v-mermaid]::-webkit-scrollbar-track,
-[data-v-mermaid]::-webkit-scrollbar-corner {
-  background: var(--background-color-primary);
+body::-webkit-scrollbar-track,
+body::-webkit-scrollbar-corner {
+  background-color: var(--background-color-surface);
 }
 
 @supports not selector(::-webkit-scrollbar) {
   html {
     scrollbar-width: thin;
     scrollbar-color: light-dark(var(--vocs-color-gray10), var(--vocs-color-gray6))
-      var(--background-color-primary);
+      var(--background-color-surface);
   }
 }
 
-/* 侧栏目录滚动条：只做透明（轨道/滑块透明，视觉隐藏），粗细沿用全站 14px；
-   Firefox 直接隐藏（滚轮/键盘仍可滚）。页面根滚动条保持 14px 不变。 */
-aside[data-v-sidebar-container]::-webkit-scrollbar-thumb {
-  background-color: transparent;
-}
-
-@supports not selector(::-webkit-scrollbar) {
-  aside[data-v-sidebar-container] {
-    scrollbar-width: none;
-  }
+/* 侧栏目录滚动条：彻底隐藏（不占宽度，滚轮/键盘仍可滚）。曾经「透明但占位
+   14px」的做法留下了幽灵槽（侧栏条目被截断后右侧一条空白带）；标准属性对
+   Chromium ≥121 生效，且卸载 ::-webkit-scrollbar 伪元素样式（与全站 14px 规则
+   互斥），Firefox 本就走同属性。app 内嵌（跨源 iframe）同样生效。 */
+aside[data-v-sidebar-container] {
+  scrollbar-width: none;
 }
 
 /* 代码组横向滚动条：与全局同几何（renderer 没有按组件开小灶的先例） */
