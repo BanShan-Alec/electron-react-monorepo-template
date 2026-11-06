@@ -33,12 +33,12 @@ Electron 45 · React 19 · Vite 8 · TypeScript 6 · antd · TailwindCSS · Ling
 > [!TIP]
 > **完整文档站**：[banshan-alec.github.io/electron-react-monorepo-template](https://banshan-alec.github.io/electron-react-monorepo-template/)
 >
-> 按 9 个维度组织的解法页，每页固定「坑 → 解法 → 怎么抄」，源码链接直达仓库真实文件。
+> 按 9 个维度组织的解法页，每页固定「选型理由 → 核心机制 → 桌面端避坑」三段式，源码链接直达仓库真实文件。
 
 ## ✨ 为什么是这份合集？
 
 - **发版级，而非片段** —— 每个解法都随本仓库的安装包发出去、被真实更新过若干版本；不是开发态能跑就贴出来的 workaround
-- **源码可直接抄** —— 解法页固定三段式「要解决的坑 → 本仓库的解法 → 怎么抄」，每段实现都链到仓库真实文件
+- **源码可直接抄** —— 解法页固定「选型理由 → 核心机制 → 桌面端避坑」三段式，每段实现都链到仓库真实文件
 - **成体系，不是清单堆叠** —— 9 个维度覆盖从工程基座到交付门禁，坑与坑之间的关联写在同一个体系里
 - **模板即载体** —— 整份合集就是一个可 clone 的 Electron Monorepo 模板，照着解法改造即可起步
 
@@ -58,7 +58,7 @@ Electron 45 · React 19 · Vite 8 · TypeScript 6 · antd · TailwindCSS · Ling
 
 **[查看完整解法目录 →](https://banshan-alec.github.io/electron-react-monorepo-template/)**
 
-[工程化基座](https://banshan-alec.github.io/electron-react-monorepo-template/engineering/dependency-management/) · [开发体验](https://banshan-alec.github.io/electron-react-monorepo-template/dx/dev-orchestration/) · [架构组织](https://banshan-alec.github.io/electron-react-monorepo-template/architecture/multi-window/) · [界面与交互](https://banshan-alec.github.io/electron-react-monorepo-template/ui/antd/) · [主进程运行时](https://banshan-alec.github.io/electron-react-monorepo-template/main/tracing/) · [安全与性能](https://banshan-alec.github.io/electron-react-monorepo-template/security/sandbox/) · [测试矩阵](https://banshan-alec.github.io/electron-react-monorepo-template/testing/unit-tests/) · [交付门禁](https://banshan-alec.github.io/electron-react-monorepo-template/delivery/packaging/) · [AI 协同](https://banshan-alec.github.io/electron-react-monorepo-template/ai/review-loop/)
+[工程化基座](https://banshan-alec.github.io/electron-react-monorepo-template/engineering/dependency-management/) · [AI 协同](https://banshan-alec.github.io/electron-react-monorepo-template/ai/collaboration-convention/) · [开发体验](https://banshan-alec.github.io/electron-react-monorepo-template/dx/dev-orchestration/) · [架构组织](https://banshan-alec.github.io/electron-react-monorepo-template/architecture/multi-window/) · [界面与交互](https://banshan-alec.github.io/electron-react-monorepo-template/ui/antd/) · [主进程运行时](https://banshan-alec.github.io/electron-react-monorepo-template/main/tracing/) · [安全与性能](https://banshan-alec.github.io/electron-react-monorepo-template/security/sandbox/) · [测试矩阵](https://banshan-alec.github.io/electron-react-monorepo-template/testing/unit-tests/) · [交付门禁](https://banshan-alec.github.io/electron-react-monorepo-template/delivery/packaging/)
 
 ## 🏗️ 仓库架构
 
@@ -104,7 +104,7 @@ pnpm dev       # 开发模式：Vite DevServer + Electron 双进程热重载
 
 ## 📚 文档站
 
-完整内容在 **[banshan-alec.github.io/electron-react-monorepo-template](https://banshan-alec.github.io/electron-react-monorepo-template/)**。每页固定「要解决的坑 → 本仓库的解法 → 怎么抄」，源码链接直达仓库真实文件；站点同时输出 `llms.txt` / `llms-full.txt` 与每页纯 Markdown 路由，支持精准结构化检索。
+完整内容在 **[banshan-alec.github.io/electron-react-monorepo-template](https://banshan-alec.github.io/electron-react-monorepo-template/)**。每页固定「选型理由 → 核心机制 → 桌面端避坑」三段式，源码链接直达仓库真实文件；站点同时输出 `llms.txt` / `llms-full.txt` 与每页纯 Markdown 路由，支持精准结构化检索。
 
 站点源码在 `packages/docs/`（Vocs 构建，GitHub Pages 部署），本地预览 `pnpm docs:dev`。
 

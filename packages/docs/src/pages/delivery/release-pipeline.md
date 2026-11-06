@@ -14,7 +14,7 @@ description: 本地 changelogen 提版锁定 tag，CI 三平台并行纯构建�
 - **三平台矩阵构建解耦发布**：Windows、macOS 与 Linux 打包耗时差异巨大，若每个构建矩阵各自上传 Release，会导致 Release 内容不完整或互相覆盖。必须采用“矩阵并行纯打包 (`-p never`) -> 汇聚 Artifact -> 单一 Publish Job 发布”的标准架构。
 - **自动化语义化变更日志**：`changelogen` 解析 Conventional Commits 的 type（feat、fix、perf 等），自动归类并映射 semver 版本号。
 
-## 2. 核心配置与实现
+## 2. 核心机制
 
 ### 本地发版命令（统一脚本入口）
 
