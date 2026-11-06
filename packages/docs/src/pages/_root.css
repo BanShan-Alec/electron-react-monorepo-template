@@ -128,6 +128,16 @@ body::-webkit-scrollbar-corner {
   background-color: var(--background-color-surface);
 }
 
+/* minimal / blank 布局（如主页 index.mdx）没有 [data-v-surface-bg]：内容区就是
+   :root 的 primary 底色，整页不存在 surface 带，轨道整体跟随 primary、不做 Header
+   分段（否则 --vocs-spacing-topNav 以下会与 primary 内容形成 250 vs 255 色缝）。
+   :has() 在滚动条伪元素规则里实测可用。 */
+body:not(:has([data-v-surface-bg]))::-webkit-scrollbar-track,
+body:not(:has([data-v-surface-bg]))::-webkit-scrollbar-corner {
+  background-color: var(--background-color-primary);
+  background-image: none;
+}
+
 @supports not selector(::-webkit-scrollbar) {
   html {
     scrollbar-width: thin;
