@@ -1,6 +1,47 @@
 import { APP_ENV } from '@app/shared/constants/env';
+import type { ElectronApi } from '@app/shared/types/api';
+import type { Result } from '@app/shared/types/result';
 import type { IpcCallOptions } from '@app/shared/types/telemetry';
-import type { Result } from '@shared/types/result';
+
+/**
+ * 提取 ElectronApi 中所有返回 Promise<Result<any>> 的两级 IPC 点分路径
+ */
+export type IpcApiPath = {
+  [K in keyof ElectronApi & string]: {
+    [M in keyof ElectronApi[K] & string]: ElectronApi[K][M] extends (
+      ...args: any[]
+    ) => Promise<Result<any>>
+      ? `${K}.${M}`
+      : never;
+  }[keyof ElectronApi[K] & string];
+}[keyof ElectronApi & string];
+
+/**
+ * 根据点分路径获取对应的原始服务函数类型
+ */
+export type IpcApiService<P extends IpcApiPath> = P extends `${infer Domain}.${infer Method}`
+  ? Domain extends keyof ElectronApi
+    ? Method extends keyof ElectronApi[Domain]
+      ? ElectronApi[Domain][Method]
+      : never
+    : never
+  : never;
+
+/**
+ * 从函数入参中剥离末尾可选的 IpcCallOptions，提取纯业务入参
+ */
+type DropTrailingIpcOptions<T extends readonly unknown[]> = T extends readonly [
+  ...infer Lead,
+  (IpcCallOptions | undefined)?,
+]
+  ? Lead
+  : T;
+
+export type IpcApiParams<P extends IpcApiPath> =
+  IpcApiService<P> extends (...args: infer Args) => any ? DropTrailingIpcOptions<Args> : [];
+
+export type IpcApiData<P extends IpcApiPath> =
+  IpcApiService<P> extends (...args: any[]) => Promise<Result<infer TData>> ? TData : never;
 
 /**
  * IPC 失败语义化错误：保留主进程 Result 契约中的 code，调用方可按错误码分支（如 DIVIDE_BY_ZERO），
@@ -66,42 +107,47 @@ function logIpc(
   }
 }
 
-type IpcService<TData, TParams extends unknown[]> = (...args: TParams) => Promise<Result<TData>>;
-
 /**
- * 统一的 IPC 调用原语：Result 解构 + 计时 + 日志。
+ * 统一的 IPC 调用原语：根据点分路径动态寻址 window.api + Result 解构 + 计时 + 日志。
  * 成功返回解构后的 data，失败抛 IpcError（保留 code 与 traceId）。
  * feature 内禁止手写 window.api.* + if (!res.success)，一律经由本函数或 hooks/useIpc.ts。
  *
  * 参数契约：`args` 只包含业务参数，options 由本函数统一追加在末尾；
- * 调用方不得把 options 混进 args。业务参数本身可能声明为可选（如 counter.increment(input?)），
+ * 无参方法可省略 `args`。业务参数本身可能声明为可选（如 counter.increment(input?)），
  * 省略时先用 undefined 占位，保证 recordSuccess 永远落在 options 位置。
  */
-export async function callIpc<TData, TParams extends unknown[]>(
-  channel: string,
-  service: IpcService<TData, TParams>,
-  args: TParams,
+export async function callIpc<P extends IpcApiPath>(
+  path: P,
+  args?: IpcApiParams<P>,
   options: IpcCallOptions = {},
-): Promise<TData> {
+): Promise<IpcApiData<P>> {
+  const [domain, method] = path.split('.') as [keyof ElectronApi, string];
+  const domainApi = window.api?.[domain] as Record<string, Function> | undefined;
+  const service = domainApi?.[method];
+
+  if (typeof service !== 'function') {
+    throw new Error(`[callIpc] Unknown IPC API method for path: "${path}"`);
+  }
+
   const startedAt = performance.now();
   let traceId: string | undefined;
   try {
-    const callArgs: unknown[] = [...args];
+    const callArgs: unknown[] = args ? [...args] : [];
     if (options.recordSuccess === false) {
       // options 是最后一个可选参数（不得写成默认参数，否则 service.length 失真）
       while (callArgs.length < Math.max(0, service.length - 1)) callArgs.push(undefined);
       callArgs.push({ recordSuccess: false });
     }
-    const res = await service(...(callArgs as TParams));
+    const res = (await service.apply(domainApi, callArgs)) as Result<IpcApiData<P>>;
     traceId = res.traceId;
     if (!res.success) {
       throw new IpcError(res.error, res.code, res.traceId);
     }
-    logIpc(channel, true, performance.now() - startedAt, undefined, traceId, options.recordSuccess);
+    logIpc(path, true, performance.now() - startedAt, undefined, traceId, options.recordSuccess);
     return res.data;
   } catch (error) {
     const effectiveTraceId = error instanceof IpcError ? (error.traceId ?? traceId) : traceId;
-    logIpc(channel, false, performance.now() - startedAt, error, effectiveTraceId);
+    logIpc(path, false, performance.now() - startedAt, error, effectiveTraceId);
     throw error;
   }
 }

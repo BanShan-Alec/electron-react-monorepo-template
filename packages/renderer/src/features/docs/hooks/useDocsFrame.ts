@@ -74,7 +74,7 @@ export function useDocsFrame() {
   };
 
   const handleOpenExternal = () => {
-    void callIpc('shell.openExternal', window.api.shell.openExternal, [PROJECT_DOCS_URL])
+    void callIpc('shell.openExternal', [PROJECT_DOCS_URL])
       .then(() => logger.info('Docs opened in external browser'))
       .catch(() => undefined);
   };

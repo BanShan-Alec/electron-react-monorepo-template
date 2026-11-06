@@ -12,12 +12,12 @@ type CounterAction = 'increment' | 'decrement' | 'reset';
 async function runCounterAction(action: CounterAction, step: number): Promise<CounterResult> {
   // 多 channel 编排：service 内部逐个 callIpc，保留统一解构与日志
   if (action === 'increment') {
-    return callIpc('counter.increment', window.api.counter.increment, [{ step }]);
+    return callIpc('counter.increment', [{ step }]);
   }
   if (action === 'decrement') {
-    return callIpc('counter.decrement', window.api.counter.decrement, [{ step }]);
+    return callIpc('counter.decrement', [{ step }]);
   }
-  return callIpc('counter.reset', window.api.counter.reset, []);
+  return callIpc('counter.reset');
 }
 
 export function useCounter() {
@@ -38,7 +38,7 @@ export function useCounter() {
       if (action) {
         return runCounterAction(action, step);
       }
-      return callIpc('counter.get', window.api.counter.get, []);
+      return callIpc('counter.get');
     },
     {
       onError: (err, [action]) => {

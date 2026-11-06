@@ -1,17 +1,16 @@
 import { t } from '@lingui/core/macro';
 import { useInterval } from 'ahooks';
 import { App } from 'antd';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect } from 'react';
 import { useIpc } from '@/hooks/useIpc';
-import { createIdleRefresh } from '../lib/createIdleRefresh';
 
 // 私有常量
 
 // 可抽离的逻辑处理函数/组件
 
 /**
- * 系统信息域：挂载拉取 + 空闲轮询（过期响应自动丢弃）。
- * useIpc 从 api 函数签名推导 data 类型，无需手写 Result 解构与类型断言。
+ * 系统信息域：初次挂载拉取 + 1s 受控轮询（请求进行中时静默跳过防积压）。
+ * useIpc 从契约路径推导 data 类型，无需手写 Result 解构与类型断言。
  */
 export function useSystemInfo() {
   const { message } = App.useApp();
@@ -20,8 +19,8 @@ export function useSystemInfo() {
   const {
     data: systemInfo,
     loading: isFetchingInfo,
-    runAsync: fetchSystemInfoAsync,
-  } = useIpc('system.getSystemInfo', window.api.system.getSystemInfo, {
+    run: fetchSystemInfo,
+  } = useIpc('system.getSystemInfo', {
     recordSuccess: false,
     onError: (err) => {
       const detail = err.message;
@@ -29,21 +28,16 @@ export function useSystemInfo() {
     },
   });
 
-  // 逻辑处理函数（createIdleRefresh 内部包含请求锁闭包状态，需保持实例引用单例）
-  const fetchSystemInfoRef = useRef(fetchSystemInfoAsync);
+  // 组件Effect：初次挂载拉取
   useEffect(() => {
-    fetchSystemInfoRef.current = fetchSystemInfoAsync;
-  });
+    fetchSystemInfo();
+  }, [fetchSystemInfo]);
 
-  // biome-ignore lint/nursery/useReactCompiler: closure invokes ref.current asynchronously during idle polling, not in render
-  const refreshWhenIdle = useMemo(() => createIdleRefresh(() => fetchSystemInfoRef.current()), []);
-
-  // 组件Effect
-  useEffect(() => {
-    refreshWhenIdle();
-  }, [refreshWhenIdle]);
+  // 周期轮询：上一轮仍在进行中时静默跳过，天然防积压
   useInterval(() => {
-    if (!isFetchingInfo) refreshWhenIdle();
+    if (!isFetchingInfo) {
+      fetchSystemInfo();
+    }
   }, 1000);
 
   return {

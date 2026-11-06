@@ -14,7 +14,7 @@ export function useUsbDevices() {
     loading: isLoading,
     refresh: fetchDevices,
     run: fetchDevicesRun,
-  } = useIpc('usb.getDeviceList', window.api.usb.getDeviceList, {
+  } = useIpc('usb.getDeviceList', {
     onError: (err) => {
       const isDescriptorError = /getString error|error 31/i.test(err.message);
       const detail = err.message;

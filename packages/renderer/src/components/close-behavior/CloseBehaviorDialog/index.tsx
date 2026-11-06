@@ -15,7 +15,7 @@ const _CloseBehaviorDialog = (_props: CloseBehaviorDialogProps) => {
       currentModal?.destroy();
       currentModal = null;
       try {
-        await callIpc('window:close-respond', window.api.window.closeRespond, [choice]);
+        await callIpc('window.closeRespond', [choice]);
       } catch (error) {
         logger.warn('Failed to submit close behavior choice:', error);
         message.error(t`提交关闭选择失败`);
@@ -61,7 +61,7 @@ const _CloseBehaviorDialog = (_props: CloseBehaviorDialogProps) => {
     };
 
     const unsubscribe = window.api.window.onCloseRequested(showPrompt);
-    void callIpc('window:close-ready', window.api.window.closeReady, []).catch((error) => {
+    void callIpc('window.closeReady').catch((error) => {
       logger.warn('Failed to register close prompt handler:', error);
     });
 

@@ -25,11 +25,7 @@ export function useLogging() {
         logger[action.level](`Test ${levelUpper} log emitted from Renderer`);
         return t`✅ 已发送 ${levelUpper} 日志到 renderer-home.log`;
       }
-      const data = await callIpc(
-        'diagnostics.openLogFolder',
-        window.api.diagnostics.openLogFolder,
-        [],
-      );
+      const data = await callIpc('diagnostics.openLogFolder');
       logger.info('Log folder opened');
       const { path } = data;
       return t`📂 已打开日志目录: ${path}`;

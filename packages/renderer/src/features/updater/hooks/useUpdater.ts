@@ -16,7 +16,7 @@ export function useUpdater() {
   // 编译器构建期会以 DropManualMemoization 换成自己的记忆化，运行期无双份开销
   const handleCheck = useCallback(async () => {
     try {
-      const data = await callIpc('updater:check', window.api.updater.check, []);
+      const data = await callIpc('updater.check');
       setSnapshot(data);
     } catch {
       // 失败行已由 callIpc 落盘；错误快照经 updater:event:state 推送展示，无需重复处理
@@ -25,7 +25,7 @@ export function useUpdater() {
 
   const handleDownload = async () => {
     try {
-      const data = await callIpc('updater:download', window.api.updater.download, []);
+      const data = await callIpc('updater.download');
       setSnapshot(data);
     } catch {
       // 同上
@@ -34,7 +34,7 @@ export function useUpdater() {
 
   const handleCancel = async () => {
     try {
-      const data = await callIpc('updater:cancel', window.api.updater.cancel, []);
+      const data = await callIpc('updater.cancel');
       setSnapshot(data);
     } catch {
       // 同上
@@ -43,7 +43,7 @@ export function useUpdater() {
 
   const handleInstall = async () => {
     try {
-      await callIpc('updater:install', window.api.updater.install, []);
+      await callIpc('updater.install');
     } catch {
       // 同上
     }
@@ -51,7 +51,7 @@ export function useUpdater() {
 
   const handleClose = async () => {
     try {
-      await callIpc('updater:close-window', window.api.updater.closeWindow, []);
+      await callIpc('updater.closeWindow');
     } catch {
       // 同上
     }
@@ -62,7 +62,7 @@ export function useUpdater() {
     const bootstrap = async () => {
       let current: UpdaterSnapshot;
       try {
-        current = await callIpc('updater:get-state', window.api.updater.getState, []);
+        current = await callIpc('updater.getState');
       } catch {
         return;
       }
