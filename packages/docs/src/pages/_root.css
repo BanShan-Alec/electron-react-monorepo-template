@@ -128,6 +128,21 @@ body::-webkit-scrollbar-corner {
   background-color: var(--background-color-surface);
 }
 
+/* minimal / blank 布局（如主页 index.mdx）没有 [data-v-surface-bg]：内容区就是
+   :root 的 primary 底色，整页不存在 surface 带，轨道整体跟随 primary、不做 Header
+   分段（否则 --vocs-spacing-topNav 以下会与 primary 内容形成 250 vs 255 色缝）。
+   仅 ≥md 生效：<md 时 :root 经 vocs:max-md:bg-surface 变成 surface 画布，minimal
+   页内容区即画布，此时应走默认的 Header 分段渐变。md = 748px 是 Vocs 的断点
+   （编译产物 @media (width>=748px)，与实测 :root 底色切换点一致）。
+   :has() 在滚动条伪元素规则里实测可用。 */
+@media (width >= 748px) {
+  body:not(:has([data-v-surface-bg]))::-webkit-scrollbar-track,
+  body:not(:has([data-v-surface-bg]))::-webkit-scrollbar-corner {
+    background-color: var(--background-color-primary);
+    background-image: none;
+  }
+}
+
 @supports not selector(::-webkit-scrollbar) {
   html {
     scrollbar-width: thin;
