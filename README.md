@@ -79,7 +79,7 @@ electron-react-monorepo-template/
 └── e2e/               # Playwright 桌面端 E2E
 ```
 
-各业务包的职责、README 与规则文件都在 `packages/<name>/` 下，AI 协作者从根 [AGENTS.md](AGENTS.md) 的任务路由进入。
+各业务包的职责与架构规则都在 `packages/<name>/` 下，全仓任务路由与红线指引见根 [AGENTS.md](AGENTS.md)。
 
 ## 🚀 快速开始
 
@@ -104,13 +104,13 @@ pnpm dev       # 开发模式：Vite DevServer + Electron 双进程热重载
 
 ## 📚 文档站
 
-完整内容在 **[banshan-alec.github.io/electron-react-monorepo-template](https://banshan-alec.github.io/electron-react-monorepo-template/)**。每页固定「要解决的坑 → 本仓库的解法 → 怎么抄」，源码链接直达仓库真实文件；站点同时输出 `llms.txt` / `llms-full.txt` 与每页 Markdown 路由，AI 协作者可直接检索。
+完整内容在 **[banshan-alec.github.io/electron-react-monorepo-template](https://banshan-alec.github.io/electron-react-monorepo-template/)**。每页固定「要解决的坑 → 本仓库的解法 → 怎么抄」，源码链接直达仓库真实文件；站点同时输出 `llms.txt` / `llms-full.txt` 与每页纯 Markdown 路由，支持精准结构化检索。
 
 站点源码在 `packages/docs/`（Vocs 构建，GitHub Pages 部署），本地预览 `pnpm docs:dev`。
 
 ## 🤝 贡献
 
-欢迎 PR。动手前请读 [CONTRIBUTING.md](CONTRIBUTING.md)；AI 协作者全局红线与任务路由见 [AGENTS.md](AGENTS.md)。提交信息遵循 Conventional Commits，且 subject 必须包含简体中文（commitlint + husky 自动校验）。文档与代码不一致时以代码为准，欢迎提 PR 修正。
+欢迎 PR。动手前请读 [CONTRIBUTING.md](CONTRIBUTING.md)；全仓架构红线与任务路由见 [AGENTS.md](AGENTS.md)。提交信息遵循 Conventional Commits 且 subject 必须包含简体中文（commitlint + husky 自动校验）。文档与代码不一致时以代码为准，欢迎提 PR 修正。
 
 ## 📄 License
 

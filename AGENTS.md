@@ -1,8 +1,7 @@
-# AGENTS.md — AI 协作者目录与全局守则
+# AGENTS.md — 全局架构守则与全仓任务路由
 
-> 本文件是 AI 编程助手（ZCode / Cursor / Claude Code 等）的项目入口：全局红线 + 全仓导航。
-> 进入任何 `packages/` 目录工作前，先读该包的 `AGENTS.md`——cwd 在包内时它会自动注入；
-> cwd 在根目录时按下方包索引主动读取。项目总览与架构见 [README.md](README.md)。
+> 本文件是全仓架构红线与任务路由入口：全局硬红线 + 包级规则索引 + 开发流门禁。
+> 进入任何 `packages/` 目录工作前，以该包的 `AGENTS.md` 为唯一真源。项目总览与架构见 [README.md](README.md)。
 
 ## 1. 技术栈速览
 

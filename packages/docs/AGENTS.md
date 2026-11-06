@@ -1,4 +1,4 @@
-# @app/docs AGENTS.md — 文档站规则（AI 必读）
+# @app/docs AGENTS.md — 文档站架构与执行规则
 
 > 全局红线见 [根 AGENTS.md](../../AGENTS.md)。本文件为 `@app/docs` 规则唯一真源。
 
