@@ -15,7 +15,6 @@
 | `hooks/`      | 跨域基础 hooks（`useManualRequest`, `useIpc`, `useTheme`）            | 请求与应用级状态抽象，禁止在业务组件中直连原生 ahooks           |
 | `lib/`        | 跨域底层能力（`ipc.ts` 契约解构与追踪、`classNames.ts`、`sentry.ts`） | 纯工具函数与全局运行时初始化                                    |
 | `locales/`    | LinguiJS 国际化模块（`zh-CN`, `en-US` 字典与 `dynamicActivate`）      | 中文源码作为 msgid（Source-as-Key），运行时按需加载语言包 Chunk |
-| `startup/`    | 首屏启动壳协调器（构建期内联注入 `index.html`）                       | 三门禁齐备后结算并挂载 `body.app-startup-ready`                 |
 | `stores/`     | 全局 Zustand 状态（主题、语言等跨窗口/跨域状态）                      | 仅存放全应用级公共状态                                          |
 
 ## 2. 分层依据
