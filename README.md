@@ -5,7 +5,7 @@
 # Electron React Template
 
 Electron 桌面端坑位解法合集：每个解法都对应本仓库经过发版验证的真实实现<br />
-仓库同时是一套可 clone 的 Electron Monorepo 模板——clone 下来，解法就是你的起步代码
+仓库同时是一套可 clone 的 Electron Monorepo 模板——[使用此模板](https://banshan-alec.github.io/electron-react-monorepo-template/introduction/use-this-template)，解法就是你的起步代码
 
 <p>
 <a href="https://github.com/BanShan-Alec/electron-react-monorepo-template/actions/workflows/ci.yml"><img src="https://github.com/BanShan-Alec/electron-react-monorepo-template/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
@@ -21,9 +21,8 @@ Electron 桌面端坑位解法合集：每个解法都对应本仓库经过发�
 <a href="CONTRIBUTING.md">贡献指南</a> ·
 <a href="AGENTS.md">AGENTS.md</a>
 </p>
-
 <p>
-Electron 45 · React 19 · Vite 8 · TypeScript 6 · antd · TailwindCSS · LinguiJS · Biome · Playwright
+Electron 45 · React 19 · Vite 8 · TypeScript 6 · Antd 6 · TailwindCSS 4 · Zod · LinguiJS · Biome · Playwright · Vitest
 </p>
 
 </div>
@@ -46,11 +45,11 @@ Electron 45 · React 19 · Vite 8 · TypeScript 6 · antd · TailwindCSS · Ling
 
 **应用主窗口（深色主题）**
 
-![应用主窗口](assets/screenshots/app-on-desktop.jpg)
+![应用主窗口](.github/assets/screenshots/app-on-desktop.webp)
 
 **文档站**
 
-![文档站](assets/screenshots/docs-site.png)
+![文档站](.github/assets/screenshots/docs-site.webp)
 
 ## 🧭 解法地图
 
