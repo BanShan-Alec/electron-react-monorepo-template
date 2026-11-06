@@ -62,6 +62,27 @@ export class IpcError extends Error {
 // 私有常量
 const IPC_LOG_PREFIX = '[ipc]';
 
+/**
+ * 包含单个业务入参（非仅 options）的 IPC API 点分路径集合。
+ * 运行时在 contextIsolation 桥接后，函数经 contextBridge 包装会导致 service.length 丢失为 0；
+ * 此处显式声明单参数通道，确保当 recordSuccess === false 且调用方省略可选参数时，
+ * 仍能正确在 options 位置前填充 undefined 占位，避免 options 错位传递给业务参数。
+ */
+const SINGLE_PAYLOAD_PATHS = new Set<IpcApiPath>([
+  'calculator.calculate',
+  'config.update',
+  'counter.decrement',
+  'counter.increment',
+  'diagnostics.log',
+  'diagnostics.performAction',
+  'dialog.openDirectory',
+  'dialog.openFile',
+  'dialog.saveFile',
+  'shell.openExternal',
+  'shell.showItemInFolder',
+  'window.closeRespond',
+]);
+
 // 可抽离的逻辑处理函数/组件
 /**
  * 日志纪律：只记录 channel / 结果 / 耗时。
@@ -121,7 +142,11 @@ export async function callIpc<P extends IpcApiPath>(
   args?: IpcApiParams<P>,
   options: IpcCallOptions = {},
 ): Promise<IpcApiData<P>> {
-  const [domain, method] = path.split('.') as [keyof ElectronApi, string];
+  const parts = path.split('.');
+  if (parts.length !== 2) {
+    throw new Error(`[callIpc] Invalid IPC API path format: "${path}". Expected "domain.method"`);
+  }
+  const [domain, method] = parts as [keyof ElectronApi, string];
   const domainApi = window.api?.[domain] as Record<string, Function> | undefined;
   const service = domainApi?.[method];
 
@@ -134,8 +159,10 @@ export async function callIpc<P extends IpcApiPath>(
   try {
     const callArgs: unknown[] = args ? [...args] : [];
     if (options.recordSuccess === false) {
-      // options 是最后一个可选参数（不得写成默认参数，否则 service.length 失真）
-      while (callArgs.length < Math.max(0, service.length - 1)) callArgs.push(undefined);
+      // options 是最后一个可选参数（不得写成默认参数，否则 service.length 失真；且 contextBridge 下 length 为 0）
+      const expectedLeadCount = SINGLE_PAYLOAD_PATHS.has(path) ? 1 : 0;
+      const targetPadding = Math.max(expectedLeadCount, service.length - 1);
+      while (callArgs.length < targetPadding) callArgs.push(undefined);
       callArgs.push({ recordSuccess: false });
     }
     const res = (await service.apply(domainApi, callArgs)) as Result<IpcApiData<P>>;

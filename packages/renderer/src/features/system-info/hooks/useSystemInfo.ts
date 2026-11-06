@@ -28,7 +28,7 @@ export function useSystemInfo() {
     },
   });
 
-  // 组件Effect：初次挂载拉取
+  // 组件Effect：初次挂载拉取（fetchSystemInfo 来自 ahooks useRequest，经 useMemoizedFn 包装引用永久恒定）
   useEffect(() => {
     fetchSystemInfo();
   }, [fetchSystemInfo]);

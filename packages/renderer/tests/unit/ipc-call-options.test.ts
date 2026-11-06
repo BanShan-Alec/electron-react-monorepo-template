@@ -81,6 +81,41 @@ describe('callIpc success logging options', () => {
     expect(received).toEqual([[undefined, { recordSuccess: false }]]);
   });
 
+  it('pads omitted optional business arguments even when service.length is 0 (contextBridge simulation)', async () => {
+    const windowState = window as Window & { __APP_ENV__: { mode: string }; api: any };
+    const received: unknown[][] = [];
+    // 模拟 contextBridge 暴露的原生包装函数（length 为 0）
+    const service = vi.fn(
+      (...args: [input?: { step: number }, options?: { recordSuccess?: boolean }]) => {
+        received.push(args);
+        return Promise.resolve({ success: true as const, data: { count: 8 } });
+      },
+    );
+    expect(service.length).toBe(0);
+
+    windowState.api = {
+      counter: {
+        increment: service,
+      },
+    };
+
+    await expect(
+      callIpc('counter.increment', undefined, { recordSuccess: false }),
+    ).resolves.toEqual({
+      count: 8,
+    });
+    expect(received).toEqual([[undefined, { recordSuccess: false }]]);
+  });
+
+  it('throws an error when IPC API path format is invalid', async () => {
+    await expect(callIpc('invalidPath' as any)).rejects.toThrow(
+      '[callIpc] Invalid IPC API path format: "invalidPath". Expected "domain.method"',
+    );
+    await expect(callIpc('a.b.c' as any)).rejects.toThrow(
+      '[callIpc] Invalid IPC API path format: "a.b.c". Expected "domain.method"',
+    );
+  });
+
   it('keeps the service arguments unchanged when success logging is enabled', async () => {
     const windowState = window as Window & { __APP_ENV__: { mode: string }; api: any };
     windowState.__APP_ENV__.mode = 'development';

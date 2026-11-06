@@ -25,6 +25,7 @@ export function useUsbDevices() {
     },
   });
 
+  // 组件Effect：初次挂载拉取（fetchDevicesRun 来自 ahooks useRequest，经 useMemoizedFn 包装引用永久恒定）
   useEffect(() => {
     fetchDevicesRun();
   }, [fetchDevicesRun]);
