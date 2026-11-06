@@ -110,7 +110,7 @@ pnpm dev       # 开发模式：Vite DevServer + Electron 双进程热重载
 
 ## 🤝 贡献
 
-欢迎 PR。动手前请读 [CONTRIBUTING.md](CONTRIBUTING.md)；提交信息遵循 Conventional Commits，且 subject 必须包含简体中文（commitlint + husky 自动校验）。使用 AI 协作者请先读 [AGENTS.md](AGENTS.md)。文档与代码不一致时以代码为准，并欢迎提 PR 修正。
+欢迎 PR。动手前请读 [CONTRIBUTING.md](CONTRIBUTING.md)；AI 协作者全局红线与任务路由见 [AGENTS.md](AGENTS.md)。提交信息遵循 Conventional Commits，且 subject 必须包含简体中文（commitlint + husky 自动校验）。文档与代码不一致时以代码为准，欢迎提 PR 修正。
 
 ## 📄 License
 
