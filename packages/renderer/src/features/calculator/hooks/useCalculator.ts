@@ -24,7 +24,7 @@ export function useCalculator() {
     error,
     loading: isLoading,
     runAsync: calculateAsync,
-  } = useIpc('calculator.calculate', window.api.calculator.calculate, {
+  } = useIpc('calculator.calculate', {
     onError: (err) => {
       const detail = err.message;
       message.error(t`计算失败: ${detail}`);

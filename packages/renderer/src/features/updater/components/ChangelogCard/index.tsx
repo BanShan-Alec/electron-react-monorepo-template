@@ -8,7 +8,7 @@ import { callIpc } from '@/lib/ipc';
 
 // 链接打开失败不打扰用户（含白名单拦截拒绝）：失败行已由 callIpc 统一落盘
 function openExternal(url: string): void {
-  void callIpc('shell:open-external', window.api.shell.openExternal, [url]).catch(() => {});
+  void callIpc('shell.openExternal', [url]).catch(() => {});
 }
 
 interface ChangelogCardProps {

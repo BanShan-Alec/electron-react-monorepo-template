@@ -34,7 +34,7 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children
   // 初始配置拉取与跨窗口主题/多语言变更同步
   useEffect(() => {
     // 拉取失败由 callIpc 统一落盘，主题/语言静默回落默认值（启动兜底不打扰，日志是唯一痕迹）
-    callIpc('config.get', window.api.config.get, [])
+    callIpc('config.get')
       .then((data) => {
         if (data.theme) setThemeMode(data.theme);
         if (data.language) setLanguage(data.language);

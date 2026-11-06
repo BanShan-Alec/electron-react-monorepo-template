@@ -14,7 +14,7 @@ description: 借助 Vitest 原生 ESM 与别名推导秒级执行 19 套件，�
 - **纯 Node 环境极致轻量**：坚持单测不引 jsdom（避免虚假 DOM 环境带来的性能损耗与伪阳性），纯逻辑与数据处理全部脱壳测试，DOM 交互交给真实 Playwright E2E。
 - **别名与架构边界同构**：直接消费 `packages/tsconfig/base.json` 中的统一路径别名，monorepo 子包间跨引用零摩擦。
 
-## 2. 核心配置与实现
+## 2. 核心机制
 
 ### 集中式 Vitest 配置文件
 

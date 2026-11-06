@@ -55,7 +55,7 @@ flowchart TB
 
 ### 关键实现：门禁结算与揭幕
 
-→ 源码：[packages/renderer/src/startup/coordinator.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/startup/coordinator.ts)
+→ 源码：[packages/renderer/plugins/startup/coordinator.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/plugins/startup/coordinator.ts)
 
 节选：`coordinator.ts` 的门禁结算与揭幕函数（`finished` / `pendingGates` / `GateId` 为同文件模块级状态）：
 

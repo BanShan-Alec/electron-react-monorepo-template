@@ -32,6 +32,16 @@ export const SIDEBAR_GROUPS: NavigationGroup[] = [
     ],
   },
   {
+    text: 'AI 协同',
+    collapsed: true,
+    items: [
+      { text: 'AI 协作者约定（Agents.md）', link: '/ai/collaboration-convention' },
+      { text: '全栈端到端功能开发（Fullstack-SOP）', link: '/ai/fullstack-sop' },
+      { text: 'AI 友好代码约定（Reference-style）', link: '/ai/friendly-conventions' },
+      { text: 'AI 评审闭环（Open-code-review）', link: '/ai/review-loop' },
+    ],
+  },
+  {
     text: '开发体验',
     collapsed: true,
     items: [
@@ -122,16 +132,6 @@ export const SIDEBAR_GROUPS: NavigationGroup[] = [
       { text: 'CI 并行门禁（GitHub-Actions）', link: '/delivery/ci-gates' },
       { text: '应用更新（Electron-updater）', link: '/delivery/auto-update' },
       { text: '发版流水线（Changelogen）', link: '/delivery/release-pipeline' },
-    ],
-  },
-  {
-    text: 'AI 协同',
-    collapsed: true,
-    items: [
-      { text: 'AI 协作者约定（Agents.md）', link: '/ai/collaboration-convention' },
-      { text: '全栈端到端功能开发（Fullstack-SOP）', link: '/ai/fullstack-sop' },
-      { text: 'AI 友好代码约定（Reference-style）', link: '/ai/friendly-conventions' },
-      { text: 'AI 评审闭环（Open-code-review）', link: '/ai/review-loop' },
     ],
   },
 ];

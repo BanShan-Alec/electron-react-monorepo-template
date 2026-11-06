@@ -102,16 +102,28 @@
    `*::` 虽也生效但会波及所有元素滚动条，故用 `body::` 精确命中。
    ② var() 与 light-dark() 在 ::-webkit-scrollbar-* 伪元素里可用（thumb 规则即先例），
    轨道直接用语义令牌 --background-color-surface，不写死色值。
-   ③ Vocs 是双色调布局——侧栏 [data-v-gutter-left] 露 :root 的
-   --background-color-primary（gray14/gray2），内容区由 [data-v-surface-bg] 定位层
-   铺 --background-color-surface（white/gray4）；根滚动条只在内容区右缘，所以轨道
-   取 surface 色而非 primary 色，否则亮色下 250 vs 255 会显出灰阶差。 */
+   ③ Vocs 是双色调布局——侧栏 [data-v-gutter-left] 与顶部 Header [data-v-gutter-top]
+   露 :root 的 --background-color-primary（gray14/gray2），内容区由 [data-v-surface-bg]
+   定位层铺 --background-color-surface（white/gray4）。根滚动条贯穿整个视口，单色
+   轨道必与其中一段形成色差，故用硬断渐变分两段：Header 带（高度恰等于
+   --vocs-spacing-topNav，实测 56px / 48px 与断点一致、banner 恒 0）铺 primary 与
+   Header 同色，其余铺 surface——轨道在 Header 带内「消失」，视觉上滚动条从内容区
+   顶开始（滑块仍全高行走：原生滚动条无法只缩短滑块行程）。 */
 html {
   scrollbar-width: auto;
   scrollbar-color: auto;
 }
 
-body::-webkit-scrollbar-track,
+/* 渐变按 --vocs-spacing-topNav 硬断；background-color 兜底给不认渐变的环境 */
+body::-webkit-scrollbar-track {
+  background-color: var(--background-color-surface);
+  background-image: linear-gradient(
+    to bottom,
+    var(--background-color-primary) 0 var(--vocs-spacing-topNav),
+    var(--background-color-surface) var(--vocs-spacing-topNav)
+  );
+}
+
 body::-webkit-scrollbar-corner {
   background-color: var(--background-color-surface);
 }

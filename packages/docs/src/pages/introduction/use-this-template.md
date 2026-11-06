@@ -11,7 +11,7 @@ description: 把模板转为自己项目的七组原子任务，可整页交给 
 ## 1. 执行时机与前置条件
 
 - **何时执行**：GitHub「Use this template」/ Fork / Clone 之后、写第一行业务之前。此时全部挂载点保持模板默认形态，改造成本最低。
-- **边界**：把仓库跑起来见 [快速上手（Getting Started）](/introduction/getting-started)；`name` / `appId` / `productName` 等字段逐项含义见 [全局配置速查字典](/dx/configuration-map)，本页只给动作与判据。
+- **边界**：把仓库跑起来见 [快速上手（Getting Started）](/introduction/getting-started)；`name` / `appId` / `productName` 等字段逐项含义见 [配置项归属](/dx/configuration-map)，本页只给动作与判据。
 - **执行方式**：整页投喂 AI 协作者逐任务执行，或人工照做；「判据」均为机器可查命令，逐条验收后再进入下一任务。
 
 ## 2. 核心机制
@@ -120,9 +120,9 @@ export function registerAllControllers(): void {
 
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点                 | 事故表现                                                                               | 对齐方案                                                                                          |
-| :----------------------- | :------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------ |
-| **productName 高危变更** | `productName` 决定操作系统 `userData` 目录路径，改后旧版本持久化数据与日志不会自动迁移 | 见 [全局配置速查字典](/dx/configuration-map)；确需变更时主进程显式 `app.setPath('userData', ...)` |
-| **漏改 tsconfig 引用**   | 删包未删根 `references` 节点，`pnpm typecheck` 抛 `TS6053` 阻断 CI                     | 每删一个包，同步删根 `tsconfig.json` 对应节点                                                     |
-| **Controller 悬挂注册**  | 删 controller 文件漏改注册表，构建期抛模块未找到                                       | 在 `registerAllControllers()` 集中注册处成对清理                                                  |
-| **契约单向残缺**         | 只删渲染层卡片不删 `@app/shared` 契约，死类型混入产物                                  | 按 shared → preload → main → renderer 链路成对剔除                                                |
+| 避坑要点                 | 事故表现                                                                               | 对齐方案                                                                                    |
+| :----------------------- | :------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------ |
+| **productName 高危变更** | `productName` 决定操作系统 `userData` 目录路径，改后旧版本持久化数据与日志不会自动迁移 | 见 [配置项归属](/dx/configuration-map)；确需变更时主进程显式 `app.setPath('userData', ...)` |
+| **漏改 tsconfig 引用**   | 删包未删根 `references` 节点，`pnpm typecheck` 抛 `TS6053` 阻断 CI                     | 每删一个包，同步删根 `tsconfig.json` 对应节点                                               |
+| **Controller 悬挂注册**  | 删 controller 文件漏改注册表，构建期抛模块未找到                                       | 在 `registerAllControllers()` 集中注册处成对清理                                            |
+| **契约单向残缺**         | 只删渲染层卡片不删 `@app/shared` 契约，死类型混入产物                                  | 按 shared → preload → main → renderer 链路成对剔除                                          |

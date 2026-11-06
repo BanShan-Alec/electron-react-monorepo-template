@@ -14,7 +14,7 @@ interface PingMeasurement {
 async function pingWithLatency(): Promise<PingMeasurement> {
   // 需要在 api 返回前后夹一段本地计时，故 service 自行拼装而非直接用 useIpc
   const start = performance.now();
-  const data = await callIpc('system.ping', window.api.system.ping, []);
+  const data = await callIpc('system.ping');
   const latency = Math.round((performance.now() - start) * 10) / 10;
   return { latency, serverTime: data.serverTime };
 }

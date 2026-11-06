@@ -35,9 +35,7 @@ async function runDialogAction(
   try {
     switch (action) {
       case 'openFile': {
-        const data = await callIpc('dialog.openFile', window.api.dialog.openFile, [
-          { title: t`选择测试文件` },
-        ]);
+        const data = await callIpc('dialog.openFile', [{ title: t`选择测试文件` }]);
         logger.info('File dialog completed', { action });
         if (!data.canceled && data.filePaths.length > 0) {
           const path = data.filePaths[0];
@@ -46,9 +44,7 @@ async function runDialogAction(
         return { statusMessage: t`用户取消了选择` };
       }
       case 'openDirectory': {
-        const data = await callIpc('dialog.openDirectory', window.api.dialog.openDirectory, [
-          { title: t`选择测试文件夹` },
-        ]);
+        const data = await callIpc('dialog.openDirectory', [{ title: t`选择测试文件夹` }]);
         logger.info('File dialog completed', { action });
         if (!data.canceled && data.filePaths.length > 0) {
           const path = data.filePaths[0];
@@ -57,7 +53,7 @@ async function runDialogAction(
         return { statusMessage: t`用户取消了选择` };
       }
       case 'saveFile': {
-        const data = await callIpc('dialog.saveFile', window.api.dialog.saveFile, [
+        const data = await callIpc('dialog.saveFile', [
           {
             title: t`另存为示例`,
             defaultPath: 'example.txt',
@@ -72,9 +68,7 @@ async function runDialogAction(
         return { statusMessage: t`用户取消了保存` };
       }
       default: {
-        await callIpc('shell.showItemInFolder', window.api.shell.showItemInFolder, [
-          { path: selectedPath },
-        ]);
+        await callIpc('shell.showItemInFolder', [{ path: selectedPath }]);
         logger.info('File dialog completed', { action });
         return {
           statusMessage: t`已在资源管理器中定位: ${selectedPath}`,
