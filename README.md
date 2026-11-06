@@ -46,11 +46,11 @@ Electron 45 · React 19 · Vite 8 · TypeScript 6 · antd · TailwindCSS · Ling
 
 **应用主窗口（深色主题）**
 
-![应用主窗口](assets/screenshots/app-on-desktop.jpg)
+![应用主窗口](.github/assets/screenshots/app-on-desktop.jpg)
 
 **文档站**
 
-![文档站](assets/screenshots/docs-site.png)
+![文档站](.github/assets/screenshots/docs-site.png)
 
 ## 🧭 解法地图
 
