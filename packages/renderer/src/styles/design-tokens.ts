@@ -9,7 +9,7 @@
  * 颜色链路见 DESIGN.md §3；不要在组件里读 getDesignToken 或写 CSS 变量。
  */
 
-export type ThemeMode = 'light' | 'dark';
+export type ResolvedTheme = 'light' | 'dark';
 
 export const BRAND_PRIMARY = '#1677ff';
 
@@ -19,7 +19,7 @@ export const BRAND_PRIMARY = '#1677ff';
  */
 export const CSS_VAR_KEY = 'css-var-app';
 
-export function applyColorScheme(mode: ThemeMode): void {
+export function applyColorScheme(mode: ResolvedTheme): void {
   const root = document.documentElement;
   root.dataset.theme = mode;
   root.classList.add(CSS_VAR_KEY);

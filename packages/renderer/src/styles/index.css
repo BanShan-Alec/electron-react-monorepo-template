@@ -85,7 +85,7 @@
     inset-inline: 0;
     height: 1.25rem;
     pointer-events: none;
-    transition: opacity 120ms linear;
+    transition: opacity 150ms linear;
   }
 
   .usb-scroll-fade-top {

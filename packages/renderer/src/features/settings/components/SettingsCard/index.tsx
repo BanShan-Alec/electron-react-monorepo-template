@@ -128,10 +128,6 @@ const _SettingsCard = (props: SettingsCardProps) => {
               >
                 {t`检查更新`}
               </Button>
-              {/* <Checkbox
-                checked={appConfig.autoCheckUpdate}
-                onChange={(e) => onUpdate({ autoCheckUpdate: e.target.checked })}
-              /> */}
             </div>
           </div>
         </div>
