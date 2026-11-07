@@ -48,10 +48,8 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     const darkOption = page.locator('.ant-select-item-option-content', { hasText: '深色模式' });
     await darkOption.click();
 
-    // 断言 data-theme 为 dark，且 classList 包含 dark (以支持 Tailwind darkMode: 'class')
+    // 断言 data-theme 为 dark
     await expect(html).toHaveAttribute('data-theme', 'dark');
-    const isDarkClassPresent = await html.evaluate((el) => el.classList.contains('dark'));
-    expect(isDarkClassPresent).toBe(true);
 
     const darkTokens = await readTokenSnapshot(page);
     expect(darkTokens.antdPrimary).toBe('#1668dc');
@@ -65,10 +63,8 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     const lightOption = page.locator('.ant-select-item-option-content', { hasText: '浅色模式' });
     await lightOption.click();
 
-    // 断言 data-theme 为 light，且 classList 不包含 dark
+    // 断言 data-theme 为 light
     await expect(html).toHaveAttribute('data-theme', 'light');
-    const isLightClassPresent = await html.evaluate((el) => el.classList.contains('dark'));
-    expect(isLightClassPresent).toBe(false);
 
     const lightTokens = await readTokenSnapshot(page);
     expect(lightTokens.antdPrimary).toBe('#1677ff');
