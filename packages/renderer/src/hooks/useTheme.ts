@@ -5,7 +5,7 @@ import { applyColorScheme } from '@/styles/design-tokens';
 
 /**
  * 应用级主题联动（跨 feature 的壳层职责，故置于 hooks/ 而非任一域）：
- * 1. applyColorScheme 同步 data-theme / .dark / cssVar 作用域类；antd 算法由 ConfigProvider 随 resolvedTheme 切换；
+ * 1. applyColorScheme 同步 data-theme 与 cssVar 作用域类；antd 算法由 ConfigProvider 随 resolvedTheme 切换；
  * 2. themeMode 为 'system' 时跟随 OS 偏好变化（监听必须配套清理，防止泄漏与重复触发）。
  */
 
