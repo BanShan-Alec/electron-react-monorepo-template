@@ -72,7 +72,6 @@ export const SIDEBAR_GROUPS: NavigationGroup[] = [
     collapsed: true,
     items: [
       { text: '组件库（Antd）', link: '/ui/antd' },
-      { text: '样式与令牌（Tailwind-CSS）', link: '/ui/tailwind' },
       { text: '设计规范与令牌（Design Tokens）', link: '/ui/design-tokens' },
       { text: '主题链路（Theme Pipeline）', link: '/ui/theme-pipeline' },
       { text: '国际化（i18n）', link: '/ui/i18n' },

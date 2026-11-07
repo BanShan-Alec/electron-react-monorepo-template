@@ -84,7 +84,7 @@ useEffect(() => {
 
 `resolvedTheme` 变化触发两个消费端并发生效：
 
-- **antd 侧**：`ConfigProvider` 的 `theme={getAntdThemeConfig(resolvedTheme)}` 换 algorithm。因启用了 `cssVar`（key 即 `.css-var-app` 类名，配置细节见 [组件库](/ui/antd)），cssinjs 会**原位改写**作用域内 `--ant-*` 变量值——没有 reload、没有自定义事件，这是 antd cssVar 模式的内置能力。
+- **antd 侧**：`ConfigProvider` 的 `theme={getAntdThemeConfig(resolvedTheme)}` 换 algorithm。因启用了 `cssVar`（key 即 `.css-var-app` 类名，配置细节见 [设计规范与令牌](/ui/design-tokens)），cssinjs 会**原位改写**作用域内 `--ant-*` 变量值——没有 reload、没有自定义事件，这是 antd cssVar 模式的内置能力。
 - **DOM 侧**：`applyColorScheme(resolvedTheme)` 幂等挂两个根契约——`data-theme` 驱动 tokens.css 的 `color-scheme` 与滚动条/语法高亮深色变量，`css-var-app` 保证 `--ant-*` 可解析（必须挂 `<html>`，Portal 浮层才继承）。
 
 → 源码：[packages/renderer/src/hooks/useTheme.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/hooks/useTheme.ts)
@@ -120,7 +120,7 @@ export function useTheme() {
 
 ### 静态消费链（详见既有页）
 
-`--ant-*` → `:root` 15 个语义别名 `--color-*`（纯改名，无亮暗分支——明暗差异全部由算法承担）→ `@theme inline` 映射 → `bg-background`、`text-foreground` 等语义工具类。三层映射的完整规则、`inline` 自引用陷阱与「不写 fallback」决策见 [设计规范与令牌](/ui/design-tokens) 与 [样式与令牌](/ui/tailwind)。
+`--ant-*` → `:root` 15 个语义别名 `--color-*`（纯改名，无亮暗分支——明暗差异全部由算法承担）→ `@theme inline` 映射 → `bg-background`、`text-foreground` 等语义工具类。三层映射的完整规则、`inline` 自引用陷阱与「不写 fallback」决策见 [设计规范与令牌](/ui/design-tokens)。
 
 ### 首帧链：窗口创建时显式传参
 
