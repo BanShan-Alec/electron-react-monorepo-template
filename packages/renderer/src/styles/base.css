@@ -10,8 +10,9 @@
     height: 100%;
     width: 100%;
     overflow: hidden;
-    background-color: var(--window-bg);
-    color: var(--window-fg);
+    /* 首帧画布由原生 BrowserWindow.backgroundColor 承担（window 模块 resolveNativeTheme），
+       renderer 恒透明叠于其上；React 根须不透明满幅，否则原生底色透出（见 DESIGN.md §3）。 */
+    background-color: transparent;
     font-family:
       -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     user-select: none;

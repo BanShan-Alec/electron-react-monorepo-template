@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createCache, extractStyle, StyleProvider } from '@ant-design/cssinjs';
-import { Button, ConfigProvider, theme } from 'antd';
+import { Button, ConfigProvider } from 'antd';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -30,7 +30,6 @@ function extractThemeCss(mode: 'light' | 'dark'): string {
 const lightCss = extractThemeCss('light');
 const darkCss = extractThemeCss('dark');
 const indexCss = readStyle('index.css');
-const tokensCss = readStyle('tokens.css');
 
 describe('cssVar 颜色链路', () => {
   it('antd 主题与作用域类共用同一个 key 与品牌种子', () => {
@@ -55,24 +54,6 @@ describe('cssVar 颜色链路', () => {
       expect(darkCss, `dark 缺少 ${target}`).toContain(`${target}:`);
     }
     expect(lightCss).toContain('--ant-color-error:');
-  });
-
-  it('window 画布兜底值与 antd colorBgLayout / colorText 一致', () => {
-    const readVar = (block: string, name: string) =>
-      new RegExp(`${name}:\\s*([^;]+);`).exec(block)?.[1]?.trim().replace(/\s+/g, '');
-    const darkStart = tokensCss.indexOf(':root[data-theme="dark"]');
-    const blocks = [
-      ['light', tokensCss.slice(0, darkStart)],
-      ['dark', tokensCss.slice(darkStart)],
-    ] as const;
-
-    for (const [mode, block] of blocks) {
-      const tokens = theme.getDesignToken({
-        algorithm: mode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
-      });
-      expect(readVar(block, '--window-bg')).toBe(tokens.colorBgLayout.replace(/\s+/g, ''));
-      expect(readVar(block, '--window-fg')).toBe(tokens.colorText.replace(/\s+/g, ''));
-    }
   });
 
   it('浅深两套颜色不同', () => {
