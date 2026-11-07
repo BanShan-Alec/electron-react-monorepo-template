@@ -139,7 +139,6 @@ test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => 
 
       // 5. 验证真实 Electron 运行时中的日志轮转机制 (时间戳归档与主日志重置)
       const rotated = await electronApp.evaluate(() => {
-        // biome-ignore lint/suspicious/noExplicitAny: access __appLogManager in main process
         const g = globalThis as any;
         const logMgr = g.__appLogManager;
         if (!logMgr) return false;
@@ -167,7 +166,6 @@ test.describe('本地遥测系统 (Mini-OTel) E2E 验证与日志捞取', () => 
     } finally {
       await electronApp
         .evaluate(() => {
-          // biome-ignore lint/suspicious/noExplicitAny: access __appLogManager in main process
           const g = globalThis as any;
           const logMgr = g.__appLogManager;
           if (!logMgr || g.__rotationOriginalMaxSize === undefined) return;

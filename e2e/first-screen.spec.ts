@@ -74,7 +74,6 @@ test.describe('首屏渐进式加载 (First Screen Loading) E2E 验证', () => {
     page,
   }) => {
     const envInfo = await page.evaluate(() => {
-      // biome-ignore lint/suspicious/noExplicitAny: window.__APP_ENV__ check
       const env = (window as any).__APP_ENV__;
       const isFrozen = Object.isFrozen(env);
       return { env, isFrozen };

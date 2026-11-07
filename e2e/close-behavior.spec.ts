@@ -110,11 +110,9 @@ test.describe('首次关闭确认', () => {
       });
       await setChineseLanguage(ctx.page);
       await ctx.electronApp.evaluate(() => {
-        // biome-ignore lint/suspicious/noExplicitAny: internal updater mock hook
         (globalThis as any).__updaterMock?.emit({ type: 'progress', percent: 30 });
       });
       const state = await ctx.electronApp.evaluate(() => {
-        // biome-ignore lint/suspicious/noExplicitAny: internal updater service hook
         return (globalThis as any).__updaterService?.getState();
       });
       expect(state).toBe('downloading');

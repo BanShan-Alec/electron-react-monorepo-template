@@ -9,8 +9,9 @@ import type { IpcCallOptions } from '@app/shared/types/telemetry';
 export type IpcApiPath = {
   [K in keyof ElectronApi & string]: {
     [M in keyof ElectronApi[K] & string]: ElectronApi[K][M] extends (
-      ...args: any[]
-    ) => Promise<Result<any>>
+      // 参数逆变位用 never[] 可匹配任意函数签名，替代 any
+      ...args: never[]
+    ) => Promise<Result<unknown>>
       ? `${K}.${M}`
       : never;
   }[keyof ElectronApi[K] & string];
@@ -38,10 +39,10 @@ type DropTrailingIpcOptions<T extends readonly unknown[]> = T extends readonly [
   : T;
 
 export type IpcApiParams<P extends IpcApiPath> =
-  IpcApiService<P> extends (...args: infer Args) => any ? DropTrailingIpcOptions<Args> : [];
+  IpcApiService<P> extends (...args: infer Args) => unknown ? DropTrailingIpcOptions<Args> : [];
 
 export type IpcApiData<P extends IpcApiPath> =
-  IpcApiService<P> extends (...args: any[]) => Promise<Result<infer TData>> ? TData : never;
+  IpcApiService<P> extends (...args: never[]) => Promise<Result<infer TData>> ? TData : never;
 
 /**
  * IPC 失败语义化错误：保留主进程 Result 契约中的 code，调用方可按错误码分支（如 DIVIDE_BY_ZERO），
@@ -147,7 +148,9 @@ export async function callIpc<P extends IpcApiPath>(
     throw new Error(`[callIpc] Invalid IPC API path format: "${path}". Expected "domain.method"`);
   }
   const [domain, method] = parts as [keyof ElectronApi, string];
-  const domainApi = window.api?.[domain] as Record<string, Function> | undefined;
+  const domainApi = window.api?.[domain] as
+    | Record<string, (...args: unknown[]) => unknown>
+    | undefined;
   const service = domainApi?.[method];
 
   if (typeof service !== 'function') {

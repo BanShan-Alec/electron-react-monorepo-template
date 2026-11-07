@@ -218,7 +218,6 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     const [restoredPage] = await Promise.all([
       electronApp.waitForEvent('window'),
       electronApp.evaluate(async () => {
-        // biome-ignore lint/suspicious/noExplicitAny: internal windowManager hook
         await (globalThis as any).__windowManager?.restoreOrCreateWindow(true);
       }),
     ]);
@@ -277,7 +276,6 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     } finally {
       // 恢复默认偏好，避免 dark / en-US / 托盘关闭残留给同进程内的后续用例
       await page.evaluate(async () => {
-        // biome-ignore lint/suspicious/noExplicitAny: window.api access
         await (window as any).api?.config?.update?.({
           theme: 'system',
           language: 'zh-CN',
