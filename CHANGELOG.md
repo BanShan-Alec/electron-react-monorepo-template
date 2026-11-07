@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.13.2
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.13.1...v1.13.2)
+
+### 🩹 缺陷修复 (Bug Fixes)
+
+- **docs:** 修复根滚动条轨道色与侧栏滚动条占宽问题 ([#81](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/81))
+- **docs:** 根滚动条轨道顶部对齐 Header 带底色 ([#84](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/84))
+- **docs:** 修复 minimal 布局页根滚动条轨道色缝 ([#87](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/87))
+
+### 💅 代码重构 (Refactoring)
+
+- **renderer:** 统一请求层点分契约并消除过度设计 ([#85](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/85))
+
+### 📖 文档更新 (Documentation)
+
+- **site:** 模板页重写为「使用此模板」AI 任务书并迁移 slug ([#82](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/82))
+- **site:** 审校整改文档站过时表述与导航标题不一致 ([#86](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/86))
+- **site:** 重写「使用此模板」并迁移 README 截图至 .github/assets ([#83](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/83))
+
+### ❤️ Contributors
+
+- 半山Alec ([@BanShan-Alec](https://github.com/BanShan-Alec))
+
 ## v1.13.1
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.13.0...v1.13.1)
