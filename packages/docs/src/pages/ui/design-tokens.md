@@ -33,7 +33,7 @@ Tailwind v4 (@theme inline)          ──> 生成 bg-background, text-primary 
 
 ### 全局色彩与作用域切换原子函数（applyColorScheme）
 
-上层 `useAppStore` 解析出最终的 `ThemeMode`（`'light' | 'dark'`），由原子函数挂载至 `<html>` 根节点：
+上层 `useAppStore` 解析出最终的 `ResolvedTheme`（`'light' | 'dark'`），由原子函数挂载至 `<html>` 根节点：
 
 → 源码：[packages/renderer/src/styles/design-tokens.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/styles/design-tokens.ts)
 
@@ -41,10 +41,9 @@ Tailwind v4 (@theme inline)          ──> 生成 bg-background, text-primary 
 export const BRAND_PRIMARY = '#1677ff';
 export const CSS_VAR_KEY = 'css-var-app';
 
-export function applyColorScheme(mode: ThemeMode): void {
+export function applyColorScheme(mode: ResolvedTheme): void {
   const root = document.documentElement;
   root.dataset.theme = mode;
-  root.classList.toggle('dark', mode === 'dark');
   root.classList.add(CSS_VAR_KEY);
 }
 ```
