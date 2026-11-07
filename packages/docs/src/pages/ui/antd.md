@@ -46,7 +46,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 → 源码：[packages/renderer/src/styles/antd-theme.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/styles/antd-theme.ts)
 
 ```ts
-export function getAntdThemeConfig(mode: ThemeMode): ThemeConfig {
+export function getAntdThemeConfig(mode: ResolvedTheme) {
   return {
     algorithm: mode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
     cssVar: { key: CSS_VAR_KEY }, // 'css-var-app'
