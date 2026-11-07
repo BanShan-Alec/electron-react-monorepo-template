@@ -3,7 +3,6 @@ import type { AppConfig } from '@app/shared/schemas/config';
 import { nativeTheme } from 'electron';
 import type { AppModule } from '../AppModule';
 import type { ModuleContext } from '../ModuleContext';
-import { getAppConfigStore } from './config.module';
 import { getLogManager } from './log.module';
 import { canUpdateTitleBarOverlay, getTitleBarOverlayOptions } from './window/titlebar-overlay';
 import { getWindow } from './window/window-registry';
@@ -12,6 +11,9 @@ import { getWindow } from './window/window-registry';
  * 系统级主题同步（nativeTheme）
  * AppConfig['theme'] 的 'system' | 'light' | 'dark' 与 Electron nativeTheme.themeSource 枚举一一对应，直接透传。
  * 同步后：原生对话框/标题栏/滚动条及渲染层 prefers-color-scheme 均由应用主题驱动。
+ *
+ * 职责边界：启动期同步与解析归窗口创建链（resolveNativeTheme，由窗口模块创建窗口时显式调用），
+ * 本模块只负责运行时联动——themeSource 变化（用户切换/系统翻转）触发 WCO overlay 重刷。
  */
 
 // 私有常量
@@ -26,6 +28,16 @@ export function applyNativeThemeSource(theme: AppConfig['theme']): void {
   } catch (err) {
     logger.error('Failed to sync themeSource:', err);
   }
+}
+
+/**
+ * 显式解析主题：幂等同步 themeSource（保证 shouldUseDarkColors 与持久偏好对齐）后返回具体明暗。
+ * 窗口创建链的单一事实源：backgroundColor / WCO overlay 初刷 / renderer 首帧 query
+ * 均以本次解析结果为准，不再依赖模块装配顺序。
+ */
+export function resolveNativeTheme(theme: AppConfig['theme']): 'light' | 'dark' {
+  applyNativeThemeSource(theme);
+  return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
 }
 
 /**
@@ -53,11 +65,8 @@ export function applyTitleBarOverlay(): void {
 
 export class NativeThemeModule implements AppModule {
   enable({ app }: ModuleContext): void {
-    // nativeTheme 须在 app.whenReady() 后操作；配置模块先于本模块初始化，store 已可读
+    // nativeTheme 事件注册须在 app.whenReady() 后；启动期同步与解析由窗口创建链负责
     app.whenReady().then(() => {
-      applyNativeThemeSource(getAppConfigStore().get('theme'));
-      applyTitleBarOverlay();
-
       nativeTheme.on('updated', () => {
         logger.info(`Updated, shouldUseDarkColors=${nativeTheme.shouldUseDarkColors}`);
         applyTitleBarOverlay();

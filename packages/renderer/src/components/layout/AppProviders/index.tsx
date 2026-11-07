@@ -23,7 +23,7 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children
   // 注入平台类名，供 CSS 做平台避让
   usePlatform();
 
-  // 初始化并跟踪应用主题（设置 html 标签 data-theme 及 dark 类名）
+  // 初始化并跟踪应用主题（设置 html 标签 data-theme 与 cssVar 作用域类）
   useTheme();
 
   // 国际化语言包按需动态激活

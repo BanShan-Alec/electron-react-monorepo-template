@@ -10,7 +10,6 @@ import { expect, test } from './helpers/fixture';
  */
 async function mockSaveDialog(electronApp: ElectronApplication, savePath: string) {
   await electronApp.evaluate(({ dialog, shell }, targetPath) => {
-    // biome-ignore lint/suspicious/noExplicitAny: test mock
     const g = globalThis as any;
     g.__dialogOriginals ??= {};
     g.__dialogOriginals.showSaveDialog ??= dialog.showSaveDialog;
@@ -26,7 +25,6 @@ async function mockSaveDialog(electronApp: ElectronApplication, savePath: string
 
 async function mockCanceledSaveDialog(electronApp: ElectronApplication) {
   await electronApp.evaluate(({ dialog }) => {
-    // biome-ignore lint/suspicious/noExplicitAny: test mock
     const g = globalThis as any;
     g.__dialogOriginals ??= {};
     g.__dialogOriginals.showSaveDialog ??= dialog.showSaveDialog;
@@ -37,7 +35,6 @@ async function mockCanceledSaveDialog(electronApp: ElectronApplication) {
 /** 挂起打开对话框，直到用例显式调用 releaseOpenDialog，用于稳定观察 loading 互斥态 */
 async function holdOpenDialog(electronApp: ElectronApplication) {
   await electronApp.evaluate(({ dialog }) => {
-    // biome-ignore lint/suspicious/noExplicitAny: test mock
     const g = globalThis as any;
     g.__dialogOriginals ??= {};
     g.__dialogOriginals.showOpenDialog ??= dialog.showOpenDialog;
@@ -51,7 +48,6 @@ async function holdOpenDialog(electronApp: ElectronApplication) {
 
 async function releaseOpenDialog(electronApp: ElectronApplication) {
   await electronApp.evaluate(() => {
-    // biome-ignore lint/suspicious/noExplicitAny: test mock
     const g = globalThis as any;
     g.__openDialogRelease?.();
     delete g.__openDialogRelease;
@@ -60,7 +56,6 @@ async function releaseOpenDialog(electronApp: ElectronApplication) {
 
 async function restoreDialogMocks(electronApp: ElectronApplication) {
   await electronApp.evaluate(({ dialog, shell }) => {
-    // biome-ignore lint/suspicious/noExplicitAny: test mock
     const g = globalThis as any;
     if (g.__dialogOriginals?.showSaveDialog) {
       dialog.showSaveDialog = g.__dialogOriginals.showSaveDialog;
@@ -84,7 +79,6 @@ test.describe
     test.beforeAll(async ({ page }) => {
       // 确保界面处于简体中文环境：等待 lang 真正切换完成，而不是固定等待
       await page.evaluate(async () => {
-        // biome-ignore lint/suspicious/noExplicitAny: window.api access
         await (window as any).api?.config?.update?.({ language: 'zh-CN' });
       });
       await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
@@ -144,7 +138,6 @@ test.describe
 
         // 8. 断言主进程 shell.showItemInFolder 被正确调用且参数一致
         const calledPaths = await electronApp.evaluate(() => {
-          // biome-ignore lint/suspicious/noExplicitAny: test mock
           return (globalThis as any).__dialogMockCalls?.showItemInFolder ?? [];
         });
         expect(calledPaths).toContain(targetSavePath);
@@ -178,7 +171,6 @@ test.describe
       expect(fs.existsSync(nonExistentPath)).toBe(false);
 
       const result = await page.evaluate(async (testPath) => {
-        // biome-ignore lint/suspicious/noExplicitAny: window.api call
         return await (window as any).api?.shell?.showItemInFolder?.({ path: testPath });
       }, nonExistentPath);
 

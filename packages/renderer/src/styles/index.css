@@ -14,13 +14,6 @@
 @source "../";
 
 /*
- * 暗色变体保持 v3 darkMode: 'class' 的 class 机制：useTheme 在 documentElement 上
- * 同步 .dark 与 data-theme，e2e settings.spec 直接断言该 class 存在。
- * 现网暂无 dark: 前缀类，此行维持机制契约。
- */
-@custom-variant dark (&:where(.dark, .dark *));
-
-/*
  * 项目语义色 → antd cssVar 变量。
  * 实体由 ConfigProvider 在 .css-var-app 作用域注入（applyColorScheme 把类挂到 <html>），
  * 这里只做改名，组件与 Tailwind 不直接依赖 --ant-* 名字。
@@ -92,7 +85,7 @@
     inset-inline: 0;
     height: 1.25rem;
     pointer-events: none;
-    transition: opacity 120ms linear;
+    transition: opacity 150ms linear;
   }
 
   .usb-scroll-fade-top {

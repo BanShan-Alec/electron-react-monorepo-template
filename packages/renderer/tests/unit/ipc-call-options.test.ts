@@ -42,7 +42,7 @@ describe('callIpc success logging options', () => {
   it('appends quiet-success options after the business arguments', async () => {
     const windowState = window as Window & { __APP_ENV__: { mode: string }; api: any };
     windowState.__APP_ENV__.mode = 'development';
-    const service = vi.fn(async (url: string, options?: { recordSuccess?: boolean }) => {
+    const service = vi.fn(async (_url: string, options?: { recordSuccess?: boolean }) => {
       expect(options).toEqual({ recordSuccess: false });
       return { success: true as const, data: { success: true } };
     });
@@ -119,7 +119,7 @@ describe('callIpc success logging options', () => {
   it('keeps the service arguments unchanged when success logging is enabled', async () => {
     const windowState = window as Window & { __APP_ENV__: { mode: string }; api: any };
     windowState.__APP_ENV__.mode = 'development';
-    const service = vi.fn(async (url: string) => ({
+    const service = vi.fn(async (_url: string) => ({
       success: true as const,
       data: { success: true },
     }));

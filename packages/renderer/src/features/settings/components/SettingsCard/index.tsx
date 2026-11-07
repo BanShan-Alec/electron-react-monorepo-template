@@ -107,7 +107,7 @@ const _SettingsCard = (props: SettingsCardProps) => {
             />
           </div>
 
-          {/* 自动检查更新与手动更新入口 */}
+          {/* 软件更新入口（检查动作内聚在 updater 窗口） */}
           <div className={TOGGLE_ROW_CLASS}>
             <div className="flex-1 pr-3">
               <span className="text-foreground font-medium block">{t`软件更新 (Updater)`}</span>
@@ -128,10 +128,6 @@ const _SettingsCard = (props: SettingsCardProps) => {
               >
                 {t`检查更新`}
               </Button>
-              {/* <Checkbox
-                checked={appConfig.autoCheckUpdate}
-                onChange={(e) => onUpdate({ autoCheckUpdate: e.target.checked })}
-              /> */}
             </div>
           </div>
         </div>

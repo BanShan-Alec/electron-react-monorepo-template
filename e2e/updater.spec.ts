@@ -12,7 +12,6 @@ test.describe
     test.beforeAll(async ({ page }) => {
       // 确保界面处于简体中文环境以稳定匹配测试文案：等待 lang 真正切换完成
       await page.evaluate(async () => {
-        // biome-ignore lint/suspicious/noExplicitAny: window.api access
         await (window as any).api?.config?.update?.({ language: 'zh-CN' });
       });
       await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
@@ -64,7 +63,6 @@ test.describe
     test('用例 2：新版本可用与 Changelog 渲染', async ({ electronApp }) => {
       // 注入新版本元数据（v2.0.0，包含多行 changelog 与发布日期）
       await electronApp.evaluate(() => {
-        // biome-ignore lint/suspicious/noExplicitAny: electron runtime mock injection
         const mock = (globalThis as any).__updaterMock;
         mock?.emit({
           type: 'available',
@@ -93,7 +91,6 @@ test.describe
 
       // 验证外链白名单安全防御：非白名单域名被拦截
       const disallowedResult = await updaterPage.evaluate(async () => {
-        // biome-ignore lint/suspicious/noExplicitAny: window.api call
         return (window as any).api?.shell?.openExternal?.('https://malicious-site.com');
       });
       expect(disallowedResult?.success).toBe(false);
@@ -111,7 +108,6 @@ test.describe
 
       // 2. 持续注入下载进度：25%
       await electronApp.evaluate(() => {
-        // biome-ignore lint/suspicious/noExplicitAny: electron runtime mock injection
         const mock = (globalThis as any).__updaterMock;
         mock?.emit({
           type: 'progress',
@@ -130,7 +126,6 @@ test.describe
 
       // 3. 持续注入下载进度：50%
       await electronApp.evaluate(() => {
-        // biome-ignore lint/suspicious/noExplicitAny: electron runtime mock injection
         const mock = (globalThis as any).__updaterMock;
         mock?.emit({
           type: 'progress',
@@ -146,7 +141,6 @@ test.describe
 
       // 4. 注入进度：100%
       await electronApp.evaluate(() => {
-        // biome-ignore lint/suspicious/noExplicitAny: electron runtime mock injection
         const mock = (globalThis as any).__updaterMock;
         mock?.emit({
           type: 'progress',
@@ -163,7 +157,6 @@ test.describe
     test('用例 4：下载就绪与安装引导', async ({ electronApp }) => {
       // 模拟下载完成事件（downloaded）
       await electronApp.evaluate(() => {
-        // biome-ignore lint/suspicious/noExplicitAny: electron runtime mock injection
         const mock = (globalThis as any).__updaterMock;
         mock?.emit({
           type: 'downloaded',
@@ -180,7 +173,6 @@ test.describe
     test('用例 5：下载中断错误与重试', async ({ electronApp }) => {
       // 模拟下载网络异常触发 error 态（带语义码，验证按 code 的本地化主文案 + 原始报错次要行）
       await electronApp.evaluate(() => {
-        // biome-ignore lint/suspicious/noExplicitAny: electron runtime mock injection
         const mock = (globalThis as any).__updaterMock;
         mock?.emit({
           type: 'error',
@@ -208,7 +200,6 @@ test.describe
         .poll(
           async () =>
             electronApp.evaluate(() => {
-              // biome-ignore lint/suspicious/noExplicitAny: electron runtime service check
               const service = (globalThis as any).__updaterService;
               return service?.getState();
             }),
@@ -221,7 +212,6 @@ test.describe
     test('用例 6：窗口隐藏保留与后台下载连续性', async ({ page, electronApp }) => {
       // 确保处于下载状态
       await electronApp.evaluate(() => {
-        // biome-ignore lint/suspicious/noExplicitAny: electron runtime mock injection
         const mock = (globalThis as any).__updaterMock;
         mock?.emit({
           type: 'progress',
@@ -265,7 +255,6 @@ test.describe
 
       // 在窗口销毁期间，后台下载持续推进至 85%
       await electronApp.evaluate(() => {
-        // biome-ignore lint/suspicious/noExplicitAny: electron runtime mock injection
         const mock = (globalThis as any).__updaterMock;
         mock?.emit({
           type: 'progress',
@@ -317,7 +306,6 @@ test.describe
       try {
         // 切到 en-US：两个窗口经 config.onChanged 同步重渲染
         await page.evaluate(async () => {
-          // biome-ignore lint/suspicious/noExplicitAny: window.api access
           await (window as any).api?.config?.update?.({ language: 'en-US' });
         });
         await expect(page.locator('html')).toHaveAttribute('lang', 'en-US');
@@ -328,7 +316,6 @@ test.describe
       } finally {
         // 恢复中文，避免影响同进程内的后续断言
         await page.evaluate(async () => {
-          // biome-ignore lint/suspicious/noExplicitAny: window.api access
           await (window as any).api?.config?.update?.({ language: 'zh-CN' });
         });
         await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
