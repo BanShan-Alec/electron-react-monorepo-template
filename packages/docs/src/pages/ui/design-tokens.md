@@ -29,6 +29,8 @@ Ant Design 算法 (getAntdThemeConfig) ──> 注入 .css-var-app { --ant-* }
 Tailwind v4 (@theme inline)          ──> 生成 bg-background, text-primary 等工具类
 ```
 
+管道是静态的一半；切换如何传播（双通道收敛、首帧显式传参、原生同步）见 [主题链路](/ui/theme-pipeline)。
+
 ## 2. 核心机制（单一真源）
 
 ### 全局色彩与作用域切换原子函数（applyColorScheme）
@@ -58,18 +60,14 @@ export function applyColorScheme(mode: ResolvedTheme): void {
 @layer base {
   :root {
     --color-primary: var(--ant-color-primary);
-    --color-bg-primary: var(--ant-color-bg-container);
+    --color-bg-primary: var(--ant-color-bg-layout);
     --color-text-primary: var(--ant-color-text);
     --color-border: var(--ant-color-border);
   }
 }
-
-@theme inline {
-  --color-background: var(--color-bg-primary);
-  --color-foreground: var(--color-text-primary);
-  --color-border: var(--color-border);
-}
 ```
+
+第三层 `@theme inline` 语义别名（生成 `bg-background` 等工具类）的映射全文与 `inline` 自引用陷阱，见 [样式与令牌](/ui/tailwind)。
 
 ## 3. 桌面端避坑注意事项
 
