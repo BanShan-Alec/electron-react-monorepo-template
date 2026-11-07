@@ -1,6 +1,6 @@
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import { UPDATER_WINDOW_HEIGHT, UPDATER_WINDOW_WIDTH } from '@app/shared/constants/window-geometry';
-import { WINDOW_IDS } from '@app/shared/constants/windows';
+import { STARTUP_THEME_QUERY_KEY, WINDOW_IDS } from '@app/shared/constants/windows';
 import { app, BrowserWindow } from 'electron';
 import type { AppInitConfig } from '../../AppInitConfig';
 import type { AppModule } from '../../AppModule';
@@ -10,6 +10,7 @@ import type { ModuleContext } from '../../ModuleContext';
 import { updaterService } from '../../services/updater.service';
 import { getAppConfigStore } from '../config.module';
 import { getLogManager } from '../log.module';
+import { resolveNativeTheme } from '../native-theme.module';
 import { getWindowBackgroundColor } from './titlebar-overlay';
 import { forgetWindow, getWindow, registerWindow, sendToWindow } from './window-registry';
 
@@ -40,6 +41,9 @@ export class UpdaterWindowModule implements AppModule {
     }
 
     this.logger.info('Creating updater browser window');
+
+    // 显式主题链同 home 窗口：backgroundColor 与 renderer 首帧 query 使用同一解析值
+    const resolvedTheme = resolveNativeTheme(getAppConfigStore().get('theme'));
 
     const browserWindow = new BrowserWindow({
       show: false,
@@ -118,9 +122,13 @@ export class UpdaterWindowModule implements AppModule {
     });
 
     if (this.renderer instanceof URL) {
-      await browserWindow.loadURL(this.renderer.href);
+      const url = new URL(this.renderer.href);
+      url.searchParams.set(STARTUP_THEME_QUERY_KEY, resolvedTheme);
+      await browserWindow.loadURL(url.href);
     } else {
-      await browserWindow.loadFile(this.renderer.path);
+      await browserWindow.loadFile(this.renderer.path, {
+        query: { [STARTUP_THEME_QUERY_KEY]: resolvedTheme },
+      });
     }
 
     await readyToShowPromise;

@@ -1,5 +1,5 @@
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
-import { WINDOW_IDS } from '@app/shared/constants/windows';
+import { STARTUP_THEME_QUERY_KEY, WINDOW_IDS } from '@app/shared/constants/windows';
 import type { CloseBehaviorChoice } from '@app/shared/schemas/close-behavior';
 import { app, BrowserWindow, screen } from 'electron';
 import type { AppInitConfig } from '../../AppInitConfig';
@@ -10,6 +10,7 @@ import type { ModuleContext } from '../../ModuleContext';
 import { updaterService } from '../../services/updater.service';
 import { getAppConfigStore } from '../config.module';
 import { getLogManager } from '../log.module';
+import { applyTitleBarOverlay, resolveNativeTheme } from '../native-theme.module';
 import { attachDocsEmbedStyle } from './docs-embed';
 import { getTitleBarOverlayOptions, getWindowBackgroundColor } from './titlebar-overlay';
 import { getUpdaterWindowModule } from './updater-window.module';
@@ -86,6 +87,10 @@ export class WindowManager implements AppModule {
     const isMac = process.platform === 'darwin';
     const isWin = process.platform === 'win32';
 
+    // 显式主题链：读持久偏好 → 幂等同步 themeSource → 解析具体明暗。
+    // backgroundColor / WCO overlay / renderer 首帧 query 均以本次解析结果为准，不依赖模块装配顺序。
+    const resolvedTheme = resolveNativeTheme(getAppConfigStore().get('theme'));
+
     const browserWindow = new BrowserWindow({
       title: app.getName(),
       // 官方窗口状态持久化：唯一 name 即存储键，bounds 与 displayMode 均默认开启。
@@ -127,6 +132,9 @@ export class WindowManager implements AppModule {
 
     // 注册到 window-registry 唯一事实源
     registerWindow(WINDOW_IDS.HOME, browserWindow);
+
+    // WCO overlay 初刷：与 backgroundColor 同源同时点（本模块只负责运行时 updated 重刷）
+    applyTitleBarOverlay();
 
     // 文档站 iframe 主题切换器隐藏：只挂 home 窗口，按 frame URL 精确匹配
     attachDocsEmbedStyle(browserWindow.webContents);
@@ -205,9 +213,13 @@ export class WindowManager implements AppModule {
     attachWindowsWindowRepaint(browserWindow);
 
     if (this.renderer instanceof URL) {
-      await browserWindow.loadURL(this.renderer.href);
+      const url = new URL(this.renderer.href);
+      url.searchParams.set(STARTUP_THEME_QUERY_KEY, resolvedTheme);
+      await browserWindow.loadURL(url.href);
     } else {
-      await browserWindow.loadFile(this.renderer.path);
+      await browserWindow.loadFile(this.renderer.path, {
+        query: { [STARTUP_THEME_QUERY_KEY]: resolvedTheme },
+      });
     }
 
     return browserWindow;
