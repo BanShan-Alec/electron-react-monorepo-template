@@ -1,12 +1,12 @@
 ---
 
 title: 使用此模板（Use-this-template）
-description: 把模板转为自己项目的七组原子任务，可整页交给 AI 协作者执行，每组只给目标与可复制的完成判据。
+description: 把模板转为自己项目的八组原子任务，可整页交给 AI 协作者执行，每组只给目标与可复制的完成判据。
 ---
 
 # 使用此模板（Use-this-template）
 
-> **TL;DR**：Use this template / Fork 之后、写第一行业务之前，按 §2 七组任务完成「转为己有」。每组只给目标与判据，挂载点由执行者自行搜索确认；可整页交给 AI 协作者执行，人只验收判据。
+> **TL;DR**：Use this template / Fork 之后、写第一行业务之前，按 §2 八组任务完成「转为己有」。每组只给目标与判据，挂载点由执行者自行搜索确认；可整页交给 AI 协作者执行，人只验收判据。
 
 ## 1. 执行时机与前置条件
 
@@ -47,9 +47,15 @@ description: 把模板转为自己项目的七组原子任务，可整页交给 
 
 ### 任务 3：剥离文档站
 
-`packages/docs` 是本模板的自述载体，与业务无关：删掉整包及其在仓库内的全部引用（内嵌文档 Tab、CI 的 docs job、站点常量都在内）。删完在 GitHub 分支保护里移除 `docs` required check——否则之后每个 PR 都会停在 Pending。
+`packages/docs` 是本模板的自述载体，与业务无关：删掉整包及其在仓库内的全部引用。代码级引用（根 `tsconfig.json`、`pnpm docs:*` 脚本、CI 的 docs job、导航常量）删漏了会由 typecheck 或命令不存在拦下；但还有一批**文档级引用不会让任何门禁报错**，必须人工清：
 
-- **判据**：`pnpm docs:build` 报命令不存在为预期；`pnpm typecheck && pnpm lint && pnpm test` 绿。
+- 根 `AGENTS.md`：`@app/docs` 包索引行与「文档站内容变动」门禁行
+- `.github/CICD.md`：`docs` check 条目与「五个 check」计数（删后为四个）
+- 代码注释中的 `@app/docs`（如 `scripts/dev.ts`）
+
+删完在 GitHub 分支保护里移除 `docs` required check——否则之后每个 PR 都会停在 Pending。
+
+- **判据**：`pnpm docs:build` 报命令不存在为预期；`pnpm typecheck && pnpm lint && pnpm test` 绿；任务 8 的 grep 零命中（可提前跑一次自查）。
 
 ### 任务 4：pr-review 工具链（默认保留）
 
@@ -70,17 +76,23 @@ description: 把模板转为自己项目的七组原子任务，可整页交给 
 
 - **判据**：新 tag 推送后 GitHub Release 正常生成，三平台产物齐全。
 
-### 任务 7：收尾门禁
+### 任务 7：依赖与配置放置
 
-七组任务做完后跑一次总验收，兜住跨任务连坐——删包后 lockfile 未重生成、被删对象的外部引用、残留的模板坐标：
+派生项目后续必然引入新工具（数据库 CLI、构建插件、Lint 插件等）。放置规则见根 `CONTRIBUTING.md` §三「配置与依赖归属」，一句话：配置跟着归属包走，跨包工具进 `.config/` 与根 `devDependencies`，根目录只留机制强制的固定项。
+
+- **判据**：根目录不存在清单外的 `*.config.*` 文件；新增依赖出现在其归属包的 `package.json`（运行时加载 → `dependencies`，刻意内联 → `devDependencies`）。
+
+### 任务 8：收尾门禁
+
+八组任务做完后跑一次总验收，兜住跨任务连坐——删包后 lockfile 未重生成、被删对象的外部引用、残留的模板坐标：
 
 ```bash
 pnpm install   # 重生成 lockfile；CI 用 --frozen-lockfile
-grep -rin "banshan-alec\|electron-react-monorepo-template\|packages/docs" \
+grep -rin "banshan-alec\|electron-react-monorepo-template\|packages/docs\|@app/docs\|docs:build\|docs:dev\|docs check" \
   --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.git .
 ```
 
-- **判据**：上面 grep 零命中；`pnpm typecheck && pnpm lint && pnpm test && pnpm test:e2e && pnpm verify:prebuild` 全绿；推送后 CI 全绿。
+- **判据**：上面 grep 零命中（同时兜住 AGENTS / CICD / 代码注释里的文档级残留）；`pnpm typecheck && pnpm lint && pnpm test && pnpm test:e2e && pnpm verify:prebuild` 全绿；推送后 CI 全绿。
 
 ## 3. 桌面端避坑注意事项
 
