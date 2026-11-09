@@ -47,9 +47,15 @@ description: 把模板转为自己项目的八组原子任务，可整页交给 
 
 ### 任务 3：剥离文档站
 
-`packages/docs` 是本模板的自述载体，与业务无关：删掉整包及其在仓库内的全部引用（内嵌文档 Tab、CI 的 docs job、站点常量都在内）。删完在 GitHub 分支保护里移除 `docs` required check——否则之后每个 PR 都会停在 Pending。
+`packages/docs` 是本模板的自述载体，与业务无关：删掉整包及其在仓库内的全部引用。代码级引用（根 `tsconfig.json`、`pnpm docs:*` 脚本、CI 的 docs job、导航常量）删漏了会由 typecheck 或命令不存在拦下；但还有一批**文档级引用不会让任何门禁报错**，必须人工清：
 
-- **判据**：`pnpm docs:build` 报命令不存在为预期；`pnpm typecheck && pnpm lint && pnpm test` 绿。
+- 根 `AGENTS.md`：`@app/docs` 包索引行与「文档站内容变动」门禁行
+- `.github/CICD.md`：`docs` check 条目与「五个 check」计数（删后为四个）
+- 代码注释中的 `@app/docs`（如 `scripts/dev.ts`）
+
+删完在 GitHub 分支保护里移除 `docs` required check——否则之后每个 PR 都会停在 Pending。
+
+- **判据**：`pnpm docs:build` 报命令不存在为预期；`pnpm typecheck && pnpm lint && pnpm test` 绿；任务 8 的 grep 零命中（可提前跑一次自查）。
 
 ### 任务 4：pr-review 工具链（默认保留）
 
@@ -82,11 +88,11 @@ description: 把模板转为自己项目的八组原子任务，可整页交给 
 
 ```bash
 pnpm install   # 重生成 lockfile；CI 用 --frozen-lockfile
-grep -rin "banshan-alec\|electron-react-monorepo-template\|packages/docs" \
+grep -rin "banshan-alec\|electron-react-monorepo-template\|packages/docs\|@app/docs\|docs:build\|docs:dev\|docs check" \
   --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.git .
 ```
 
-- **判据**：上面 grep 零命中；`pnpm typecheck && pnpm lint && pnpm test && pnpm test:e2e && pnpm verify:prebuild` 全绿；推送后 CI 全绿。
+- **判据**：上面 grep 零命中（同时兜住 AGENTS / CICD / 代码注释里的文档级残留）；`pnpm typecheck && pnpm lint && pnpm test && pnpm test:e2e && pnpm verify:prebuild` 全绿；推送后 CI 全绿。
 
 ## 3. 桌面端避坑注意事项
 
