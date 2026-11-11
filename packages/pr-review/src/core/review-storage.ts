@@ -18,16 +18,6 @@ export class ReviewStorage {
     this.maxReviewsToKeep = maxReviewsToKeep;
   }
 
-  getDirectory(): string {
-    return this.reviewsDir;
-  }
-
-  ensureDirectory(): void {
-    if (!fs.existsSync(this.reviewsDir)) {
-      fs.mkdirSync(this.reviewsDir, { recursive: true });
-    }
-  }
-
   listReviewFiles(): ReviewFileEntry[] {
     if (!fs.existsSync(this.reviewsDir)) return [];
 

@@ -8,6 +8,7 @@ import type {
   PrDetails,
   VcsProvider,
 } from '../ports/vcs-provider.ts';
+import { getRepoRoot } from '../utils/git.ts';
 
 export interface Clock {
   sleep: (ms: number) => Promise<void>;
@@ -62,7 +63,7 @@ export class PrWorkflowEngine {
       error: console.error,
     };
     this.confirmMergeCallback = options.confirmMerge;
-    this.repoRoot = options.repoRoot ?? process.cwd();
+    this.repoRoot = options.repoRoot ?? getRepoRoot();
   }
 
   private async preflight(): Promise<{ branch: string; defaultBranch: string }> {
@@ -200,8 +201,6 @@ export class PrWorkflowEngine {
         return {
           status: 'PASSED',
           checks,
-          failedChecks: [],
-          pendingChecks: [],
         };
       }
 
@@ -225,16 +224,11 @@ export class PrWorkflowEngine {
     const pr = await this.vcs.getPrForBranch(branch);
     const targetBranch = pr?.baseRefName || defaultBranch;
 
-    if (pr?.mergeable === 'CONFLICTING') {
-      throw new Error(
-        `检测到分支 "${branch}" 与目标分支 "${targetBranch}" 存在代码冲突，请在本地合并或 rebase 目标分支解决冲突并推送后再合并`,
-      );
-    }
-
     const conflict = await this.vcs.checkConflict(branch, targetBranch);
     if (conflict.hasConflict) {
+      const details = conflict.details ? `: ${conflict.details}` : '';
       throw new Error(
-        `检测到代码冲突: 分支 "${branch}" 与 "${targetBranch}" 冲突，请在本地解决冲突并推送后再合并`,
+        `检测到分支 "${branch}" 与目标分支 "${targetBranch}" 存在代码冲突${details}，请在本地解决冲突并推送后再合并`,
       );
     }
     this.logger.log(`✓ 与 origin/${targetBranch} 无代码冲突（无需同步最新目标分支代码）`);
@@ -265,6 +259,29 @@ export class PrWorkflowEngine {
       `\n已合并并删除远端分支。清理本地分支:\n  git checkout ${targetBranch}\n  git pull\n  git branch -d ${branch}`,
     );
     return { merged: true, branch, targetBranch };
+  }
+
+  async statusPr(): Promise<void> {
+    await this.vcs.ensureAuth();
+    await this.vcs.showStatus();
+
+    const ctx = await this.vcs.getBranchContext();
+    if (
+      ctx.currentBranch &&
+      ctx.currentBranch !== ctx.defaultBranch &&
+      ctx.currentBranch !== 'HEAD'
+    ) {
+      const conflict = await this.checkConflict(ctx.currentBranch, ctx.defaultBranch);
+      if (conflict.hasConflict) {
+        this.logger.log(
+          `\n\x1b[33m⚠️ 冲突警告: 当前分支与 origin/${conflict.targetBranch} 存在代码冲突，合并前需先解决冲突。\x1b[0m\n`,
+        );
+      } else {
+        this.logger.log(
+          `\n\x1b[32m✓ 冲突状态: 当前分支与 origin/${conflict.targetBranch} 无代码冲突（可直接合入，无需每次同步最新目标分支）。\x1b[0m\n`,
+        );
+      }
+    }
   }
 
   async triggerReview(): Promise<PrDetails> {

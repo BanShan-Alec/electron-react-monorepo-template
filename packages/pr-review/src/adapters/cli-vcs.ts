@@ -64,6 +64,7 @@ export class CliVcsAdapter implements VcsProvider {
   }
 
   checkConflict(branch: string, targetBranch: string): Promise<ConflictCheckResult> {
+    run('git', ['fetch', 'origin', targetBranch]);
     const prJson = probe('gh', ['pr', 'view', branch, '--json', 'baseRefName,mergeable']);
     const prData = safeParseJson<{ baseRefName?: string; mergeable?: string }>(prJson);
     const resolvedTarget = prData?.baseRefName || targetBranch;
@@ -127,8 +128,8 @@ export class CliVcsAdapter implements VcsProvider {
     });
   }
 
-  pushBranch(_branch: string): Promise<void> {
-    run('git', ['push', '-u', 'origin', 'HEAD']);
+  pushBranch(branch: string): Promise<void> {
+    run('git', ['push', '-u', 'origin', branch]);
     return Promise.resolve();
   }
 
@@ -209,6 +210,11 @@ export class CliVcsAdapter implements VcsProvider {
 
   commentPr(prNumberOrBranch: string, body: string): Promise<void> {
     run('gh', ['pr', 'comment', prNumberOrBranch, '--body', body]);
+    return Promise.resolve();
+  }
+
+  showStatus(): Promise<void> {
+    run('gh', ['pr', 'status']);
     return Promise.resolve();
   }
 }

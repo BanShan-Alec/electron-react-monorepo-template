@@ -167,7 +167,7 @@ describe('PrWorkflowEngine', () => {
       const confirmMerge = vi.fn();
       const engine = new PrWorkflowEngine({ vcs, clock: dummyClock, confirmMerge });
 
-      await expect(engine.mergePr()).rejects.toThrow('检测到代码冲突');
+      await expect(engine.mergePr()).rejects.toThrow('存在代码冲突');
       expect(confirmMerge).not.toHaveBeenCalled();
       expect(vcs.mergedPrs).toHaveLength(0);
     });
@@ -233,6 +233,36 @@ describe('PrWorkflowEngine', () => {
       const result = await engine.triggerReview();
       expect(result.number).toBe(42);
       expect(vcs.comments).toContainEqual({ target: '42', body: '/review' });
+    });
+  });
+
+  describe('statusPr', () => {
+    it('shows status and logs clean conflict state', async () => {
+      const vcs = new InMemoryVcsAdapter({
+        currentBranch: 'feat/clean',
+        hasConflict: false,
+      });
+      const showStatusSpy = vi.spyOn(vcs, 'showStatus');
+      const logger = { log: vi.fn(), warn: vi.fn(), error: vi.fn() };
+      const engine = new PrWorkflowEngine({ vcs, clock: dummyClock, logger });
+
+      await engine.statusPr();
+      expect(showStatusSpy).toHaveBeenCalled();
+      expect(logger.log).toHaveBeenCalledWith(expect.stringContaining('无代码冲突'));
+    });
+
+    it('shows status and logs conflict warning when conflict exists', async () => {
+      const vcs = new InMemoryVcsAdapter({
+        currentBranch: 'feat/conflict',
+        hasConflict: true,
+      });
+      const showStatusSpy = vi.spyOn(vcs, 'showStatus');
+      const logger = { log: vi.fn(), warn: vi.fn(), error: vi.fn() };
+      const engine = new PrWorkflowEngine({ vcs, clock: dummyClock, logger });
+
+      await engine.statusPr();
+      expect(showStatusSpy).toHaveBeenCalled();
+      expect(logger.log).toHaveBeenCalledWith(expect.stringContaining('存在代码冲突'));
     });
   });
 });

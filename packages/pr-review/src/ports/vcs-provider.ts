@@ -35,10 +35,8 @@ export interface CiCheck {
 }
 
 export interface CheckGateResult {
-  status: 'PASSED' | 'FAILED' | 'PENDING' | 'TIMEOUT';
+  status: 'PASSED' | 'FAILED' | 'TIMEOUT';
   checks: CiCheck[];
-  failedChecks: CiCheck[];
-  pendingChecks: CiCheck[];
 }
 
 export interface CreatePrInput {
@@ -80,4 +78,5 @@ export interface VcsProvider {
   getChecks(branch: string): Promise<CiCheck[] | null>;
   mergePr(input: MergePrInput): Promise<void>;
   commentPr(prNumberOrBranch: string, body: string): Promise<void>;
+  showStatus(): Promise<void>;
 }

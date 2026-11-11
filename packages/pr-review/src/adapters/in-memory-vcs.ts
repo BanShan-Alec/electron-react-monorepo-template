@@ -135,4 +135,8 @@ export class InMemoryVcsAdapter implements VcsProvider {
     this.comments.push({ target: prNumberOrBranch, body });
     return Promise.resolve();
   }
+
+  showStatus(): Promise<void> {
+    return Promise.resolve();
+  }
 }

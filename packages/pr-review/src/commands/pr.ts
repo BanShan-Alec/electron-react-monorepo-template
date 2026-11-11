@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { CliVcsAdapter } from '../adapters/cli-vcs.ts';
 import { PrWorkflowEngine } from '../core/workflow-engine.ts';
-import { fail, run } from '../utils/process.ts';
+import { fail } from '../utils/process.ts';
 
 function createEngine(): PrWorkflowEngine {
   const vcs = new CliVcsAdapter();
@@ -45,27 +45,8 @@ export async function mergePr(): Promise<void> {
 
 export async function statusPr(): Promise<void> {
   try {
-    const vcs = new CliVcsAdapter();
-    vcs.ensureAuth();
-    run('gh', ['pr', 'status']);
-
-    const ctx = await vcs.getBranchContext();
-    if (
-      ctx.currentBranch &&
-      ctx.currentBranch !== ctx.defaultBranch &&
-      ctx.currentBranch !== 'HEAD'
-    ) {
-      const conflict = await vcs.checkConflict(ctx.currentBranch, ctx.defaultBranch);
-      if (conflict.hasConflict) {
-        console.log(
-          `\n\x1b[33m⚠️ 冲突警告: 当前分支与 origin/${conflict.targetBranch} 存在代码冲突，合并前需先解决冲突。\x1b[0m\n`,
-        );
-      } else {
-        console.log(
-          `\n\x1b[32m✓ 冲突状态: 当前分支与 origin/${conflict.targetBranch} 无代码冲突（可直接合入，无需每次同步最新目标分支）。\x1b[0m\n`,
-        );
-      }
-    }
+    const engine = createEngine();
+    await engine.statusPr();
   } catch (err) {
     fail((err as Error).message);
   }
