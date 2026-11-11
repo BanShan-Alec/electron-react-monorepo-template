@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cleanOldReviewFiles } from '../core/cleaner.ts';
 import { formatDashboard } from '../core/dashboard.ts';
 import { findLatestReviewFile, parseExistingDashboard } from '../core/diff.ts';
 import { fetchOcrResult, fetchPrComments, getLatestRunInfo } from '../core/ocr.ts';
+import { cleanOldReviewFiles } from '../core/review-storage.ts';
 import type { CiCheckItem, OcrResult, RunInfo } from '../types.ts';
 import {
   ensureGh,

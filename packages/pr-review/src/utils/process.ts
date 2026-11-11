@@ -5,6 +5,10 @@ export function fail(message: string): never {
   process.exit(1);
 }
 
+export function toErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 export function run(cmd: string, args: string[]): void {
   const result = spawnSync(cmd, args, { stdio: 'inherit' });
   if (result.error) {
@@ -12,6 +16,16 @@ export function run(cmd: string, args: string[]): void {
   }
   if (result.status !== 0) {
     process.exit(result.status ?? 1);
+  }
+}
+
+export function runOrThrow(cmd: string, args: string[]): void {
+  const result = spawnSync(cmd, args, { stdio: 'inherit' });
+  if (result.error) {
+    throw new Error(`无法执行 ${cmd}: ${result.error.message} (是否已安装并在 PATH 中?)`);
+  }
+  if (result.status !== 0) {
+    throw new Error(`命令执行失败: ${cmd} ${args.join(' ')} (退出码 ${result.status ?? 1})`);
   }
 }
 
