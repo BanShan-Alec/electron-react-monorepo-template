@@ -70,17 +70,20 @@ if (
 window.addEventListener(APP_REACT_STARTUP_READY_EVENT, () => settleGate('react'), { once: true });
 window.setTimeout(() => settleGate('react'), STARTUP_REACT_FALLBACK_MS);
 
-// 门禁三：主进程就绪（先拉后推，先到信号经快照补发不丢；就绪源见 startup-readiness.module）
+// 门禁三：主进程就绪（双保险：先挂监听防漏推，再拉动态快照；就绪源见 startup-readiness.module）
 const bridge = (window as { api?: { startup?: StartupBridgeLike } }).api?.startup;
 if (!bridge) {
   settleGate('main'); // 无 preload 桥的异常环境不阻塞壳
 } else {
+  // 1. 先挂上广播监听，确保拉取过程中到来的事件不丢失
+  window.addEventListener(APP_STARTUP_MAIN_READY_EVENT, () => settleGate('main'), { once: true });
+  // 2. 动态向主进程拉取最新快照（已就绪则立即放行）
   bridge
     .getSnapshot()
     .then((snapshot) => {
       if (snapshot.mainReady) settleGate('main');
     })
     .catch(() => {}); // 拉取失败交给事件与兜底路径
-  window.addEventListener(APP_STARTUP_MAIN_READY_EVENT, () => settleGate('main'), { once: true });
+  // 3. 超时兜底防死锁
   window.setTimeout(() => settleGate('main'), STARTUP_MAIN_FALLBACK_MS);
 }

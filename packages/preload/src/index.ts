@@ -32,11 +32,9 @@ if (metaArg) {
 }
 contextBridge.exposeInMainWorld('__APP_ENV__', Object.freeze(runtimeEnv ?? {}));
 
-// 启动就绪桥：先拉后推，主进程信号先于窗口时经快照补发不丢。
-// 求值时即预取快照并注册推送监听（不等 onMainReady 被调用）——晚到信号经跨世界
+// 启动就绪桥：求值期注册主进程广播监听，晚到信号经跨世界
 // 纯 Event 派发给壳协调器（contextIsolation 下无 payload Event 可见），payload 经回调携带
 const mainReadyCallbacks = new Set<(payload: StartupMainReadyPayload) => void>();
-const startupSnapshotPromise = invokeTraced<StartupGateSnapshot>(IPC_CHANNELS.STARTUP_GET_SNAPSHOT);
 ipcRenderer.on(
   IPC_CHANNELS.STARTUP_EVENT_MAIN_READY,
   (_event, payload: StartupMainReadyPayload) => {
@@ -142,9 +140,9 @@ export const apiBridge: ElectronApi = {
       };
     },
   },
-  // 启动就绪桥：快照走求值期预取的 Promise，推送回调按注册表分发
+  // 启动就绪桥：动态实时拉取主进程就绪快照，推送回调按注册表分发
   startup: {
-    getSnapshot: () => startupSnapshotPromise,
+    getSnapshot: () => invokeTraced<StartupGateSnapshot>(IPC_CHANNELS.STARTUP_GET_SNAPSHOT),
     onMainReady: (cb: (payload: StartupMainReadyPayload) => void) => {
       mainReadyCallbacks.add(cb);
       return () => {
