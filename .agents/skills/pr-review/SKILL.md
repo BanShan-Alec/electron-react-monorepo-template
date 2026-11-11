@@ -20,10 +20,10 @@ description: 项目专用的 Pull Request 生命周期与 OpenCodeReview (OCR) �
 | 用户意图             | 对应命令                 | 替代简写                | 详细操作与行为                                                                                                                              |
 | :------------------- | :----------------------- | :---------------------- | :------------------------------------------------------------------------------------------------------------------------------------------ |
 | **创建 PR**          | `pnpm pr-review create`  | `pnpm pr-review pr`     | 前置校验工作区是否干净、推送当前分支、基于 `.github/PULL_REQUEST_TEMPLATE.md` 模板自动填充提交信息并开 PR                                   |
-| **查看状态**         | `pnpm pr-review status`  | -                       | 查看当前仓库关联 PR 及所有 checks/CI 门禁状态，并提示与目标分支的代码冲突状态                                                               |
+| **查看状态**         | `pnpm pr-review status`  | -                       | 查看当前仓库关联 PR、所有 checks/CI 门禁状态及与目标分支的代码冲突状态                                                                      |
 | **拉取 Review 结果** | `pnpm pr-review pull`    | -                       | 从 Actions 产物拉取最新 Review 结果，前置嵌入 `CI Checks 整体状态`，在 `packages/pr-review/reviews/` 下生成 `pr-<PR>-round-<N>.md` 独立看板 |
 | **触发增量复查**     | `pnpm pr-review trigger` | `pnpm pr-review review` | 在当前 PR 讨论区自动发送 `/review` 评论，触发 OpenCodeReview 增量扫描                                                                       |
-| **安全合并 PR**      | `pnpm pr-review merge`   | -                       | 自动检测与目标分支无代码冲突（无冲突不强制同步最新目标分支），轮询等待所有必选 checks 全绿，确认后执行 squash 合并并清理远端分支            |
+| **安全合并 PR**      | `pnpm pr-review merge`   | -                       | 快速检测与目标分支无代码冲突（无冲突无需同步最新目标分支），轮询等待门禁全绿后执行 squash 合并并清理远端分支                                |
 
 ---
 
