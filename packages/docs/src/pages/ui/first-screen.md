@@ -34,8 +34,8 @@ flowchart TB
     STARTUP_MAIN_FALLBACK_MS["超时 5s"]
   end
   subgraph preload["Preload（隔离桥）· api.startup"]
-    getSnapshot["getSnapshot()<br/>先拉快照"]
-    APP_STARTUP_MAIN_READY_EVENT["APP_STARTUP_MAIN_READY_EVENT<br/>后事件补推"]
+    APP_STARTUP_MAIN_READY_EVENT["APP_STARTUP_MAIN_READY_EVENT<br/>先挂监听补推"]
+    getSnapshot["getSnapshot()<br/>后动态拉快照"]
   end
   subgraph mainProcess["主进程（Main）· startup-readiness.module"]
     startupReadiness["enable() 注册通道<br/>finalize() 广播就绪"]
@@ -45,10 +45,10 @@ flowchart TB
   STARTUP_ANIMATION_FALLBACK_MS & STARTUP_REACT_FALLBACK_MS & STARTUP_MAIN_FALLBACK_MS -.-> settleGate
   settleGate --> tryFinishStartup
   tryFinishStartup --> APP_STARTUP_READY_CLASS
-  startupReadiness -->|"快照"| getSnapshot
   startupReadiness -->|"推送"| APP_STARTUP_MAIN_READY_EVENT
-  getSnapshot -->|"先拉"| main
-  APP_STARTUP_MAIN_READY_EVENT -->|"后推"| main
+  startupReadiness -->|"快照"| getSnapshot
+  APP_STARTUP_MAIN_READY_EVENT -->|"先听"| main
+  getSnapshot -->|"后查"| main
 ```
 
 协调器由构建期插件 `startup-shell` 打包为经典 IIFE 内联进 `index.html`，先于 React 执行。它维护门禁注册表：`pendingGates` 初始装齐 `animation` / `react` / `main`，每路就绪调用一次 `settleGate`；集合清空后由 `tryFinishStartup` 统一揭幕，`finished` 保证只执行一次。

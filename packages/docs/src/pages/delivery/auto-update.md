@@ -63,7 +63,7 @@ stateDiagram-v2
 
 ### 关键实现：取消下载
 
-`cancel()` 是取消分支的唯一入口：渲染层经 IPC `updater:cancel` 调用；主窗口关闭并触发退出时，`quitAfterCancellingUpdate()` 会先 `await` 它（2 秒超时兜底），销毁更新窗口后再 `app.quit()`。
+`cancel()` 是取消分支的唯一入口：渲染层经 IPC `updater:cancel` 调用；主窗口关闭并触发退出时，`quitAfterCancellingUpdate()` 会先 `await` 它（2 秒超时兜底），再执行 `app.quit()`（其余窗口由原生退出生命周期与注册表自动清理）。
 
 **节选**：`UpdaterService.cancel()`（`packages/main/src/services/updater.service.ts:524`）
 

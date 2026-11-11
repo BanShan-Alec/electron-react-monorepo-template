@@ -45,12 +45,13 @@ flowchart TB
 
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点                       | 事故表现与原因                                                                     | 本仓库对齐方案                                                                                     |
-| :----------------------------- | :--------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------- |
-| **首次访问 SW 未控制页面**     | 首屏 HTML/JS/CSS 不会被 SW 截到，断网后首屏缺资源                                  | SW ready 后页面回传当前页 HTML 与已加载资源，SW 主动缓存                                           |
-| **GH Pages `max-age=600`**     | 在线时 10 分钟内可能不拿新 HTML；`sw.js` 也可能被 HTTP 缓存                        | 注册 `updateViaCache: 'none'`；导航 `cache: 'no-cache'`                                            |
-| **Cache Storage 是 origin 级** | `caches.keys()` 会看到同 origin 其他 GH Pages 项目的缓存，全删会误伤               | 缓存名前缀从 `registration.scope` 推导，activate 只删本前缀                                        |
-| **dev 注册会缓存 Vocs HMR**    | 开发时热更新被 SW 缓存挡住                                                         | dev 不注入注册脚本                                                                                 |
-| **Electron 顶层是 `file://`**  | 跨源 iframe 的 SW 注册依赖 iframe 的 `allow-same-origin`；CSP 若全量注入会拦文档站 | docs tab 的 iframe 保留 `allow-same-origin`；CSP 只注主框架并放行 docs origin 的 `frame-src`       |
-| **keep-alive 不自动更新**      | 切 tab 不卸载 iframe，SW/新 HTML 不会自动进当前页                                  | SW 只保证重载/离线路径；需要新内容时重载 iframe 或重启 app                                         |
-| **坏 SW 的恢复**               | SW 持久化在 Electron session，服务器修好后仍可能服务旧内容                         | 版本 bump + `skipWaiting` 发新 SW；必要时清站点数据（当前无 `?embed=1`/kill switch，公开站也注册） |
+| 避坑要点                       | 事故表现与原因                                                                       | 本仓库对齐方案                                                                                         |
+| :----------------------------- | :----------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
+| **首次访问 SW 未控制页面**     | 首屏 HTML/JS/CSS 不会被 SW 截到，断网后首屏缺资源                                    | SW ready 后页面回传当前页 HTML 与已加载资源，SW 主动缓存                                               |
+| **GH Pages `max-age=600`**     | 在线时 10 分钟内可能不拿新 HTML；`sw.js` 也可能被 HTTP 缓存                          | 注册 `updateViaCache: 'none'`；导航 `cache: 'no-cache'`                                                |
+| **Cache Storage 是 origin 级** | `caches.keys()` 会看到同 origin 其他 GH Pages 项目的缓存，全删会误伤                 | 缓存名前缀从 `registration.scope` 推导，activate 只删本前缀                                            |
+| **dev 注册会缓存 Vocs HMR**    | 开发时热更新被 SW 缓存挡住                                                           | dev 不注入注册脚本                                                                                     |
+| **Electron 顶层是 `file://`**  | 跨源 iframe 的 SW 注册依赖 iframe 的 `allow-same-origin`；CSP 若全量注入会拦文档站   | docs tab 的 iframe 保留 `allow-same-origin`；CSP 只注主框架并放行 docs origin 的 `frame-src`           |
+| **keep-alive 不自动更新**      | 切 tab 不卸载 iframe，SW/新 HTML 不会自动进当前页                                    | SW 只保证重载/离线路径；需要新内容时重载 iframe 或重启 app                                             |
+| **坏 SW 的恢复**               | SW 持久化在 Electron session，服务器修好后仍可能服务旧内容                           | 版本 bump + `skipWaiting` 发新 SW；必要时清站点数据（当前无 `?embed=1`/kill switch，公开站也注册）     |
+| **iframe 嵌入宿主耦合**        | 依赖主进程或宿主页面向 URL 强行拼接 `?embed=true` 参数，引发跨进程参数传递与时序耦合 | 文档站通过标准 Web API `window.self !== window.top` 自主感知嵌入状态，自动适配隐藏顶栏，彻底解耦主进程 |

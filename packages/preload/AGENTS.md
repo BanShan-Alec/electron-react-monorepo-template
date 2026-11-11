@@ -17,9 +17,9 @@ Preload 运行在拥有部分 Node 能力但启用了沙箱与上下文隔离的
 ## 2. 核心架构铁律
 
 1. **类型强绑定**：`apiBridge` 必须显式标注为 `@app/shared/types/api` 的 `ElectronApi`，确保编译期类型与渲染端 `window.api` 绝对对齐。
-2. **强制全链路追踪 (`invokeTraced`)**：所有 IPC 通信必须通过 `telemetry/ipc-tracer.ts` 的 `invokeTraced` 包装以携带 traceparent，严禁直接调用原生的 `ipcRenderer.invoke`。
+2. **强制全链路追踪 (`invokeTraced`) 与 Result 契约**：所有 IPC 通信必须通过 `telemetry/ipc-tracer.ts` 的 `invokeTraced` 包装以携带 traceparent，严禁直接调用原生的 `ipcRenderer.invoke`；业务调用统一返回 `Promise<Result<T>>`，严禁向渲染端透传未封装的裸响应。
 3. **通道常量单一真源**：调用 channel 必须从 `@app/shared/constants/ipc-channels` 引入，严禁手写硬编码字符串。
-4. **零业务逻辑**：Preload 仅作“透明请求转发器”，严禁在 Preload 内部做数据持久化、复杂运算或状态缓存。
+4. **零业务逻辑与禁止求值期缓存**：Preload 仅作“透明请求转发器”，严禁在 Preload 内部做数据持久化、复杂运算或状态缓存；严禁在模块顶层求值期通过单次 Promise 缓存主进程状态（如已废弃的 `startupSnapshotPromise`），状态查询一律动态经由 IPC 请求主进程拉取最新快照。
 5. **绝对沙箱隔离 (Zero Node Leak)**：在 `contextIsolation: true` 与 `sandbox: true` 约束下，严禁向渲染端暴露任何 Node.js 原生模块（如 `fs`、`child_process`）或 `electron` 原始对象。
 
 ## 3. 新增 Bridge API 开发范式 (代码骨架模板)
