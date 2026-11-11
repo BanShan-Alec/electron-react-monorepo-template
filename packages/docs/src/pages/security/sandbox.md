@@ -20,7 +20,7 @@ Electron 历史上最严重的漏洞多源于沙箱配置不严：
 
 ### 强制写死沙箱四件套
 
-→ 源码：[packages/main/src/modules/window/index.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/index.module.ts)
+→ 源码：[packages/main/src/modules/window/home-window.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/home-window.module.ts)
 
 ```ts
 const browserWindow = new BrowserWindow({

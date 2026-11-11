@@ -5,6 +5,15 @@ import { BASE_PATH, SIDEBAR } from './src/navigation';
 // 文档站脚本固定是 `cli.js dev|build`，因此用 argv 判断 dev。
 const isDev = process.argv[2] === 'dev';
 
+// 嵌入探测：若被 iframe 嵌套，同步在 <html> 上标记 is-embedded，由 _root.css 隐藏自身的主题切换器
+const EMBED_DETECTION_SCRIPT = `
+(function () {
+  if (window.self !== window.top) {
+    document.documentElement.classList.add('is-embedded');
+  }
+})();
+`;
+
 // 文档站离线：注册 sw.js，并在 SW 就绪后把当前页 HTML 与已加载资源补进缓存。
 // 首次访问时 SW 尚未控制页面，首屏资源不会被 fetch 事件截到，需要这一步。
 const SW_REGISTER_SCRIPT = `
@@ -50,8 +59,12 @@ export default defineConfig({
   iconUrl: '/electron-react-monorepo-template/icon.png',
   // 默认 dynamic 是 Node 服务形态；GitHub Pages 纯静态托管必须显式 full-static
   renderStrategy: 'full-static',
-  // dev 不注入注册脚本，避免 SW 缓存 Vocs HMR 资源
-  ...(isDev ? {} : { head: { script: [{ innerHTML: SW_REGISTER_SCRIPT }] } }),
+  head: {
+    script: [
+      { innerHTML: EMBED_DETECTION_SCRIPT },
+      ...(isDev ? [] : [{ innerHTML: SW_REGISTER_SCRIPT }]),
+    ],
+  },
   socials: [
     {
       icon: 'github',

@@ -134,5 +134,6 @@ contextBridge.exposeInMainWorld('api', apiBridge);
   - TypeScript 类型直接从 Zod Schema 派生，全仓杜绝手动抄写第二份 `interface StepInput`，避免类型与校验规则长期不同步。
 - **校验必须发生在 Controller 边界**：
   - Service 只接收通过校验的干净数据。若将校验逻辑塞入 Service，会导致纯业务逻辑充满防御性判断，丧失在 Node 环境下的单测纯粹性。
-- **严禁向渲染层暴露原始 `ipcRenderer`**：
+- **严禁向渲染层暴露原始 `ipcRenderer` 与绕过契约的裸响应**：
   - 无论何时，切勿为了图方便在 Preload 中书写 `exposeInMainWorld('ipcRenderer', ipcRenderer)`，这等同于向外部攻击者大开任意 IPC 调用的后门。
+  - 所有 Preload 暴露的 IPC 业务调用必须严格经由 `invokeTraced` 封装并统一返回 `Promise<Result<T>>`。严禁引入绕开契约包装的裸响应管道（如已废弃的 `invokeRaw` / `RendererRawResponse`），确保调用端、异常处理与链路追踪行为全局一致。

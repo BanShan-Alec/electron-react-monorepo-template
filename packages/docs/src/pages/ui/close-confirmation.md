@@ -22,7 +22,7 @@ description: 拦截主窗口首次关闭事件，交互确认托盘常驻或彻�
 
 主进程监听窗口 `close` 事件，未确认时拦截默认行为并向渲染端广播 `WINDOW_CLOSE_REQUESTED`：
 
-→ 源码：[packages/main/src/modules/window/index.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/index.module.ts)
+→ 源码：[packages/main/src/modules/window/home-window.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/home-window.module.ts)
 
 ```ts
 browserWindow.on('close', (event) => {

@@ -22,7 +22,7 @@ describe('callIpc success logging options', () => {
     const windowState = window as Window & { __APP_ENV__: { mode: string }; api: any };
     windowState.__APP_ENV__.mode = 'development';
     const result = { platform: 'win32', arch: 'x64', cpus: [], totalMemory: 100, freeMemory: 50 };
-    const service = vi.fn(async (options?: { recordSuccess?: boolean }) => {
+    const service = vi.fn(async (_payload: unknown, options?: { recordSuccess?: boolean }) => {
       expect(options).toEqual({ recordSuccess: false });
       return { success: true as const, data: result };
     });

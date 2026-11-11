@@ -20,7 +20,7 @@ description: 采用 Window Controls Overlay，保留 Win11 贴靠与原生管理
 
 ### 跨平台分流配置
 
-→ 源码：[packages/main/src/modules/window/index.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/index.module.ts)
+→ 源码：[packages/main/src/modules/window/home-window.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/home-window.module.ts)
 
 ```ts
 backgroundColor: getWindowBackgroundColor(),

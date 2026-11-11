@@ -67,8 +67,8 @@ handleTraced(IPC_CHANNELS.NOTES_CREATE, async (_event, rawInput: unknown) => {
 
 → 规范直链：[packages/renderer/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/AGENTS.md)
 ```tsx
-// features/notes/hooks/useNotes.ts: 消费统一封装的 useIpc
-const { runAsync, loading } = useIpc('notes.create', window.api.notes.create);
+// features/notes/hooks/useNotes.ts: 消费统一封装的 useIpc（点分路径推导类型，无需传冗余函数引用）
+const { runAsync, loading } = useIpc('notes.create');
 
 // features/notes/components/NotesCard/index.tsx: 遵循七段式语义模板纯展示渲染
 ```

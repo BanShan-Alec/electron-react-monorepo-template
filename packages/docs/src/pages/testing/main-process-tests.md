@@ -12,39 +12,38 @@ description: 将业务逻辑与系统依赖解耦，纯逻辑脱壳秒测，生�
 
 - **摆脱 Electron 运行时启动包袱**：如果在单元测试中真实导入 `electron` 模块并创建窗口，单次测试耗时将从数毫秒激增至数秒，且无法直接跑在轻量 Node CI 节点上。
 - **防止全局原型污染**：市面上通用的 `electron-mock` 等重量级库经常存在全局原型链污染与 API 版本滞后问题，导致单测通过但生产报错。
-- **分层解耦的必然成果**：遵循 Controller / Service 分层架构后，绝大多数核心业务算法（如更新错误分类、日志行截断、环境解包）本质上都是纯 TypeScript 函数，完全可以在脱壳状态下获得 100% 单元测试覆盖。
+- **分层解耦的必然成果**：遵循 Controller / Service 分层架构后，绝大多数核心业务算法（如日志行截断、环境解包、窗口尺寸计算）本质上都是纯 TypeScript 函数，完全可以在脱壳状态下获得 100% 单元测试覆盖。
 
 ## 2. 核心机制
 
-### 场景一：纯逻辑/算法脱壳单测（零外部依赖）
+### 场景一：业务服务与算法脱壳单测（依赖注入与接口即表面）
 
-→ 源码：[packages/main/tests/unit/updater-classify.test.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/tests/unit/updater-classify.test.ts)
+→ 源码：[packages/main/tests/unit/updater-service.test.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/tests/unit/updater-service.test.ts)
 
 ```ts
+import { EventEmitter } from 'node:events';
 import { AppError } from '@app/main/errors/AppError';
-import { classifyUpdaterError } from '@app/main/services/updater-classify';
+import { UpdaterService } from '@app/main/services/updater.service';
 import { ErrorCode } from '@app/shared/constants/error-codes';
-import { describe, expect, it } from 'vitest';
+import type { AppUpdater } from 'electron-updater';
+import { describe, expect, it, vi } from 'vitest';
 
-describe('classifyUpdaterError', () => {
-  it('优先采用结构化 AppError 中携带的明确业务错误码', () => {
-    const timeout = new AppError('请求超时', ErrorCode.UPDATER_NETWORK_ERROR);
-    expect(classifyUpdaterError(timeout, ErrorCode.UPDATER_CHECK_FAILED)).toBe(
-      ErrorCode.UPDATER_NETWORK_ERROR,
-    );
-  });
+describe('UpdaterService', () => {
+  it('智能识别 electron-updater 底层 net::ERR_ 前缀并映射为网络错误码', async () => {
+    const netErr = new Error('Error: net::ERR_CONNECTION_TIMED_OUT');
+    const mockUpdater = Object.assign(new EventEmitter(), {
+      checkForUpdates: vi.fn().mockRejectedValue(netErr),
+    }) as unknown as AppUpdater;
 
-  it('智能识别 electron-updater 底层抛出的 net::ERR_ 前缀', () => {
-    const err = new Error('Error: net::ERR_CONNECTION_TIMED_OUT');
-    expect(classifyUpdaterError(err, ErrorCode.UPDATER_CHECK_FAILED)).toBe(
-      ErrorCode.UPDATER_NETWORK_ERROR,
-    );
-  });
+    const service = new UpdaterService(mockUpdater);
 
-  it('未识别异常安全回退至阶段默认兜底码', () => {
-    expect(classifyUpdaterError(new Error('ENOENT'), ErrorCode.UPDATER_CHECK_FAILED)).toBe(
-      ErrorCode.UPDATER_CHECK_FAILED,
-    );
+    await expect(service.check()).rejects.toSatisfy((err) => {
+      expect(err).toBeInstanceOf(AppError);
+      expect((err as AppError).code).toBe(ErrorCode.UPDATER_NETWORK_ERROR);
+      return true;
+    });
+
+    expect(service.getSnapshot().code).toBe(ErrorCode.UPDATER_NETWORK_ERROR);
   });
 });
 ```

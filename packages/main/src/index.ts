@@ -17,7 +17,7 @@ import { createSentryModule, initMainSentry } from './modules/sentry.module';
 import { disallowMultipleAppInstance } from './modules/single-instance.module';
 import { createStartupReadinessModule } from './modules/startup-readiness.module';
 import { createTrayModule } from './modules/tray.module';
-import { createWindowManagerModule } from './modules/window/index.module';
+import { createHomeWindowModule } from './modules/window/home-window.module';
 import { createUpdaterWindowModule } from './modules/window/updater-window.module';
 import { updaterService } from './services/updater.service';
 
@@ -25,15 +25,17 @@ import { updaterService } from './services/updater.service';
 initMainSentry();
 
 export async function initApp(initConfig: AppInitConfig) {
+  const startupReadiness = createStartupReadinessModule();
+
   const moduleRunner = createModuleRunner()
     .init(createLogModule())
     .init(createSentryModule())
     .init(createConfigModule())
     .init(createNativeThemeModule())
     .init(createIPCModule())
-    // 主进程就绪源：链位在 WindowManager 之前，信号先于窗口与壳
-    .init(createStartupReadinessModule())
-    .init(createWindowManagerModule({ initConfig }))
+    // 主进程启动就绪控制：注册 IPC 查询通道，初始保持 false
+    .init(startupReadiness)
+    .init(createHomeWindowModule({ initConfig }))
     .init(createUpdaterWindowModule({ initConfig }))
     .init(createTrayModule())
     .init(disallowMultipleAppInstance())
@@ -53,7 +55,9 @@ export async function initApp(initConfig: AppInitConfig) {
         ),
       ),
     )
-    .init(allowExternalUrls(new Set(ALLOWED_EXTERNAL_URLS)));
+    .init(allowExternalUrls(new Set(ALLOWED_EXTERNAL_URLS)))
+    // 链尾封板：所有前序同步/异步模块就绪完毕后向存活窗口广播就绪信号
+    .init(startupReadiness.finalize());
 
   await moduleRunner;
 

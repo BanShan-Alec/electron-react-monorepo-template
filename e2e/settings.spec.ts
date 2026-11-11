@@ -218,7 +218,9 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
     const [restoredPage] = await Promise.all([
       electronApp.waitForEvent('window'),
       electronApp.evaluate(async () => {
-        await (globalThis as any).__windowManager?.restoreOrCreateWindow(true);
+        await (
+          (globalThis as any).__homeWindowModule ?? (globalThis as any).__windowManager
+        )?.restoreOrCreateWindow(true);
       }),
     ]);
     await restoredPage.waitForLoadState('domcontentloaded');

@@ -26,6 +26,8 @@
 - **Controller 越界实现业务** — 在 Controller 中写复杂计算、文件读写或数据库操作；业务必须下沉到 Service。
 - **返回裸 Error 对象** — 必须映射为带 `ErrorCode` 的 `Result<never>`，杜绝向渲染端抛出未捕获 Promise rejection。
 - **反向依赖 Renderer 源码** — 主进程代码仅消费 `@app/shared`，严禁 import 渲染层源码（唯一例外：`index.ts` 装配时经 `require.resolve` 动态定位编译产物 HTML 物理路径）。
+- **为单测生硬抽离微型纯函数** — 严禁为了所谓的“测试方便”破坏面向对象/深模块封装，将类的私有分类、状态映射或策略逻辑生硬剥离成外部微型文件（如原 `updater-classify.ts`、`csp-policy.ts`）；应当通过构造函数可选注入底层依赖测试接缝（Dependency Injection），由公开 API（如 `service.check()`）驱动端到端单元测试。
+- **窗口模块间越权操纵** — 窗口模块（如 `HomeWindowModule`、`UpdaterWindowModule`）自治管理自身生命周期，严禁在一个窗口关闭时跨模块显式销毁其他窗口；所有原生窗口的创建与销毁收敛至 `window-registry` 集中感知与清理。
 - **漏配 external 导致打包污染** — 主进程生产依赖必须 100% 在 `packages/main/vite.config.ts` 的 `rolldownOptions.external` 中排除（门禁：CI `pnpm verify:prebuild` 拦截；`@sentry/electron` 经 `ssr.noExternal` 主动内联除外）。
 
 ## 4. 新增业务领域开发范式 (SOP 代码骨架)

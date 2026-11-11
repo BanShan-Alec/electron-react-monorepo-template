@@ -80,7 +80,8 @@ initApp({
   - 严禁简单使用 `id.includes('react')` 进行分包匹配，否则名称包含 `react` 的第三方库（如 `@lingui/react`）会被错误混入底层的 React 核心块，破坏模块缓存稳定性。必须使用 `/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/` 进行精确路径正则过滤。
 - **MPA 跨物理窗口状态同步单一真源原则**：
   - 多页面物理入口意味着各窗口拥有完全独立的 Chromium 渲染进程、独立的 JS 堆内存与独立的 Zustand 实例。跨物理窗口严禁试图通过 LocalStorage、BroadcastChannel 或 `window.opener` 直接通信，状态变更一律提交主进程，由主进程通过 `broadcast(channel, data)` 向全量注册窗口派发，保证数据单一事实源。
-- **辅助小窗口的内存释放原则**：
+- **辅助小窗口的内存释放原则与模块自治**：
   - 更新弹窗等辅助性小窗口应当是**按需创建、关闭即销毁**（Destroy on Close），避免在后台常驻无谓消耗 Chromium 渲染进程内存。
+  - 各窗口模块（如 `HomeWindowModule` 与 `UpdaterWindowModule`）自治管理自身生命周期，严禁跨模块越权销毁其他窗口；所有原生窗口由生命周期注册表集中感知并清理。
 - **开发态路由穿透与 DevServer 联动**：
   - 在开发模式下，主进程根据 Vite Dev Server 的基础 URL 拼接目标 HTML 的相对路径；在生产预览与安装包下，直接加载本地 `file://` 静态产物，两套时序完全独立。

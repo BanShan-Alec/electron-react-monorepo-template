@@ -2,7 +2,7 @@ import { nativeTheme } from 'electron';
 
 /**
  * Window Controls Overlay（WCO）配置的单一事实源，
- * 供 WindowManager（窗口创建时）与 NativeThemeModule（主题切换时）共享。
+ * 供 HomeWindowModule（窗口创建时）与 NativeThemeModule（主题切换时）共享。
  *
  * 平台契约（Electron 41 electron.d.ts）：
  * - 构造项 titleBarOverlay 的 color/symbolColor 标注 @platform win32,linux；
