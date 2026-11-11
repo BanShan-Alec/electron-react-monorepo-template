@@ -1,6 +1,6 @@
 import { createPr, mergePr, statusPr, triggerReview } from './commands/pr.ts';
 import { runPull } from './commands/pull.ts';
-import { fail } from './utils/process.ts';
+import { fail, toErrorMessage } from './utils/process.ts';
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
@@ -43,5 +43,5 @@ async function main(): Promise<void> {
 }
 
 main().catch((err: unknown) => {
-  fail((err as Error).message);
+  fail(toErrorMessage(err));
 });

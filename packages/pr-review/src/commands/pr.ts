@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { CliVcsAdapter } from '../adapters/cli-vcs.ts';
 import { PrWorkflowEngine } from '../core/workflow-engine.ts';
-import { fail } from '../utils/process.ts';
+import { fail, toErrorMessage } from '../utils/process.ts';
 
 function createEngine(): PrWorkflowEngine {
   const vcs = new CliVcsAdapter();
@@ -25,36 +25,31 @@ function createEngine(): PrWorkflowEngine {
   });
 }
 
-export async function createPr(): Promise<void> {
+async function handleCommand(
+  action: (engine: PrWorkflowEngine) => Promise<unknown>,
+): Promise<void> {
   try {
     const engine = createEngine();
-    await engine.createPr();
-  } catch (err) {
-    fail((err as Error).message);
+    await action(engine);
+  } catch (err: unknown) {
+    fail(toErrorMessage(err));
   }
+}
+
+export async function createPr(): Promise<void> {
+  await handleCommand((engine) => engine.createPr());
 }
 
 export async function mergePr(): Promise<void> {
-  try {
-    const engine = createEngine();
-    await engine.mergePr({ yes: process.argv.includes('--yes') });
-  } catch (err) {
-    fail((err as Error).message);
-  }
+  await handleCommand((engine) => engine.mergePr({ yes: process.argv.includes('--yes') }));
 }
 
 export async function statusPr(): Promise<void> {
-  try {
-    const engine = createEngine();
-    await engine.statusPr();
-  } catch (err) {
-    fail((err as Error).message);
-  }
+  await handleCommand((engine) => engine.statusPr());
 }
 
 export async function triggerReview(): Promise<void> {
-  try {
-    const engine = createEngine();
+  await handleCommand(async (engine) => {
     const pr = await engine.triggerReview();
     if (pr.url) {
       console.log(`  PR 链接: ${pr.url}`);
@@ -62,7 +57,5 @@ export async function triggerReview(): Promise<void> {
     console.log(
       '  提示: GitHub Actions 已在后台启动审查工作流，约 2~3 分钟后可执行 pnpm pr-review pull 拉取看板。',
     );
-  } catch (err) {
-    fail((err as Error).message);
-  }
+  });
 }

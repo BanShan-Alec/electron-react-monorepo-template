@@ -19,7 +19,7 @@ describe('InMemoryVcsAdapter', () => {
     expect(commits[0]?.subject).toBe('feat: initial commit');
   });
 
-  it('records pushed branches and PR creation', async () => {
+  it('records pushed branches and PR creation with dynamic numbering', async () => {
     const vcs = new InMemoryVcsAdapter({
       currentBranch: 'feat/pr-1',
       defaultBranch: 'main',
@@ -29,16 +29,41 @@ describe('InMemoryVcsAdapter', () => {
     await vcs.pushBranch('feat/pr-1');
     expect(vcs.pushedBranches).toContain('feat/pr-1');
 
-    const created = await vcs.createPr({
+    const created1 = await vcs.createPr({
       base: 'main',
       head: 'feat/pr-1',
-      title: 'feat: add feature',
-      body: 'PR body',
+      title: 'feat: add feature 1',
+      body: 'PR body 1',
+    });
+    expect(created1.number).toBe(1);
+
+    const created2 = await vcs.createPr({
+      base: 'develop',
+      head: 'feat/pr-2',
+      title: 'feat: add feature 2',
+      body: 'PR body 2',
+    });
+    expect(created2.number).toBe(2);
+
+    const pr2 = await vcs.getPrForBranch('feat/pr-2');
+    expect(pr2?.number).toBe(2);
+    expect(pr2?.baseRefName).toBe('develop');
+
+    const conflict = await vcs.checkConflict('feat/pr-2', 'main');
+    expect(conflict.targetBranch).toBe('develop');
+  });
+
+  it('resets internal state when reset() is called', async () => {
+    const vcs = new InMemoryVcsAdapter({
+      checksPollSequence: [[{ name: 'test', state: 'PENDING' }]],
     });
 
-    expect(created.number).toBe(1);
-    const pr = await vcs.getPrForBranch('feat/pr-1');
-    expect(pr?.title).toBe('feat: add feature');
+    await vcs.getChecks('feat/test');
+    expect(vcs.currentPollIndex).toBe(1);
+
+    vcs.reset();
+    expect(vcs.currentPollIndex).toBe(0);
+    expect(vcs.createdPrs).toHaveLength(0);
   });
 
   it('reports conflict according to preset status', async () => {

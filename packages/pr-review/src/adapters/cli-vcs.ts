@@ -10,7 +10,7 @@ import type {
   VcsProvider,
 } from '../ports/vcs-provider.ts';
 import { ensureGhAuth, getCurrentBranch, getDefaultBranch } from '../utils/git.ts';
-import { probe, run, safeParseJson } from '../utils/process.ts';
+import { probe, runOrThrow, safeParseJson } from '../utils/process.ts';
 
 export class CliVcsAdapter implements VcsProvider {
   ensureAuth(): void {
@@ -19,7 +19,7 @@ export class CliVcsAdapter implements VcsProvider {
 
   getBranchContext(): Promise<BranchContext> {
     const currentBranch = getCurrentBranch();
-    const defaultBranch = getDefaultBranch();
+    const defaultBranch = process.env.DEFAULT_BRANCH || getDefaultBranch();
     const statusOutput = probe('git', ['status', '--porcelain']) ?? '';
     const uncommittedFiles = statusOutput
       .split('\n')
@@ -36,7 +36,7 @@ export class CliVcsAdapter implements VcsProvider {
   }
 
   getCommitsAgainst(baseBranch: string): Promise<CommitSummary[]> {
-    run('git', ['fetch', 'origin', baseBranch]);
+    runOrThrow('git', ['fetch', 'origin', baseBranch]);
     const range = `origin/${baseBranch}..HEAD`;
     const subjectsRaw = probe('git', ['log', '--reverse', '--format=%H%x09%s', range]) ?? '';
     if (!subjectsRaw.trim()) {
@@ -64,10 +64,10 @@ export class CliVcsAdapter implements VcsProvider {
   }
 
   checkConflict(branch: string, targetBranch: string): Promise<ConflictCheckResult> {
-    run('git', ['fetch', 'origin', targetBranch]);
+    runOrThrow('git', ['fetch', 'origin', targetBranch]);
     const prJson = probe('gh', ['pr', 'view', branch, '--json', 'baseRefName,mergeable']);
     const prData = safeParseJson<{ baseRefName?: string; mergeable?: string }>(prJson);
-    const resolvedTarget = prData?.baseRefName || targetBranch;
+    const resolvedTarget = prData?.baseRefName ?? targetBranch;
 
     if (prData?.mergeable === 'CONFLICTING') {
       return Promise.resolve({
@@ -129,12 +129,12 @@ export class CliVcsAdapter implements VcsProvider {
   }
 
   pushBranch(branch: string): Promise<void> {
-    run('git', ['push', '-u', 'origin', branch]);
+    runOrThrow('git', ['push', '-u', 'origin', branch]);
     return Promise.resolve();
   }
 
   createPr(input: CreatePrInput): Promise<CreatePrResult> {
-    run('gh', [
+    runOrThrow('gh', [
       'pr',
       'create',
       '--base',
@@ -149,16 +149,21 @@ export class CliVcsAdapter implements VcsProvider {
 
     const created = probe('gh', ['pr', 'view', input.head, '--json', 'number,url']);
     const parsed = safeParseJson<{ number?: number; url?: string }>(created);
+    if (!parsed?.number) {
+      throw new Error(`无法确认 PR 创建状态: 未能在分支 "${input.head}" 上查询到已创建的 PR`);
+    }
+
     return Promise.resolve({
-      number: parsed?.number,
-      url: parsed?.url,
+      number: parsed.number,
+      url: parsed.url,
     });
   }
 
   getRequiredCheckNames(baseBranch: string): Promise<string[] | null> {
+    const encodedBranch = encodeURIComponent(baseBranch);
     const raw = probe('gh', [
       'api',
-      `repos/{owner}/{repo}/branches/${baseBranch}/protection`,
+      `repos/{owner}/{repo}/branches/${encodedBranch}/protection`,
       '--jq',
       '.required_status_checks.contexts[]',
     ]);
@@ -188,9 +193,9 @@ export class CliVcsAdapter implements VcsProvider {
         parsed.map((c) => ({
           name: c.name ?? c.context ?? '',
           state: (
-            c.state ??
-            c.conclusion ??
-            c.status ??
+            c.state ||
+            c.conclusion ||
+            c.status ||
             'PENDING'
           ).toUpperCase() as CiCheck['state'],
         })),
@@ -204,17 +209,17 @@ export class CliVcsAdapter implements VcsProvider {
     const args = ['pr', 'merge', input.branch];
     if (input.squash) args.push('--squash');
     if (input.deleteBranch) args.push('--delete-branch');
-    run('gh', args);
+    runOrThrow('gh', args);
     return Promise.resolve();
   }
 
   commentPr(prNumberOrBranch: string, body: string): Promise<void> {
-    run('gh', ['pr', 'comment', prNumberOrBranch, '--body', body]);
+    runOrThrow('gh', ['pr', 'comment', prNumberOrBranch, '--body', body]);
     return Promise.resolve();
   }
 
   showStatus(): Promise<void> {
-    run('gh', ['pr', 'status']);
+    runOrThrow('gh', ['pr', 'status']);
     return Promise.resolve();
   }
 }

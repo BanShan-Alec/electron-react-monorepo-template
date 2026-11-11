@@ -66,6 +66,8 @@ describe('PrWorkflowEngine', () => {
       expect(vcs.pushedBranches).toContain('feat/new-feature');
       expect(vcs.createdPrs).toHaveLength(1);
       expect(vcs.createdPrs[0]?.title).toBe('feat: add new feature');
+      expect(vcs.createdPrs[0]?.body).toContain('Intent description');
+      expect(vcs.createdPrs[0]?.body).toContain('- feat: add new feature');
       expect(result.number).toBe(1);
     });
   });

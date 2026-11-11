@@ -51,7 +51,8 @@ export class ReviewStorage {
         fs.unlinkSync(item.path);
         deletedNames.push(item.name);
       } catch (err: unknown) {
-        console.warn(`   ! 删除 ${item.name} 失败: ${(err as Error).message}`);
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(`   ! 删除 ${item.name} 失败: ${msg}`);
       }
     }
 

@@ -53,6 +53,14 @@ export class InMemoryVcsAdapter implements VcsProvider {
 
   ensureAuth(): void {}
 
+  reset(): void {
+    this.currentPollIndex = 0;
+    this.pushedBranches = [];
+    this.createdPrs = [];
+    this.mergedPrs = [];
+    this.comments = [];
+  }
+
   getBranchContext(): Promise<BranchContext> {
     return Promise.resolve({
       currentBranch: this.currentBranch,
@@ -67,10 +75,15 @@ export class InMemoryVcsAdapter implements VcsProvider {
   }
 
   checkConflict(branch: string, targetBranch: string): Promise<ConflictCheckResult> {
+    const existing =
+      this.existingPr && this.existingPr.headRefName === branch ? this.existingPr : null;
+    const created = this.createdPrs.find((pr) => pr.head === branch);
+    const resolvedTarget = created?.base ?? existing?.baseRefName ?? targetBranch;
+
     return Promise.resolve({
       hasConflict: this.hasConflict,
-      targetBranch,
-      details: this.hasConflict ? `Branch ${branch} conflicts with ${targetBranch}` : undefined,
+      targetBranch: resolvedTarget,
+      details: this.hasConflict ? `Branch ${branch} conflicts with ${resolvedTarget}` : undefined,
     });
   }
 
@@ -78,12 +91,14 @@ export class InMemoryVcsAdapter implements VcsProvider {
     if (this.existingPr && this.existingPr.headRefName === branch) {
       return Promise.resolve(this.existingPr);
     }
-    const foundCreated = this.createdPrs.find((pr) => pr.head === branch);
-    if (foundCreated) {
+    const idx = this.createdPrs.findIndex((pr) => pr.head === branch);
+    if (idx !== -1) {
+      const foundCreated = this.createdPrs[idx]!;
+      const prNumber = idx + 1;
       return Promise.resolve({
-        number: 1,
+        number: prNumber,
         title: foundCreated.title,
-        url: `https://github.com/owner/repo/pull/1`,
+        url: `https://github.com/owner/repo/pull/${prNumber}`,
         baseRefName: foundCreated.base,
         headRefName: foundCreated.head,
         mergeable: this.hasConflict ? 'CONFLICTING' : 'MERGEABLE',

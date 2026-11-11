@@ -20,18 +20,16 @@ export interface PrDetails {
   mergeable?: 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN';
 }
 
+export const CI_CHECK_FAILURE_STATES = ['FAILURE', 'ERROR', 'CANCELLED', 'TIMED_OUT'] as const;
+
+export const CI_CHECK_PENDING_STATES = ['PENDING', 'IN_PROGRESS', 'QUEUED', 'WAITING'] as const;
+
+export type CiCheckFailureState = (typeof CI_CHECK_FAILURE_STATES)[number];
+export type CiCheckPendingState = (typeof CI_CHECK_PENDING_STATES)[number];
+
 export interface CiCheck {
   name: string;
-  state:
-    | 'SUCCESS'
-    | 'FAILURE'
-    | 'ERROR'
-    | 'CANCELLED'
-    | 'TIMED_OUT'
-    | 'PENDING'
-    | 'IN_PROGRESS'
-    | 'QUEUED'
-    | 'WAITING';
+  state: 'SUCCESS' | CiCheckFailureState | CiCheckPendingState;
 }
 
 export interface CheckGateResult {

@@ -1,12 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type {
-  CheckGateResult,
-  CommitSummary,
-  ConflictCheckResult,
-  CreatePrResult,
-  PrDetails,
-  VcsProvider,
+import {
+  type CheckGateResult,
+  CI_CHECK_FAILURE_STATES,
+  CI_CHECK_PENDING_STATES,
+  type CommitSummary,
+  type ConflictCheckResult,
+  type CreatePrResult,
+  type PrDetails,
+  type VcsProvider,
 } from '../ports/vcs-provider.ts';
 import { getRepoRoot } from '../utils/git.ts';
 
@@ -86,9 +88,9 @@ export class PrWorkflowEngine {
 
   private buildBody(commitList: CommitSummary[], intent: string): string {
     const fills: Record<string, string> = {
-      意图: intent || '_（提交里没提取到动机，编辑本节补一句）_',
-      改动: commitList.map((c) => `- ${c.subject}`).join('\n'),
-      人工验证: '- [ ] （列出 CI 查不了的人工验证项；无则删掉本节）',
+      '意图 / Intent': intent || '_（提交里没提取到动机，编辑本节补一句）_',
+      '改动 / Changes': commitList.map((c) => `- ${c.subject}`).join('\n'),
+      '人工验证 / Manual Verification': '- [ ] （列出 CI 查不了的人工验证项；无则删掉本节）',
     };
 
     const templatePath = path.join(this.repoRoot, '.github/PULL_REQUEST_TEMPLATE.md');
@@ -102,19 +104,34 @@ export class PrWorkflowEngine {
     }
 
     if (!template) {
-      return `## 改动 / Changes\n\n${fills.改动}\n\n## 人工验证 / Manual Verification\n\n${fills.人工验证}\n`;
+      return `## 改动 / Changes\n\n${fills['改动 / Changes']}\n\n## 人工验证 / Manual Verification\n\n${fills['人工验证 / Manual Verification']}\n`;
     }
 
+    const lines = template.split('\n');
     const out: string[] = [];
-    for (const line of template.split('\n')) {
-      if (!line.startsWith('## ')) continue;
-      out.push(line, '');
-      const headerTitle = line.replace(/^##\s+/, '').trim();
-      const key = Object.keys(fills).find(
-        (k) => headerTitle.startsWith(k) || headerTitle.includes(k),
-      );
-      if (key) out.push(fills[key] ?? '', '');
+    let pendingFill: string | null = null;
+
+    for (const line of lines) {
+      if (line.startsWith('## ')) {
+        if (pendingFill) {
+          out.push('', pendingFill);
+          pendingFill = null;
+        }
+        out.push(line);
+        const headerTitle = line.replace(/^##\s+/, '').trim();
+        const matchedKey = Object.keys(fills).find(
+          (k) => headerTitle === k || headerTitle.startsWith(k.split(' / ')[0] ?? k),
+        );
+        pendingFill = matchedKey ? (fills[matchedKey] ?? null) : null;
+      } else {
+        out.push(line);
+      }
     }
+
+    if (pendingFill) {
+      out.push('', pendingFill);
+    }
+
     return `${out.join('\n').trim()}\n`;
   }
 
@@ -153,8 +170,9 @@ export class PrWorkflowEngine {
     branchName?: string,
     targetBranchName?: string,
   ): Promise<ConflictCheckResult> {
-    const branch = branchName ?? (await this.vcs.getBranchContext()).currentBranch;
-    const targetBranch = targetBranchName ?? (await this.vcs.getBranchContext()).defaultBranch;
+    const ctx = !branchName || !targetBranchName ? await this.vcs.getBranchContext() : null;
+    const branch = branchName ?? ctx?.currentBranch ?? '';
+    const targetBranch = targetBranchName ?? ctx?.defaultBranch ?? '';
     return this.vcs.checkConflict(branch, targetBranch);
   }
 
@@ -186,7 +204,7 @@ export class PrWorkflowEngine {
       }
 
       const failed = checks.filter((c) =>
-        ['FAILURE', 'ERROR', 'CANCELLED', 'TIMED_OUT'].includes(c.state),
+        (CI_CHECK_FAILURE_STATES as readonly string[]).includes(c.state),
       );
       if (failed.length > 0) {
         const detail = failed.map((c) => `${c.name} (${c.state})`).join(', ');
@@ -194,7 +212,7 @@ export class PrWorkflowEngine {
       }
 
       const pending = checks.filter((c) =>
-        ['PENDING', 'IN_PROGRESS', 'QUEUED', 'WAITING'].includes(c.state),
+        (CI_CHECK_PENDING_STATES as readonly string[]).includes(c.state),
       );
       if (pending.length === 0) {
         this.logger.log(`✓ 所有 required checks 均已通过 (${checks.length} 项)`);
@@ -222,7 +240,7 @@ export class PrWorkflowEngine {
     this.logger.log('→ 检查与目标分支是否存在代码冲突…');
 
     const pr = await this.vcs.getPrForBranch(branch);
-    const targetBranch = pr?.baseRefName || defaultBranch;
+    const targetBranch = pr?.baseRefName ?? defaultBranch;
 
     const conflict = await this.vcs.checkConflict(branch, targetBranch);
     if (conflict.hasConflict) {
