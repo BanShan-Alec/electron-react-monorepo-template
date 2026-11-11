@@ -2,7 +2,7 @@ import { createPr, mergePr, statusPr, triggerReview } from './commands/pr.ts';
 import { runPull } from './commands/pull.ts';
 import { fail } from './utils/process.ts';
 
-function main(): void {
+async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const command = args[0];
 
@@ -12,17 +12,17 @@ function main(): void {
       break;
     case 'trigger':
     case 'review':
-      triggerReview();
+      await triggerReview();
       break;
     case 'create':
     case 'pr':
-      createPr();
+      await createPr();
       break;
     case 'merge':
-      mergePr();
+      await mergePr();
       break;
     case 'status':
-      statusPr();
+      await statusPr();
       break;
     default:
       console.log(`
@@ -42,4 +42,6 @@ function main(): void {
   }
 }
 
-main();
+main().catch((err: unknown) => {
+  fail((err as Error).message);
+});

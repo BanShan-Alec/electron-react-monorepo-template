@@ -1,0 +1,214 @@
+import type {
+  BranchContext,
+  CiCheck,
+  CommitSummary,
+  ConflictCheckResult,
+  CreatePrInput,
+  CreatePrResult,
+  MergePrInput,
+  PrDetails,
+  VcsProvider,
+} from '../ports/vcs-provider.ts';
+import { ensureGhAuth, getCurrentBranch, getDefaultBranch } from '../utils/git.ts';
+import { probe, run, safeParseJson } from '../utils/process.ts';
+
+export class CliVcsAdapter implements VcsProvider {
+  ensureAuth(): void {
+    ensureGhAuth();
+  }
+
+  getBranchContext(): Promise<BranchContext> {
+    const currentBranch = getCurrentBranch();
+    const defaultBranch = getDefaultBranch();
+    const statusOutput = probe('git', ['status', '--porcelain']) ?? '';
+    const uncommittedFiles = statusOutput
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => line.slice(3).trim());
+
+    return Promise.resolve({
+      currentBranch,
+      defaultBranch,
+      isClean: uncommittedFiles.length === 0,
+      uncommittedFiles,
+    });
+  }
+
+  getCommitsAgainst(baseBranch: string): Promise<CommitSummary[]> {
+    run('git', ['fetch', 'origin', baseBranch]);
+    const range = `origin/${baseBranch}..HEAD`;
+    const subjectsRaw = probe('git', ['log', '--reverse', '--format=%H%x09%s', range]) ?? '';
+    if (!subjectsRaw.trim()) {
+      return Promise.resolve([]);
+    }
+
+    const lines = subjectsRaw
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const summaries: CommitSummary[] = lines.map((line) => {
+      const [sha = '', ...rest] = line.split('\t');
+      const subject = rest.join('\t');
+      return { sha, subject, body: '' };
+    });
+
+    if (summaries.length > 0 && summaries[0]) {
+      const firstSha = summaries[0].sha;
+      const body = probe('git', ['log', '-1', '--format=%b', firstSha]) ?? '';
+      summaries[0].body = body;
+    }
+
+    return Promise.resolve(summaries);
+  }
+
+  checkConflict(branch: string, targetBranch: string): Promise<ConflictCheckResult> {
+    const prJson = probe('gh', ['pr', 'view', branch, '--json', 'baseRefName,mergeable']);
+    const prData = safeParseJson<{ baseRefName?: string; mergeable?: string }>(prJson);
+    const resolvedTarget = prData?.baseRefName || targetBranch;
+
+    if (prData?.mergeable === 'CONFLICTING') {
+      return Promise.resolve({
+        hasConflict: true,
+        targetBranch: resolvedTarget,
+        details: 'GitHub 标记该 PR 处于 CONFLICTING 状态',
+      });
+    }
+
+    const mergeTreeResult = probe('git', [
+      'merge-tree',
+      '--write-tree',
+      branch,
+      `origin/${resolvedTarget}`,
+    ]);
+    if (mergeTreeResult === null) {
+      return Promise.resolve({
+        hasConflict: true,
+        targetBranch: resolvedTarget,
+        details: `git merge-tree 预演检测到与 origin/${resolvedTarget} 存在冲突`,
+      });
+    }
+
+    return Promise.resolve({
+      hasConflict: false,
+      targetBranch: resolvedTarget,
+    });
+  }
+
+  getPrForBranch(branch: string): Promise<PrDetails | null> {
+    const raw = probe('gh', [
+      'pr',
+      'view',
+      branch,
+      '--json',
+      'number,title,url,baseRefName,headRefName,mergeable',
+    ]);
+    if (!raw) return Promise.resolve(null);
+
+    const parsed = safeParseJson<{
+      number?: number;
+      title?: string;
+      url?: string;
+      baseRefName?: string;
+      headRefName?: string;
+      mergeable?: 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN';
+    }>(raw);
+
+    if (!parsed?.number) return Promise.resolve(null);
+
+    return Promise.resolve({
+      number: parsed.number,
+      title: parsed.title || '',
+      url: parsed.url || '',
+      baseRefName: parsed.baseRefName || '',
+      headRefName: parsed.headRefName || branch,
+      mergeable: parsed.mergeable,
+    });
+  }
+
+  pushBranch(_branch: string): Promise<void> {
+    run('git', ['push', '-u', 'origin', 'HEAD']);
+    return Promise.resolve();
+  }
+
+  createPr(input: CreatePrInput): Promise<CreatePrResult> {
+    run('gh', [
+      'pr',
+      'create',
+      '--base',
+      input.base,
+      '--head',
+      input.head,
+      '--title',
+      input.title,
+      '--body',
+      input.body,
+    ]);
+
+    const created = probe('gh', ['pr', 'view', input.head, '--json', 'number,url']);
+    const parsed = safeParseJson<{ number?: number; url?: string }>(created);
+    return Promise.resolve({
+      number: parsed?.number,
+      url: parsed?.url,
+    });
+  }
+
+  getRequiredCheckNames(baseBranch: string): Promise<string[] | null> {
+    const raw = probe('gh', [
+      'api',
+      `repos/{owner}/{repo}/branches/${baseBranch}/protection`,
+      '--jq',
+      '.required_status_checks.contexts[]',
+    ]);
+
+    if (raw === null) return Promise.resolve(null);
+    const contexts = raw
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return Promise.resolve(contexts);
+  }
+
+  getChecks(branch: string): Promise<CiCheck[] | null> {
+    const raw = probe('gh', ['pr', 'checks', branch, '--json', 'name,state']);
+    if (raw === null) return Promise.resolve(null);
+
+    try {
+      const parsed = JSON.parse(raw) as Array<{
+        name?: string;
+        context?: string;
+        state?: string;
+        status?: string;
+        conclusion?: string;
+      }>;
+
+      return Promise.resolve(
+        parsed.map((c) => ({
+          name: c.name ?? c.context ?? '',
+          state: (
+            c.state ??
+            c.conclusion ??
+            c.status ??
+            'PENDING'
+          ).toUpperCase() as CiCheck['state'],
+        })),
+      );
+    } catch {
+      return Promise.resolve([]);
+    }
+  }
+
+  mergePr(input: MergePrInput): Promise<void> {
+    const args = ['pr', 'merge', input.branch];
+    if (input.squash) args.push('--squash');
+    if (input.deleteBranch) args.push('--delete-branch');
+    run('gh', args);
+    return Promise.resolve();
+  }
+
+  commentPr(prNumberOrBranch: string, body: string): Promise<void> {
+    run('gh', ['pr', 'comment', prNumberOrBranch, '--body', body]);
+    return Promise.resolve();
+  }
+}
