@@ -15,8 +15,8 @@
 | `pnpm pr-review pull`    | -        | 拉取最新 CI 产物并在 `reviews/` 下生成 `pr-<PR>-round-<N>.md` 看板（分支未关联 PR 时为 `branch-<分支>-round-<N>.md`），自动清理超过 10 轮的旧看板 |
 | `pnpm pr-review trigger` | `review` | 在当前 PR 讨论区自动发表 `/review` 评论（等价于手动评论 `/review` 或 `/ocr`），触发 OpenCodeReview 增量扫描                                       |
 | `pnpm pr-review create`  | `pr`     | 运行前置检查（gh 已认证、工作区干净、非 main 分支），推送特性分支并基于 PR 模板自动创建 Pull Request                                              |
-| `pnpm pr-review status`  | -        | 查看当前仓库 PR 与所有 checks 状态                                                                                                                |
-| `pnpm pr-review merge`   | -        | 先交互确认（`--yes` 跳过），再轮询等待分支保护门禁全绿（15s × 40 次上限），随后 squash 合并并清理远端分支                                         |
+| `pnpm pr-review status`  | -        | 查看当前仓库 PR、所有 checks 及与目标分支的代码冲突状态                                                                                           |
+| `pnpm pr-review merge`   | -        | 快速检测与目标分支无代码冲突（无冲突无需强制同步最新目标分支），交互确认（`--yes` 跳过），轮询等待门禁全绿后 squash 合并并清理远端分支            |
 
 ---
 

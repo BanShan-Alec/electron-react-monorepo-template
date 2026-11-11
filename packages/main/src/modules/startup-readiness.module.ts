@@ -7,7 +7,7 @@ import { broadcast } from './window/window-registry';
 /**
  * 主进程就绪源
  *
- * ModuleRunner 链位在 IPC 模块之后、WindowManager 之前：enable() 完成即代表
+ * ModuleRunner 链位在 IPC 模块之后、HomeWindowModule 之前：enable() 完成即代表
  * 主进程初始化链就绪，此时窗口尚未创建——信号必然先于壳监听器的注册，
  * 故采用"闩锁 + 快照拉取（startup:get-snapshot）+ 单向推送
  * （startup:event:main-ready）"双通道，先到的信号经拉取补发，不丢。

@@ -11,9 +11,7 @@ import { updaterService } from '../../services/updater.service';
 import { getAppConfigStore } from '../config.module';
 import { getLogManager } from '../log.module';
 import { applyTitleBarOverlay, resolveNativeTheme } from '../native-theme.module';
-import { attachDocsEmbedStyle } from './docs-embed';
 import { getTitleBarOverlayOptions, getWindowBackgroundColor } from './titlebar-overlay';
-import { getUpdaterWindowModule } from './updater-window.module';
 import {
   broadcast,
   forgetWindow,
@@ -26,13 +24,13 @@ import { MIN_WINDOW_HEIGHT, MIN_WINDOW_WIDTH, resolveWindowBounds } from './wind
 
 const QUIT_CANCEL_TIMEOUT_MS = 2000;
 
-export interface WindowManagerOptions {
+export interface HomeWindowModuleOptions {
   initConfig: AppInitConfig;
   openDevTools?: boolean;
   keepState?: boolean;
 }
 
-export class WindowManager implements AppModule {
+export class HomeWindowModule implements AppModule {
   private readonly preload: { path: string };
   private readonly renderer: { path: string } | URL;
   private readonly openDevTools: boolean;
@@ -41,7 +39,7 @@ export class WindowManager implements AppModule {
   private closeRequestPending = false;
   private quitAfterCancelPending = false;
 
-  constructor({ initConfig, openDevTools = false, keepState = true }: WindowManagerOptions) {
+  constructor({ initConfig, openDevTools = false, keepState = true }: HomeWindowModuleOptions) {
     this.preload = initConfig.preload;
     this.renderer = initConfig.windows.home;
     this.openDevTools = openDevTools;
@@ -53,17 +51,7 @@ export class WindowManager implements AppModule {
     await this.restoreOrCreateWindow(true);
 
     const handleReactivation = async () => {
-      const homeWin = getWindow(WINDOW_IDS.HOME);
-      if (homeWin) {
-        await this.restoreOrCreateWindow(true);
-      } else {
-        const updaterWin = getWindow(WINDOW_IDS.UPDATER);
-        if (updaterWin) {
-          await getUpdaterWindowModule().show();
-        } else {
-          await this.restoreOrCreateWindow(true);
-        }
-      }
+      await this.restoreOrCreateWindow(true);
     };
     electronApp.on('second-instance', () => handleReactivation());
     electronApp.on('activate', () => handleReactivation());
@@ -136,9 +124,6 @@ export class WindowManager implements AppModule {
     // WCO overlay 初刷：与 backgroundColor 同源同时点（本模块只负责运行时 updated 重刷）
     applyTitleBarOverlay();
 
-    // 文档站 iframe 主题切换器隐藏：只挂 home 窗口，按 frame URL 精确匹配
-    attachDocsEmbedStyle(browserWindow.webContents);
-
     browserWindow.on('closed', () => {
       this.closeRequestPending = false;
       this.closeGuardBypass = false;
@@ -173,9 +158,6 @@ export class WindowManager implements AppModule {
     browserWindow.on('close', (event) => {
       if (appLifecycle.isQuitting) {
         this.closeRequestPending = false;
-        try {
-          getUpdaterWindowModule().destroy();
-        } catch {}
         return;
       }
 
@@ -259,9 +241,6 @@ export class WindowManager implements AppModule {
     } catch (err) {
       logger.warn('Failed to cancel update download before quitting:', err);
     }
-    try {
-      getUpdaterWindowModule().destroy();
-    } catch {}
     app.quit();
   }
 
@@ -287,17 +266,21 @@ export class WindowManager implements AppModule {
   }
 }
 
-let singletonWindowManager: WindowManager | null = null;
+let singletonHomeWindowModule: HomeWindowModule | null = null;
 
-export function getWindowManager(): WindowManager | null {
-  return singletonWindowManager;
+export function getHomeWindowModule(): HomeWindowModule | null {
+  return singletonHomeWindowModule;
 }
 
-export function createWindowManagerModule(
-  ...args: ConstructorParameters<typeof WindowManager>
-): WindowManager {
-  singletonWindowManager = new WindowManager(...args);
-  (globalThis as unknown as { __windowManager?: WindowManager }).__windowManager =
-    singletonWindowManager;
-  return singletonWindowManager;
+export function createHomeWindowModule(
+  ...args: ConstructorParameters<typeof HomeWindowModule>
+): HomeWindowModule {
+  singletonHomeWindowModule = new HomeWindowModule(...args);
+  const globalRef = globalThis as unknown as {
+    __homeWindowModule?: HomeWindowModule;
+    __windowManager?: HomeWindowModule;
+  };
+  globalRef.__homeWindowModule = singletonHomeWindowModule;
+  globalRef.__windowManager = singletonHomeWindowModule;
+  return singletonHomeWindowModule;
 }

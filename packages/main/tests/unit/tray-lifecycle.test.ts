@@ -3,7 +3,7 @@ import { appLifecycle } from '@app/main/lifecycle';
 import { ApplicationTerminatorOnLastWindowClose } from '@app/main/modules/auto-terminate.module';
 import * as configModule from '@app/main/modules/config.module';
 import { TrayManager } from '@app/main/modules/tray.module';
-import * as windowIndexModule from '@app/main/modules/window/index.module';
+import * as homeWindowModule from '@app/main/modules/window/home-window.module';
 import * as windowRegistry from '@app/main/modules/window/window-registry';
 import { WINDOW_IDS } from '@app/shared/constants/windows';
 import type { BrowserWindow } from 'electron';
@@ -82,9 +82,9 @@ describe('Tray & Window Destroy Lifecycle', () => {
       vi.spyOn(windowRegistry, 'getWindow').mockReturnValue(undefined);
 
       const restoreOrCreateWindowMock = vi.fn().mockResolvedValue({} as BrowserWindow);
-      vi.spyOn(windowIndexModule, 'getWindowManager').mockReturnValue({
+      vi.spyOn(homeWindowModule, 'getHomeWindowModule').mockReturnValue({
         restoreOrCreateWindow: restoreOrCreateWindowMock,
-      } as unknown as windowIndexModule.WindowManager);
+      } as unknown as homeWindowModule.HomeWindowModule);
 
       const trayManager = new TrayManager();
       trayManager.restoreMainWindow();

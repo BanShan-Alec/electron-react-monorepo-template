@@ -17,7 +17,7 @@ import { createSentryModule, initMainSentry } from './modules/sentry.module';
 import { disallowMultipleAppInstance } from './modules/single-instance.module';
 import { createStartupReadinessModule } from './modules/startup-readiness.module';
 import { createTrayModule } from './modules/tray.module';
-import { createWindowManagerModule } from './modules/window/index.module';
+import { createHomeWindowModule } from './modules/window/home-window.module';
 import { createUpdaterWindowModule } from './modules/window/updater-window.module';
 import { updaterService } from './services/updater.service';
 
@@ -31,9 +31,9 @@ export async function initApp(initConfig: AppInitConfig) {
     .init(createConfigModule())
     .init(createNativeThemeModule())
     .init(createIPCModule())
-    // 主进程就绪源：链位在 WindowManager 之前，信号先于窗口与壳
+    // 主进程就绪源：链位在 HomeWindowModule 之前，信号先于窗口与壳
     .init(createStartupReadinessModule())
-    .init(createWindowManagerModule({ initConfig }))
+    .init(createHomeWindowModule({ initConfig }))
     .init(createUpdaterWindowModule({ initConfig }))
     .init(createTrayModule())
     .init(disallowMultipleAppInstance())

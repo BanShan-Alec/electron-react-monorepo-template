@@ -1,7 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { ensureGhAuth, getCurrentBranch, getDefaultBranch, getRepoRoot } from '../utils/git.ts';
-import { fail, probe, run, sleepSync } from '../utils/process.ts';
+import {
+  ensureGhAuth,
+  getCurrentBranch,
+  getDefaultBranch,
+  getRepoRoot,
+  hasMergeConflict,
+} from '../utils/git.ts';
+import { fail, probe, run, safeParseJson, sleepSync } from '../utils/process.ts';
 
 const MAIN_BRANCH = process.env.DEFAULT_BRANCH || getDefaultBranch();
 const CHECKS_POLL_INTERVAL_MS = 15_000;
@@ -179,9 +185,32 @@ function printCleanupHint(branch: string): void {
   console.log(`  git branch -d ${branch}`);
 }
 
+function ensureNoConflicts(branch: string): void {
+  console.log('→ 检查与目标分支是否存在代码冲突…');
+  const prJson = probe('gh', ['pr', 'view', branch, '--json', 'baseRefName,mergeable']);
+  const prData = safeParseJson<{ baseRefName?: string; mergeable?: string }>(prJson);
+  const targetBranch = prData?.baseRefName || MAIN_BRANCH;
+
+  if (prData?.mergeable === 'CONFLICTING') {
+    fail(
+      `检测到分支 "${branch}" 与目标分支 "${targetBranch}" 存在代码冲突，请在本地合并或 rebase 目标分支解决冲突并推送后再合并`,
+    );
+  }
+
+  if (hasMergeConflict(branch, targetBranch)) {
+    fail(
+      `检测到分支 "${branch}" 与 "origin/${targetBranch}" 存在代码冲突，请在本地合并或 rebase 目标分支解决冲突并推送后再合并`,
+    );
+  }
+
+  console.log(`✓ 与 origin/${targetBranch} 无代码冲突（无需同步最新目标分支代码）`);
+}
+
 export function mergePr(): void {
   const branch = preflight();
   run('git', ['fetch', 'origin']);
+
+  ensureNoConflicts(branch);
 
   if (!process.argv.includes('--yes')) {
     process.stdout.write(`确认将 ${branch} 合并入 ${MAIN_BRANCH}? (y/N): `);
@@ -209,6 +238,23 @@ export function mergePr(): void {
 export function statusPr(): void {
   ensureGhAuth();
   run('gh', ['pr', 'status']);
+
+  const branch = getCurrentBranch();
+  if (branch && branch !== MAIN_BRANCH && branch !== 'HEAD') {
+    const prJson = probe('gh', ['pr', 'view', branch, '--json', 'baseRefName,mergeable']);
+    const prData = safeParseJson<{ baseRefName?: string; mergeable?: string }>(prJson);
+    const targetBranch = prData?.baseRefName || MAIN_BRANCH;
+
+    if (prData?.mergeable === 'CONFLICTING' || hasMergeConflict(branch, targetBranch)) {
+      console.log(
+        `\n\x1b[33m⚠️ 冲突警告: 当前分支与 origin/${targetBranch} 存在代码冲突，合并前需先解决冲突。\x1b[0m\n`,
+      );
+    } else {
+      console.log(
+        `\n\x1b[32m✓ 冲突状态: 当前分支与 origin/${targetBranch} 无代码冲突（可直接合入，无需每次同步最新目标分支）。\x1b[0m\n`,
+      );
+    }
+  }
 }
 
 export function triggerReview(): void {

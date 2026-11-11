@@ -47,20 +47,22 @@ ipcRenderer.on(
 
 export const apiBridge: ElectronApi = {
   usb: {
-    getDeviceList: (options) => invokeTraced(IPC_CHANNELS.USB_GET_DEVICE_LIST, undefined, options),
+    getDeviceList: (_payload, options) =>
+      invokeTraced(IPC_CHANNELS.USB_GET_DEVICE_LIST, undefined, options),
   },
   system: {
-    ping: (options) => invokeTraced(IPC_CHANNELS.SYSTEM_PING, undefined, options),
-    getSystemInfo: (options) => invokeTraced(IPC_CHANNELS.SYSTEM_GET_INFO, undefined, options),
+    ping: (_payload, options) => invokeTraced(IPC_CHANNELS.SYSTEM_PING, undefined, options),
+    getSystemInfo: (_payload, options) =>
+      invokeTraced(IPC_CHANNELS.SYSTEM_GET_INFO, undefined, options),
     getPlatform: () => process.platform,
   },
   counter: {
-    get: (options) => invokeTraced(IPC_CHANNELS.COUNTER_GET, undefined, options),
+    get: (_payload, options) => invokeTraced(IPC_CHANNELS.COUNTER_GET, undefined, options),
     increment: (input: StepInput | undefined, options?: IpcCallOptions) =>
       invokeTraced(IPC_CHANNELS.COUNTER_INCREMENT, input, options),
     decrement: (input: StepInput | undefined, options?: IpcCallOptions) =>
       invokeTraced(IPC_CHANNELS.COUNTER_DECREMENT, input, options),
-    reset: (options) => invokeTraced(IPC_CHANNELS.COUNTER_RESET, undefined, options),
+    reset: (_payload, options) => invokeTraced(IPC_CHANNELS.COUNTER_RESET, undefined, options),
   },
   calculator: {
     calculate: (input: CalculateInput, options) =>
@@ -74,15 +76,16 @@ export const apiBridge: ElectronApi = {
         ipcRenderer.removeListener(IPC_CHANNELS.WINDOW_CLOSE_REQUESTED, listener);
       };
     },
-    closeReady: () => invokeTraced(IPC_CHANNELS.WINDOW_CLOSE_READY),
-    closeRespond: (choice: CloseBehaviorChoice) =>
-      invokeTraced(IPC_CHANNELS.WINDOW_CLOSE_RESPOND, choice),
+    closeReady: (_payload, options) =>
+      invokeTraced(IPC_CHANNELS.WINDOW_CLOSE_READY, undefined, options),
+    closeRespond: (choice: CloseBehaviorChoice, options) =>
+      invokeTraced(IPC_CHANNELS.WINDOW_CLOSE_RESPOND, choice, options),
   },
   config: {
-    get: (options) => invokeTraced(IPC_CHANNELS.CONFIG_GET, undefined, options),
+    get: (_payload, options) => invokeTraced(IPC_CHANNELS.CONFIG_GET, undefined, options),
     update: (input: UpdateConfigInput, options) =>
       invokeTraced(IPC_CHANNELS.CONFIG_UPDATE, input, options),
-    reset: (options) => invokeTraced(IPC_CHANNELS.CONFIG_RESET, undefined, options),
+    reset: (_payload, options) => invokeTraced(IPC_CHANNELS.CONFIG_RESET, undefined, options),
     onChanged: (cb: (config: AppConfig) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, config: AppConfig) => cb(config);
       ipcRenderer.on(IPC_CHANNELS.CONFIG_EVENT_CHANGED, listener);
@@ -93,7 +96,7 @@ export const apiBridge: ElectronApi = {
   },
   diagnostics: {
     log: (input: LogInput, options) => invokeTraced(IPC_CHANNELS.DIAGNOSTICS_LOG, input, options),
-    openLogFolder: (options) =>
+    openLogFolder: (_payload, options) =>
       invokeTraced(IPC_CHANNELS.DIAGNOSTICS_OPEN_LOG_FOLDER, undefined, options),
     performAction: (input: PerformActionInput, options) =>
       invokeTraced(IPC_CHANNELS.DIAGNOSTICS_PERFORM_ACTION, input, options),
@@ -113,13 +116,17 @@ export const apiBridge: ElectronApi = {
       invokeTraced(IPC_CHANNELS.SHELL_OPEN_EXTERNAL, url, options),
   },
   updater: {
-    getState: (options) => invokeTraced(IPC_CHANNELS.UPDATER_GET_STATE, undefined, options),
-    check: (options) => invokeTraced(IPC_CHANNELS.UPDATER_CHECK, undefined, options),
-    download: (options) => invokeTraced(IPC_CHANNELS.UPDATER_DOWNLOAD, undefined, options),
-    cancel: (options) => invokeTraced(IPC_CHANNELS.UPDATER_CANCEL, undefined, options),
-    install: (options) => invokeTraced(IPC_CHANNELS.UPDATER_INSTALL, undefined, options),
-    openWindow: (options) => invokeTraced(IPC_CHANNELS.UPDATER_OPEN_WINDOW, undefined, options),
-    closeWindow: (options) => invokeTraced(IPC_CHANNELS.UPDATER_CLOSE_WINDOW, undefined, options),
+    getState: (_payload, options) =>
+      invokeTraced(IPC_CHANNELS.UPDATER_GET_STATE, undefined, options),
+    check: (_payload, options) => invokeTraced(IPC_CHANNELS.UPDATER_CHECK, undefined, options),
+    download: (_payload, options) =>
+      invokeTraced(IPC_CHANNELS.UPDATER_DOWNLOAD, undefined, options),
+    cancel: (_payload, options) => invokeTraced(IPC_CHANNELS.UPDATER_CANCEL, undefined, options),
+    install: (_payload, options) => invokeTraced(IPC_CHANNELS.UPDATER_INSTALL, undefined, options),
+    openWindow: (_payload, options) =>
+      invokeTraced(IPC_CHANNELS.UPDATER_OPEN_WINDOW, undefined, options),
+    closeWindow: (_payload, options) =>
+      invokeTraced(IPC_CHANNELS.UPDATER_CLOSE_WINDOW, undefined, options),
     onStateChanged: (cb: (s: UpdaterSnapshot) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, s: UpdaterSnapshot) => cb(s);
       ipcRenderer.on(IPC_CHANNELS.UPDATER_EVENT_STATE, listener);

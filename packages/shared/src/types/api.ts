@@ -21,18 +21,18 @@ import type { UsbDeviceItem } from './usb';
  */
 export interface ElectronApi {
   usb: {
-    getDeviceList: (options?: IpcCallOptions) => Promise<Result<UsbDeviceItem[]>>;
+    getDeviceList: (_payload?: void, options?: IpcCallOptions) => Promise<Result<UsbDeviceItem[]>>;
   };
   system: {
-    ping: (options?: IpcCallOptions) => Promise<Result<PingResult>>;
-    getSystemInfo: (options?: IpcCallOptions) => Promise<Result<SystemInfo>>;
+    ping: (_payload?: void, options?: IpcCallOptions) => Promise<Result<PingResult>>;
+    getSystemInfo: (_payload?: void, options?: IpcCallOptions) => Promise<Result<SystemInfo>>;
     getPlatform: () => string;
   };
   counter: {
-    get: (options?: IpcCallOptions) => Promise<Result<CounterResult>>;
+    get: (_payload?: void, options?: IpcCallOptions) => Promise<Result<CounterResult>>;
     increment: (input?: StepInput, options?: IpcCallOptions) => Promise<Result<CounterResult>>;
     decrement: (input?: StepInput, options?: IpcCallOptions) => Promise<Result<CounterResult>>;
-    reset: (options?: IpcCallOptions) => Promise<Result<CounterResult>>;
+    reset: (_payload?: void, options?: IpcCallOptions) => Promise<Result<CounterResult>>;
   };
   calculator: {
     calculate: (
@@ -42,18 +42,27 @@ export interface ElectronApi {
   };
   window: {
     onCloseRequested: (cb: () => void) => () => void;
-    closeReady: () => Promise<Result<{ success: boolean }>>;
-    closeRespond: (choice: CloseBehaviorChoice) => Promise<Result<{ success: boolean }>>;
+    closeReady: (
+      _payload?: void,
+      options?: IpcCallOptions,
+    ) => Promise<Result<{ success: boolean }>>;
+    closeRespond: (
+      choice: CloseBehaviorChoice,
+      options?: IpcCallOptions,
+    ) => Promise<Result<{ success: boolean }>>;
   };
   config: {
-    get: (options?: IpcCallOptions) => Promise<Result<AppConfig>>;
+    get: (_payload?: void, options?: IpcCallOptions) => Promise<Result<AppConfig>>;
     update: (input: UpdateConfigInput, options?: IpcCallOptions) => Promise<Result<AppConfig>>;
-    reset: (options?: IpcCallOptions) => Promise<Result<AppConfig>>;
+    reset: (_payload?: void, options?: IpcCallOptions) => Promise<Result<AppConfig>>;
     onChanged?: (cb: (config: AppConfig) => void) => () => void;
   };
   diagnostics: {
     log: (input: LogInput, options?: IpcCallOptions) => Promise<Result<{ success: boolean }>>;
-    openLogFolder: (options?: IpcCallOptions) => Promise<Result<OpenLogFolderResult>>;
+    openLogFolder: (
+      _payload?: void,
+      options?: IpcCallOptions,
+    ) => Promise<Result<OpenLogFolderResult>>;
     performAction: (
       input: PerformActionInput,
       options?: IpcCallOptions,
@@ -81,13 +90,19 @@ export interface ElectronApi {
     openExternal: (url: string, options?: IpcCallOptions) => Promise<Result<{ success: boolean }>>;
   };
   updater: {
-    getState: (options?: IpcCallOptions) => Promise<Result<UpdaterSnapshot>>;
-    check: (options?: IpcCallOptions) => Promise<Result<UpdaterSnapshot>>;
-    download: (options?: IpcCallOptions) => Promise<Result<UpdaterSnapshot>>;
-    cancel: (options?: IpcCallOptions) => Promise<Result<UpdaterSnapshot>>;
-    install: (options?: IpcCallOptions) => Promise<Result<{ success: boolean }>>;
-    openWindow: (options?: IpcCallOptions) => Promise<Result<{ success: boolean }>>;
-    closeWindow: (options?: IpcCallOptions) => Promise<Result<{ success: boolean }>>;
+    getState: (_payload?: void, options?: IpcCallOptions) => Promise<Result<UpdaterSnapshot>>;
+    check: (_payload?: void, options?: IpcCallOptions) => Promise<Result<UpdaterSnapshot>>;
+    download: (_payload?: void, options?: IpcCallOptions) => Promise<Result<UpdaterSnapshot>>;
+    cancel: (_payload?: void, options?: IpcCallOptions) => Promise<Result<UpdaterSnapshot>>;
+    install: (_payload?: void, options?: IpcCallOptions) => Promise<Result<{ success: boolean }>>;
+    openWindow: (
+      _payload?: void,
+      options?: IpcCallOptions,
+    ) => Promise<Result<{ success: boolean }>>;
+    closeWindow: (
+      _payload?: void,
+      options?: IpcCallOptions,
+    ) => Promise<Result<{ success: boolean }>>;
     /** 返回取消订阅函数，渲染层必须在 useEffect cleanup 中调用 */
     onStateChanged: (cb: (s: UpdaterSnapshot) => void) => () => void;
     onProgressChanged: (cb: (p: UpdaterProgress) => void) => () => void;

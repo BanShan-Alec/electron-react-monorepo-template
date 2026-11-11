@@ -124,7 +124,7 @@ export function useTheme() {
 
 ### 首帧链：窗口创建时显式传参
 
-→ 源码：[packages/main/src/modules/window/index.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/index.module.ts)
+→ 源码：[packages/main/src/modules/window/home-window.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/window/home-window.module.ts)
 
 首帧不靠模块装配顺序，也不靠渲染层猜测：创建窗口时读持久偏好 → `resolveNativeTheme()` 幂等同步 `nativeTheme.themeSource` 并解析出具体明暗 → `backgroundColor` 与 win32 WCO overlay 构造项用同一解析值 → `loadFile/loadURL` 携带 `?theme=light|dark` query（键为 shared 的 `STARTUP_THEME_QUERY_KEY`）。两个入口（home / updater）用同一段内联脚本消费 query 预置 `data-theme`——**刻意不读 `prefers-color-scheme`**，杜绝与持久偏好不一致时的闪烁；entry tsx 在 React 挂载前幂等 re-assert 并提前挂 `css-var-app`。此后 `config.get` 回填持久值，交给运行时链路接管。
 

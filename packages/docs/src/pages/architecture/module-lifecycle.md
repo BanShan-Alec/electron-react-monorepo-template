@@ -39,7 +39,7 @@ flowchart LR
 
   subgraph windows["窗口与系统生命周期"]
     direction TB
-    WIN["createWindowManagerModule()<br/>主窗口"]
+    WIN["createHomeWindowModule()<br/>主窗口"]
     UPDATER_WIN["createUpdaterWindowModule()<br/>更新窗口"]
     TRAY["createTrayModule()<br/>系统托盘"]
     SINGLE["disallowMultipleAppInstance()<br/>单实例锁"]
@@ -133,9 +133,9 @@ const moduleRunner = createModuleRunner()
   .init(createConfigModule())
   .init(createNativeThemeModule())
   .init(createIPCModule())
-  // 主进程就绪源：链位在 WindowManager 之前，信号先于窗口与壳
+  // 主进程就绪源：链位在 HomeWindowModule 之前，信号先于窗口与壳
   .init(createStartupReadinessModule())
-  .init(createWindowManagerModule({ initConfig }))
+  .init(createHomeWindowModule({ initConfig }))
   .init(createUpdaterWindowModule({ initConfig }))
   .init(createTrayModule())
   .init(disallowMultipleAppInstance())
@@ -163,7 +163,7 @@ await moduleRunner;
 ## 3. 桌面端避坑注意事项
 
 - **模块装配顺序具有强因果依赖**：
-  - 例如日志模块（`LogModule`）必须最先装配，确保后续所有模块初始化异常均可被捕获落盘；`StartupReadinessModule` 必须先于 `WindowManagerModule`，确保窗口渲染前就绪信号已完成就绪。
+  - 例如日志模块（`LogModule`）必须最先装配，确保后续所有模块初始化异常均可被捕获落盘；`StartupReadinessModule` 必须先于 `HomeWindowModule`，确保窗口渲染前就绪信号已完成就绪。
 - **职责边界隔离（`modules/` vs `services/`）**：
   - `modules/` 仅承载横向基础设施与原生系统生命周期切片（如窗口、托盘、系统原生主题）；垂直业务逻辑一律归属于 `services/`，严禁在 `modules/` 中书写业务处理分支。
 - **初始化异常阻断与 app.exit(1) 防僵尸驻留**：

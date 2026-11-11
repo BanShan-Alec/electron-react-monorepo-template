@@ -10,7 +10,7 @@ import type { ModuleContext } from '../ModuleContext';
 import { updaterService } from '../services/updater.service';
 import { getAppConfigStore } from './config.module';
 import { getLogManager } from './log.module';
-import { getWindowManager } from './window/index.module';
+import { getHomeWindowModule } from './window/home-window.module';
 import { getUpdaterWindowModule } from './window/updater-window.module';
 import { getWindow } from './window/window-registry';
 
@@ -135,9 +135,9 @@ export class TrayManager implements AppModule {
       win.show();
       win.focus();
     } else {
-      const windowManager = getWindowManager();
-      if (windowManager) {
-        windowManager.restoreOrCreateWindow(true).catch((err) => {
+      const homeWindow = getHomeWindowModule();
+      if (homeWindow) {
+        homeWindow.restoreOrCreateWindow(true).catch((err) => {
           this.logger.error('Failed to restoreOrCreateWindow from tray:', err);
         });
       }

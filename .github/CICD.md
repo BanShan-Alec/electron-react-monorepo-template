@@ -99,6 +99,9 @@ GitHub Actions 流水线（`.github/workflows/ci.yml`）：
 
 分支保护要求所有变更经 PR、squash 合并、以上五个 check 全绿才可合入——`main` 上每个提交都对应一个完整 PR，回滚与 changelog 都以 PR 为单位。
 
+> [!TIP]
+> **无冲突快速合入机制**：主干分支保护已关闭严格最新要求（`strict: false`）。只要当前 PR 与目标分支无代码冲突且 5 项门禁全部通过，即可直接合并；不再强制要求每次合并前必须先拉取或 rebase 最新的 `main` 分支代码，大幅降低多 PR 并行时的串行等待成本。
+
 ---
 
 ## 🚀 4. 发版 SOP（changelogen + tag 驱动）
