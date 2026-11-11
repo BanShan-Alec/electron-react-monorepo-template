@@ -189,20 +189,9 @@ export function getLatestRunInfo(
 
 export function fetchOcrResult(runId: string, cacheDir: string): OcrResult {
   const runCacheDir = path.join(cacheDir, String(runId));
-  if (!fs.existsSync(runCacheDir)) {
-    fs.mkdirSync(runCacheDir, { recursive: true });
-  }
-
-  console.log(`→ 正在从 GitHub Actions 下载 Review 产物 (Run ID: ${runId})...`);
-  const downloadResult = spawnSync('gh', ['run', 'download', runId, '-D', runCacheDir], {
-    encoding: 'utf-8',
-  });
-
-  if (downloadResult.status !== 0) {
-    throw new Error(`下载 Review 产物失败: ${downloadResult.stderr || downloadResult.stdout}`);
-  }
 
   const findResultFile = (dir: string): string | null => {
+    if (!fs.existsSync(dir)) return null;
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
@@ -215,6 +204,34 @@ export function fetchOcrResult(runId: string, cacheDir: string): OcrResult {
     }
     return null;
   };
+
+  // 1. 若当前运行已缓存有效 ocr-result.json，直接复用，避免重复网络下载与 zip 解压冲突
+  const existingJsonPath = findResultFile(runCacheDir);
+  if (existingJsonPath && fs.existsSync(existingJsonPath)) {
+    try {
+      const raw = fs.readFileSync(existingJsonPath, 'utf-8');
+      if (raw.trim()) {
+        return JSON.parse(raw) as OcrResult;
+      }
+    } catch {
+      // 损坏则继续重新拉取
+    }
+  }
+
+  // 2. 重新下载前清理目录，防止 gh run download 解压报 "openat ocr-result.json: file exists"
+  if (fs.existsSync(runCacheDir)) {
+    fs.rmSync(runCacheDir, { recursive: true, force: true });
+  }
+  fs.mkdirSync(runCacheDir, { recursive: true });
+
+  console.log(`→ 正在从 GitHub Actions 下载 Review 产物 (Run ID: ${runId})...`);
+  const downloadResult = spawnSync('gh', ['run', 'download', runId, '-D', runCacheDir], {
+    encoding: 'utf-8',
+  });
+
+  if (downloadResult.status !== 0) {
+    throw new Error(`下载 Review 产物失败: ${downloadResult.stderr || downloadResult.stdout}`);
+  }
 
   const jsonPath = findResultFile(runCacheDir);
   if (!jsonPath || !fs.existsSync(jsonPath)) {
