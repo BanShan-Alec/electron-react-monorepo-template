@@ -1,4 +1,4 @@
-import { ErrorCode } from '@app/shared/constants/error-codes';
+import { ErrorCode, type ErrorCodeType } from '@app/shared/constants/error-codes';
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import { APP_FEATURES, buildSentryTags, SENTRY_TAGS } from '@app/shared/constants/telemetry';
 import { WINDOW_IDS } from '@app/shared/constants/windows';
@@ -21,7 +21,6 @@ import { mainMessage } from '../i18n';
 import { getAppConfigStore } from '../modules/config.module';
 import { getLogManager } from '../modules/log.module';
 import { getWindow, sendToWindow } from '../modules/window/window-registry';
-import { classifyUpdaterError } from './updater-classify';
 
 function isOtaSentryEnabled(): boolean {
   if (isTest || !isPackaged) return false;
@@ -97,6 +96,18 @@ export class UpdaterService {
 
   private windowDelegate: { show: () => Promise<unknown>; close?: () => void } | null = null;
   private userDismissedWindow = false;
+  private readonly customUpdater?: AppUpdater;
+
+  private classifyError(err: unknown, fallback: ErrorCodeType): ErrorCodeType {
+    if (err instanceof AppError) {
+      return err.code as ErrorCodeType;
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes('net::ERR_')) {
+      return ErrorCode.UPDATER_NETWORK_ERROR;
+    }
+    return fallback;
+  }
 
   private async withSentry(
     action: (sentry: typeof import('@sentry/electron/main')) => Promise<unknown> | unknown,
@@ -163,7 +174,8 @@ export class UpdaterService {
     }
   }
 
-  constructor() {
+  constructor(customUpdater?: AppUpdater) {
+    this.customUpdater = customUpdater;
     this.initElectronUpdater();
   }
 
@@ -180,12 +192,15 @@ export class UpdaterService {
   }
 
   private getAutoUpdater(): AppUpdater {
+    if (this.customUpdater) {
+      return this.customUpdater;
+    }
     const { autoUpdater } = electronUpdater;
     return autoUpdater;
   }
 
   private initElectronUpdater(): void {
-    if (isTest) {
+    if (isTest && !this.customUpdater) {
       return;
     }
 
@@ -300,7 +315,7 @@ export class UpdaterService {
         const wasDownloading = this.snapshot.state === 'downloading';
         this.snapshot.state = 'error';
         this.snapshot.error = err ? err.message : 'Unknown updater error';
-        this.snapshot.code = classifyUpdaterError(
+        this.snapshot.code = this.classifyError(
           err,
           wasDownloading ? ErrorCode.UPDATER_DOWNLOAD_FAILED : ErrorCode.UPDATER_CHECK_FAILED,
         );
@@ -336,7 +351,7 @@ export class UpdaterService {
     this.snapshot.progress = null;
     this.emitState();
 
-    if (isTest) {
+    if (isTest && !this.customUpdater) {
       return this.getSnapshot();
     }
 
@@ -364,7 +379,7 @@ export class UpdaterService {
     }
 
     // 仅在未打包形态下检查仓库配置（已打包状态直接由 electron-updater 读取 resources/app-update.yml）
-    if (!isPackaged) {
+    if (!isPackaged && !this.customUpdater) {
       const { owner, repo } = bundledRepository;
       if (!owner || !repo) {
         this.logger.warn(
@@ -400,7 +415,7 @@ export class UpdaterService {
       }
       return this.getSnapshot();
     } catch (err) {
-      const code = classifyUpdaterError(err, ErrorCode.UPDATER_CHECK_FAILED);
+      const code = this.classifyError(err, ErrorCode.UPDATER_CHECK_FAILED);
       this.snapshot.state = 'error';
       this.snapshot.error = err instanceof Error ? err.message : String(err);
       this.snapshot.code = code;
@@ -474,7 +489,7 @@ export class UpdaterService {
     this.snapshot.code = null;
     this.emitState();
 
-    if (isTest) {
+    if (isTest && !this.customUpdater) {
       return this.getSnapshot();
     }
 
@@ -516,7 +531,7 @@ export class UpdaterService {
         this.logger.info('Download cancelled by token');
         return this.getSnapshot();
       }
-      const code = classifyUpdaterError(err, ErrorCode.UPDATER_DOWNLOAD_FAILED);
+      const code = this.classifyError(err, ErrorCode.UPDATER_DOWNLOAD_FAILED);
       this.snapshot.state = 'error';
       this.snapshot.error = err instanceof Error ? err.message : String(err);
       this.snapshot.code = code;
