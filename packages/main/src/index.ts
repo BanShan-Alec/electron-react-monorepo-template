@@ -55,11 +55,11 @@ export async function initApp(initConfig: AppInitConfig) {
         ),
       ),
     )
-    .init(allowExternalUrls(new Set(ALLOWED_EXTERNAL_URLS)))
-    // 链尾封板：所有前序同步/异步模块就绪完毕后向存活窗口广播就绪信号
-    .init(startupReadiness.finalize());
+    .init(allowExternalUrls(new Set(ALLOWED_EXTERNAL_URLS)));
 
   await moduleRunner;
+  // 所有同步/异步模块（含异步窗口创建与注册）均已完成后再广播就绪事件
+  startupReadiness.markReady();
 
   // 应用就绪后若开启自动更新则延迟执行后台静默检查
   try {

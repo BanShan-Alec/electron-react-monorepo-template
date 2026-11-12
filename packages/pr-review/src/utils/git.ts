@@ -55,16 +55,3 @@ export function getDefaultBranch(): string {
 export function getHeadSha(): string {
   return probe('git', ['rev-parse', 'HEAD']) || 'HEAD';
 }
-
-/**
- * 校验指定分支与目标分支（默认 origin/main）是否存在代码合并冲突。
- * 基于 `git merge-tree --write-tree` 在内存中预演三方合并，毫秒级响应且不触碰/污染工作区与 index。
- * @returns true 表示存在冲突，false 表示可无冲突合并。
- */
-export function hasMergeConflict(
-  branch: string,
-  targetBranch: string = getDefaultBranch(),
-): boolean {
-  const result = probe('git', ['merge-tree', '--write-tree', branch, `origin/${targetBranch}`]);
-  return result === null;
-}

@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CliVcsAdapter } from '../../src/adapters/cli-vcs.ts';
 import { InMemoryVcsAdapter } from '../../src/adapters/in-memory-vcs.ts';
+import * as processUtils from '../../src/utils/process.ts';
 
 describe('InMemoryVcsAdapter', () => {
   it('provides configured branch context and commits', async () => {
@@ -75,5 +77,81 @@ describe('InMemoryVcsAdapter', () => {
 
     const conflict = await vcs.checkConflict('feat/conflict', 'main');
     expect(conflict.hasConflict).toBe(true);
+  });
+});
+
+describe('CliVcsAdapter.checkConflict', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('returns hasConflict=false when git merge-tree exits with 0', async () => {
+    vi.spyOn(processUtils, 'runOrThrow').mockImplementation(() => {});
+    vi.spyOn(processUtils, 'probe').mockReturnValue(
+      JSON.stringify({ baseRefName: 'main', mergeable: 'MERGEABLE' }),
+    );
+    vi.spyOn(processUtils, 'probeRaw').mockReturnValue({
+      status: 0,
+      stdout: 'tree-sha',
+      stderr: '',
+    });
+
+    const vcs = new CliVcsAdapter();
+    const result = await vcs.checkConflict('feat/clean', 'main');
+
+    expect(result).toEqual({
+      hasConflict: false,
+      targetBranch: 'main',
+    });
+  });
+
+  it('returns hasConflict=true when git merge-tree exits with 1', async () => {
+    vi.spyOn(processUtils, 'runOrThrow').mockImplementation(() => {});
+    vi.spyOn(processUtils, 'probe').mockReturnValue(
+      JSON.stringify({ baseRefName: 'main', mergeable: 'UNKNOWN' }),
+    );
+    vi.spyOn(processUtils, 'probeRaw').mockReturnValue({
+      status: 1,
+      stdout: 'CONFLICT (content): Merge conflict in foo.ts',
+      stderr: '',
+    });
+
+    const vcs = new CliVcsAdapter();
+    const result = await vcs.checkConflict('feat/conflict', 'main');
+
+    expect(result.hasConflict).toBe(true);
+    expect(result.targetBranch).toBe('main');
+    expect(result.details).toContain('git merge-tree');
+  });
+
+  it('throws when git merge-tree fails with unexpected exit code such as 128', async () => {
+    vi.spyOn(processUtils, 'runOrThrow').mockImplementation(() => {});
+    vi.spyOn(processUtils, 'probe').mockReturnValue(null);
+    vi.spyOn(processUtils, 'probeRaw').mockReturnValue({
+      status: 128,
+      stdout: '',
+      stderr: 'fatal: Not a valid object name origin/main',
+    });
+
+    const vcs = new CliVcsAdapter();
+    await expect(vcs.checkConflict('feat/invalid', 'main')).rejects.toThrow(
+      'git merge-tree 冲突检测异常失败 (退出码 128)',
+    );
+  });
+
+  it('throws when git merge-tree cannot be spawned', async () => {
+    vi.spyOn(processUtils, 'runOrThrow').mockImplementation(() => {});
+    vi.spyOn(processUtils, 'probe').mockReturnValue(null);
+    vi.spyOn(processUtils, 'probeRaw').mockReturnValue({
+      status: null,
+      stdout: '',
+      stderr: '',
+      error: new Error('spawnSync git ENOENT'),
+    });
+
+    const vcs = new CliVcsAdapter();
+    await expect(vcs.checkConflict('feat/enoent', 'main')).rejects.toThrow(
+      '无法执行 git merge-tree 冲突检测: spawnSync git ENOENT',
+    );
   });
 });

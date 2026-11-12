@@ -58,21 +58,4 @@ describe('StartupReadinessModule', () => {
     expect(broadcastSpy).toHaveBeenCalledTimes(1);
     expect(module.getSnapshot().payload).toEqual(firstPayload);
   });
-
-  it('finalize() returns an AppModule that triggers markReady', () => {
-    const module = new StartupReadinessModule();
-    const finalizer = module.finalize();
-
-    expect(module.getSnapshot().mainReady).toBe(false);
-    finalizer.enable({} as any);
-
-    expect(module.getSnapshot().mainReady).toBe(true);
-    expect(broadcastSpy).toHaveBeenCalledWith(
-      IPC_CHANNELS.STARTUP_EVENT_MAIN_READY,
-      expect.objectContaining({
-        initMs: expect.any(Number),
-        latchedAt: expect.any(Number),
-      }),
-    );
-  });
 });
