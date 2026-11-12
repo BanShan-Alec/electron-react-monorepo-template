@@ -34,6 +34,13 @@ const config: Configuration = {
   // biome-ignore lint/suspicious/noTemplateCurlyInString: electron-builder placeholder
   artifactName: '${name}-${version}-${os}-${arch}.${ext}',
   asarUnpack: ['**/*.node'],
+  electronFuses: {
+    runAsNode: false,
+    enableNodeOptionsEnvironmentVariable: false,
+    onlyLoadAppFromAsar: true,
+    enableEmbeddedAsarIntegrityValidation: true,
+    resetAdHocDarwinSignature: true,
+  },
   generateUpdatesFilesForAllChannels: true,
   files: [
     'LICENSE*',
@@ -77,6 +84,20 @@ pnpm build:win       # 打包 Windows NSIS 安装包
 pnpm build:mac       # 打包 macOS dmg / zip
 pnpm build:linux     # 打包 Linux deb 安装包
 ```
+
+### Electron Fuses 二进制熔丝加固
+
+打包配置通过 `electronFuses` 在构建期固化运行期熔丝位，防止打包后的可执行文件被滥用或误加载外部未校验目录：
+
+| Fuse 选项                               | 配置值  | 作用与无签名边界                                                                                                            |
+| :-------------------------------------- | :------ | :-------------------------------------------------------------------------------------------------------------------------- |
+| `runAsNode`                             | `false` | 禁止通过 `ELECTRON_RUN_AS_NODE=1` 将客户端当作通用 Node 运行器执行外部脚本。                                                |
+| `enableNodeOptionsEnvironmentVariable`  | `false` | 忽略 `NODE_OPTIONS` 与 `NODE_EXTRA_CA_CERTS` 环境变量注入。                                                                 |
+| `onlyLoadAppFromAsar`                   | `true`  | 强制仅从 `app.asar` 启动，封死删除 `app.asar` 后回退加载 `resources/app/` 目录的绕过路径。                                  |
+| `enableEmbeddedAsarIntegrityValidation` | `true`  | 在 Windows / macOS 上校验 `app.asar` 头部与分块 SHA-256（Linux 不生效；防损坏即开即用，完整防恶意篡改需搭配 OS 代码签名）。 |
+| `resetAdHocDarwinSignature`             | `true`  | 在无 Apple 开发者证书场景下，保证 macOS `arm64` 修改 Fuse 位后重签 ad-hoc 签名不拒启。                                      |
+
+> **刻意保留默认值的选项**：`enableNodeCliInspectArguments` 暂未关闭，因 [verify-postbuild.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/verify-postbuild.ts) 依赖 Playwright `electron.launch()`（内部注入 `--inspect=0`）做产物冒烟；`enableCookieEncryption` 在无签名 macOS 下重打包会触发 Keychain 弹窗且为单向迁移。下游接入正式代码签名发商业包时，可按需开启这两项并同步改造冒烟脚本。
 
 ## 3. 桌面端避坑注意事项
 
