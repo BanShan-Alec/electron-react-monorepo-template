@@ -419,6 +419,7 @@ html.mermaid-zoom-open body {
 /* #endregion */
 
 /* #region iframe 嵌入态自适应：隐藏自带的主题切换器（侧栏底部 + 移动端导航） */
+/* 注：aria-label="Theme selection" 与 data-v-sidebar-footer-content 源自 Vocs Layout.client 渲染输出，升级 Vocs 时需回归确认 */
 html.is-embedded [aria-label="Theme selection"],
 html.is-embedded [data-v-sidebar-footer-content] [role="radiogroup"] {
   display: none !important;

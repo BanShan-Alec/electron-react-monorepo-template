@@ -57,7 +57,7 @@ flowchart LR
 
   subgraph finalize["启动就绪封板"]
     direction TB
-    READY_FIN["startupReadiness.finalize()<br/>全模块就绪后广播"]
+    READY_FIN["await moduleRunner 完成后<br/>startupReadiness.markReady() 广播"]
   end
 
   foundation --> runtime
@@ -163,17 +163,17 @@ const moduleRunner = createModuleRunner()
       ),
     ),
   )
-  .init(allowExternalUrls(new Set(ALLOWED_EXTERNAL_URLS)))
-  // 链尾封板：所有同步/异步模块就绪完毕后广播就绪信号
-  .init(startupReadiness.finalize());
+  .init(allowExternalUrls(new Set(ALLOWED_EXTERNAL_URLS)));
 
 await moduleRunner;
+// 所有同步/异步模块（含异步窗口注册）就绪完毕后广播就绪信号
+startupReadiness.markReady();
 ```
 
 ## 3. 桌面端避坑注意事项
 
 - **模块装配顺序具有强因果依赖**：
-  - 例如日志模块（`LogModule`）必须最先装配，确保后续所有模块初始化异常均可被捕获落盘；`StartupReadinessModule` 在 IPC 后挂载注册通道，并在链尾通过 `finalize()` 封板广播，确保窗口先开不白屏、所有后台任务完成才揭幕。
+  - 例如日志模块（`LogModule`）必须最先装配，确保后续所有模块初始化异常均可被捕获落盘；`StartupReadinessModule` 在 IPC 后挂载注册通道，并在 `await moduleRunner` 完成后通过 `markReady()` 封板广播，确保窗口先开不白屏、所有后台任务完成才揭幕。
 - **职责边界隔离（`modules/` vs `services/`）**：
   - `modules/` 仅承载横向基础设施与原生系统生命周期切片（如窗口、托盘、系统原生主题）；垂直业务逻辑一律归属于 `services/`，严禁在 `modules/` 中书写业务处理分支。
 - **初始化异常阻断与 app.exit(1) 防僵尸驻留**：

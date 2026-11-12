@@ -10,7 +10,7 @@ import type {
   VcsProvider,
 } from '../ports/vcs-provider.ts';
 import { ensureGhAuth, getCurrentBranch, getDefaultBranch } from '../utils/git.ts';
-import { probe, runOrThrow, safeParseJson } from '../utils/process.ts';
+import { probe, probeRaw, runOrThrow, safeParseJson } from '../utils/process.ts';
 
 export class CliVcsAdapter implements VcsProvider {
   ensureAuth(): void {
@@ -77,18 +77,31 @@ export class CliVcsAdapter implements VcsProvider {
       });
     }
 
-    const mergeTreeResult = probe('git', [
+    const mergeTreeResult = probeRaw('git', [
       'merge-tree',
       '--write-tree',
       branch,
       `origin/${resolvedTarget}`,
     ]);
-    if (mergeTreeResult === null) {
+    if (mergeTreeResult.error) {
+      return Promise.reject(
+        new Error(`无法执行 git merge-tree 冲突检测: ${mergeTreeResult.error.message}`),
+      );
+    }
+    if (mergeTreeResult.status === 1) {
       return Promise.resolve({
         hasConflict: true,
         targetBranch: resolvedTarget,
         details: `git merge-tree 预演检测到与 origin/${resolvedTarget} 存在冲突`,
       });
+    }
+    if (mergeTreeResult.status !== 0) {
+      const reason = mergeTreeResult.stderr || mergeTreeResult.stdout || '未知错误';
+      return Promise.reject(
+        new Error(
+          `git merge-tree 冲突检测异常失败 (退出码 ${mergeTreeResult.status ?? 'null'}): ${reason}`,
+        ),
+      );
     }
 
     return Promise.resolve({

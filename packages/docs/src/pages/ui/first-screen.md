@@ -38,7 +38,7 @@ flowchart TB
     getSnapshot["getSnapshot()<br/>后动态拉快照"]
   end
   subgraph mainProcess["主进程（Main）· startup-readiness.module"]
-    startupReadiness["enable() 注册通道<br/>finalize() 广播就绪"]
+    startupReadiness["enable() 注册通道<br/>markReady() 广播就绪"]
   end
   StartupReadyNotifier --> react
   animation & react & main --> settleGate
@@ -77,7 +77,7 @@ const settleGate = (id: GateId) => {
 };
 ```
 
-主进程门禁双保险机制：主进程在 ModuleRunner 启动期挂载 [startup-readiness.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/startup-readiness.module.ts) 注册 IPC 查询通道（初始为 false），窗口创建并呈现原生 Loading 动效；待所有同步与异步模块就绪后，由链尾 `finalize()` 真正向已存活窗口广播 `APP_STARTUP_MAIN_READY_EVENT`。协调器采用双保险时序——先挂监听防漏推，再动态调用 `api.startup.getSnapshot()` 查询当前状态，已就绪则立即放行，配合 `STARTUP_MAIN_FALLBACK_MS` 超时兜底，彻底消除跨进程竞态与死锁。无 `api.startup` 的纯浏览器调试环境直接放行，不阻塞揭幕。
+主进程门禁双保险机制：主进程在 ModuleRunner 启动期挂载 [startup-readiness.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/startup-readiness.module.ts) 注册 IPC 查询通道（初始为 false），窗口创建并呈现原生 Loading 动效；待 `await moduleRunner` 所有同步与异步模块（含异步窗口注册）就绪后，调用 `startupReadiness.markReady()` 向已存活窗口广播 `APP_STARTUP_MAIN_READY_EVENT`。协调器采用双保险时序——先挂监听防漏推，再动态调用 `api.startup.getSnapshot()` 查询当前状态，已就绪则立即放行，配合 `STARTUP_MAIN_FALLBACK_MS` 超时兜底，彻底消除跨进程竞态与死锁。无 `api.startup` 的纯浏览器调试环境直接放行，不阻塞揭幕。
 
 ## 3. 桌面端避坑注意事项
 

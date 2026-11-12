@@ -29,10 +29,27 @@ export function runOrThrow(cmd: string, args: string[]): void {
   }
 }
 
-export function probe(cmd: string, args: string[]): string | null {
+export interface ProbeRawResult {
+  status: number | null;
+  stdout: string;
+  stderr: string;
+  error?: Error;
+}
+
+export function probeRaw(cmd: string, args: string[]): ProbeRawResult {
   const result = spawnSync(cmd, args, { encoding: 'utf-8' });
+  return {
+    status: result.status,
+    stdout: (result.stdout ?? '').trim(),
+    stderr: (result.stderr ?? '').trim(),
+    error: result.error,
+  };
+}
+
+export function probe(cmd: string, args: string[]): string | null {
+  const result = probeRaw(cmd, args);
   if (result.error || result.status !== 0) return null;
-  return (result.stdout ?? '').trim();
+  return result.stdout;
 }
 
 export function safeParseJson<T>(raw: string | null | undefined): T | null {
