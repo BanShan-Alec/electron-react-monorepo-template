@@ -21,18 +21,49 @@ const PACK_ROOT = path.resolve(__dirname, '../..');
 const REVIEWS_DIR = path.join(PACK_ROOT, 'reviews');
 const ARTIFACT_CACHE_DIR = path.join(REVIEWS_DIR, '.cache');
 
-export function runPull(): void {
+export function parsePrNumberArg(args: readonly string[]): number | undefined {
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--pr') {
+      const val = args[i + 1];
+      if (!val || !/^[1-9][0-9]*$/.test(val)) {
+        fail('无效的 --pr 参数: 请提供正整数 PR 编号，例如 pnpm pr-review pull --pr 93');
+      }
+      return Number.parseInt(val, 10);
+    }
+    if (arg.startsWith('--pr=')) {
+      const val = arg.slice('--pr='.length);
+      if (!/^[1-9][0-9]*$/.test(val)) {
+        fail('无效的 --pr 参数: 请提供正整数 PR 编号，例如 pnpm pr-review pull --pr=93');
+      }
+      return Number.parseInt(val, 10);
+    }
+  }
+  return undefined;
+}
+
+export function runPull(prNumberOverride?: number): void {
   ensureGh();
 
-  const branch = getCurrentBranch();
-  if (!branch) fail('无法获取当前 Git 分支名');
+  const currentBranch = getCurrentBranch();
+  if (!prNumberOverride && !currentBranch) {
+    fail('无法获取当前 Git 分支名');
+  }
 
-  const headSha = getHeadSha();
   const ownerRepo = resolveOwnerRepo();
+  const prLookupTarget = prNumberOverride ? String(prNumberOverride) : currentBranch!;
 
-  const prInfoRaw = probe('gh', ['pr', 'view', branch, '--json', 'number,statusCheckRollup']);
+  const prInfoRaw = probe('gh', [
+    'pr',
+    'view',
+    prLookupTarget,
+    '--json',
+    'number,headRefName,headRefOid,statusCheckRollup',
+  ]);
   const prInfo = safeParseJson<{
     number?: number;
+    headRefName?: string;
+    headRefOid?: string;
     statusCheckRollup?: Array<{
       name?: string;
       context?: string;
@@ -42,7 +73,14 @@ export function runPull(): void {
       workflowName?: string;
     }>;
   }>(prInfoRaw);
-  const prNumber: number | null = prInfo?.number ?? null;
+
+  if (prNumberOverride && !prInfo?.number) {
+    fail(`未能找到 PR #${prNumberOverride}`);
+  }
+
+  const prNumber: number | null = prInfo?.number ?? prNumberOverride ?? null;
+  const branch = prInfo?.headRefName || currentBranch || `pr-${prNumberOverride}`;
+  const headSha = prInfo?.headRefOid || getHeadSha();
   const ciChecks: CiCheckItem[] = (prInfo?.statusCheckRollup ?? []).map((c) => ({
     name: c.name ?? c.context ?? 'unknown',
     status: c.status ?? '',
@@ -51,7 +89,7 @@ export function runPull(): void {
     workflowName: c.workflowName,
   }));
 
-  console.log(`🔍 当前分支: ${branch} ${prNumber ? `(PR #${prNumber})` : ''}`);
+  console.log(`🔍 目标 PR/分支: ${branch} ${prNumber ? `(PR #${prNumber})` : ''}`);
 
   const runInfo = getLatestRunInfo(branch, prNumber, ownerRepo);
 
