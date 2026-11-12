@@ -6,7 +6,7 @@ description: PR 自动化审查流水线，置顶单一看板治理评论刷屏�
 
 # AI 评审闭环（Open-code-review）
 
-> **TL;DR**：告别 AI 评论在 PR 中的无序刷屏。通过 GitHub Actions 钉版集成 `open-code-review`，配置置顶看板（`sticky_summary`）与旧线程自动解决（`resolve_outdated`）。本地配套 `pnpm pr-review` CLI 命令集，实现“拉取审查 -> 针对修复 -> 门禁全绿一键合并”的高效工程闭环。
+> **TL;DR**：告别 AI 评论在 PR 中的无序刷屏。通过 GitHub Actions 集成 `open-code-review`，配置置顶看板（`sticky_summary`）与旧线程自动解决（`resolve_outdated`）。本地配套 `pnpm pr-review` CLI 命令集，实现“拉取审查 -> 针对修复 -> 门禁全绿一键合并”的高效工程闭环。
 
 ## 1. 选型理由
 
@@ -60,7 +60,7 @@ jobs:
               core.setOutput('pr_number', context.payload.pull_request.number);
             }
 
-      - uses: alibaba/open-code-review@v1.13.3
+      - uses: alibaba/open-code-review@main
         with:
           pr_number: ${{ steps.pr_info.outputs.pr_number }}
           base_ref: ${{ steps.pr_info.outputs.base_ref }}
@@ -88,9 +88,10 @@ jobs:
 
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点                    | 事故表现与原因                                                                                        | 本仓库对齐方案                                                                                    |
-| :-------------------------- | :---------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------ |
-| **LLM 供应商 429 限流**     | AI 审查对 PR 中每个变动文件并发发起大模型调用，触发 API 频率上限导致 Review 中断或返回 Partial 结果。 | 工作流显式设置 `review_concurrency: '4'`，平滑削峰留出频率余量。                                  |
-| **CI 自动关闭线程权限不足** | 开启 `resolve_outdated: 'true'` 但未配置写权限，GitHub Actions 抛出 HTTP 403 异常。                   | 工作流顶部必须显式授予 `permissions: contents: write`。                                           |
-| **门禁未绿强行合入**        | 开发者在单元测试或 E2E 尚未跑完时手动合并 PR，导致破坏性改动流入 main 分支。                          | `pnpm pr-review merge` 内部硬编码状态机，严格轮询直至 5 个 Required Checks 全部通过方放行合并。   |
-| **重复触发竞态冲突**        | 连续快速评论 `/review` 启动多个审查 Job，互相覆盖 Summary 评论。                                      | 配置 `concurrency: group: ocr-${{ pr_number }}, cancel-in-progress: true`，新任务自动取消旧任务。 |
+| 避坑要点                               | 事故表现与原因                                                                                                                            | 本仓库对齐方案                                                                                                                                   |
+| :------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **LLM 供应商 429 限流**                | AI 审查对 PR 中每个变动文件并发发起大模型调用，触发 API 频率上限导致 Review 中断或返回 Partial 结果。                                     | 工作流显式设置 `review_concurrency: '4'`，平滑削峰留出频率余量。                                                                                 |
+| **CI 自动关闭线程权限不足**            | 开启 `resolve_outdated: 'true'` 但未配置写权限，GitHub Actions 抛出 HTTP 403 异常。                                                       | 工作流顶部必须显式授予 `permissions: contents: write`。                                                                                          |
+| **门禁未绿强行合入**                   | 开发者在单元测试或 E2E 尚未跑完时手动合并 PR，导致破坏性改动流入 main 分支。                                                              | `pnpm pr-review merge` 内部硬编码状态机，严格轮询直至 5 个 Required Checks 全部通过方放行合并。                                                  |
+| **重复触发竞态冲突**                   | 连续快速评论 `/review` 启动多个审查 Job，互相覆盖 Summary 评论。                                                                          | 配置 `concurrency: group: ocr-${{ pr_number }}, cancel-in-progress: true`，新任务自动取消旧任务。                                                |
+| **公开仓库路人恶意刷额度与 Fork 噪音** | 公开仓库下 `issue_comment` 在默认分支上下文自带 Secrets，任何路人或已合并 PR 评论 `/review` 都会消耗额度；Fork PR 因无 Secrets 必败报错。 | `pull_request` 校验同源（`head.repo.full_name == repository`）；`issue_comment` 校验 `state == 'open'` 与 `OWNER / MEMBER / COLLABORATOR` 权限。 |

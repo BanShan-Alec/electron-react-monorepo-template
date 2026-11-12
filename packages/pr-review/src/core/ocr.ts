@@ -4,6 +4,49 @@ import path from 'node:path';
 import type { OcrResult, RunInfo } from '../types.ts';
 import { fail, probe, safeParseJson } from '../utils/process.ts';
 
+/**
+ * 从 PR Sticky 评论中提取当前审查对应的目标 Run ID。
+ * 优先解析当前真实生成摘要的 `ocr-summary-run`，当发生 checkpoint carry（降级沿用旧检查点）时
+ * 可避免被旧 `ocr-checkpoint.run` 覆盖；仅当不存在 summary run 标记时才回退解析 checkpoint。
+ */
+export function extractTargetRunIdFromComments(
+  comments: Array<{ body: string }> | undefined,
+): string | undefined {
+  if (!comments || comments.length === 0) return undefined;
+
+  const summaryComment = comments.find(
+    (c) =>
+      c.body.includes('<!-- ocr-summary-run:') ||
+      c.body.includes('<!-- ocr-checkpoint:') ||
+      c.body.includes('<!-- ocr-review-run:'),
+  );
+  if (!summaryComment) return undefined;
+
+  const summaryRunMatch = summaryComment.body.match(
+    /<!--\s*ocr-summary-run:(\d+)(?:-[0-9]+)?\s*-->/,
+  );
+  if (summaryRunMatch?.[1]) {
+    return summaryRunMatch[1];
+  }
+
+  const checkpointMatch = summaryComment.body.match(
+    /<!-- ocr-checkpoint:(?:v[0-9]+|[a-zA-Z0-9._-]+)\s+([A-Za-z0-9+/=]+)\s*-->/,
+  );
+  if (checkpointMatch) {
+    try {
+      const decoded = JSON.parse(Buffer.from(checkpointMatch[1], 'base64').toString('utf-8'));
+      const decodedRun = typeof decoded.run === 'number' ? String(decoded.run) : decoded.run;
+      if (typeof decodedRun === 'string' && decodedRun.length > 0) {
+        return decodedRun;
+      }
+    } catch {
+      // fallback
+    }
+  }
+
+  return undefined;
+}
+
 export function getLatestRunInfo(
   branch: string,
   prNumber: number | null,
@@ -46,7 +89,7 @@ export function getLatestRunInfo(
         }
         let targetId = sortedIds[sortedIds.length - 1];
 
-        // 优先从 PR sticky 评论中的 checkpoint 确认最新 run ID
+        // 优先从 PR sticky 评论中确认最新 run ID
         const commentsJson = probe('gh', ['pr', 'view', String(prNumber), '--json', 'comments']);
         const prCommentsData = safeParseJson<{ comments: { body: string }[] }>(commentsJson);
         const reviewComments = prCommentsData?.comments?.filter((c) =>
@@ -54,28 +97,9 @@ export function getLatestRunInfo(
         );
         const reviewTriggerCount = 1 + (reviewComments?.length ?? 0);
 
-        if (prCommentsData?.comments) {
-          const summaryComment = prCommentsData.comments.find(
-            (c) =>
-              c.body.includes('<!-- ocr-checkpoint:') || c.body.includes('<!-- ocr-review-run:'),
-          );
-          if (summaryComment) {
-            const match = summaryComment.body.match(
-              /<!-- ocr-checkpoint:(?:v[0-9]+|[a-zA-Z0-9._-]+)\s+([A-Za-z0-9+/=]+)\s*-->/,
-            );
-            if (match) {
-              try {
-                const decoded = JSON.parse(Buffer.from(match[1], 'base64').toString('utf-8'));
-                const decodedRun =
-                  typeof decoded.run === 'number' ? String(decoded.run) : decoded.run;
-                if (typeof decodedRun === 'string' && sortedIds.includes(decodedRun)) {
-                  targetId = decodedRun;
-                }
-              } catch {
-                // fallback
-              }
-            }
-          }
+        const extractedRunId = extractTargetRunIdFromComments(prCommentsData?.comments);
+        if (extractedRunId && sortedIds.includes(extractedRunId)) {
+          targetId = extractedRunId;
         }
 
         const totalRuns = Math.max(reviewTriggerCount, sortedIds.length);
@@ -120,7 +144,7 @@ export function getLatestRunInfo(
   const branchRuns = allRuns.filter((r) => r.headBranch === branch);
   const completedRuns = branchRuns.filter((r) => r.status === 'completed');
 
-  // 优化 1: 优先从 PR sticky 评论中的 checkpoint 元数据直接获取最新的 run ID
+  // 优化 1: 优先从 PR sticky 评论中的元数据直接获取最新的 run ID
   if (prNumber) {
     const commentsJson = probe('gh', ['pr', 'view', String(prNumber), '--json', 'comments']);
     const prCommentsData = safeParseJson<{ comments: { body: string }[] }>(commentsJson);
@@ -130,26 +154,7 @@ export function getLatestRunInfo(
     const reviewTriggerCount = 1 + (reviewComments?.length ?? 0);
 
     if (prCommentsData?.comments) {
-      const summaryComment = prCommentsData.comments.find(
-        (c) => c.body.includes('<!-- ocr-checkpoint:') || c.body.includes('<!-- ocr-review-run:'),
-      );
-      let targetId: string | undefined;
-      if (summaryComment) {
-        const match = summaryComment.body.match(
-          /<!-- ocr-checkpoint:(?:v[0-9]+|[a-zA-Z0-9._-]+)\s+([A-Za-z0-9+/=]+)\s*-->/,
-        );
-        if (match) {
-          try {
-            const decoded = JSON.parse(Buffer.from(match[1], 'base64').toString('utf-8'));
-            const decodedRun = typeof decoded.run === 'number' ? String(decoded.run) : decoded.run;
-            if (typeof decodedRun === 'string') {
-              targetId = decodedRun;
-            }
-          } catch {
-            // fallback
-          }
-        }
-      }
+      const targetId = extractTargetRunIdFromComments(prCommentsData.comments);
 
       if (targetId) {
         const fallbackTotalRuns = Math.max(reviewTriggerCount, completedRuns.length);

@@ -455,3 +455,48 @@ describe('fetchPrComments', () => {
     expect(map.get('src/bar.ts:10')).toBe('https://github.com/c2');
   });
 });
+
+describe('ocr-summary-run priority when checkpoint is carried', () => {
+  const mockedProbe = vi.mocked(processUtils.probe);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('prefers ocr-summary-run over stale carried ocr-checkpoint run id', () => {
+    const prNumber = 93;
+    const ownerRepo = 'owner/repo';
+    const branch = 'refactor/test';
+
+    mockedProbe.mockImplementation((cmd, args) => {
+      if (cmd === 'gh' && args[0] === 'api' && args[1] === `repos/${ownerRepo}/actions/artifacts`) {
+        return JSON.stringify([43006064620, 43009308622, 43014986040]);
+      }
+      if (cmd === 'gh' && args[0] === 'pr' && args[1] === 'view' && args[2] === String(prNumber)) {
+        const carriedCheckpoint = Buffer.from(
+          JSON.stringify({ run: '43009308622', pr: prNumber }),
+        ).toString('base64');
+        return JSON.stringify({
+          comments: [
+            {
+              body: [
+                '<!-- ocr-summary -->',
+                '<!-- ocr-summary-run:43014986040-1 -->',
+                'Summary body',
+                `<!-- ocr-checkpoint:v1 ${carriedCheckpoint} -->`,
+              ].join('\n'),
+            },
+            { body: '/review' },
+            { body: '/review' },
+          ],
+        });
+      }
+      return null;
+    });
+
+    const runInfo = getLatestRunInfo(branch, prNumber, ownerRepo);
+    expect(runInfo.id).toBe('43014986040');
+    expect(runInfo.round).toBe(3);
+    expect(runInfo.totalRuns).toBe(3);
+  });
+});
