@@ -64,6 +64,21 @@ const config: Configuration = {
   // biome-ignore lint/suspicious/noTemplateCurlyInString: electron-builder placeholder template
   artifactName: '${name}-${version}-${os}-${arch}.${ext}',
   asarUnpack: ['**/*.node'],
+  /**
+   * Electron Fuses（构建期写入二进制熔丝开关）
+   * - runAsNode / enableNodeOptionsEnvironmentVariable：防止客户端被当作通用 Node 运行器或注入 NODE_OPTIONS
+   * - onlyLoadAppFromAsar + enableEmbeddedAsarIntegrityValidation：锁死仅从 app.asar 加载并校验完整性（Win/Mac 生效；防篡改需配合 OS 代码签名）
+   * - resetAdHocDarwinSignature：无正式 Apple 签名时保证 macOS arm64 修改 Fuse 后仍可正常启动
+   * - 未关闭 enableNodeCliInspectArguments：verify-postbuild 依赖 Playwright electron.launch(--inspect=0) 验真；下游发商业签名包时建议设为 false 并改用 CDP 探针
+   * - 未开启 enableCookieEncryption：无签名 macOS 下重打包会变更 ad-hoc 签名并触发 Keychain 弹窗，且为单向不可逆迁移
+   */
+  electronFuses: {
+    runAsNode: false,
+    enableNodeOptionsEnvironmentVariable: false,
+    onlyLoadAppFromAsar: true,
+    enableEmbeddedAsarIntegrityValidation: true,
+    resetAdHocDarwinSignature: true,
+  },
   files: [
     'LICENSE*',
     '!node_modules/@app/**',

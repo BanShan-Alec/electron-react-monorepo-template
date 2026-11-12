@@ -1,5 +1,38 @@
 # Changelog
 
+## v1.13.3
+
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.13.2...v1.13.3)
+
+### 🩹 缺陷修复 (Bug Fixes)
+
+- **main:** Updater release notes 消毒改为一次性剥离尖括号（CodeQL 多字符消毒告警） ([#91](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/91))
+- **ci:** 限制 OCR 评论触发仅限开启 PR 的协作者与所有者 ([#95](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/95))
+- 修复 PR 93 评审指出的启动时序与冲突检测缺陷 ([#96](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/96))
+
+### 💅 代码重构 (Refactoring)
+
+- 首帧主题链显式化，新增主题链路解法页并整合令牌文档 ([#89](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/89))
+- **pr-review:** 构建核心工作流引擎与 VCS 适配器反转架构 (Phase 3) ([#94](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/94))
+- 归一化 IPC 传输契约并重构 Home 窗口模块自洽化 ([#93](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/93))
+
+### 📖 文档更新 (Documentation)
+
+- 精简 CONTRIBUTING 为披露参考（删环境 cache，新增配置与依赖归属判定） ([#90](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/90))
+
+### 📦 构建与依赖 (Build & Deps)
+
+- **security:** 启用 Electron Fuses 与 ASAR 完整性校验 ([8d28efd](https://github.com/BanShan-Alec/electron-react-monorepo-template/commit/8d28efd))
+
+### ✅ 测试相关 (Testing)
+
+- **e2e:** 关闭行为用例改用 evaluate 派发点击，消除 page-closed 时序竞态 ([#92](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/92))
+
+### ❤️ Contributors
+
+- Wengzehua ([@BanShan-Alec](https://github.com/BanShan-Alec))
+- 半山Alec ([@BanShan-Alec](https://github.com/BanShan-Alec))
+
 ## v1.13.2
 
 [compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.13.1...v1.13.2)
