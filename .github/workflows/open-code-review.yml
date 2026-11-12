@@ -19,10 +19,12 @@ permissions:
 jobs:
   review:
     name: AI Code Review
-    # 触发条件过滤：如果是 issue_comment，必须是 PR 且评论包含 /review 或 /ocr；如果是 pull_request 则直接运行
+    # 触发条件过滤：pull_request 直接运行；issue_comment 须为 open 状态的 PR、协作者及以上身份，且以 /review 或 /ocr 开头
     if: >
       github.event_name == 'pull_request' ||
       (github.event.issue.pull_request &&
+       github.event.issue.state == 'open' &&
+       contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
        (startsWith(github.event.comment.body, '/review') || startsWith(github.event.comment.body, '/ocr')))
     runs-on: ubuntu-latest
     steps:
