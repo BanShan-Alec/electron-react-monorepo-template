@@ -71,3 +71,5 @@ app.on('render-process-gone', (_event, _webContents, details) => {
   - 构建产物使用 `hidden-source-map` 模式生成映射。CI 流水线调用 `@sentry/cli` 上传 SourceMap 后立即物理删除 `.map` 文件，配合打包规则杜绝源码逆向风险。
 - **前端忽略无害噪声（ignoreErrors）**：
   - 渲染端需显式过滤 `ResizeObserver loop completed with undelivered notifications` 等浏览器引擎内部微量良性警告，避免占用企业 Sentry 事件配额。
+- **打包态退出会被 Sentry 拖长（最长约 2 秒，最坏约 4 秒）**：
+  - 打包态且配置有效 DSN 时，`@sentry/electron` 的 session 集成会接管 `will-quit`：`preventDefault()` 后异步结束会话并 flush（`node.flush(2000)`，最长约 2 秒），最后调用 `app.exit()` 终止进程。表现为窗口已关闭、托盘图标或进程仍残留数秒，用户可能觉得“点退出没反应”，功能上无危害。
