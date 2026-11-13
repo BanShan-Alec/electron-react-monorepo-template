@@ -1,8 +1,12 @@
 # Changelog
 
-## v1.13.3
+## v1.14.0
 
-[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.13.2...v1.13.3)
+[compare changes](https://github.com/BanShan-Alec/electron-react-monorepo-template/compare/v1.13.2...v1.14.0)
+
+### 🚀 新增特性 (Features)
+
+- 延迟测速耗时分解与卸载数据清理 ([#98](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/98))
 
 ### 🩹 缺陷修复 (Bug Fixes)
 
@@ -22,7 +26,7 @@
 
 ### 📦 构建与依赖 (Build & Deps)
 
-- **security:** 启用 Electron Fuses 与 ASAR 完整性校验 ([8d28efd](https://github.com/BanShan-Alec/electron-react-monorepo-template/commit/8d28efd))
+- **security:** 启用 Electron Fuses 与 ASAR 完整性校验 ([#97](https://github.com/BanShan-Alec/electron-react-monorepo-template/pull/97))
 
 ### ✅ 测试相关 (Testing)
 
@@ -30,7 +34,6 @@
 
 ### ❤️ Contributors
 
-- Wengzehua ([@BanShan-Alec](https://github.com/BanShan-Alec))
 - 半山Alec ([@BanShan-Alec](https://github.com/BanShan-Alec))
 
 ## v1.13.2
