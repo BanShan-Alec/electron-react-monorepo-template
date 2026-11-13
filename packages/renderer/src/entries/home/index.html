@@ -74,6 +74,24 @@
         justify-content: center;
       }
 
+      /* 长等待呼吸：参数与 ZCode 启动 logo 的 SMIL 脉冲同源
+         （begin=3s / dur=1.8s / values=1;0.4;1，线性无限循环）。
+         正常启动 1.2s 内即揭幕，这段不会被执行；只有门禁长时未结算才看得到，
+         用来区分「正在等」与「卡死」 */
+      .startup-logo-slot > svg {
+        animation: startup-logo-pulse 1.8s linear 3s infinite;
+      }
+
+      @keyframes startup-logo-pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
       @keyframes startup-logo-pop {
         0% {
           opacity: 0;
@@ -101,6 +119,11 @@
         .startup-logo-shell {
           opacity: 1;
           transform: scale(1);
+          animation: none;
+        }
+
+        /* ZCode 的 SMIL 脉冲不随 reduced-motion 停；本仓按无动画基线一并停掉 */
+        .startup-logo-slot > svg {
           animation: none;
         }
       }
