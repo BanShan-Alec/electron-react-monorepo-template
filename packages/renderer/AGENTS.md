@@ -55,7 +55,29 @@ hook 实例化必须落在 feature 内部。没有跨域共享需求就不上提
 - **三层刚性拦截**：类型层（`Omit` 剔除 16 个自动触发键）、Lint 门禁（`noRestrictedImports` 禁止直连 `ahooks` 的 `useRequest`）与 CI 构建。
 - **日志与安全纪律**：仅记录 channel、耗时与结果状态；严禁在日志中打印包含敏感路径与 URL 的入参 body。
 
-## 5. 组件书写约定与七段式语义模板
+## 5. UI 组件选型与组件库优先铁律 (Component-First)
+
+实现任何 UI 功能、布局、状态指示与交互反馈时，**必须优先选用已安装的 Ant Design (antd) 组件库，严禁手写原生 HTML 标签或滥用 Tailwind 原子类拼装模拟已有组件（严禁重复造轮子）**。
+
+### 1. 规范矩阵与查对表
+
+| 业务场景 / UI 需求      | 优先标准组件 / 规范                                                    | 严禁的重复造轮子 Anti-Pattern                         |
+| :---------------------- | :--------------------------------------------------------------------- | :---------------------------------------------------- |
+| **状态小圆点 / 徽标**   | `<Badge color="var(--color-*)" />` 或 `status="success\|warning\|..."` | 裸手写 `<span className="size-2 rounded-full ..." />` |
+| **状态标签 / 业务标记** | `<StatusTag tone="..." />` 或 `<Tag />`                                | 裸手写 `div/span` 拼装背景色与文字                    |
+| **交互提示 / 悬浮说明** | `<Tooltip title="...">` 或 `<Popover>`                                 | 裸手写 CSS `hover:block` / 自定义悬浮层               |
+| **操作按钮与加载反馈**  | `<Button loading={...}>`（配合 `loadingDelay`）                        | 裸手写 `<button>` 并手动插入 Spinner SVG              |
+| **数据展示与空态骨架**  | `<Empty />` · `<Skeleton />` · `<Statistic />` · `<Descriptions />`    | 裸手写无数据提示、加载骨架占位                        |
+| **卡片与容器布局**      | `<AppCard />`（统一规范）· `<Space />` · `<Flex />`                    | 随意手写裸 `div.card` 并随意覆盖边框与阴影            |
+
+### 2. context7 MCP 文档即时查阅机制 (Docs-First)
+
+在编写、封装或重构涉及第三方库（尤其是 Ant Design 组件、图标与 React 特性）的代码时，**严禁凭历史记忆盲猜 API、属性名或破坏性变更**：
+1. **即时查阅最新契约**：必须调用 `context7` MCP 工具（先经 `resolve-library-id` 解析库标识如 `antd`，再通过 `query-docs` 查询精确组件 API 与用法示例）。
+2. **版本与规范对齐**：本项目使用 Ant Design 现代版本，组件属性必须符合当前官方最新规范，禁止引入已过时或已被弃用的废弃属性（如旧版废弃 API 或样式破坏）。
+3. **定制边界**：当组件库原生确有无法覆盖的特异化场景时（如 4 阶段多色堆叠进度条），允许使用语义化容器（如 Flex + ARIA）扩展，但前缀/后缀、小圆点及 Tooltip 交互仍必须最大化复用 AntD 基础原语。
+
+## 6. 组件书写约定与七段式语义模板
 
 ### 1. 结构与导出纪律
 
@@ -120,13 +142,13 @@ export const UserCard = memo(_UserCard);
 > 2. **单向线性流**：函数体内严格遵循 `解构 ➔ State ➔ IO ➔ 派生 ➔ Handlers ➔ Effect ➔ JSX`。
 > 3. **无内容占位**：纯展示卡片若无“网络IO”或“Effect”，可保留单行注释占位或自然跳过，但绝不可颠倒相对顺序。
 
-## 6. 国际化 (i18n)
+## 7. 国际化 (i18n)
 
 - **源码直书中文**：文案以 LinguiJS 的 `t` 宏包裹（`t`文案``），中文原文即 msgid（Source-as-Key），杜绝层级 JSON 键名。
 - **提取与完整性校验**：改动文案后必须在根目录执行 `pnpm i18n:extract` 抽词条并补充 `en-US/messages.po` 翻译，随后运行 `pnpm i18n:check`（缺译即失败）。
 - **动态按需加载**：`locales/i18n.ts` 经 `dynamicActivate` 动态加载语言包 Chunk，组件通过 `useLingui()` 响应式监听语言切换。
 
-## 7. 提交前门禁
+## 8. 提交前门禁
 
 - 根目录执行：`pnpm typecheck` · `pnpm lint` · `pnpm test`。
 - 文案改动追加执行：`pnpm i18n:check`。
