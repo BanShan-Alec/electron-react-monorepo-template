@@ -4,9 +4,13 @@ title: 首屏体验（Startup-orchestration）
 description: 动画、React 首帧与主进程就绪三路门禁协调揭幕，内联启动壳顶住白屏空窗期。
 ---
 
+import { StartupShellPreview } from '../../components/StartupShellPreview';
+
 # 首屏体验（Startup-orchestration）
 
 > **TL;DR**：React 挂载前由轻量内联 HTML 启动壳顶住白屏；构建内联的启动协调器（Coordinator）等待 Logo 动画、React 首帧与主进程就绪三路门禁齐备后交叉揭幕，任一路失联均有超时兜底。
+
+<StartupShellPreview />
 
 ## 1. 选型理由
 
