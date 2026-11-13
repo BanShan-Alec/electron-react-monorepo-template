@@ -1,7 +1,7 @@
 import { ApiOutlined, InfoCircleOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Badge, Button, Tooltip } from 'antd';
+import { Button, Tooltip } from 'antd';
 import { memo } from 'react';
 import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
@@ -36,10 +36,16 @@ const _PingCard = (props: PingCardProps) => {
 
   // 数据转换
   const total = timing ? timing.renderMs + timing.queueMs + timing.ipcMs + timing.mainMs || 1 : 1;
-  const renderPct = timing ? Math.round((timing.renderMs / total) * 100) : 0;
-  const queuePct = timing ? Math.round((timing.queueMs / total) * 100) : 0;
-  const mainPct = timing ? Math.round((timing.mainMs / total) * 100) : 0;
-  const ipcPct = timing ? Math.max(0, 100 - renderPct - queuePct - mainPct) : 0;
+  const renderPct = timing
+    ? Math.max(timing.renderMs > 0 ? 5 : 0, Math.round((timing.renderMs / total) * 100))
+    : 0;
+  const queuePct = timing
+    ? Math.max(timing.queueMs > 0 ? 5 : 0, Math.round((timing.queueMs / total) * 100))
+    : 0;
+  const mainPct = timing
+    ? Math.max(timing.mainMs > 0 ? 5 : 0, Math.round((timing.mainMs / total) * 100))
+    : 0;
+  const ipcPct = timing ? Math.max(5, 100 - renderPct - queuePct - mainPct) : 0;
 
   // 逻辑处理函数
 
@@ -88,7 +94,7 @@ const _PingCard = (props: PingCardProps) => {
         </div>
 
         {/* 下半部：4 阶段端到端时序流（彩色分段条 + 耗时标注） */}
-        <div className="pt-3 border-t border-border/60 flex flex-col gap-2">
+        <div className="pt-4 border-t border-border/60 flex flex-col gap-2">
           <div className="flex items-center justify-between text-xs text-foreground-secondary">
             <span className="font-medium">{t`端到端链路耗时分解`}</span>
             <span className="font-mono text-xs">{timing ? `${timing.totalMs} ms` : '--'}</span>
@@ -98,40 +104,34 @@ const _PingCard = (props: PingCardProps) => {
           <div className="h-2.5 w-full rounded-full bg-border/40 overflow-hidden flex items-center">
             {timing ? (
               <>
-                {renderPct > 0 && (
-                  <Tooltip title={t`渲染调度: ${timing.renderMs}ms`}>
-                    <div
-                      style={{ width: `${renderPct}%` }}
-                      className="h-full bg-success transition-all duration-300 hover:opacity-85 cursor-pointer"
-                    />
-                  </Tooltip>
-                )}
+                <Tooltip title={t`渲染调度: ${timing.renderMs}ms`}>
+                  <div
+                    style={{ width: `${renderPct}%` }}
+                    className="h-full bg-emerald-500 transition-all duration-300 hover:opacity-85 cursor-pointer"
+                  />
+                </Tooltip>
                 {queuePct > 0 && (
                   <Tooltip
                     title={t`页面首屏正忙于挂载各功能组件与渲染，测速回调在任务队列排队；再次测速即恢复极速`}
                   >
                     <div
                       style={{ width: `${queuePct}%` }}
-                      className="h-full bg-warning transition-all duration-300 hover:opacity-85 cursor-pointer"
+                      className="h-full bg-amber-500 transition-all duration-300 hover:opacity-85 cursor-pointer"
                     />
                   </Tooltip>
                 )}
-                {ipcPct > 0 && (
-                  <Tooltip title={t`IPC 传输: ${timing.ipcMs}ms`}>
-                    <div
-                      style={{ width: `${ipcPct}%` }}
-                      className="h-full bg-primary transition-all duration-300 hover:opacity-85 cursor-pointer"
-                    />
-                  </Tooltip>
-                )}
-                {mainPct > 0 && (
-                  <Tooltip title={t`主进程: ${timing.mainMs}ms`}>
-                    <div
-                      style={{ width: `${mainPct}%` }}
-                      className="h-full bg-purple-500 transition-all duration-300 hover:opacity-85 cursor-pointer"
-                    />
-                  </Tooltip>
-                )}
+                <Tooltip title={t`IPC 传输: ${timing.ipcMs}ms`}>
+                  <div
+                    style={{ width: `${ipcPct}%` }}
+                    className="h-full bg-primary transition-all duration-300 hover:opacity-85 cursor-pointer"
+                  />
+                </Tooltip>
+                <Tooltip title={t`主进程: ${timing.mainMs}ms`}>
+                  <div
+                    style={{ width: `${mainPct}%` }}
+                    className="h-full bg-purple-500 transition-all duration-300 hover:opacity-85 cursor-pointer"
+                  />
+                </Tooltip>
               </>
             ) : (
               <div className="h-full w-full bg-border/40" />
@@ -141,7 +141,7 @@ const _PingCard = (props: PingCardProps) => {
           {/* 4 阶段图例与毫秒数值 */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-0.5 text-xs">
             <div className="flex items-center gap-1.5">
-              <Badge color="var(--color-success)" className="shrink-0" />
+              <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
               <span className="text-foreground-secondary truncate">{t`渲染调度`}:</span>
               <span className="font-mono font-medium text-foreground ml-auto sm:ml-0">
                 {timing ? `${timing.renderMs}ms` : '--'}
@@ -151,7 +151,7 @@ const _PingCard = (props: PingCardProps) => {
               <Tooltip
                 title={t`页面首屏正忙于挂载各功能组件与渲染，测速回调在任务队列排队；再次测速即恢复极速`}
               >
-                <Badge color="var(--color-warning)" className="shrink-0 cursor-help" />
+                <span className="size-2 rounded-full bg-amber-500 shrink-0 cursor-help hover:scale-125 transition-transform" />
               </Tooltip>
               <span className="text-foreground-secondary truncate">{t`排队等待`}:</span>
               <span className="font-mono font-medium text-foreground ml-auto sm:ml-0">
@@ -159,14 +159,14 @@ const _PingCard = (props: PingCardProps) => {
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Badge color="var(--color-primary)" className="shrink-0" />
+              <span className="size-2 rounded-full bg-primary shrink-0" />
               <span className="text-foreground-secondary truncate">{t`IPC 传输`}:</span>
               <span className="font-mono font-medium text-foreground ml-auto sm:ml-0">
                 {timing ? `${timing.ipcMs}ms` : '--'}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Badge color="purple" className="shrink-0" />
+              <span className="size-2 rounded-full bg-purple-500 shrink-0" />
               <span className="text-foreground-secondary truncate">{t`主进程`}:</span>
               <span className="font-mono font-medium text-foreground ml-auto sm:ml-0">
                 {timing ? `${timing.mainMs}ms` : '--'}
