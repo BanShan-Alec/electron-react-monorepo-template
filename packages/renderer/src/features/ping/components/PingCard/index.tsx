@@ -36,16 +36,10 @@ const _PingCard = (props: PingCardProps) => {
 
   // 数据转换
   const total = timing ? timing.renderMs + timing.queueMs + timing.ipcMs + timing.mainMs || 1 : 1;
-  const renderPct = timing
-    ? Math.max(timing.renderMs > 0 ? 5 : 0, Math.round((timing.renderMs / total) * 100))
-    : 0;
-  const queuePct = timing
-    ? Math.max(timing.queueMs > 0 ? 5 : 0, Math.round((timing.queueMs / total) * 100))
-    : 0;
-  const mainPct = timing
-    ? Math.max(timing.mainMs > 0 ? 5 : 0, Math.round((timing.mainMs / total) * 100))
-    : 0;
-  const ipcPct = timing ? Math.max(5, 100 - renderPct - queuePct - mainPct) : 0;
+  const renderPct = timing ? Math.round((timing.renderMs / total) * 100) : 0;
+  const queuePct = timing ? Math.round((timing.queueMs / total) * 100) : 0;
+  const mainPct = timing ? Math.round((timing.mainMs / total) * 100) : 0;
+  const ipcPct = timing ? Math.max(0, 100 - renderPct - queuePct - mainPct) : 0;
 
   // 逻辑处理函数
 
@@ -104,12 +98,14 @@ const _PingCard = (props: PingCardProps) => {
           <div className="h-2.5 w-full rounded-full bg-border/40 overflow-hidden flex items-center">
             {timing ? (
               <>
-                <Tooltip title={t`渲染调度: ${timing.renderMs}ms`}>
-                  <div
-                    style={{ width: `${renderPct}%` }}
-                    className="h-full bg-emerald-500 transition-all duration-300 hover:opacity-85 cursor-pointer"
-                  />
-                </Tooltip>
+                {renderPct > 0 && (
+                  <Tooltip title={t`渲染调度: ${timing.renderMs}ms`}>
+                    <div
+                      style={{ width: `${renderPct}%` }}
+                      className="h-full bg-emerald-500 transition-all duration-300 hover:opacity-85 cursor-pointer"
+                    />
+                  </Tooltip>
+                )}
                 {queuePct > 0 && (
                   <Tooltip
                     title={t`页面首屏正忙于挂载各功能组件与渲染，测速回调在任务队列排队；再次测速即恢复极速`}
@@ -120,18 +116,22 @@ const _PingCard = (props: PingCardProps) => {
                     />
                   </Tooltip>
                 )}
-                <Tooltip title={t`IPC 传输: ${timing.ipcMs}ms`}>
-                  <div
-                    style={{ width: `${ipcPct}%` }}
-                    className="h-full bg-primary transition-all duration-300 hover:opacity-85 cursor-pointer"
-                  />
-                </Tooltip>
-                <Tooltip title={t`主进程: ${timing.mainMs}ms`}>
-                  <div
-                    style={{ width: `${mainPct}%` }}
-                    className="h-full bg-purple-500 transition-all duration-300 hover:opacity-85 cursor-pointer"
-                  />
-                </Tooltip>
+                {ipcPct > 0 && (
+                  <Tooltip title={t`IPC 传输: ${timing.ipcMs}ms`}>
+                    <div
+                      style={{ width: `${ipcPct}%` }}
+                      className="h-full bg-primary transition-all duration-300 hover:opacity-85 cursor-pointer"
+                    />
+                  </Tooltip>
+                )}
+                {mainPct > 0 && (
+                  <Tooltip title={t`主进程: ${timing.mainMs}ms`}>
+                    <div
+                      style={{ width: `${mainPct}%` }}
+                      className="h-full bg-purple-500 transition-all duration-300 hover:opacity-85 cursor-pointer"
+                    />
+                  </Tooltip>
+                )}
               </>
             ) : (
               <div className="h-full w-full bg-border/40" />

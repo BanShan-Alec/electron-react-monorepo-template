@@ -42,6 +42,10 @@ async function pingWithLatency(triggerTime?: number): Promise<PingTimingBreakdow
     queueMs = Math.round((rawTransit - PURE_IPC_PHYSICAL_MS) * 10) / 10;
     ipcMs = PURE_IPC_PHYSICAL_MS;
   }
+  // 叠加主进程 libuv 原生探针测得的真实事件循环滞后
+  if (data.eventLoopLagMs && data.eventLoopLagMs > 0) {
+    queueMs = Math.round((queueMs + data.eventLoopLagMs) * 10) / 10;
+  }
 
   // 跨帧度量：等待渲染主线程完成当前事件循环调度与绘制周期
   await new Promise((resolve) => requestAnimationFrame(resolve));

@@ -1,5 +1,11 @@
 import { performance } from 'node:perf_hooks';
 
+// 私有常量
+// setImmediate 在空闲事件循环中的固有调度开销基线（通常 < 0.2ms）
+const SET_IMMEDIATE_BASELINE_MS = 0.2;
+// 忽略微小抖动的上报门限（低于此值视为事件循环完全畅通）
+const MIN_REPORTED_LAG_MS = 0.5;
+
 /**
  * Node.js 主进程 Event Loop 滞后实时采样器
  *
@@ -25,8 +31,7 @@ export class EventLoopLagMonitor {
       const start = performance.now();
       setImmediate(() => {
         const delta = performance.now() - start;
-        // setImmediate 在空闲事件循环中的固有开销通常 < 0.2ms，超出部分即为真正的事件循环排队阻塞
-        const lag = Math.max(0, delta - 0.2);
+        const lag = Math.max(0, delta - SET_IMMEDIATE_BASELINE_MS);
         if (lag > this.maxLagMs) {
           this.maxLagMs = lag;
         }
@@ -54,8 +59,7 @@ export class EventLoopLagMonitor {
   public getLagAndReset(): number {
     const lag = Math.round(this.maxLagMs * 10) / 10;
     this.maxLagMs = 0;
-    // 小于 0.5ms 的微小波动直接归零，视为事件循环完全畅通
-    return lag > 0.5 ? lag : 0;
+    return lag > MIN_REPORTED_LAG_MS ? lag : 0;
   }
 }
 
