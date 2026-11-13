@@ -99,6 +99,16 @@ pnpm build:linux     # 打包 Linux deb 安装包
 
 > **刻意保留默认值的选项**：`enableNodeCliInspectArguments` 暂未关闭，因 [verify-postbuild.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/verify-postbuild.ts) 依赖 Playwright `electron.launch()`（内部注入 `--inspect=0`）做产物冒烟；`enableCookieEncryption` 在无签名 macOS 下重打包会触发 Keychain 弹窗且为单向迁移。下游接入正式代码签名发商业包时，可按需开启这两项并同步改造冒烟脚本。
 
+### Windows 卸载清除 AppData 选项
+
+→ 源码：[build/installer.nsh](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/installer.nsh)
+
+Windows NSIS 卸载向导在欢迎页之后提供「同时清除本地应用数据、配置与缓存（AppData）」复选框（默认不勾选，防止重装或临时卸载误删数据）：
+
+- **安全守卫**：静默卸载（`${Silent}`）与 `electron-updater` 自动更新（`${isUpdated}`）期间自动跳过交互页且不触发清理。
+- **清理范围**：仅当用户显式勾选时，切换至当前用户上下文（`SetShellVarContext current`）递归清理 Roaming `AppData`（`config.json`、日志、Chromium 数据）以及 `LocalAppData` 下的 `${APP_PACKAGE_NAME}-updater` 更新缓存。
+- **平台边界**：该能力属于 Windows NSIS 安装/卸载向导特性；macOS（拖拽废纸篓）与 Linux（`deb` 包管理器）受系统机制限制无对应卸载弹窗。
+
 ## 3. 桌面端避坑注意事项
 
 | 避坑要点                    | 事故表现与原因                                                                                                                                              | 本仓库对齐方案                                                                          |
