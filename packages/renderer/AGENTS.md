@@ -3,57 +3,47 @@
 > 全局红线与全仓任务路由见 [根 AGENTS.md](../../AGENTS.md)。本文件为该包规则唯一真源。
 > 视觉与 token 纪律另见 [docs/DESIGN.md](./docs/DESIGN.md)。
 
-## 1. 架构分层与目录职责
+## 1. 架构分层与所有权
 
-`src/` 下代码严格按所有权与副作用分层，常规文件结构如下：
+- **单向流动**：`entries ➔ features ➔ 跨域层 (components/hooks/lib/stores)`。Feature 间严格互相独立、禁止互相 import；跨域组合仅限 `dashboard` 编排域。
+- **所有权原则**：业务代码就近收敛在 `features/<domain>/`，仅当真实出现第 2 个独立消费者时才上提到全局跨域层。
+- **副作用隔离**：`features/<domain>/hooks/` 统一持有状态与 IPC（输出 ViewModel）；`features/<domain>/components/` 保持纯展示，不碰 IPC、不持有跨卡片状态。
 
-| 目录          | 核心职责                                                              | 依赖与可见性约束                                                |
-| :------------ | :-------------------------------------------------------------------- | :-------------------------------------------------------------- |
-| `entries/`    | 多窗口独立挂载入口（MPA 架构：`home/`, `updater/`）                   | 仅做顶层根节点挂载与全局 Provider 装配                          |
-| `features/`   | 业务域实现（各领域自包含模块）                                        | 外部仅允许引用域入口 `index.tsx`，域间禁止互相 import           |
-| `components/` | 跨 feature 复用的通用 UI（`ui/` 展示原子，`layout/` 全局骨架）        | 一组件一文件夹（`Xxx/index.tsx`），被 2 个以上域共用才上提      |
-| `hooks/`      | 跨域基础 hooks（`useManualRequest`, `useIpc`, `useTheme`）            | 请求与应用级状态抽象，禁止在业务组件中直连原生 ahooks           |
-| `lib/`        | 跨域底层能力（`ipc.ts` 契约解构与追踪、`classNames.ts`、`sentry.ts`） | 纯工具函数与全局运行时初始化                                    |
-| `locales/`    | LinguiJS 国际化模块（`zh-CN`, `en-US` 字典与 `dynamicActivate`）      | 中文源码作为 msgid（Source-as-Key），运行时按需加载语言包 Chunk |
-| `stores/`     | 全局 Zustand 状态（主题、语言等跨窗口/跨域状态）                      | 仅存放全应用级公共状态                                          |
+## 2. Feature 规范
 
-## 2. 分层依据
+1. **入口驱动**：每个 feature 的 `index.tsx` 是唯一允许被外部 import 的文件，仅负责调用本域 hook 并向卡片传递 props，严禁深层路径引用（如 `@/features/x/hooks/...`）。
+2. **状态下沉**：hook 必须在 feature 内部实例化，严禁在顶层 App 集中实例化导致壳层耦合。
+3. **子域组织**：默认保持扁平；复杂父域允许二级 `sections/`（自包含且深度上限 2 层，section 间禁止互相 import）。
 
-**第一层：按所有权切**——只服务单一业务域的代码必须就近收敛在 `features/<domain>/`；仅当真实出现第二个独立消费者时，才允许上提到顶层 `components/`、`hooks/`、`lib/` 或 `stores/`。
-`components/` 属于“跨域 UI”，`hooks/` 与 `lib/` 属于“跨域能力”，`stores/` 属于“跨域状态”。
-
-**第二层：按有无副作用切**——`features/<domain>/hooks/` 统一持有状态与 IPC 副作用，输出 View Model（`{ state, handlers }`）；
-`features/<domain>/components/` 保持纯展示，仅通过 props 接收数据、通过 callback 输出交互，不碰 IPC、不持有跨卡片状态。
-
-**依赖方向单向流动**：严格遵循 `entries ➔ features ➔ 跨域层`。Feature 之间互相独立，禁止互相 import；唯一合法例外是 `dashboard` 编排域，跨域组合一律在此完成。
-
-## 3. Feature 规范
-
-### 1. 入口驱动与胶水容器
-
-每个 feature 的 `index.tsx` 是**唯一**允许被外部 import 的文件，只导出顶层入口组件。外部严禁出现深层路径引用（如 `@/features/<domain>/hooks/...`）。
-入口只负责“调用本域 hook 并向卡片传递 props”。一旦入口里出现条件分支、跨 feature 组合或数据计算，说明域边界划分有误，应当拆分而非往入口里堆砌逻辑。
-
-### 2. 状态下沉与共享提取
-
-hook 实例化必须落在 feature 内部。没有跨域共享需求就不上提——在 App.tsx 集中实例化所有 hook 会让壳层与各个域强耦合，随业务增长线性劣化。
-不要预先抽取公共代码。只有当第二个消费者真实出现时，才把 UI 提到 `components/`、把纯函数提到 `lib/`、把 hook 提到 `hooks/`。
-
-### 3. 多卡片与子域组织（`sections/`）
-
-一个域允许返回 Fragment 渲染多张卡片，拆分或合并域的标准在于两张卡片是否共享同一份状态与生命周期。
-默认保持扁平。只有当父域需统一控制二级子域的显隐、权限或展示时，才允许二级目录 `sections/`，每个 section 自包含：
-- 外部只允许 `import { XFeature } from "@/features/x"`，出现 `@/features/x/sections/...` 即为越界。
-- section 之间禁止互相 import；深度上限 2 层（`domain/section`）。
-
-## 4. 请求层与 manual-only 铁律
+## 3. 请求层与 manual-only 铁律
 
 所有 IPC 通信必须走安全包装层，严禁在业务中手写 `window.api.*` + `if (!res.success)` 散装解构。
 
-- **调用原语**：单接口请求一律使用 `useIpc('domain.method', options)`（由点分路径推导入参与解包类型，失败抛出 `IpcError`）；多通道业务编排使用 `useManualRequest` 并在内部按需调用 `callIpc('domain.method', args?)`（无参可省略 `args`）。非 Result 契约的辅助 API（如 `getPathForFile`）直接调用。
-- **manual-only 铁律**：所有异步请求写死 `manual: true`，严禁隐式触发。禁止使用 `refreshDeps`、`pollingInterval`、`refreshOnWindowFocus` 与自动防抖。请求必须显式由事件回调或挂载 `useEffect` 触发；防抖统一用 `useDebounceFn`，轮询统一用 `useInterval`。
-- **三层刚性拦截**：类型层（`Omit` 剔除 16 个自动触发键）、Lint 门禁（`noRestrictedImports` 禁止直连 `ahooks` 的 `useRequest`）与 CI 构建。
-- **日志与安全纪律**：仅记录 channel、耗时与结果状态；严禁在日志中打印包含敏感路径与 URL 的入参 body。
+- **调用原语**：单接口请求一律使用 `useIpc('domain.method')`；多通道业务编排使用 `useManualRequest` 并在内部按需调用 `callIpc('domain.method', args?)`。
+- **manual-only 铁律**：所有异步请求写死 `manual: true`，严禁隐式轮询/自动触发，触发点必须显式（事件回调或挂载 `useEffect`）；防抖用 `useDebounceFn`，轮询用 `useInterval`。
+- **安全纪律**：仅记录 channel、耗时与结果状态；严禁在日志中打印包含敏感路径与 URL 的入参 body。
+
+## 4. UI 组件选型与组件库优先 (Component-First)
+
+实现任何 UI 功能、布局、状态指示与交互反馈时，**必须优先选用已安装的 Ant Design (antd) 组件库，严禁手写原生 HTML 标签或滥用 Tailwind 原子类拼装模拟已有组件（严禁重复造轮子）**。
+
+### 1. 规范矩阵与查对表
+
+| 业务场景 / UI 需求      | 优先标准组件 / 规范                                                    | 严禁的重复造轮子 Anti-Pattern                         |
+| :---------------------- | :--------------------------------------------------------------------- | :---------------------------------------------------- |
+| **状态小圆点 / 徽标**   | `<Badge color="var(--color-*)" />` 或 `status="success\|warning\|..."` | 裸手写 `<span className="size-2 rounded-full ..." />` |
+| **状态标签 / 业务标记** | `<StatusTag tone="..." />` 或 `<Tag />`                                | 裸手写 `div/span` 拼装背景色与文字                    |
+| **交互提示 / 悬浮说明** | `<Tooltip title="...">` 或 `<Popover>`                                 | 裸手写 CSS `hover:block` / 自定义悬浮层               |
+| **操作按钮与加载反馈**  | `<Button loading={...}>`（配合 `loadingDelay`）                        | 裸手写 `<button>` 并手动插入 Spinner SVG              |
+| **数据展示与空态骨架**  | `<Empty />` · `<Skeleton />` · `<Statistic />` · `<Descriptions />`    | 裸手写无数据提示、加载骨架占位                        |
+| **卡片与容器布局**      | `<AppCard />`（统一规范）· `<Space />` · `<Flex />`                    | 随意手写裸 `div.card` 并随意覆盖边框与阴影            |
+
+### 2. context7 MCP 文档即时查阅机制 (Docs-First)
+
+在编写、封装或重构涉及第三方库（尤其是 Ant Design 组件、图标与 React 特性）的代码时，**严禁凭历史记忆盲猜 API、属性名或破坏性变更**：
+1. **即时查阅最新契约**：必须调用 `context7` MCP 工具（先经 `resolve-library-id` 解析库标识如 `antd`，再通过 `query-docs` 查询精确组件 API 与用法示例）。
+2. **版本与规范对齐**：本项目使用 Ant Design 现代版本，组件属性必须符合当前官方最新规范，禁止引入已过时或已被弃用的废弃属性。
+3. **定制边界**：当组件库原生确有无法覆盖的特异化场景时（如 4 阶段多色堆叠进度条），允许使用语义化容器（如 Flex + ARIA）扩展，但前缀/后缀、小圆点及 Tooltip 交互仍必须最大化复用 AntD 基础原语。
 
 ## 5. 组件书写约定与七段式语义模板
 
@@ -63,7 +53,6 @@ hook 实例化必须落在 feature 内部。没有跨域共享需求就不上提
 - **Props 接口规范**：Props 类型必须使用 `export interface XxxProps` 声明（空 props 统一采用 `export type XxxProps = Record<string, never>`），禁止行内字面量。
 - **导出与 Memo 规范**：展示卡片统一使用具名导出并包裹 `memo`（`export const X = memo(_X)`，杜绝 `export default`）；入口容器组件使用 `export { XFeature }`，不套 memo。
 - **React Compiler 纪律**：全仓由 React Compiler 全自动接管依赖记忆化，禁止手写样板式 `useMemo` 与 `useCallback`；遵守组件纯函数渲染，严禁在 render 期间读写 `ref.current`（Biome `useReactCompiler` 为 error 刚性阻断）。展示组件按约定包裹外层 `memo(_Xxx)` 导出以阻断跨组件重渲染。
-- **附属物就近原则**：组件私有 hook、样式与辅助函数维护在组件目录内；跨组件共享的上提顶层。别名 `@/` 指向 `src/*`，跨端契约仅消费 `@app/shared`。
 
 ### 2. 组件代码七段式语义模板
 
@@ -118,7 +107,7 @@ export const UserCard = memo(_UserCard);
 > **语义分块纪律**：
 > 1. **静态在外、动态在内**：常量与纯函数必须提取到组件函数体外部，不占用重渲染开销。
 > 2. **单向线性流**：函数体内严格遵循 `解构 ➔ State ➔ IO ➔ 派生 ➔ Handlers ➔ Effect ➔ JSX`。
-> 3. **无内容占位**：纯展示卡片若无“网络IO”或“Effect”，可保留单行注释占位或自然跳过，但绝不可颠倒相对顺序。
+> 3. **无内容跳过不颠倒**：若无“网络IO”或“Effect”，可保留单行注释占位或自然跳过，但绝不可颠倒相对顺序。
 
 ## 6. 国际化 (i18n)
 

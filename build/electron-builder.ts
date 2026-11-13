@@ -40,7 +40,9 @@ const config: Configuration = {
     installerIcon: 'build/resources/icon.ico',
     uninstallerIcon: 'build/resources/icon.ico',
     installerHeaderIcon: 'build/resources/icon.ico',
+    // 静默与默认卸载不自动删用户数据；交互式卸载通过 build/installer.nsh 提供可勾选项
     deleteAppDataOnUninstall: false,
+    include: 'build/installer.nsh',
   },
   mac: {
     target: ['dmg', 'zip'],

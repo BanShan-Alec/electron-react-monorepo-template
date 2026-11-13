@@ -1,18 +1,34 @@
 ---
 
 title: 使用此模板（Use-this-template）
-description: 把模板转为自己项目的八组原子任务，可整页交给 AI 协作者执行，每组只给目标与可复制的完成判据。
+description: 把模板转为自己项目的八组原子任务，提供引导 Agent 执行的结构化 Prompt，每组给出目标与可复制的完成判据。
 ---
 
 # 使用此模板（Use-this-template）
 
-> **TL;DR**：Use this template / Fork 之后、写第一行业务之前，按 §2 八组任务完成「转为己有」。每组只给目标与判据，挂载点由执行者自行搜索确认；可整页交给 AI 协作者执行，人只验收判据。
+> **TL;DR**：Use this template / Fork 之后、写第一行业务之前，按 §2 八组任务完成「转为己有」。每组只给目标与判据，挂载点由执行者自行搜索确认。建议直接使用文首的 Prompt 委派给 AI 协作者按序推进，人只对照判据验收。
 
-## 1. 执行时机与前置条件
+## 1. 委托 Agent 执行 Prompt 与前置条件
+
+### 1.1 给 Agent 的委托执行 Prompt
+
+你可以直接复制以下 Prompt 发送给你的 AI 编程助手（如 Cursor、Claude Code、GitHub Copilot 或 Antigravity）：
+
+```markdown
+请阅读项目文档 `packages/docs/src/pages/introduction/use-this-template.md`（或参考文档站「使用此模板」页面）。
+按照文档 §2 中的八组原子任务依次执行，将当前模板改造成我自己的桌面端项目。
+
+执行要求：
+1. 任务 1 请遵循命名规约与推导规则（若我未单独提供，请主动向我确认应用英文名、中文/展示名与 App ID，或按规则安全推导）；
+2. 严格以每个任务给出的“判据”作为完成标准，逐项验证通过后再进入下一任务；
+3. 全部任务完成后，运行任务 8 的收尾门禁命令，确保没有模板坐标残留且全仓检查全绿。
+```
+
+### 1.2 执行时机与前置条件
 
 - **何时执行**：GitHub「Use this template」/ Fork / Clone 之后、写第一行业务之前。此时挂载点全是模板默认形态，改造成本最低。
 - **边界**：把仓库跑起来见 [快速上手（Getting Started）](/introduction/getting-started)；`name` / `appId` / `productName` 的逐项含义见 [配置项归属](/dx/configuration-map)。演示域（counter / calculator）与能力演示卡随业务需要自行删改，不属本页范围。
-- **执行方式**：整页投喂 AI 协作者逐任务执行，或人工照做；判据为可复制命令或明确的人工验收项，逐条通过后再进入下一任务。
+- **执行方式**：使用上方 Prompt 委托 AI 协作者逐任务执行，或人工照做；判据为可复制命令或明确的人工验收项，逐条通过后再进入下一任务。
 
 ## 2. 核心机制
 
@@ -36,6 +52,14 @@ description: 把模板转为自己项目的八组原子任务，可整页交给 
   }
 }
 ```
+
+#### 字段规约与推导规则（供 Agent / 人工参考）
+
+若用户未显式指定字段值，执行者（或 Agent）应遵循以下确定性规则：
+- **`name`**：必须满足纯小写正则 `/^[a-z0-9-_]+$/`（严禁空格、大写与 `@/` 等特殊符号，否则会被 `pnpm verify:prebuild` 静态门禁直接拦截）；默认从当前工作区根目录名或 Git 仓库名推导（如 `my-desktop-app`）。
+- **`productName`**：桌面窗口标题、安装器与快捷方式展示名；默认由 `name` 转换为 Title Case（如 `My Desktop App`）。
+- **`appId`**：应用全局唯一标识（Windows AUMID、macOS Bundle Identifier）；推荐格式为反向域名 `com.<org-or-author>.<clean-name>`。
+- **`author` / `repository`**：更新为当前项目拥有者的作者名与真实 GitHub 仓库 URL（以便主进程与 electron-builder 正确定位 OTA 发布源）。
 
 - **判据**：`pnpm verify:prebuild` 绿（`name` 的小写规约由该门禁校验）；`productName` 与 `appId` 是发布身份，对外发版后不可再改。
 

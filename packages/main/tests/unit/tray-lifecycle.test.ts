@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import { appLifecycle } from '@app/main/lifecycle';
 import { ApplicationTerminatorOnLastWindowClose } from '@app/main/modules/auto-terminate.module';
 import * as configModule from '@app/main/modules/config.module';
+import * as logModule from '@app/main/modules/log.module';
 import { TrayManager } from '@app/main/modules/tray.module';
 import * as homeWindowModule from '@app/main/modules/window/home-window.module';
 import * as windowRegistry from '@app/main/modules/window/window-registry';
@@ -66,6 +67,11 @@ describe('Tray & Window Destroy Lifecycle', () => {
         get: (key: string) => key === 'minimizeToTray',
       } as unknown as ReturnType<typeof configModule.getAppConfigStore>);
 
+      const info = vi.fn();
+      vi.spyOn(logModule, 'getLogManager').mockReturnValue({
+        scoped: () => ({ info, warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
+      } as unknown as ReturnType<typeof logModule.getLogManager>);
+
       const terminator = new ApplicationTerminatorOnLastWindowClose();
       terminator.enable({
         app: mockApp,
@@ -74,6 +80,7 @@ describe('Tray & Window Destroy Lifecycle', () => {
       mockApp.emit('window-all-closed');
 
       expect((mockApp as unknown as { quit: () => void }).quit).toHaveBeenCalled();
+      expect(info).toHaveBeenCalledWith('Last window closed during quit; requesting quit retry');
     });
   });
 

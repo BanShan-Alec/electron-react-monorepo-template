@@ -47,6 +47,7 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 | 主进程模块装配 / 生命周期 / 托盘 / 窗口        | [packages/main/AGENTS.md](packages/main/AGENTS.md)                               |
 | 安全桥接 / contextBridge / IPC 追踪            | [packages/preload/AGENTS.md](packages/preload/AGENTS.md)                         |
 | 渲染层 Feature 划分 / manual-only / 组件七段式 | [packages/renderer/AGENTS.md](packages/renderer/AGENTS.md)                       |
+| UI 组件选型 / context7 文档查阅 / 防造轮子     | [packages/renderer/AGENTS.md](packages/renderer/AGENTS.md) §4                    |
 | 跨端契约 / Zod Schema / MODE 环境流转          | [packages/shared/AGENTS.md](packages/shared/AGENTS.md)                           |
 | 视觉 / 设计 Token / 品牌定制                   | [packages/renderer/docs/DESIGN.md](packages/renderer/docs/DESIGN.md)             |
 | 多语言词条与国际化 (LinguiJS)                  | [packages/renderer/AGENTS.md](packages/renderer/AGENTS.md) §6                    |

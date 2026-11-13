@@ -2,7 +2,6 @@
 // 运行时零外部依赖，故作为 devDependencies 安装与管理
 import '@sentry/electron/preload';
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
-import { APP_STARTUP_MAIN_READY_EVENT } from '@app/shared/constants/startup';
 import type { CalculateInput } from '@app/shared/schemas/calculator';
 import type { CloseBehaviorChoice } from '@app/shared/schemas/close-behavior';
 import type { AppConfig, UpdateConfigInput } from '@app/shared/schemas/config';
@@ -12,7 +11,6 @@ import type { OpenDirectoryInput, OpenFileInput, SaveFileInput } from '@app/shar
 import type { ShowItemInFolderInput } from '@app/shared/schemas/shell';
 import type { ElectronApi } from '@app/shared/types/api';
 import type { AppRuntimeEnv } from '@app/shared/types/env';
-import type { StartupGateSnapshot, StartupMainReadyPayload } from '@app/shared/types/startup';
 import type { IpcCallOptions } from '@app/shared/types/telemetry';
 import type { UpdaterProgress, UpdaterSnapshot } from '@app/shared/types/updater';
 import { APP_ENV_ARG_PREFIX, unpackRuntimeEnv } from '@app/shared/utils/env-packer';
@@ -31,17 +29,6 @@ if (metaArg) {
   }
 }
 contextBridge.exposeInMainWorld('__APP_ENV__', Object.freeze(runtimeEnv ?? {}));
-
-// 启动就绪桥：求值期注册主进程广播监听，晚到信号经跨世界
-// 纯 Event 派发给壳协调器（contextIsolation 下无 payload Event 可见），payload 经回调携带
-const mainReadyCallbacks = new Set<(payload: StartupMainReadyPayload) => void>();
-ipcRenderer.on(
-  IPC_CHANNELS.STARTUP_EVENT_MAIN_READY,
-  (_event, payload: StartupMainReadyPayload) => {
-    window.dispatchEvent(new Event(APP_STARTUP_MAIN_READY_EVENT));
-    for (const cb of mainReadyCallbacks) cb(payload);
-  },
-);
 
 export const apiBridge: ElectronApi = {
   usb: {
@@ -137,16 +124,6 @@ export const apiBridge: ElectronApi = {
       ipcRenderer.on(IPC_CHANNELS.UPDATER_EVENT_PROGRESS, listener);
       return () => {
         ipcRenderer.removeListener(IPC_CHANNELS.UPDATER_EVENT_PROGRESS, listener);
-      };
-    },
-  },
-  // 启动就绪桥：动态实时拉取主进程就绪快照，推送回调按注册表分发
-  startup: {
-    getSnapshot: () => invokeTraced<StartupGateSnapshot>(IPC_CHANNELS.STARTUP_GET_SNAPSHOT),
-    onMainReady: (cb: (payload: StartupMainReadyPayload) => void) => {
-      mainReadyCallbacks.add(cb);
-      return () => {
-        mainReadyCallbacks.delete(cb);
       };
     },
   },

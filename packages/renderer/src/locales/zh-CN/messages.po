@@ -47,10 +47,6 @@ msgstr "CPU 核心 / 架构"
 msgid "Electron & Node.js 原生底层探针"
 msgstr "Electron & Node.js 原生底层探针"
 
-#: src/features/ping/components/PingCard/index.tsx
-msgid "Electron ContextBridge & window.api 延迟测量"
-msgstr "Electron ContextBridge & window.api 延迟测量"
-
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "Electron 版本"
 msgstr "Electron 版本"
@@ -62,6 +58,15 @@ msgstr "Fullstack 经典分层通信架构全流程"
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "Fullstack 规范分层方式"
 msgstr "Fullstack 规范分层方式"
+
+#: src/features/ping/components/PingCard/index.tsx
+msgid "IPC 传输"
+msgstr "IPC 传输"
+
+#. placeholder {0}: timing.ipcMs
+#: src/features/ping/components/PingCard/index.tsx
+msgid "IPC 传输: {0}ms"
+msgstr "IPC 传输: {0}ms"
 
 #: src/features/counter/components/CounterCard/index.tsx
 msgid "IPC 计数器 (Counter)"
@@ -115,13 +120,18 @@ msgstr "下载进度"
 msgid "严格协议白名单校验 (仅允许 http/https) 与 DevTools 控制"
 msgstr "严格协议白名单校验 (仅允许 http/https) 与 DevTools 控制"
 
+#: src/features/ping/components/PingCard/index.tsx
+msgid "主进程"
+msgstr "主进程"
+
+#. placeholder {0}: timing.mainMs
+#: src/features/ping/components/PingCard/index.tsx
+msgid "主进程: {0}ms"
+msgstr "主进程: {0}ms"
+
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "主进程堆内存占用"
 msgstr "主进程堆内存占用"
-
-#: src/features/ping/components/PingCard/index.tsx
-msgid "主进程时间"
-msgstr "主进程时间"
 
 #: src/features/architecture/hooks/useArchitecture.ts
 msgid "代码已复制"
@@ -363,6 +373,14 @@ msgstr "打开更新窗口失败"
 msgid "打开项目文档站"
 msgstr "打开项目文档站"
 
+#: src/features/ping/components/PingCard/index.tsx
+msgid "排队等待"
+msgstr "排队等待"
+
+#: src/features/ping/components/PingCard/index.tsx
+msgid "探针机制：结合主进程 libuv 原生探针与高精度打点，精准解耦排队与通信耗时"
+msgstr "探针机制：结合主进程 libuv 原生探针与高精度打点，精准解耦排队与通信耗时"
+
 #: src/components/close-behavior/CloseBehaviorDialog/index.tsx
 msgid "提交关闭选择失败"
 msgstr "提交关闭选择失败"
@@ -523,6 +541,15 @@ msgstr "测速 Ping"
 msgid "深色模式 (Dark)"
 msgstr "深色模式 (Dark)"
 
+#: src/features/ping/components/PingCard/index.tsx
+msgid "渲染调度"
+msgstr "渲染调度"
+
+#. placeholder {0}: timing.renderMs
+#: src/features/ping/components/PingCard/index.tsx
+msgid "渲染调度: {0}ms"
+msgstr "渲染调度: {0}ms"
+
 #: src/features/settings/components/SettingsCard/index.tsx
 msgid "点击托盘图标可重新打开"
 msgstr "点击托盘图标可重新打开"
@@ -563,6 +590,10 @@ msgstr "稍后提醒"
 msgid "立即更新"
 msgstr "立即更新"
 
+#: src/features/ping/components/PingCard/index.tsx
+msgid "端到端链路耗时分解"
+msgstr "端到端链路耗时分解"
+
 #: src/features/settings/components/SettingsCard/index.tsx
 msgid "类型安全主进程本地持久化存储与动态生效"
 msgstr "类型安全主进程本地持久化存储与动态生效"
@@ -578,6 +609,10 @@ msgstr "系统运行时间"
 #: src/features/native-dialogs/components/DialogCard/index.tsx
 msgid "经由安全 Controller & Preload 调起系统文件管理器与访达"
 msgstr "经由安全 Controller & Preload 调起系统文件管理器与访达"
+
+#: src/features/ping/components/PingCard/index.tsx
+msgid "结合 libuv 原生探针与 ContextBridge，精确解耦全链路延迟"
+msgstr "结合 libuv 原生探针与 ContextBridge，精确解耦全链路延迟"
 
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "统一通过 window.api 消费 Result 契约，享受完备 IDE 智能提示，与主进程实现 100% 物理代码隔离。"
@@ -703,6 +738,10 @@ msgstr "非白名单外链 (example.com)"
 #: src/components/layout/ErrorBoundary/index.tsx
 msgid "页面出错啦~"
 msgstr "页面出错啦~"
+
+#: src/features/ping/components/PingCard/index.tsx
+msgid "页面首屏正忙于挂载各功能组件与渲染，测速回调在任务队列排队；再次测速即恢复极速"
+msgstr "页面首屏正忙于挂载各功能组件与渲染，测速回调在任务队列排队；再次测速即恢复极速"
 
 #: src/features/docs/components/DocsView/index.tsx
 msgid "项目文档站"

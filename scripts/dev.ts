@@ -80,6 +80,12 @@ function createPreloadReloaderPlugin(server: ViteDevServer): Plugin {
   return {
     name: '[dev]preload-dev-reloader',
     writeBundle() {
+      // 冷启动时 watch 的首轮构建早于窗口连上 HMR，此时广播等于对着空气发一条
+      // full-reload：页面刚连上就收到，会立刻整页重载，启动壳的入场动画被重播一遍。
+      // 没有客户端时直接跳过；语义上也确实没有需要重载的页面。
+      if (server.ws.clients.size === 0) {
+        return;
+      }
       server.ws.send({
         type: 'full-reload',
       });
