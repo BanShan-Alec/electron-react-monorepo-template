@@ -9,16 +9,11 @@ import { usePing } from './hooks/usePing';
  */
 function PingFeature() {
   // 变量声明、解构
-  const { pingLatency, serverTime, isPinging, handlePing } = usePing();
+  const { pingLatency, timing, isPinging, handlePing } = usePing();
 
   // 组件渲染
   return (
-    <PingCard
-      latency={pingLatency}
-      serverTime={serverTime}
-      isPinging={isPinging}
-      onPing={handlePing}
-    />
+    <PingCard latency={pingLatency} timing={timing} isPinging={isPinging} onPing={handlePing} />
   );
 }
 
