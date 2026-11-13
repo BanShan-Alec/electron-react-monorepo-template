@@ -15,17 +15,20 @@ import { createContentSecurityPolicyModule } from './modules/security/csp';
 import { allowExternalUrls } from './modules/security/external-urls';
 import { createSentryModule, initMainSentry } from './modules/sentry.module';
 import { disallowMultipleAppInstance } from './modules/single-instance.module';
-import { createStartupReadinessModule } from './modules/startup-readiness.module';
 import { createTrayModule } from './modules/tray.module';
 import { createHomeWindowModule } from './modules/window/home-window.module';
 import { createUpdaterWindowModule } from './modules/window/updater-window.module';
 import { updaterService } from './services/updater.service';
+import { getTracer } from './telemetry/tracer';
 
 // 主进程最早期初始化 Sentry
 initMainSentry();
 
 export async function initApp(initConfig: AppInitConfig) {
-  const startupReadiness = createStartupReadinessModule();
+  // 冷启动仪表盘：span 覆盖「模块装配开始 → 全部同步/异步模块完成」，
+  // initMs 属性保留以进程启动为锚的总耗时（performance.now() 原点即进程启动）。
+  // 注意 ModuleRunner.init() 是同步调用 enable()，所以 span 必须建在 init 链之前。
+  const startupSpan = getTracer().startManualSpan('app.initialization');
 
   const moduleRunner = createModuleRunner()
     .init(createLogModule())
@@ -33,8 +36,6 @@ export async function initApp(initConfig: AppInitConfig) {
     .init(createConfigModule())
     .init(createNativeThemeModule())
     .init(createIPCModule())
-    // 主进程启动就绪控制：注册 IPC 查询通道，初始保持 false
-    .init(startupReadiness)
     .init(createHomeWindowModule({ initConfig }))
     .init(createUpdaterWindowModule({ initConfig }))
     .init(createTrayModule())
@@ -58,8 +59,10 @@ export async function initApp(initConfig: AppInitConfig) {
     .init(allowExternalUrls(new Set(ALLOWED_EXTERNAL_URLS)));
 
   await moduleRunner;
-  // 所有同步/异步模块（含异步窗口创建与注册）均已完成后再广播就绪事件
-  startupReadiness.markReady();
+  // 所有同步/异步模块（含异步窗口创建与注册）均已完成：封板冷启动 span 后进入后台任务
+  startupSpan.addEvent('app.modules_ready');
+  startupSpan.setAttributes({ initMs: Math.round(performance.now()) });
+  startupSpan.end('OK');
 
   // 应用就绪后若开启自动更新则延迟执行后台静默检查
   try {

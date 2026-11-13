@@ -8,7 +8,7 @@ import { StartupShellPreview } from '../../components/StartupShellPreview';
 
 # 首屏体验（Startup-orchestration）
 
-> **TL;DR**：React 挂载前由轻量内联 HTML 启动壳顶住白屏；构建内联的启动协调器（Coordinator）等待 Logo 动画、React 首帧与主进程就绪三路门禁齐备后交叉揭幕，任一路失联均有超时兜底。
+> **TL;DR**：React 挂载前由轻量内联 HTML 启动壳顶住白屏；构建内联的启动协调器（Coordinator）等待 Logo 动画与 React 首帧两道门禁齐备后交叉揭幕，任一路失联均有超时兜底。
 
 <StartupShellPreview />
 
@@ -19,7 +19,7 @@ import { StartupShellPreview } from '../../components/StartupShellPreview';
 2. **时序割裂**：前端 React 已经渲染完成，但主进程的核心控制器或配置存储尚未就绪，导致用户点击触发空指针。
 3. **死锁风险**：若强依赖某单一路就绪信号，一旦发生异常（如主进程 IPC 假死），应用将永久卡在 Loading 骨架屏。
 
-传统社区实践常采用 `show: false` 配合 `ready-to-show` 事件再呈现窗口，但这会导致用户双击桌面图标后在数百毫秒内没有任何物理界面出现，产生严重的“假死未启动”迟滞感。本项目刻意采用**「窗口创建即显示 + 底色对齐 + 裸 DOM 启动壳即刻呈现」**，在首帧瞬间给用户即时视觉反馈，再由启动协调器进行三道门禁汇流与超时兜底。
+传统社区实践常采用 `show: false` 配合 `ready-to-show` 事件再呈现窗口，但这会导致用户双击桌面图标后在数百毫秒内没有任何物理界面出现，产生严重的“假死未启动”迟滞感。本项目刻意采用**「窗口创建即显示 + 底色对齐 + 裸 DOM 启动壳即刻呈现」**，在首帧瞬间给用户即时视觉反馈，再由启动协调器进行两道门禁汇流与超时兜底。
 
 ## 2. 核心机制
 
@@ -29,33 +29,20 @@ flowchart TB
     StartupReadyNotifier["StartupReadyNotifier<br/>React 首帧 commit"]
     animation["animation 门禁<br/>animationend"]
     react["react 门禁<br/>app-react-startup-ready"]
-    main["main 门禁"]
     settleGate["settleGate(id)"]
     tryFinishStartup["tryFinishStartup()"]
     APP_STARTUP_READY_CLASS["揭幕<br/>body.app-startup-ready"]
     STARTUP_ANIMATION_FALLBACK_MS["超时 1s"]
     STARTUP_REACT_FALLBACK_MS["超时 3s"]
-    STARTUP_MAIN_FALLBACK_MS["超时 5s"]
-  end
-  subgraph preload["Preload（隔离桥）· api.startup"]
-    APP_STARTUP_MAIN_READY_EVENT["APP_STARTUP_MAIN_READY_EVENT<br/>先挂监听补推"]
-    getSnapshot["getSnapshot()<br/>后动态拉快照"]
-  end
-  subgraph mainProcess["主进程（Main）· startup-readiness.module"]
-    startupReadiness["enable() 注册通道<br/>markReady() 广播就绪"]
   end
   StartupReadyNotifier --> react
-  animation & react & main --> settleGate
-  STARTUP_ANIMATION_FALLBACK_MS & STARTUP_REACT_FALLBACK_MS & STARTUP_MAIN_FALLBACK_MS -.-> settleGate
+  animation & react --> settleGate
+  STARTUP_ANIMATION_FALLBACK_MS & STARTUP_REACT_FALLBACK_MS -.-> settleGate
   settleGate --> tryFinishStartup
   tryFinishStartup --> APP_STARTUP_READY_CLASS
-  startupReadiness -->|"推送"| APP_STARTUP_MAIN_READY_EVENT
-  startupReadiness -->|"快照"| getSnapshot
-  APP_STARTUP_MAIN_READY_EVENT -->|"先听"| main
-  getSnapshot -->|"后查"| main
 ```
 
-协调器由构建期插件 `startup-shell` 打包为经典 IIFE 内联进 `index.html`，先于 React 执行。它维护门禁注册表：`pendingGates` 初始装齐 `animation` / `react` / `main`，每路就绪调用一次 `settleGate`；集合清空后由 `tryFinishStartup` 统一揭幕，`finished` 保证只执行一次。
+协调器由构建期插件 `startup-shell` 打包为经典 IIFE 内联进 `index.html`，先于 React 执行。它维护门禁注册表：`pendingGates` 初始装齐 `animation` / `react`，每路就绪调用一次 `settleGate`；集合清空后由 `tryFinishStartup` 统一揭幕，`finished` 保证只执行一次。
 
 ### 关键实现：门禁结算与揭幕
 
@@ -81,15 +68,15 @@ const settleGate = (id: GateId) => {
 };
 ```
 
-主进程门禁双保险机制：主进程在 ModuleRunner 启动期挂载 [startup-readiness.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/startup-readiness.module.ts) 注册 IPC 查询通道（初始为 false），窗口创建并呈现原生 Loading 动效；待 `await moduleRunner` 所有同步与异步模块（含异步窗口注册）就绪后，调用 `startupReadiness.markReady()` 向已存活窗口广播 `APP_STARTUP_MAIN_READY_EVENT`。协调器采用双保险时序——先挂监听防漏推，再动态调用 `api.startup.getSnapshot()` 查询当前状态，已就绪则立即放行，配合 `STARTUP_MAIN_FALLBACK_MS` 超时兜底，彻底消除跨进程竞态与死锁。无 `api.startup` 的纯浏览器调试环境直接放行，不阻塞揭幕。
+**为什么只有两道门禁**：主进程模块装配完成一度是第三道门禁，经 preload 的 `api.startup` 快照拉取 + 广播双保险接入。但它是跨进程的**代理信号**——「模块装配完成」并不等于「服务可用」，真正需要等待的业务就绪应放在业务层（例如拿到服务端口后再挂载业务根），不该由启动壳承担。这道门禁与 `api.startup` 契约已整体移除：壳只等动画与 React 首帧；装配耗时改由主进程 `app.initialization` span 记录（`initMs` 属性保留以进程启动为锚的总耗时），落 `traces.ndjson`——属于观测，不再是判断。
 
 ## 3. 桌面端避坑注意事项
 
 - **首屏协调器与 CSP 生产策略协同**：
-  - 启动协调器是构建期直接内联到 `index.html` 的独立原生脚本。主进程在配置生产态 CSP 时，`script-src` 必须包含 `'unsafe-inline'`（或匹配 hash），否则协调器会被 Chromium 静默阻断，导致三门禁永远无法结算揭幕，造成应用与自动化测试无死锁假死。
+  - 启动协调器是构建期直接内联到 `index.html` 的独立原生脚本。主进程在配置生产态 CSP 时，`script-src` 必须包含 `'unsafe-inline'`（或匹配 hash），否则协调器会被 Chromium 静默阻断，导致两道门禁永远无法结算揭幕，造成应用与自动化测试无死锁假死。
 - **产物冒烟严禁断言静态 `#root` 假阳性**：
   - 许多冒烟测试仅断言 HTML 包含 `<div id="root">` 便判定渲染成功，此时页面可能因 JS 语法错误处于彻底白屏。产物校验脚本必须等待 `page.waitForSelector('body.app-startup-ready')`，断言协调器真实完成揭幕。
-- **三门禁超时兜底单一真源**：
-  - `STARTUP_ANIMATION_FALLBACK_MS`（1s）、`STARTUP_REACT_FALLBACK_MS`（3s）、`STARTUP_MAIN_FALLBACK_MS`（5s）常量统一定义在 `@app/shared`，严禁在渲染端与主进程分别硬编码数字。
+- **两道门禁超时兜底单一真源**：
+  - `STARTUP_ANIMATION_FALLBACK_MS`（1s）、`STARTUP_REACT_FALLBACK_MS`（3s）常量统一定义在 `@app/shared`，严禁在渲染端与 E2E 断言分别硬编码数字。主进程装配耗时不是门禁，由 `app.initialization` span 的 `initMs` 属性记录，排障时看 `traces.ndjson`。
 - **裸 DOM 启动壳样式不引外部资源**：
   - 启动壳 CSS 必须直接内联在 HTML `<style>` 标签中，严禁引用外部字体或外链图片，确保在最慢的物理磁盘上也能在首帧瞬间呈现。
