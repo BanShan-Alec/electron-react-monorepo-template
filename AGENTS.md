@@ -1,7 +1,7 @@
 # AGENTS.md — 全局架构守则与全仓任务路由
 
 > 本文件是全仓架构红线与任务路由入口：全局硬红线 + 包级规则索引 + 开发流门禁。
-> 进入任何 `packages/` 目录工作前，以该包的 `AGENTS.md` 为唯一真源。项目总览与架构见 [README.md](README.md)。
+> 进入任何 `packages/` 目录工作前，先读该包的 `AGENTS.md`；包级架构与日常规则以该文件为准，明确链接的专项规则或流程文档承载对应细则。项目总览与架构见 [README.md](README.md)。
 
 ## 1. 技术栈速览
 
@@ -18,9 +18,9 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 4. **配置与依赖归属**：有归属包的配置与运行时依赖进该包；跨包编排工具进 `.config/` 与根 `devDependencies`；只有工具解析机制强制才能留在根，且须在 CONTRIBUTING 的机制强制清单内备案。判定规则见 [CONTRIBUTING.md](CONTRIBUTING.md) §三「配置与依赖归属」。
 5. **文档与代码同 PR 同步**：新增 / 删除目录、模块、导出、脚本或依赖时，同一 PR 内更新对应包 `AGENTS.md`；规则表述与代码冲突时先改文档使其可执行。（细则见 [CONTRIBUTING.md](CONTRIBUTING.md) §六「文档同步纪律」）
 
-## 3. 包索引（规则真源在各包 AGENTS.md）
+## 3. 包索引（包级入口在 AGENTS.md，专项细则按指针）
 
-| 包               | 职责                                                | 规则文件                                                                                                             |
+| 包               | 职责                                                | 规则入口 / 专项细则                                                                                                  |
 | ---------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | `@app/main`      | 主进程：Controller/Service 分层、窗口与系统生命周期 | [packages/main/AGENTS.md](packages/main/AGENTS.md)                                                                   |
 | `@app/preload`   | 安全桥接层：contextBridge 暴露 `window.api`         | [packages/preload/AGENTS.md](packages/preload/AGENTS.md)                                                             |
@@ -41,9 +41,11 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 
 ### 4.2 任务路由导航
 
-| 研发任务 / 关注点                              | 核心规则指引（唯一真源）                                                         |
+| 研发任务 / 关注点                              | 核心规则入口 / 专项指引                                                          |
 | :--------------------------------------------- | :------------------------------------------------------------------------------- |
 | 新增跨端业务域 (全栈 SOP)                      | 四包各自的 `AGENTS.md`（按上述 4.1 流水线顺序落地）                              |
+| 新增主进程业务领域骨架                         | [.agents/rules/main-domain-sop.md](.agents/rules/main-domain-sop.md)             |
+| 文档站页面编写 / 导航登记 / 路径迁移           | [packages/docs/AGENTS.md](packages/docs/AGENTS.md)                               |
 | 主进程模块装配 / 生命周期 / 托盘 / 窗口        | [packages/main/AGENTS.md](packages/main/AGENTS.md)                               |
 | 安全桥接 / contextBridge / IPC 追踪            | [packages/preload/AGENTS.md](packages/preload/AGENTS.md)                         |
 | 渲染层 Feature 划分 / manual-only / 组件七段式 | [packages/renderer/AGENTS.md](packages/renderer/AGENTS.md)                       |
@@ -71,7 +73,7 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 
 - 全局工程规范与协作基础设施（Git 规范 / PR 闭环 / pnpm 12 机制 / build/lib）：[CONTRIBUTING.md](CONTRIBUTING.md)
 - PR / CI 门禁清单与发版 SOP：[.github/CICD.md](.github/CICD.md)
-- 横切规则（globs 触发，落盘日志英文）：[.agents/rules/logging-specification.md](.agents/rules/logging-specification.md)
+- 落盘日志语言、异常上报与日志链路规范（按日志任务路由）：[.agents/rules/logging-specification.md](.agents/rules/logging-specification.md)
 
 ## 7. 模块系统与脚本执行约定
 

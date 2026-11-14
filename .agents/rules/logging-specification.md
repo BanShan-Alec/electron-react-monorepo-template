@@ -1,9 +1,3 @@
----
-
-description: 落盘日志语言与用词规范（English-only, simple & concise logging）
-globs: packages/**/*.{ts,tsx}
----
-
 # 落盘日志语言与用词规范 (English-Only Logging Specification)
 
 在本项目中，所有持久化写入磁盘日志（包括 `main.log`、`renderer-<window>.log`、`electron-log` 以及 `LogManager` / `ScopedLogger`）的代码必须严格遵循以下原则：

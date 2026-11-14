@@ -1,4 +1,5 @@
 ---
+
 title: 快速上手（Getting Started）
 description: 环境基线、从零启动流程与 Monorepo 核心命令速查表
 ---
@@ -45,16 +46,16 @@ pnpm preview
 
 ## 常用命令速查表
 
-| 命令 | 行为与用途 |
-| :--- | :--- |
-| `pnpm dev` | 启动开发态（带单实例/端口自愈、Vite HMR、主进程变更自重启） |
-| `pnpm preview` | 一次性构建三包产物并在本地模拟生产形态启动应用 |
-| `pnpm typecheck` | 执行全仓 Monorepo 跨包类型一致性检查（`tsc -b --noEmit`） |
-| `pnpm lint` / `lint:fix` | Biome 架构红线扫描（拦截桶文件、循环依赖与违规导入）/ 自动修复 |
-| `pnpm test` | 运行 Main、Renderer、Shared 所有的 Vitest 单元测试 |
-| `pnpm test:e2e` | 驱动真实打包/预览环境运行 Playwright 端到端交互断言 |
-| `pnpm verify:prebuild` | 打包前硬性安全门禁（检查根依赖白名单、包命名规约与依赖拓扑） |
-| `pnpm build:win` | 构建 Windows 平台 NSIS 安装包与免安装产物 |
-| `pnpm build:mac` | 构建 macOS 平台 DMG / Zip 产物 |
-| `pnpm build:linux` | 构建 Linux 平台 DEB 安装包产物 |
-| `pnpm docs:dev` / `docs:build` | 启动本解法文档站本地热更开发 / 静态 SSG 构建 |
+| 命令                           | 行为与用途                                                     |
+| :----------------------------- | :------------------------------------------------------------- |
+| `pnpm dev`                     | 启动开发态（带单实例/端口自愈、Vite HMR、主进程变更自重启）    |
+| `pnpm preview`                 | 一次性构建三包产物并在本地模拟生产形态启动应用                 |
+| `pnpm typecheck`               | 执行全仓 Monorepo 跨包类型一致性检查（`tsc -b --noEmit`）      |
+| `pnpm lint` / `lint:fix`       | Biome 架构红线扫描（拦截桶文件、循环依赖与违规导入）/ 自动修复 |
+| `pnpm test`                    | 运行 Main、Renderer、Shared 所有的 Vitest 单元测试             |
+| `pnpm test:e2e`                | 驱动真实打包/预览环境运行 Playwright 端到端交互断言            |
+| `pnpm verify:prebuild`         | 打包前硬性安全门禁（检查根依赖白名单、包命名规约与依赖拓扑）   |
+| `pnpm build:win`               | 构建 Windows 平台 NSIS 安装包与免安装产物                      |
+| `pnpm build:mac`               | 构建 macOS 平台 DMG / Zip 产物                                 |
+| `pnpm build:linux`             | 构建 Linux 平台 DEB 安装包产物                                 |
+| `pnpm docs:dev` / `docs:build` | 启动本解法文档站本地热更开发 / 静态 SSG 构建                   |

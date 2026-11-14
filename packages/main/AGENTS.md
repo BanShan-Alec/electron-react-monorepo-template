@@ -1,6 +1,6 @@
 # @app/main AGENTS.md — 主进程架构与执行规则
 
-> 全局红线与全仓任务路由见 [根 AGENTS.md](../../AGENTS.md)。本文件为该包规则唯一真源。
+> 全局红线与全仓任务路由见 [根 AGENTS.md](../../AGENTS.md)。本文件为该包架构与日常开发规则的唯一真源；新增业务领域代码骨架见[专用 SOP](../../.agents/rules/main-domain-sop.md)。
 
 ## 1. 分层架构与隐形陷阱
 
@@ -30,85 +30,11 @@
 - **窗口模块间越权操纵** — 窗口模块（如 `HomeWindowModule`、`UpdaterWindowModule`）自治管理自身生命周期，严禁在一个窗口关闭时跨模块显式销毁其他窗口；所有原生窗口的创建与销毁收敛至 `window-registry` 集中感知与清理。
 - **漏配 external 导致打包污染** — 主进程生产依赖必须 100% 在 `packages/main/vite.config.ts` 的 `rolldownOptions.external` 中排除（门禁：CI `pnpm verify:prebuild` 拦截；`@sentry/electron` 经 `ssr.noExternal` 主动内联除外）。
 
-## 4. 新增业务领域开发范式 (SOP 代码骨架)
+## 4. 新增业务领域流程路由
 
-开发新领域时严格按以下三步骨架编写：
-
-### Step 1: 编写 Service (`services/<domain>.service.ts` - 纯逻辑单例，零 IPC 依赖)
-
-```typescript
-import { AppError } from '../errors/AppError';
-import { ErrorCode } from '@app/shared/constants/error-codes';
-import type { CreateNoteInput } from '@app/shared/schemas/notes';
-import type { NoteItem } from '@app/shared/types/notes';
-
-export class NotesService {
-  async create(input: CreateNoteInput): Promise<NoteItem> {
-    if (!input.title) {
-      throw new AppError('Title is required', ErrorCode.VALIDATION_ERROR);
-    }
-    // 纯业务逻辑 / 文件持久化 / 系统 API 调用
-    return {
-      id: 'note-1',
-      title: input.title,
-      content: input.content,
-      createdAt: Date.now(),
-    };
-  }
-}
-
-export const notesService = new NotesService();
-```
-
-### Step 2: 编写 Controller (`controllers/<domain>.controller.ts` - 校验 + handleTraced + 结果包装)
-
-```typescript
-import { ErrorCode } from '@app/shared/constants/error-codes';
-import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
-import { createNoteInputSchema } from '@app/shared/schemas/notes';
-import type { NoteItem } from '@app/shared/types/notes';
-import type { Result } from '@app/shared/types/result';
-import { handleTraced } from '../telemetry/ipc-tracer';
-import { notesService } from '../services/notes.service';
-import { catchToResult, failResult, successResult } from './utils';
-
-export function registerNotesControllers(): void {
-  handleTraced(
-    IPC_CHANNELS.NOTES_CREATE,
-    async (_event, rawInput: unknown): Promise<Result<NoteItem>> => {
-      // 1. Zod 严格校验入参（第二形参 rawInput 为 preload 解包后的纯净载荷）
-      const parseResult = createNoteInputSchema.safeParse(rawInput ?? {});
-      if (!parseResult.success) {
-        return failResult(parseResult.error.issues[0].message, ErrorCode.VALIDATION_ERROR);
-      }
-      // 2. 业务调用与统一 Result 包装
-      try {
-        const result = await notesService.create(parseResult.data);
-        return successResult(result);
-      } catch (err) {
-        return catchToResult(err);
-      }
-    },
-  );
-}
-```
-
-> **链路追踪与唯一豁免**：
-> - **必须走 `handleTraced`**：负责解包 `__trace_carrier`、创建 `ipc.receive:<channel>` span 并记录执行耗时与成败。严禁裸写 `ipcMain.handle`（会静默丢失追踪）。
-> - **架构唯一豁免**：`IPC_CHANNELS.DIAGNOSTICS_LOG` 作为日志落盘底层管道，**严禁**包裹 `handleTraced`，避免日志双写引发 span 循环自噪与递归死锁！
-
-### Step 3: 在 `controllers/index.ts` 集中登记挂载
-
-```typescript
-import { registerNotesControllers } from './notes.controller';
-
-export function registerAllControllers(): void {
-  // ...已有 controllers
-  registerNotesControllers();
-}
-```
+仅在新增主进程业务领域时，按[新增业务领域 SOP](../../.agents/rules/main-domain-sop.md) 编写 Service、Controller 并集中挂载；日常修复和维护继续遵循本文件 §1–3。
 
 ## 5. 提交前门禁
 
-- 根目录执行：`pnpm typecheck` · `pnpm lint` · `pnpm test`。
-- 修改主进程生产依赖或 Vite 配置后，必须本地执行并通过：`pnpm verify:prebuild`。
+- 通用验证门禁与命令见根 [AGENTS.md](../../AGENTS.md) §5。
+- 修改主进程生产依赖或 Vite 配置时，按根 AGENTS.md §5 的预构建检查项执行。
