@@ -1,4 +1,5 @@
 ---
+
 title: 什么是解决方案合集（Introduction）
 description: 本站定位、工程验证标准与模板仓库关系——阅读解法前的核心约定
 ---

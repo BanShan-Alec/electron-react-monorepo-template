@@ -5,7 +5,7 @@
 - 有哪些命令 → 根 `package.json` 的 `scripts`（如 `build:win`、`docs:build`）
 - 校验规则是什么 → `.config/`（如 `.config/biome.json`、`.config/commitlint.config.ts`）
 
-全局红线与任务路由见 [AGENTS.md](AGENTS.md)，各包规则真源在包级 `AGENTS.md`。
+全局红线与任务路由见 [AGENTS.md](AGENTS.md)，包级规则入口见对应 `packages/*/AGENTS.md`；专项细则以这些入口明确链接的文档为真源。
 
 ---
 
@@ -51,9 +51,9 @@
 
 ## 六、文档同步纪律（架构规约与代码同源）
 
-各包 `AGENTS.md` 是该包规则唯一真源，不允许「写着 A、做着 B」：
+各包 `AGENTS.md` 是包级规则入口，也是包级架构与日常规则的唯一真源；明确链接的专项文档承载限定范围的细则。规则不得「写着 A、做着 B」：
 
 - 新增 / 删除目录、模块、导出、脚本或依赖时，同一 PR 内更新对应包 `AGENTS.md`；
-- 包级 `README.md` 只承载高层定位与导航索引，不要复制 `AGENTS.md` 的规则细节；
+- 包级 `README.md` 只承载高层定位与导航索引，不要复制 `AGENTS.md` 或其指向的专项文档中的规则细节；
 - 规范表述与代码现实冲突时，先改文档使其可执行，再评估是否值得改代码；
-- **会变事实只写一处**：门禁项、命令、平台范围、版本示例等会随代码演进的事实，只在 CONTRIBUTING（或对应包 `AGENTS.md`）写一次；其它文档只写指针。
+- **会变事实只写一处**：实际命令以 `package.json` 为准，校验规则以 `.config/` 为准；规范性门禁、平台范围与版本事实只在 CONTRIBUTING、根 / 包级 `AGENTS.md` 或其明确链接的专项文档中维护一次，其它文档只写指针。
