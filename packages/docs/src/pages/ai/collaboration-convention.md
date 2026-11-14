@@ -37,7 +37,7 @@ description: 基于七维度法则构建 Monorepo 双层 AGENTS.md 治理体系�
 | **新增跨端业务域**     | `shared` → `preload` → `main` → `renderer` 的 `AGENTS.md` | [全栈端到端功能开发（Fullstack-SOP）](/ai/fullstack-sop) |
 | **主进程模块生命周期** | `packages/main/AGENTS.md`                                 | [主进程模块化生命周期](/architecture/module-lifecycle)   |
 | **渲染层组件与状态**   | `packages/renderer/AGENTS.md`                             | [React 组件编写规范](/architecture/react-conventions)    |
-| **全链路追踪与日志**   | `.agents/rules/logging-specification.md`                  | [全链路追踪（W3C-trace）](/main/tracing)                 |
+| **全链路追踪与日志**   | 根目录 `LOGGING.md`                                       | [全链路追踪（W3C-trace）](/main/tracing)                 |
 
 ## 3. 桌面端避坑注意事项
 

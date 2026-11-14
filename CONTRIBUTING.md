@@ -15,6 +15,7 @@
 
 - **桶文件**：只做重导出的 `index.ts` 禁止新增（Biome 硬拦截）。组件目录里的 `Xxx/index.tsx` 是组件本体，不算桶文件；确实需要桶时，走评审 + 单条 override 豁免 + 显式命名导出。
 - **构建期转换**（需要自己写转译 / 插件时）：只用 Vite 8 / Rolldown / Oxc 原生 API，不引 esbuild / babel。
+- **落盘日志文案**：纯英文、动词表与叙事纪律见 [LOGGING.md](LOGGING.md)。
 
 ## 二、提交与 PR
 
