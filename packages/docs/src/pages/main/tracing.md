@@ -135,6 +135,17 @@ export async function invokeTraced<R = unknown, T = unknown>(
 2. **遥测落盘**：Span 结束时 `onSpanEnd` 监听器把 `SpanRecord` 以单行 JSON 写入 `traces.ndjson`，支持毫秒级拓扑还原。
 3. **结果回注**：业务返回带 `success` 字段的 `Result` 时，`handleTraced` 浅克隆注入 `traceId`（不改原对象），渲染层报错时直接打印该 ID。
 
+### 启动耗时 span 速查
+
+冷启动被切成两条独立 span，与 IPC span 同落 `traces.ndjson`：
+
+| span 名                 | 覆盖区间                                         | 关键字段                                                     |
+| :---------------------- | :----------------------------------------------- | :----------------------------------------------------------- |
+| `app.initialization`    | 模块装配开始 → `await moduleRunner` 完成         | `initMs`（以进程启动为锚的总耗时）、事件 `app.modules_ready` |
+| `window.initialization` | `window.created` → `dom_ready` → `ready_to_show` | `window.name` / `window.id`、`duration_ms`                   |
+
+两者各起一条独立 trace，拼起来即「进程启动 → 窗口可显示」；渲染端首帧不在这条链上（启动阶段没有跨进程 trace 关联）。排障时按名字过滤即可：`grep 'app.initialization' traces.ndjson`（PowerShell 用 `Select-String`）。
+
 ## 3. 桌面端避坑注意事项
 
 - **日志管道本身严禁套用 traceparent**：

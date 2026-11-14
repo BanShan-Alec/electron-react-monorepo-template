@@ -30,11 +30,9 @@ flowchart LR
     SENTRY --> CONFIG --> THEME
   end
 
-  subgraph runtime["通信与就绪"]
+  subgraph runtime["通信层"]
     direction TB
     IPC["createIPCModule()<br/>控制器路由"]
-    READY["createStartupReadinessModule()<br/>就绪闩锁"]
-    IPC --> READY
   end
 
   subgraph windows["窗口与系统生命周期"]
@@ -55,9 +53,9 @@ flowchart LR
     CSP --> ORIGIN --> EXT
   end
 
-  subgraph finalize["启动就绪封板"]
+  subgraph finalize["冷启动耗时封板"]
     direction TB
-    READY_FIN["await moduleRunner 完成后<br/>startupReadiness.markReady() 广播"]
+    READY_FIN["await moduleRunner 完成后<br/>app.initialization span 收尾"]
   end
 
   foundation --> runtime
@@ -133,7 +131,7 @@ export function createModuleRunner() {
 节选：`initApp()` 内的装配链（省略函数签名与异常处理）：
 
 ```ts
-const startupReadiness = createStartupReadinessModule();
+const startupSpan = getTracer().startManualSpan('app.initialization');
 
 const moduleRunner = createModuleRunner()
   .init(createLogModule())
@@ -141,8 +139,6 @@ const moduleRunner = createModuleRunner()
   .init(createConfigModule())
   .init(createNativeThemeModule())
   .init(createIPCModule())
-  // 启动就绪控制：注册 IPC 查询通道，初始为 false
-  .init(startupReadiness)
   .init(createHomeWindowModule({ initConfig }))
   .init(createUpdaterWindowModule({ initConfig }))
   .init(createTrayModule())
@@ -166,14 +162,16 @@ const moduleRunner = createModuleRunner()
   .init(allowExternalUrls(new Set(ALLOWED_EXTERNAL_URLS)));
 
 await moduleRunner;
-// 所有同步/异步模块（含异步窗口注册）就绪完毕后广播就绪信号
-startupReadiness.markReady();
+// 所有同步/异步模块（含异步窗口注册）就绪完毕：封板冷启动 span
+startupSpan.addEvent('app.modules_ready');
+startupSpan.setAttributes({ initMs: Math.round(performance.now()) });
+startupSpan.end('OK');
 ```
 
 ## 3. 桌面端避坑注意事项
 
 - **模块装配顺序具有强因果依赖**：
-  - 例如日志模块（`LogModule`）必须最先装配，确保后续所有模块初始化异常均可被捕获落盘；`StartupReadinessModule` 在 IPC 后挂载注册通道，并在 `await moduleRunner` 完成后通过 `markReady()` 封板广播，确保窗口先开不白屏、所有后台任务完成才揭幕。
+  - 例如日志模块（`LogModule`）必须最先装配，确保后续所有模块初始化异常均可被捕获落盘；启动壳只等「动画 + React 首帧」两道门禁，主进程装配完成不再作为门禁，其耗时由 `app.initialization` span 记录（`initMs` 以进程启动为锚），落 `traces.ndjson` 供排障。
 - **职责边界隔离（`modules/` vs `services/`）**：
   - `modules/` 仅承载横向基础设施与原生系统生命周期切片（如窗口、托盘、系统原生主题）；垂直业务逻辑一律归属于 `services/`，严禁在 `modules/` 中书写业务处理分支。
 - **初始化异常阻断与 app.exit(1) 防僵尸驻留**：
