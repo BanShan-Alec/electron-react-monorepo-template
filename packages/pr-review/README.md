@@ -16,7 +16,7 @@
 | `pnpm pr-review trigger` | `review` | 在当前 PR 讨论区自动发表 `/review` 评论（等价于手动评论 `/review` 或 `/ocr`），触发 OpenCodeReview 增量扫描                                       |
 | `pnpm pr-review create`  | `pr`     | 运行前置检查（gh 已认证、工作区干净、非 main 分支），推送特性分支并基于 PR 模板自动创建 Pull Request                                              |
 | `pnpm pr-review status`  | -        | 查看当前仓库 PR、所有 checks 及与目标分支的代码冲突状态                                                                                           |
-| `pnpm pr-review merge`   | -        | 快速检测与目标分支无代码冲突（无冲突无需强制同步最新目标分支），交互确认（`--yes` 跳过），轮询等待门禁全绿后 squash 合并并清理远端分支            |
+| `pnpm pr-review merge`   | -        | 检测与目标分支的代码冲突，交互确认（`--yes` 跳过），轮询等待门禁全绿后 squash 合并并清理远端分支；分支保护 `strict: true`，落后时需先同步 `main`  |
 
 ---
 

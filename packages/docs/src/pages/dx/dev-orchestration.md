@@ -23,8 +23,9 @@ Electron 项目的本地开发回路远比普通 Web 应用复杂：
 → 源码：[scripts/dev.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/dev.ts)
 
 1. **渲染层**：编程式拉起 Vite，获取真实监听地址注入 `VITE_DEV_SERVER_URL`。
-2. **Preload 层**：构建完成后，通过 Vite WebSocket 广播页面全量刷新（Full Reload）：
+2. **Preload 层**：构建完成后，通过 Vite WebSocket 广播页面全量刷新（Full Reload）；**没有已连接客户端时直接跳过**——冷启动时首轮 watch 构建早于窗口连上 HMR，空广播会让刚加载完的首屏立刻重载、启动壳动画重播一遍：
 ```ts
+if (server.ws.clients.size === 0) return;
 server.ws.send({ type: 'full-reload' });
 ```
 

@@ -23,7 +23,7 @@ description: 项目专用的 Pull Request 生命周期与 OpenCodeReview (OCR) �
 | **查看状态**         | `pnpm pr-review status`             | -                       | 查看当前仓库关联 PR、所有 checks/CI 门禁状态及与目标分支的代码冲突状态                                                                                                                          |
 | **拉取 Review 结果** | `pnpm pr-review pull [--pr <PR号>]` | -                       | 从 Actions 产物拉取最新 Review 结果（默认按当前分支反查，可用 `--pr` 指定任意 PR 编号），前置嵌入 `CI Checks 整体状态`，在 `packages/pr-review/reviews/` 下生成 `pr-<PR>-round-<N>.md` 独立看板 |
 | **触发增量复查**     | `pnpm pr-review trigger`            | `pnpm pr-review review` | 在当前 PR 讨论区自动发送 `/review` 评论，触发 OpenCodeReview 增量扫描                                                                                                                           |
-| **安全合并 PR**      | `pnpm pr-review merge`              | -                       | 快速检测与目标分支无代码冲突（无冲突无需同步最新目标分支），轮询等待门禁全绿后执行 squash 合并并清理远端分支                                                                                    |
+| **安全合并 PR**      | `pnpm pr-review merge`              | -                       | 检测与目标分支的代码冲突，轮询等待门禁全绿后执行 squash 合并并清理远端分支；分支保护为 `strict: true`，落后于 `main` 时需先同步                                                                 |
 
 ---
 
@@ -87,5 +87,5 @@ description: 项目专用的 Pull Request 生命周期与 OpenCodeReview (OCR) �
 
 当所有轮次评审与 checks 均通过，用户要求“合并 PR”：
 1. 运行 `pnpm pr-review merge`；
-2. 脚本会自动进行无冲突检测（只要当前分支与目标分支无代码冲突，无需强制同步最新目标分支代码即可直接合并）；
+2. 脚本会先做冲突检测，再轮询必选门禁；注意分支保护为 `strict: true`——分支落后于 `main` 时 GitHub 会拒绝合并，需先 `git merge origin/main` 并推送，CLI 不会替你同步；
 3. 校验必选门禁全绿并在合并后提示本地分支清理命令。
