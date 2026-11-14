@@ -20,7 +20,7 @@
 
 - **Commit**：Conventional Commits，subject 必须含简体中文；规则真源 [`.config/commitlint.config.ts`](.config/commitlint.config.ts)。提交时 pre-commit（lint-staged + Biome）与 commit-msg（commitlint）自动校验，失败即中断。
 - **PR**：所有改动经 PR 合入 `main`（squash-only，required checks 任一失败即阻断）。`main` 上每个提交对应一个完整 PR——回滚以功能为单位，CHANGELOG 按 PR 生成。PR 标题就是 release 条目，写成一句用户能看懂的话；一个 PR 只做一件事。
-- **门禁与发版**：见 [.github/CICD.md](.github/CICD.md)；PR 操作统一用 `pnpm pr-review <cmd>`（用法见 `.agents/skills/pr-review/SKILL.md`）。
+- **门禁与发版**：见 [.github/CICD.md](.github/CICD.md)；PR 操作统一用 `pnpm pr-review <cmd>`（用法见 `packages/pr-review/SKILL.md`）。
 
 ## 三、配置与依赖归属
 

@@ -52,7 +52,7 @@ Playwright（E2E，真实 Electron 窗口）· pnpm 12 monorepo · Node >= 24
 | 视觉 / 设计 Token / 品牌定制                   | [packages/renderer/docs/DESIGN.md](packages/renderer/docs/DESIGN.md)             |
 | 多语言词条与国际化 (LinguiJS)                  | [packages/renderer/AGENTS.md](packages/renderer/AGENTS.md) §6                    |
 | 日志输出 / 异常处理 / 链路追踪规范             | [.agents/rules/logging-specification.md](.agents/rules/logging-specification.md) |
-| PR 审查 / OpenCodeReview 工作流                | [.agents/skills/pr-review/SKILL.md](.agents/skills/pr-review/SKILL.md)           |
+| PR 审查 / OpenCodeReview 工作流                | [packages/pr-review/SKILL.md](packages/pr-review/SKILL.md)                       |
 | 工程规范 / Commit 纪律 / 路径推导              | [CONTRIBUTING.md](CONTRIBUTING.md)                                               |
 
 ## 5. 开发流与验证门禁矩阵（根目录执行）

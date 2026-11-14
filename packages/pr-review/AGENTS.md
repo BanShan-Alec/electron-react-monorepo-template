@@ -1,6 +1,6 @@
 # @app/pr-review AGENTS.md — 评审工具包规则
 
-> 全局红线与全仓任务路由见 [根 AGENTS.md](../../AGENTS.md)。工具链契约唯一真源见 [.agents/skills/pr-review/SKILL.md](../../.agents/skills/pr-review/SKILL.md)。
+> 全局红线与全仓任务路由见 [根 AGENTS.md](../../AGENTS.md)。工具链契约唯一真源见 [SKILL.md](./SKILL.md)。
 
 ## 1. 架构分层与目录职责
 
@@ -18,7 +18,7 @@
 
 ## 2. 核心架构与交互铁律
 
-1. **唯一真源对齐**：修改命令逻辑或参数前，**必须先读** [.agents/skills/pr-review/SKILL.md](../../.agents/skills/pr-review/SKILL.md)，所有对外命令契约与 OCR 提示词口径以此为基准。
+1. **唯一真源对齐**：修改命令逻辑或参数前，**必须先读** [SKILL.md](./SKILL.md)，所有对外命令契约与 OCR 提示词口径以此为基准。
 2. **唯一调用入口**：根目录 `pnpm pr-review <command>` 是该工具包全仓唯一合法的调用方式，严禁绕过 CLI 或在业务脚本中散装拼凑 `gh` 命令。
 3. **全仓 ESM-only 执行**：源码为 ES Module，直接经 `tsx` 运行，禁止引入 CommonJS 混编或引入 `ts-node`。
 
