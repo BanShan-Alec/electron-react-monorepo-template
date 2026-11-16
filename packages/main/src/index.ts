@@ -18,6 +18,7 @@ import { disallowMultipleAppInstance } from './modules/single-instance.module';
 import { createTrayModule } from './modules/tray.module';
 import { createHomeWindowModule } from './modules/window/home-window.module';
 import { createUpdaterWindowModule } from './modules/window/updater-window.module';
+import { autoLaunchService } from './services/auto-launch.service';
 import { updaterService } from './services/updater.service';
 import { getTracer } from './telemetry/tracer';
 
@@ -63,6 +64,14 @@ export async function initApp(initConfig: AppInitConfig) {
   startupSpan.addEvent('app.modules_ready');
   startupSpan.setAttributes({ initMs: Math.round(performance.now()) });
   startupSpan.end('OK');
+
+  // 开机自启状态静默校验（若配置开启但底层被系统禁用，输出 Warn 日志）
+  try {
+    const configStore = getAppConfigStore();
+    autoLaunchService.checkStartupStatus(configStore.get('openAtLogin'));
+  } catch (err) {
+    log.warn('[AutoLaunch] Startup status check failed:', err);
+  }
 
   // 应用就绪后若开启自动更新则延迟执行后台静默检查
   try {

@@ -25,3 +25,8 @@ export interface SystemInfo {
   env?: AppEnv;
   isPackaged?: boolean;
 }
+
+export interface LoginItemStatus {
+  openAtLogin: boolean;
+  isBlockedBySystem: boolean;
+}
