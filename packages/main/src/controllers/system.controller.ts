@@ -1,7 +1,8 @@
 import { performance } from 'node:perf_hooks';
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import type { Result } from '@app/shared/types/result';
-import type { PingResult, SystemInfo } from '@app/shared/types/system';
+import type { LoginItemStatus, PingResult, SystemInfo } from '@app/shared/types/system';
+import { autoLaunchService } from '../services/auto-launch.service';
 import { systemService } from '../services/system.service';
 import { eventLoopMonitor } from '../telemetry/event-loop-monitor';
 import { handleTraced } from '../telemetry/ipc-tracer';
@@ -28,4 +29,16 @@ export function registerSystemControllers(): void {
       return catchToResult(err);
     }
   });
+
+  handleTraced(
+    IPC_CHANNELS.SYSTEM_GET_LOGIN_ITEM_STATUS,
+    async (): Promise<Result<LoginItemStatus>> => {
+      try {
+        const data = autoLaunchService.getLoginItemStatus();
+        return successResult(data);
+      } catch (err) {
+        return catchToResult(err);
+      }
+    },
+  );
 }

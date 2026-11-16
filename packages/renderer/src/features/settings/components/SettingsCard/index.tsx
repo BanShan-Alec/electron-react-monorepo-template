@@ -2,10 +2,12 @@ import { SettingOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import type { AppConfig } from '@shared/schemas/config';
+import type { LoginItemStatus } from '@shared/types/system';
 import { App, Button, Select, Skeleton, Switch } from 'antd';
 import { memo } from 'react';
 import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
+import { StatusTag } from '@/components/ui/StatusTag';
 import { callIpc } from '@/lib/ipc';
 
 // 私有常量
@@ -18,7 +20,7 @@ const _SettingsCard = (props: SettingsCardProps) => {
   useLingui();
   const { message } = App.useApp();
   // 变量声明、解构
-  const { appConfig, onUpdate, onReset, isLoading } = props;
+  const { appConfig, loginItemStatus, onUpdate, onReset, isLoading } = props;
 
   // 组件状态
 
@@ -107,8 +109,33 @@ const _SettingsCard = (props: SettingsCardProps) => {
             />
           </div>
 
-          {/* 软件更新入口（检查动作内聚在 updater 窗口） */}
+          {/* 开机自动启动 */}
           <div className={TOGGLE_ROW_CLASS}>
+            <label
+              htmlFor="open-at-login-switch"
+              className="cursor-pointer select-none flex-1 pr-3"
+            >
+              <span className="text-foreground font-medium block">{t`开机自动启动`}</span>
+              <span className="text-xs text-foreground-secondary block mt-0.5">
+                {t`开机后自动在后台启动运行`}
+              </span>
+              {appConfig.openAtLogin && loginItemStatus?.isBlockedBySystem ? (
+                <div className="mt-1.5">
+                  <StatusTag tone="warning">
+                    {t`系统启动项已被禁用，开机自启可能无法生效`}
+                  </StatusTag>
+                </div>
+              ) : null}
+            </label>
+            <Switch
+              id="open-at-login-switch"
+              checked={appConfig.openAtLogin}
+              onChange={(checked) => onUpdate({ openAtLogin: checked })}
+            />
+          </div>
+
+          {/* 软件更新入口（检查动作内聚在 updater 窗口） */}
+          <div className={`${TOGGLE_ROW_CLASS} sm:col-span-2`}>
             <div className="flex-1 pr-3">
               <span className="text-foreground font-medium block">{t`软件更新 (Updater)`}</span>
               <span className="text-xs text-foreground-secondary block mt-0.5">
@@ -141,8 +168,9 @@ const _SettingsCard = (props: SettingsCardProps) => {
 };
 
 // props 类型定义
-interface SettingsCardProps {
+export interface SettingsCardProps {
   appConfig: AppConfig | null;
+  loginItemStatus?: LoginItemStatus | null;
   onUpdate: (partial: Partial<AppConfig>) => void;
   onReset: () => void;
   isLoading: boolean;

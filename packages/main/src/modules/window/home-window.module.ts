@@ -48,7 +48,24 @@ export class HomeWindowModule implements AppModule {
 
   async enable({ app: electronApp }: ModuleContext): Promise<void> {
     await electronApp.whenReady();
-    await this.restoreOrCreateWindow(true);
+    const isHiddenArg = process.argv.includes('--hidden');
+    const minimizeToTray = getAppConfigStore().get('minimizeToTray');
+    const shouldStartHidden = isHiddenArg && minimizeToTray;
+
+    if (shouldStartHidden) {
+      getLogManager()
+        .scoped(this)
+        .info('Application started in background (--hidden) with tray enabled');
+    } else {
+      if (isHiddenArg && !minimizeToTray) {
+        getLogManager()
+          .scoped(this)
+          .info(
+            'Application launched with --hidden but minimizeToTray is disabled; creating and showing main window',
+          );
+      }
+      await this.restoreOrCreateWindow(true);
+    }
 
     const handleReactivation = async () => {
       await this.restoreOrCreateWindow(true);

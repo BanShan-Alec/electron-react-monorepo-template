@@ -13,6 +13,7 @@ export const configBaseSchema = z.object({
   language: z.enum(LANGUAGE_MODES),
   autoCheckUpdate: z.boolean(),
   serverCounter: z.number().int(),
+  openAtLogin: z.boolean(),
 });
 
 export const configSchema = z.object({
@@ -22,6 +23,7 @@ export const configSchema = z.object({
   language: z.enum(LANGUAGE_MODES).default(DEFAULT_LANGUAGE),
   autoCheckUpdate: z.boolean().default(true),
   serverCounter: z.number().int().default(0),
+  openAtLogin: z.boolean().default(false),
 });
 
 export type AppConfig = z.infer<typeof configSchema>;

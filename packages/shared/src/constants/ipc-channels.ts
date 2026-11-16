@@ -4,6 +4,7 @@
 export const IPC_CHANNELS = {
   SYSTEM_PING: 'system:ping',
   SYSTEM_GET_INFO: 'system:get-info',
+  SYSTEM_GET_LOGIN_ITEM_STATUS: 'system:get-login-item-status',
 
   COUNTER_GET: 'counter:get',
   COUNTER_INCREMENT: 'counter:increment',

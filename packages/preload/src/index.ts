@@ -39,6 +39,8 @@ export const apiBridge: ElectronApi = {
     ping: (_payload, options) => invokeTraced(IPC_CHANNELS.SYSTEM_PING, undefined, options),
     getSystemInfo: (_payload, options) =>
       invokeTraced(IPC_CHANNELS.SYSTEM_GET_INFO, undefined, options),
+    getLoginItemStatus: (_payload, options) =>
+      invokeTraced(IPC_CHANNELS.SYSTEM_GET_LOGIN_ITEM_STATUS, undefined, options),
     getPlatform: () => process.platform,
   },
   counter: {
