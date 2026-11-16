@@ -1,13 +1,12 @@
-import { SettingOutlined } from '@ant-design/icons';
+import { SettingOutlined, WarningOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import type { AppConfig } from '@shared/schemas/config';
 import type { LoginItemStatus } from '@shared/types/system';
-import { App, Button, Select, Skeleton, Switch } from 'antd';
+import { App, Button, Select, Skeleton, Switch, Tooltip } from 'antd';
 import { memo } from 'react';
 import { AppCard } from '@/components/ui/AppCard';
 import { CardTitle } from '@/components/ui/CardTitle';
-import { StatusTag } from '@/components/ui/StatusTag';
 import { callIpc } from '@/lib/ipc';
 
 // 私有常量
@@ -115,17 +114,17 @@ const _SettingsCard = (props: SettingsCardProps) => {
               htmlFor="open-at-login-switch"
               className="cursor-pointer select-none flex-1 pr-3"
             >
-              <span className="text-foreground font-medium block">{t`开机自动启动`}</span>
+              <span className="text-foreground font-medium flex items-center gap-1.5">
+                <span>{t`开机自动启动`}</span>
+                {appConfig.openAtLogin && loginItemStatus?.isBlockedBySystem ? (
+                  <Tooltip title={t`系统启动项已被禁用，开机自启可能无法生效`}>
+                    <WarningOutlined className="text-warning cursor-help" />
+                  </Tooltip>
+                ) : null}
+              </span>
               <span className="text-xs text-foreground-secondary block mt-0.5">
                 {t`开机后自动在后台启动运行`}
               </span>
-              {appConfig.openAtLogin && loginItemStatus?.isBlockedBySystem ? (
-                <div className="mt-1.5">
-                  <StatusTag tone="warning">
-                    {t`系统启动项已被禁用，开机自启可能无法生效`}
-                  </StatusTag>
-                </div>
-              ) : null}
             </label>
             <Switch
               id="open-at-login-switch"
