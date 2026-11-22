@@ -138,7 +138,8 @@ const _SettingsCard = (props: SettingsCardProps) => {
             </label>
             <Switch
               id="open-at-login-switch"
-              checked={appConfig.openAtLogin}
+              // 不支持的平台上归一为未选中：残留的配置值既不可操作也不应显示为「已开启」
+              checked={isAutoLaunchSupported && appConfig.openAtLogin}
               disabled={!isAutoLaunchSupported}
               onChange={(checked) => onUpdate({ openAtLogin: checked })}
             />

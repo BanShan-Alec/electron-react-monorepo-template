@@ -108,8 +108,9 @@ export function useAppConfig(): UseAppConfigResult {
     appConfig: appConfig ?? null,
     loginItemStatus: loginItemStatus ?? null,
     isLoading: isFetching || isResetting,
-    // getPlatform 是 preload 同步暴露的 process.platform，不经 IPC
-    isAutoLaunchSupported: window.api.system.getPlatform() !== 'linux',
+    // getPlatform 是 preload 同步暴露的 process.platform，不经 IPC；
+    // 白名单与主进程 isLoginItemSupported 同口径，避免跨文件契约漂移
+    isAutoLaunchSupported: ['win32', 'darwin'].includes(window.api.system.getPlatform()),
     fetchConfig,
     handleUpdateConfig,
     handleResetConfig,
