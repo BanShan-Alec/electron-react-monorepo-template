@@ -329,9 +329,21 @@ msgstr "延迟稍高"
 msgid "开关 DevTools"
 msgstr "开关 DevTools"
 
+#: src/features/settings/components/SettingsCard/index.tsx
+msgid "开机后自动在后台启动运行"
+msgstr "开机后自动在后台启动运行"
+
+#: src/features/settings/components/SettingsCard/index.tsx
+msgid "开机自动启动"
+msgstr "开机自动启动"
+
 #: src/features/updater/index.tsx
 msgid "当前安装的应用已包含所有最新功能与安全更新。"
 msgstr "当前安装的应用已包含所有最新功能与安全更新。"
+
+#: src/features/settings/components/SettingsCard/index.tsx
+msgid "当前平台不支持开机自启"
+msgstr "当前平台不支持开机自启"
 
 #: src/features/counter/components/CounterCard/index.tsx
 msgid "当前持久化数值"
@@ -601,6 +613,10 @@ msgstr "类型安全主进程本地持久化存储与动态生效"
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "系统与运行环境"
 msgstr "系统与运行环境"
+
+#: src/features/settings/components/SettingsCard/index.tsx
+msgid "系统启动项已被禁用，开机自启可能无法生效"
+msgstr "系统启动项已被禁用，开机自启可能无法生效"
 
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "系统运行时间"

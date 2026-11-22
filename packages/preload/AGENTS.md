@@ -10,6 +10,7 @@ Preload 运行在拥有部分 Node 能力但启用了沙箱与上下文隔离的
 | :------------------------ | :-------------------------------------------------------------- | :--------------------------------------------------------------- |
 | `index.ts`                | 聚合实现并暴露 `apiBridge`（`contextBridge.exposeInMainWorld`） | 必须显式声明类型为 `ElectronApi`，严禁泄露 Node 原生模块         |
 | `logger.ts`               | 渲染进程全局 logger 桥接                                        | 调用经 `invokeTraced` 转发至主进程落盘，实现日志统一流转         |
+| `sticky.ts`               | 通用粘性事件通道（`createStickyChannel`）                       | 捕获主进程先发推送并在注册时微任务重放，消灭时序竞态             |
 | `telemetry/ipc-tracer.ts` | 跨进程全链路追踪桥接                                            | 生成 W3C traceparent 并挂载 `__trace_carrier` 实现跨进程追踪透传 |
 
 > **构建与挂载约定**：Vite 以 lib 模式输出 CJS 产物 `dist/index.cjs`（Electron 外置，`@sentry/electron` 经 `ssr.noExternal` 主动内联），主进程在创建窗口时以绝对物理路径挂载。

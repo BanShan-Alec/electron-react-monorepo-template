@@ -16,6 +16,7 @@ import type { UpdaterProgress, UpdaterSnapshot } from '@app/shared/types/updater
 import { APP_ENV_ARG_PREFIX, unpackRuntimeEnv } from '@app/shared/utils/env-packer';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import { loggerBridge } from './logger';
+import { createStickyChannel } from './sticky';
 import { invokeTraced } from './telemetry/ipc-tracer';
 
 // 运行时环境基座同步挂载：在页面执行任何脚本前从 argv 快速解包并深度冻结暴露
@@ -39,6 +40,8 @@ export const apiBridge: ElectronApi = {
     ping: (_payload, options) => invokeTraced(IPC_CHANNELS.SYSTEM_PING, undefined, options),
     getSystemInfo: (_payload, options) =>
       invokeTraced(IPC_CHANNELS.SYSTEM_GET_INFO, undefined, options),
+    getLoginItemStatus: (_payload, options) =>
+      invokeTraced(IPC_CHANNELS.SYSTEM_GET_LOGIN_ITEM_STATUS, undefined, options),
     getPlatform: () => process.platform,
   },
   counter: {
@@ -112,13 +115,7 @@ export const apiBridge: ElectronApi = {
       invokeTraced(IPC_CHANNELS.UPDATER_OPEN_WINDOW, undefined, options),
     closeWindow: (_payload, options) =>
       invokeTraced(IPC_CHANNELS.UPDATER_CLOSE_WINDOW, undefined, options),
-    onStateChanged: (cb: (s: UpdaterSnapshot) => void) => {
-      const listener = (_event: Electron.IpcRendererEvent, s: UpdaterSnapshot) => cb(s);
-      ipcRenderer.on(IPC_CHANNELS.UPDATER_EVENT_STATE, listener);
-      return () => {
-        ipcRenderer.removeListener(IPC_CHANNELS.UPDATER_EVENT_STATE, listener);
-      };
-    },
+    onStateChanged: createStickyChannel<UpdaterSnapshot>(IPC_CHANNELS.UPDATER_EVENT_STATE),
     onProgressChanged: (cb: (p: UpdaterProgress) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, p: UpdaterProgress) => cb(p);
       ipcRenderer.on(IPC_CHANNELS.UPDATER_EVENT_PROGRESS, listener);

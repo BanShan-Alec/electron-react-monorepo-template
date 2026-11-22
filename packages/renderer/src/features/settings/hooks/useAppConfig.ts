@@ -1,5 +1,6 @@
 import { t } from '@lingui/core/macro';
 import type { AppConfig } from '@shared/schemas/config';
+import type { LoginItemStatus } from '@shared/types/system';
 import { App } from 'antd';
 import { useEffect } from 'react';
 import { useIpc } from '@/hooks/useIpc';
@@ -8,8 +9,18 @@ import { useAppStore } from '@/stores/useAppStore';
 // 私有常量
 
 // 可抽离的逻辑处理函数/组件
+export interface UseAppConfigResult {
+  appConfig: AppConfig | null;
+  loginItemStatus: LoginItemStatus | null;
+  isLoading: boolean;
+  /** Electron 登录项 API 仅 darwin/win32 可用，Linux 上开关不可用 */
+  isAutoLaunchSupported: boolean;
+  fetchConfig: () => void;
+  handleUpdateConfig: (partial: Partial<AppConfig>) => Promise<void>;
+  handleResetConfig: () => Promise<void>;
+}
 
-export function useAppConfig() {
+export function useAppConfig(): UseAppConfigResult {
   const { message } = App.useApp();
   const setThemeMode = useAppStore((state) => state.setThemeMode);
   const setLanguage = useAppStore((state) => state.setLanguage);
@@ -31,10 +42,18 @@ export function useAppConfig() {
     },
   });
 
+  // 网络IO（显式挂载触发）—— 查询底层系统自启状态与警告标记
+  const {
+    data: loginItemStatus,
+    refresh: fetchLoginItemStatus,
+    run: fetchLoginItemStatusRun,
+  } = useIpc('system.getLoginItemStatus');
+
   // 显式挂载触发：初次拉取（run 引用稳定，不会自触循环）
   useEffect(() => {
     fetchConfigRun();
-  }, [fetchConfigRun]);
+    fetchLoginItemStatusRun();
+  }, [fetchConfigRun, fetchLoginItemStatusRun]);
 
   // 网络IO（显式触发）—— 局部更新后回填
   const { runAsync: updateConfigAsync } = useIpc('config.update', {
@@ -57,6 +76,10 @@ export function useAppConfig() {
   });
 
   // 逻辑处理函数
+  const refreshAll = async () => {
+    await Promise.all([fetchConfig(), fetchLoginItemStatus()]);
+  };
+
   const handleUpdateConfig = async (partial: Partial<AppConfig>) => {
     try {
       await updateConfigAsync(partial);
@@ -66,7 +89,7 @@ export function useAppConfig() {
       if (partial.language !== undefined) {
         setLanguage(partial.language);
       }
-      await fetchConfig();
+      await refreshAll();
     } catch {
       // 过期响应 CancelledError 与业务异常均已丢弃/提示，此处防止未处理拒绝
     }
@@ -75,7 +98,7 @@ export function useAppConfig() {
   const handleResetConfig = async () => {
     try {
       await resetConfigAsync();
-      await fetchConfig();
+      await refreshAll();
     } catch {
       // 同上
     }
@@ -83,7 +106,11 @@ export function useAppConfig() {
 
   return {
     appConfig: appConfig ?? null,
+    loginItemStatus: loginItemStatus ?? null,
     isLoading: isFetching || isResetting,
+    // getPlatform 是 preload 同步暴露的 process.platform，不经 IPC；
+    // 白名单与主进程 isLoginItemSupported 同口径，避免跨文件契约漂移
+    isAutoLaunchSupported: ['win32', 'darwin'].includes(window.api.system.getPlatform()),
     fetchConfig,
     handleUpdateConfig,
     handleResetConfig,

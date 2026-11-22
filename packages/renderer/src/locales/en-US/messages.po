@@ -329,9 +329,21 @@ msgstr "High latency"
 msgid "开关 DevTools"
 msgstr "Toggle DevTools"
 
+#: src/features/settings/components/SettingsCard/index.tsx
+msgid "开机后自动在后台启动运行"
+msgstr "Launch automatically in the background on system startup"
+
+#: src/features/settings/components/SettingsCard/index.tsx
+msgid "开机自动启动"
+msgstr "Launch on startup"
+
 #: src/features/updater/index.tsx
 msgid "当前安装的应用已包含所有最新功能与安全更新。"
 msgstr "You're on the latest version."
+
+#: src/features/settings/components/SettingsCard/index.tsx
+msgid "当前平台不支持开机自启"
+msgstr "Auto launch is not supported on this platform"
 
 #: src/features/counter/components/CounterCard/index.tsx
 msgid "当前持久化数值"
@@ -601,6 +613,10 @@ msgstr "Type-safe local config, applied at runtime"
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "系统与运行环境"
 msgstr "Runtime environment"
+
+#: src/features/settings/components/SettingsCard/index.tsx
+msgid "系统启动项已被禁用，开机自启可能无法生效"
+msgstr "Startup item disabled by system; launch on startup may not take effect"
 
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "系统运行时间"
