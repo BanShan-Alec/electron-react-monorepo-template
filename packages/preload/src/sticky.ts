@@ -31,8 +31,14 @@ export function createStickyChannel<T>(
     if (latestData !== null) {
       const cached = latestData;
       queueMicrotask(() => {
-        if (listeners.has(callback)) {
-          callback(cached);
+        // 引用相等守卫：订阅到重放之间若有新事件送达，实时路径已投递更新的数据，
+        // 此时重放旧缓存会让监听器状态倒退；IPC 每次投递都是新对象，同值不会误判
+        if (listeners.has(callback) && latestData === cached) {
+          try {
+            callback(cached);
+          } catch (err) {
+            console.error(`[preload] Error in sticky listener for "${channel}":`, err);
+          }
         }
       });
     }

@@ -19,7 +19,15 @@ const _SettingsCard = (props: SettingsCardProps) => {
   useLingui();
   const { message } = App.useApp();
   // 变量声明、解构
-  const { appConfig, loginItemStatus, onUpdate, onReset, isLoading } = props;
+  const {
+    appConfig,
+    loginItemStatus,
+    // 缺省视为支持：仅在明确传入 false 时禁用开关，避免属性未接线时误锁
+    isAutoLaunchSupported = true,
+    onUpdate,
+    onReset,
+    isLoading,
+  } = props;
 
   // 组件状态
 
@@ -112,23 +120,26 @@ const _SettingsCard = (props: SettingsCardProps) => {
           <div className={TOGGLE_ROW_CLASS}>
             <label
               htmlFor="open-at-login-switch"
-              className="cursor-pointer select-none flex-1 pr-3"
+              className={`select-none flex-1 pr-3 ${isAutoLaunchSupported ? 'cursor-pointer' : 'cursor-not-allowed'}`}
             >
               <span className="text-foreground font-medium flex items-center gap-1.5">
                 <span>{t`开机自动启动`}</span>
-                {appConfig.openAtLogin && loginItemStatus?.isBlockedBySystem ? (
+                {isAutoLaunchSupported &&
+                appConfig.openAtLogin &&
+                loginItemStatus?.isBlockedBySystem ? (
                   <Tooltip title={t`系统启动项已被禁用，开机自启可能无法生效`}>
                     <WarningOutlined className="text-warning cursor-help" />
                   </Tooltip>
                 ) : null}
               </span>
               <span className="text-xs text-foreground-secondary block mt-0.5">
-                {t`开机后自动在后台启动运行`}
+                {isAutoLaunchSupported ? t`开机后自动在后台启动运行` : t`当前平台不支持开机自启`}
               </span>
             </label>
             <Switch
               id="open-at-login-switch"
               checked={appConfig.openAtLogin}
+              disabled={!isAutoLaunchSupported}
               onChange={(checked) => onUpdate({ openAtLogin: checked })}
             />
           </div>
@@ -170,6 +181,7 @@ const _SettingsCard = (props: SettingsCardProps) => {
 export interface SettingsCardProps {
   appConfig: AppConfig | null;
   loginItemStatus?: LoginItemStatus | null;
+  isAutoLaunchSupported?: boolean;
   onUpdate: (partial: Partial<AppConfig>) => void;
   onReset: () => void;
   isLoading: boolean;

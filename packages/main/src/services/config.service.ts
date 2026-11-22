@@ -31,8 +31,14 @@ export class ConfigService {
   }
 
   resetConfig(): AppConfig {
-    // 恢复默认配置时联动清除底层操作系统自启项
-    autoLaunchService.setOpenAtLogin(false);
+    // 恢复默认配置时联动清除底层操作系统自启项；
+    // 与 updateConfig 不同，重置的目标是「尽力回到可用状态」，
+    // 系统调用失败只降级告警，不能中断后续的配置/主题/托盘恢复
+    try {
+      autoLaunchService.setOpenAtLogin(false);
+    } catch (err) {
+      this.logger.warn('Failed to clear OS login item during reset; continuing:', err);
+    }
     const reset = getAppConfigStore().reset();
     // 恢复到默认主题偏好，同样需要同步 themeSource 与系统托盘语言
     applyNativeThemeSource(reset.theme);

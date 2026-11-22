@@ -34,7 +34,7 @@ describe('createStickyChannel (Preload 粘性事件通道)', () => {
   });
 
   it('监听器先于事件注册时，正常实时接收推送', async () => {
-    const { createStickyChannel } = await import('./sticky');
+    const { createStickyChannel } = await import('../../src/sticky');
     const subscribe = createStickyChannel<{ status: string }>('test:event');
 
     const received: string[] = [];
@@ -50,7 +50,7 @@ describe('createStickyChannel (Preload 粘性事件通道)', () => {
   });
 
   it('事件先于监听器到达时，新监听器注册即刻通过微任务收到回放', async () => {
-    const { createStickyChannel } = await import('./sticky');
+    const { createStickyChannel } = await import('../../src/sticky');
     const subscribe = createStickyChannel<{ count: number }>('test:sticky');
 
     // 主进程提前推送（例如窗口创建期间先于 React 挂载到达）
@@ -77,7 +77,7 @@ describe('createStickyChannel (Preload 粘性事件通道)', () => {
   });
 
   it('解绑后不再接收新推送与微任务回放', async () => {
-    const { createStickyChannel } = await import('./sticky');
+    const { createStickyChannel } = await import('../../src/sticky');
     const subscribe = createStickyChannel<string>('test:unsub');
 
     emitIpc('test:unsub', 'stale');
@@ -95,5 +95,40 @@ describe('createStickyChannel (Preload 粘性事件通道)', () => {
 
     emitIpc('test:unsub', 'new');
     expect(received).toEqual([]);
+  });
+
+  it('订阅到回放之间到达新事件时，跳过过期缓存避免状态倒退', async () => {
+    const { createStickyChannel } = await import('../../src/sticky');
+    const subscribe = createStickyChannel<{ version: number }>('test:race');
+
+    emitIpc('test:race', { version: 1 });
+
+    const received: number[] = [];
+    subscribe((data) => {
+      received.push(data.version);
+    });
+
+    // 微任务尚未执行，更新的事件先到：实时路径已投递 v2
+    emitIpc('test:race', { version: 2 });
+    expect(received).toEqual([2]);
+
+    await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
+    // 旧缓存 v1 不得覆盖已送达的 v2
+    expect(received).toEqual([2]);
+  });
+
+  it('回放路径捕获回调异常，不产生未处理拒绝', async () => {
+    const { createStickyChannel } = await import('../../src/sticky');
+    const subscribe = createStickyChannel<string>('test:throw');
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    emitIpc('test:throw', 'payload');
+    subscribe(() => {
+      throw new Error('renderer boom');
+    });
+
+    await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
   });
 });

@@ -341,6 +341,10 @@ msgstr "开机自动启动"
 msgid "当前安装的应用已包含所有最新功能与安全更新。"
 msgstr "当前安装的应用已包含所有最新功能与安全更新。"
 
+#: src/features/settings/components/SettingsCard/index.tsx
+msgid "当前平台不支持开机自启"
+msgstr "当前平台不支持开机自启"
+
 #: src/features/counter/components/CounterCard/index.tsx
 msgid "当前持久化数值"
 msgstr "当前持久化数值"

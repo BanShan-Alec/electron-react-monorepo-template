@@ -49,13 +49,19 @@ export class HomeWindowModule implements AppModule {
   async enable({ app: electronApp }: ModuleContext): Promise<void> {
     await electronApp.whenReady();
     const isHiddenArg = process.argv.includes('--hidden');
+    // macOS 无法通过 args 传递启动参数（Settings.args 仅 win32 生效），
+    // 改用系统报告的「本次进程由登录项拉起」标记，实现同样的后台启动语义
+    const launchedAtLogin =
+      process.platform === 'darwin' && electronApp.getLoginItemSettings().wasOpenedAtLogin;
     const minimizeToTray = getAppConfigStore().get('minimizeToTray');
-    const shouldStartHidden = isHiddenArg && minimizeToTray;
+    const shouldStartHidden = (isHiddenArg || launchedAtLogin) && minimizeToTray;
 
     if (shouldStartHidden) {
       getLogManager()
         .scoped(this)
-        .info('Application started in background (--hidden) with tray enabled');
+        .info('Application started in background with tray enabled:', {
+          source: isHiddenArg ? '--hidden' : 'login-item',
+        });
     } else {
       if (isHiddenArg && !minimizeToTray) {
         getLogManager()

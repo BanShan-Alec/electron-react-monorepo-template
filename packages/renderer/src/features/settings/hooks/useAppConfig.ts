@@ -13,6 +13,8 @@ export interface UseAppConfigResult {
   appConfig: AppConfig | null;
   loginItemStatus: LoginItemStatus | null;
   isLoading: boolean;
+  /** Electron 登录项 API 仅 darwin/win32 可用，Linux 上开关不可用 */
+  isAutoLaunchSupported: boolean;
   fetchConfig: () => void;
   handleUpdateConfig: (partial: Partial<AppConfig>) => Promise<void>;
   handleResetConfig: () => Promise<void>;
@@ -106,6 +108,8 @@ export function useAppConfig(): UseAppConfigResult {
     appConfig: appConfig ?? null,
     loginItemStatus: loginItemStatus ?? null,
     isLoading: isFetching || isResetting,
+    // getPlatform 是 preload 同步暴露的 process.platform，不经 IPC
+    isAutoLaunchSupported: window.api.system.getPlatform() !== 'linux',
     fetchConfig,
     handleUpdateConfig,
     handleResetConfig,

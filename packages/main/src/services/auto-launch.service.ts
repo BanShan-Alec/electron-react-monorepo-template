@@ -4,6 +4,11 @@ import { isPackaged } from '../env';
 import { getAppConfigStore } from '../modules/config.module';
 import { getLogManager } from '../modules/log.module';
 
+/** Electron 仅在 darwin/win32 实现登录项 API（electron.d.ts: @platform darwin,win32） */
+function isLoginItemSupported(): boolean {
+  return process.platform === 'win32' || process.platform === 'darwin';
+}
+
 export class AutoLaunchService {
   private readonly logger = getLogManager().scoped(this);
 
@@ -11,30 +16,42 @@ export class AutoLaunchService {
    * 获取底层系统自启状态及是否被系统/任务管理器禁用
    */
   getLoginItemStatus(expectedOpenAtLogin?: boolean): LoginItemStatus {
+    const configOpenAtLogin = expectedOpenAtLogin ?? getAppConfigStore().get('openAtLogin');
+
+    // 不支持的平台如实回显配置意图，不虚构 OS 状态（否则会永久误报「被系统禁用」）
+    if (!isLoginItemSupported()) {
+      return { openAtLogin: configOpenAtLogin, isBlockedBySystem: false };
+    }
+
     try {
       const settings = app.getLoginItemSettings({ args: ['--hidden'] });
-      const configOpenAtLogin = expectedOpenAtLogin ?? getAppConfigStore().get('openAtLogin');
 
       let isBlockedBySystem = false;
+      let blockedReason = '';
       if (isPackaged && configOpenAtLogin) {
-        // Windows 平台：若在任务管理器中被禁用，executableWillLaunchAtLogin 为 false
-        if (
+        if (!settings.openAtLogin) {
+          // 配置开着但系统里查不到：启动项被 Windows 设置或清理工具移除
+          isBlockedBySystem = true;
+          blockedReason = 'Startup item is missing from the operating system.';
+        } else if (
+          // Windows 平台：若在任务管理器中被禁用，executableWillLaunchAtLogin 为 false
           process.platform === 'win32' &&
-          settings.openAtLogin &&
           settings.executableWillLaunchAtLogin === false
         ) {
           isBlockedBySystem = true;
+          blockedReason = 'Startup item is disabled by the task manager.';
         } else if (
           process.platform === 'darwin' &&
           (settings as unknown as { status?: string }).status === 'requires-approval'
         ) {
           isBlockedBySystem = true;
+          blockedReason = 'Startup item requires user approval in system settings.';
         }
       }
 
       if (isBlockedBySystem) {
         this.logger.warn(
-          'Startup item is enabled in app config, but is disabled or blocked by the operating system/task manager.',
+          `Auto-launch is enabled in app config, but is blocked by the operating system: ${blockedReason}`,
         );
       }
 
@@ -63,6 +80,14 @@ export class AutoLaunchService {
       return;
     }
 
+    if (!isLoginItemSupported()) {
+      this.logger.info(
+        'Login item API is not available on this platform; skipping OS startup registration:',
+        { openAtLogin },
+      );
+      return;
+    }
+
     try {
       const settings: Parameters<typeof app.setLoginItemSettings>[0] = {
         openAtLogin,
@@ -79,19 +104,14 @@ export class AutoLaunchService {
   }
 
   /**
-   * 应用启动时的静默校验与警告日志
+   * 应用启动时的静默校验：仅触发一次状态查询，告警由 getLoginItemStatus 统一输出
    */
   checkStartupStatus(expectedOpenAtLogin?: boolean): void {
     if (!isPackaged) return;
     const configOpenAtLogin = expectedOpenAtLogin ?? getAppConfigStore().get('openAtLogin');
     if (!configOpenAtLogin) return;
 
-    const status = this.getLoginItemStatus(configOpenAtLogin);
-    if (status.isBlockedBySystem) {
-      this.logger.warn(
-        'Startup item is enabled in app config, but is disabled or blocked by the operating system/task manager.',
-      );
-    }
+    this.getLoginItemStatus(configOpenAtLogin);
   }
 }
 
