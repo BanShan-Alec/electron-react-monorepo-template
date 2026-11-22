@@ -50,6 +50,17 @@ vi.mock('@app/main/modules/tray.module', () => ({
   }),
 }));
 
+const originalPlatform = process.platform;
+
+// 断言以 Windows 分支行为为基准；CI 跑在 Linux，不锁定平台会导致 args 分支断言不一致
+beforeEach(() => {
+  Object.defineProperty(process, 'platform', { value: 'win32' });
+});
+
+afterEach(() => {
+  Object.defineProperty(process, 'platform', { value: originalPlatform });
+});
+
 describe('AutoLaunchService', () => {
   let service: AutoLaunchService;
 
