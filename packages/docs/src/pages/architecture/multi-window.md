@@ -85,3 +85,8 @@ initApp({
   - 各窗口模块（如 `HomeWindowModule` 与 `UpdaterWindowModule`）自治管理自身生命周期，严禁跨模块越权销毁其他窗口；所有原生窗口由生命周期注册表集中感知并清理。
 - **开发态路由穿透与 DevServer 联动**：
   - 在开发模式下，主进程根据 Vite Dev Server 的基础 URL 拼接目标 HTML 的相对路径；在生产预览与安装包下，直接加载本地 `file://` 静态产物，两套时序完全独立。
+
+---
+
+> 💡 **延伸阅读**：
+> 多物理窗口创建时的初始参数传递（URL Query、`additionalArguments` 进程注入、Preload 粘性事件重放与主动拉取）以及首屏生命周期防闪烁控制，详见 [窗口初始传参（Window-params）](/architecture/window-params)。

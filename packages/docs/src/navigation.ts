@@ -57,6 +57,7 @@ export const SIDEBAR_GROUPS: NavigationGroup[] = [
     collapsed: true,
     items: [
       { text: '多窗口入口（MPA）', link: '/architecture/multi-window' },
+      { text: '窗口初始传参（Window-params）', link: '/architecture/window-params' },
       { text: '功能域组织（Features）', link: '/architecture/feature-domains' },
       { text: '组件目录结构（Component-folder）', link: '/architecture/component-structure' },
       {
