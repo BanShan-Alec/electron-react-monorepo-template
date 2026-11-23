@@ -68,7 +68,7 @@ export async function initApp(initConfig: AppInitConfig) {
   // 开机自启状态静默校验（若配置开启但底层被系统禁用，输出 Warn 日志）
   try {
     const configStore = getAppConfigStore();
-    autoLaunchService.checkStartupStatus(configStore.get('openAtLogin'));
+    autoLaunchService.checkStartupStatus(configStore.get('autoLaunch'));
   } catch (err) {
     log.warn('[AutoLaunch] Startup status check failed:', err);
   }

@@ -26,7 +26,14 @@ export interface SystemInfo {
   isPackaged?: boolean;
 }
 
-export interface LoginItemStatus {
-  openAtLogin: boolean;
+/**
+ * 开机自启状态：平台能力 + 系统侧真实状态 + 配置与系统的冲突标记
+ */
+export interface AutoLaunchStatus {
+  /** 当前平台是否实现登录项 API；Electron 仅 darwin/win32 提供，其余平台恒为 false */
+  isSupported: boolean;
+  /** 系统启动项是否处于启用状态；不支持的平台回显配置意图（无系统状态可查） */
+  isEnabled: boolean;
+  /** 配置要求开启但系统侧未生效：被任务管理器禁用、待用户批准或启动项已被移除 */
   isBlockedBySystem: boolean;
 }

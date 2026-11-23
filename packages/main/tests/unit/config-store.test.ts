@@ -49,7 +49,7 @@ describe('ConfigStore', () => {
     expect(store.get('language')).toBe(DEFAULT_CONFIG.language);
     expect(store.get('minimizeToTray')).toBe(true);
     expect(store.get('closeBehaviorConfirmed')).toBe(false);
-    expect(store.get('openAtLogin')).toBe(false);
+    expect(store.get('autoLaunch')).toBe(false);
   });
 
   it('falls back to defaults entirely when any field is invalid', () => {

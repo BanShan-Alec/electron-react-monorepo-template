@@ -73,8 +73,8 @@ describe('AutoLaunchService', () => {
     vi.restoreAllMocks();
   });
 
-  it('calls app.setLoginItemSettings with --hidden args when openAtLogin is true in packaged mode', () => {
-    service.setOpenAtLogin(true);
+  it('calls app.setLoginItemSettings with --hidden args when autoLaunch is true in packaged mode', () => {
+    service.setAutoLaunch(true);
 
     expect(app.setLoginItemSettings).toHaveBeenCalledWith({
       openAtLogin: true,
@@ -82,8 +82,8 @@ describe('AutoLaunchService', () => {
     });
   });
 
-  it('calls app.setLoginItemSettings with empty args when openAtLogin is false in packaged mode', () => {
-    service.setOpenAtLogin(false);
+  it('calls app.setLoginItemSettings with empty args when autoLaunch is false in packaged mode', () => {
+    service.setAutoLaunch(false);
 
     expect(app.setLoginItemSettings).toHaveBeenCalledWith({
       openAtLogin: false,
@@ -96,7 +96,7 @@ describe('AutoLaunchService', () => {
       throw new Error('Access denied by OS policy');
     });
 
-    expect(() => service.setOpenAtLogin(true)).toThrow(
+    expect(() => service.setAutoLaunch(true)).toThrow(
       'Failed to update system login item settings: Access denied by OS policy',
     );
   });
@@ -115,8 +115,9 @@ describe('AutoLaunchService', () => {
         launchItems: [],
       });
 
-      const status = service.getLoginItemStatus();
-      expect(status.openAtLogin).toBe(true);
+      const status = service.getAutoLaunchStatus();
+      expect(status.isSupported).toBe(true);
+      expect(status.isEnabled).toBe(true);
       expect(status.isBlockedBySystem).toBe(true);
     } finally {
       Object.defineProperty(process, 'platform', { value: originalPlatform });
@@ -133,8 +134,9 @@ describe('AutoLaunchService', () => {
       launchItems: [],
     });
 
-    const status = service.getLoginItemStatus();
-    expect(status.openAtLogin).toBe(true);
+    const status = service.getAutoLaunchStatus();
+    expect(status.isSupported).toBe(true);
+    expect(status.isEnabled).toBe(true);
     expect(status.isBlockedBySystem).toBe(false);
   });
 
@@ -145,12 +147,12 @@ describe('AutoLaunchService', () => {
     try {
       mockStore.get.mockReturnValue(true);
 
-      const status = service.getLoginItemStatus();
-      expect(status).toEqual({ openAtLogin: true, isBlockedBySystem: false });
+      const status = service.getAutoLaunchStatus();
+      expect(status).toEqual({ isSupported: false, isEnabled: true, isBlockedBySystem: false });
       // 不应虚构 OS 状态，也不应触发系统调用
       expect(app.getLoginItemSettings).not.toHaveBeenCalled();
 
-      service.setOpenAtLogin(true);
+      service.setAutoLaunch(true);
       expect(app.setLoginItemSettings).not.toHaveBeenCalled();
     } finally {
       Object.defineProperty(process, 'platform', { value: savedPlatform });
@@ -167,7 +169,7 @@ describe('AutoLaunchService', () => {
       launchItems: [],
     });
 
-    const status = service.getLoginItemStatus();
+    const status = service.getAutoLaunchStatus();
     expect(status.isBlockedBySystem).toBe(true);
   });
 
@@ -181,11 +183,11 @@ describe('AutoLaunchService', () => {
       launchItems: [],
     });
 
-    const status = service.getLoginItemStatus();
+    const status = service.getAutoLaunchStatus();
     expect(status.isBlockedBySystem).toBe(false);
   });
 
-  it('checkStartupStatus queries the OS once and leaves warning output to getLoginItemStatus', () => {
+  it('checkStartupStatus queries the OS once and leaves warning output to getAutoLaunchStatus', () => {
     mockStore.get.mockReturnValue(true);
     vi.mocked(app.getLoginItemSettings).mockReturnValue({
       openAtLogin: false,
@@ -194,13 +196,13 @@ describe('AutoLaunchService', () => {
       status: 'enabled',
       launchItems: [],
     });
-    const getStatusSpy = vi.spyOn(service, 'getLoginItemStatus');
+    const getStatusSpy = vi.spyOn(service, 'getAutoLaunchStatus');
 
     service.checkStartupStatus(true);
 
     expect(getStatusSpy).toHaveBeenCalledTimes(1);
     expect(getStatusSpy).toHaveBeenCalledWith(true);
-    // 告警由 getLoginItemStatus 内部单点产出，调用方不再重复查一次
+    // 告警由 getAutoLaunchStatus 内部单点产出，调用方不再重复查一次
     expect(app.getLoginItemSettings).toHaveBeenCalledTimes(1);
   });
 });
@@ -213,23 +215,23 @@ describe('ConfigService with AutoLaunch', () => {
     configService = new ConfigService();
   });
 
-  it('calls setLoginItemSettings when updating openAtLogin', () => {
-    mockStore.set.mockReturnValue({ openAtLogin: true });
+  it('calls setLoginItemSettings when updating autoLaunch', () => {
+    mockStore.set.mockReturnValue({ autoLaunch: true });
 
-    configService.updateConfig({ openAtLogin: true });
+    configService.updateConfig({ autoLaunch: true });
 
     expect(app.setLoginItemSettings).toHaveBeenCalledWith({
       openAtLogin: true,
       args: ['--hidden'],
     });
-    expect(mockStore.set).toHaveBeenCalledWith({ openAtLogin: true });
+    expect(mockStore.set).toHaveBeenCalledWith({ autoLaunch: true });
   });
 
   it('calls setLoginItemSettings to disable auto launch on resetConfig', () => {
     mockStore.reset.mockReturnValue({
       theme: 'system',
       language: 'system',
-      openAtLogin: false,
+      autoLaunch: false,
     });
 
     configService.resetConfig();
@@ -248,7 +250,7 @@ describe('ConfigService with AutoLaunch', () => {
     mockStore.reset.mockReturnValue({
       theme: 'system',
       language: 'system',
-      openAtLogin: false,
+      autoLaunch: false,
     });
 
     // 系统调用失败只降级告警，不能阻断配置/主题/托盘的恢复

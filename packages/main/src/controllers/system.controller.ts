@@ -1,7 +1,7 @@
 import { performance } from 'node:perf_hooks';
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import type { Result } from '@app/shared/types/result';
-import type { LoginItemStatus, PingResult, SystemInfo } from '@app/shared/types/system';
+import type { AutoLaunchStatus, PingResult, SystemInfo } from '@app/shared/types/system';
 import { autoLaunchService } from '../services/auto-launch.service';
 import { systemService } from '../services/system.service';
 import { eventLoopMonitor } from '../telemetry/event-loop-monitor';
@@ -31,10 +31,10 @@ export function registerSystemControllers(): void {
   });
 
   handleTraced(
-    IPC_CHANNELS.SYSTEM_GET_LOGIN_ITEM_STATUS,
-    async (): Promise<Result<LoginItemStatus>> => {
+    IPC_CHANNELS.SYSTEM_GET_AUTO_LAUNCH_STATUS,
+    async (): Promise<Result<AutoLaunchStatus>> => {
       try {
-        const data = autoLaunchService.getLoginItemStatus();
+        const data = autoLaunchService.getAutoLaunchStatus();
         return successResult(data);
       } catch (err) {
         return catchToResult(err);

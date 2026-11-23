@@ -2,7 +2,7 @@ import { SettingOutlined, WarningOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import type { AppConfig } from '@shared/schemas/config';
-import type { LoginItemStatus } from '@shared/types/system';
+import type { AutoLaunchStatus } from '@shared/types/system';
 import { App, Button, Select, Skeleton, Switch, Tooltip } from 'antd';
 import { memo } from 'react';
 import { AppCard } from '@/components/ui/AppCard';
@@ -19,15 +19,9 @@ const _SettingsCard = (props: SettingsCardProps) => {
   useLingui();
   const { message } = App.useApp();
   // 变量声明、解构
-  const {
-    appConfig,
-    loginItemStatus,
-    // 缺省视为支持：仅在明确传入 false 时禁用开关，避免属性未接线时误锁
-    isAutoLaunchSupported = true,
-    onUpdate,
-    onReset,
-    isLoading,
-  } = props;
+  const { appConfig, autoLaunchStatus, onUpdate, onReset, isLoading } = props;
+  // 乐观判定：状态未到达前按支持渲染，到达后若明确不支持再禁用并切换文案
+  const isAutoLaunchSupported = autoLaunchStatus?.isSupported !== false;
 
   // 组件状态
 
@@ -125,8 +119,8 @@ const _SettingsCard = (props: SettingsCardProps) => {
               <span className="text-foreground font-medium flex items-center gap-1.5">
                 <span>{t`开机自动启动`}</span>
                 {isAutoLaunchSupported &&
-                appConfig.openAtLogin &&
-                loginItemStatus?.isBlockedBySystem ? (
+                appConfig.autoLaunch &&
+                autoLaunchStatus?.isBlockedBySystem ? (
                   <Tooltip title={t`系统启动项已被禁用，开机自启可能无法生效`}>
                     <WarningOutlined className="text-warning cursor-help" />
                   </Tooltip>
@@ -139,9 +133,9 @@ const _SettingsCard = (props: SettingsCardProps) => {
             <Switch
               id="open-at-login-switch"
               // 不支持的平台上归一为未选中：残留的配置值既不可操作也不应显示为「已开启」
-              checked={isAutoLaunchSupported && appConfig.openAtLogin}
+              checked={isAutoLaunchSupported && appConfig.autoLaunch}
               disabled={!isAutoLaunchSupported}
-              onChange={(checked) => onUpdate({ openAtLogin: checked })}
+              onChange={(checked) => onUpdate({ autoLaunch: checked })}
             />
           </div>
 
@@ -181,8 +175,7 @@ const _SettingsCard = (props: SettingsCardProps) => {
 // props 类型定义
 export interface SettingsCardProps {
   appConfig: AppConfig | null;
-  loginItemStatus?: LoginItemStatus | null;
-  isAutoLaunchSupported?: boolean;
+  autoLaunchStatus?: AutoLaunchStatus | null;
   onUpdate: (partial: Partial<AppConfig>) => void;
   onReset: () => void;
   isLoading: boolean;
