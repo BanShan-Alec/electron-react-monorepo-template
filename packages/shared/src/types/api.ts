@@ -10,7 +10,7 @@ import type { CounterResult } from './counter';
 import type { ActionResult, OpenLogFolderResult } from './diagnostics';
 import type { FileDialogResult, SaveFileDialogResult } from './dialog';
 import type { Result } from './result';
-import type { LoginItemStatus, PingResult, SystemInfo } from './system';
+import type { AutoLaunchStatus, PingResult, SystemInfo } from './system';
 import type { IpcCallOptions } from './telemetry';
 import type { UpdaterProgress, UpdaterSnapshot } from './updater';
 import type { UsbDeviceItem } from './usb';
@@ -25,10 +25,10 @@ export interface ElectronApi {
   system: {
     ping: (_payload?: void, options?: IpcCallOptions) => Promise<Result<PingResult>>;
     getSystemInfo: (_payload?: void, options?: IpcCallOptions) => Promise<Result<SystemInfo>>;
-    getLoginItemStatus: (
+    getAutoLaunchStatus: (
       _payload?: void,
       options?: IpcCallOptions,
-    ) => Promise<Result<LoginItemStatus>>;
+    ) => Promise<Result<AutoLaunchStatus>>;
     getPlatform: () => string;
   };
   counter: {

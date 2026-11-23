@@ -1,6 +1,6 @@
 import { t } from '@lingui/core/macro';
 import type { AppConfig } from '@shared/schemas/config';
-import type { LoginItemStatus } from '@shared/types/system';
+import type { AutoLaunchStatus } from '@shared/types/system';
 import { App } from 'antd';
 import { useEffect } from 'react';
 import { useIpc } from '@/hooks/useIpc';
@@ -11,10 +11,8 @@ import { useAppStore } from '@/stores/useAppStore';
 // 可抽离的逻辑处理函数/组件
 export interface UseAppConfigResult {
   appConfig: AppConfig | null;
-  loginItemStatus: LoginItemStatus | null;
+  autoLaunchStatus: AutoLaunchStatus | null;
   isLoading: boolean;
-  /** Electron 登录项 API 仅 darwin/win32 可用，Linux 上开关不可用 */
-  isAutoLaunchSupported: boolean;
   fetchConfig: () => void;
   handleUpdateConfig: (partial: Partial<AppConfig>) => Promise<void>;
   handleResetConfig: () => Promise<void>;
@@ -42,18 +40,18 @@ export function useAppConfig(): UseAppConfigResult {
     },
   });
 
-  // 网络IO（显式挂载触发）—— 查询底层系统自启状态与警告标记
+  // 网络IO（显式挂载触发）—— 查询开机自启状态（含平台能力与系统侧拦截标记）
   const {
-    data: loginItemStatus,
-    refresh: fetchLoginItemStatus,
-    run: fetchLoginItemStatusRun,
-  } = useIpc('system.getLoginItemStatus');
+    data: autoLaunchStatus,
+    refresh: fetchAutoLaunchStatus,
+    run: fetchAutoLaunchStatusRun,
+  } = useIpc('system.getAutoLaunchStatus');
 
   // 显式挂载触发：初次拉取（run 引用稳定，不会自触循环）
   useEffect(() => {
     fetchConfigRun();
-    fetchLoginItemStatusRun();
-  }, [fetchConfigRun, fetchLoginItemStatusRun]);
+    fetchAutoLaunchStatusRun();
+  }, [fetchConfigRun, fetchAutoLaunchStatusRun]);
 
   // 网络IO（显式触发）—— 局部更新后回填
   const { runAsync: updateConfigAsync } = useIpc('config.update', {
@@ -77,7 +75,7 @@ export function useAppConfig(): UseAppConfigResult {
 
   // 逻辑处理函数
   const refreshAll = async () => {
-    await Promise.all([fetchConfig(), fetchLoginItemStatus()]);
+    await Promise.all([fetchConfig(), fetchAutoLaunchStatus()]);
   };
 
   const handleUpdateConfig = async (partial: Partial<AppConfig>) => {
@@ -106,11 +104,8 @@ export function useAppConfig(): UseAppConfigResult {
 
   return {
     appConfig: appConfig ?? null,
-    loginItemStatus: loginItemStatus ?? null,
+    autoLaunchStatus: autoLaunchStatus ?? null,
     isLoading: isFetching || isResetting,
-    // getPlatform 是 preload 同步暴露的 process.platform，不经 IPC；
-    // 白名单与主进程 isLoginItemSupported 同口径，避免跨文件契约漂移
-    isAutoLaunchSupported: ['win32', 'darwin'].includes(window.api.system.getPlatform()),
     fetchConfig,
     handleUpdateConfig,
     handleResetConfig,

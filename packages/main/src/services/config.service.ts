@@ -13,9 +13,9 @@ export class ConfigService {
   }
 
   updateConfig(input: UpdateConfigInput): AppConfig {
-    if (input.openAtLogin !== undefined) {
+    if (input.autoLaunch !== undefined) {
       // 开机自启变更优先同步底层操作系统；失败直接阻断落盘并由 Controller 向上抛出
-      autoLaunchService.setOpenAtLogin(input.openAtLogin);
+      autoLaunchService.setAutoLaunch(input.autoLaunch);
     }
     const updated = getAppConfigStore().set(input);
     if (input.theme !== undefined) {
@@ -35,7 +35,7 @@ export class ConfigService {
     // 与 updateConfig 不同，重置的目标是「尽力回到可用状态」，
     // 系统调用失败只降级告警，不能中断后续的配置/主题/托盘恢复
     try {
-      autoLaunchService.setOpenAtLogin(false);
+      autoLaunchService.setAutoLaunch(false);
     } catch (err) {
       this.logger.warn('Failed to clear OS login item during reset; continuing:', err);
     }

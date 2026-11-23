@@ -9,21 +9,14 @@ import { useAppConfig } from './hooks/useAppConfig';
  */
 function SettingsFeature() {
   // 变量声明、解构
-  const {
-    appConfig,
-    loginItemStatus,
-    isLoading,
-    isAutoLaunchSupported,
-    handleUpdateConfig,
-    handleResetConfig,
-  } = useAppConfig();
+  const { appConfig, autoLaunchStatus, isLoading, handleUpdateConfig, handleResetConfig } =
+    useAppConfig();
 
   // 组件渲染
   return (
     <SettingsCard
       appConfig={appConfig}
-      loginItemStatus={loginItemStatus}
-      isAutoLaunchSupported={isAutoLaunchSupported}
+      autoLaunchStatus={autoLaunchStatus}
       onUpdate={handleUpdateConfig}
       onReset={handleResetConfig}
       isLoading={isLoading}
