@@ -18,7 +18,7 @@ async function closeHomeWindow(
 ) {
   await electronApp.evaluate(({ BrowserWindow }) => {
     const homeWindow = BrowserWindow.getAllWindows().find(
-      (window) => !window.isDestroyed() && !window.webContents.getURL().includes('updater'),
+      (window) => !window.isDestroyed() && !window.webContents.getURL().includes('entries/updater'),
     );
     homeWindow?.close();
   });
@@ -36,7 +36,7 @@ async function homeWindowExists(
 ) {
   return electronApp.evaluate(({ BrowserWindow }) =>
     BrowserWindow.getAllWindows().some(
-      (window) => !window.isDestroyed() && !window.webContents.getURL().includes('updater'),
+      (window) => !window.isDestroyed() && !window.webContents.getURL().includes('entries/updater'),
     ),
   );
 }
