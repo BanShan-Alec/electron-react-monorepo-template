@@ -21,7 +21,7 @@ test.describe('主窗口初始几何尺寸与工作区视觉居中 E2E 验证', 
       await expect(ctx.page.locator('body')).toHaveClass(/app-startup-ready/, { timeout: 5000 });
 
       const metrics = await ctx.electronApp.evaluate(({ BrowserWindow, screen }) => {
-        // 必须精确匹配 Home 主窗口，防止并发或前序测试残留的 Updater 窗口 (480x460) 造成干扰
+        // 必须精确匹配 Home 主窗口，防止并发或前序测试残留的 Updater 窗口 (700x600) 造成干扰
         const homeWindow =
           BrowserWindow.getAllWindows().find(
             (w) =>
