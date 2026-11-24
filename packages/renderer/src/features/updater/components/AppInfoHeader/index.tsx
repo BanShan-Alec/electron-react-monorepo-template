@@ -2,6 +2,7 @@ import { CloseOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { APP_INFO } from '@shared/constants/app-info';
+import { Button } from 'antd';
 import type React from 'react';
 import { memo } from 'react';
 import appIcon from '../../assets/app-icon.png?url';
@@ -73,16 +74,16 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
       className="drag-region no-wco relative shrink-0 border-b border-border bg-background-sunken px-6 py-5 select-none"
       aria-labelledby="updater-app-name"
     >
-      {/* 无边框窗口自绘关闭钮：绝对定位在信息区右上角，不占排版流 */}
+      {/* 无边框窗口自绘关闭钮：antd 文字按钮，绝对定位在信息区右上角，不占排版流 */}
       {onClose && (
-        <button
-          type="button"
+        <Button
+          type="text"
+          size="small"
           aria-label={t`关闭`}
+          icon={<CloseOutlined />}
           onClick={onClose}
-          className="no-drag absolute top-3 right-3 inline-flex h-8 w-8 items-center justify-center rounded-md text-foreground-muted hover:bg-foreground/10 hover:text-foreground active:bg-foreground/20 transition-colors duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-        >
-          <CloseOutlined className="text-sm" />
-        </button>
+          className="no-drag absolute top-3 right-3 h-8 w-8 text-foreground-muted hover:text-foreground"
+        />
       )}
 
       <div className="flex gap-4 pr-10">

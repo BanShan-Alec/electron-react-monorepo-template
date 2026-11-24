@@ -1,6 +1,6 @@
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Tag } from 'antd';
+import { Button, Tag } from 'antd';
 import type React from 'react';
 import { memo, useState } from 'react';
 import { AppCard } from '@/components/ui/AppCard';
@@ -127,13 +127,14 @@ const _ChangelogCard = (props: ChangelogCardProps) => {
         </div>
         {isLongNotes && (
           <div className="flex justify-end pt-1">
-            <button
-              type="button"
+            <Button
+              type="link"
+              size="small"
               onClick={() => setExpanded(!expanded)}
-              className="text-primary hover:text-primary-hover text-xs font-normal cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="h-auto px-0 text-xs"
             >
               {expanded ? t`收起` : t`展开全部`}
-            </button>
+            </Button>
           </div>
         )}
       </div>
