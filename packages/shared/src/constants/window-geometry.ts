@@ -22,6 +22,9 @@ export const POSITION_TOLERANCE_X = 50;
 export const POSITION_TOLERANCE_Y_TOP = 10;
 export const POSITION_TOLERANCE_Y_BOTTOM = 50;
 
-/** 更新窗口固定尺寸（不可缩放/最大化/最小化）；高度按三段式布局（固定头 + 滚动身 + 固定脚）预算 */
-export const UPDATER_WINDOW_WIDTH = 480;
+/**
+ * 更新窗口固定尺寸（不可缩放/最大化/最小化）；高度按三段式布局（固定头 + 滚动身 + 固定脚）预算。
+ * 宽度对齐 Motrix 关于面板（`sm:max-w-[700px]`）：横向构图下状态文案与动作按钮才能同排。
+ */
+export const UPDATER_WINDOW_WIDTH = 700;
 export const UPDATER_WINDOW_HEIGHT = 600;

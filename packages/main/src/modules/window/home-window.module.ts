@@ -115,7 +115,7 @@ export class HomeWindowModule implements AppModule {
       y: initialBounds.y,
       width: initialBounds.width,
       height: initialBounds.height,
-      // 最小尺寸下限，防止窗口缩到布局不可用（updater 窗口为 480×460）
+      // 最小尺寸下限，防止窗口缩到布局不可用（updater 窗口为 700×600，不可缩放）
       minWidth: MIN_WINDOW_WIDTH,
       minHeight: MIN_WINDOW_HEIGHT,
       backgroundColor: getWindowBackgroundColor(),
