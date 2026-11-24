@@ -1,21 +1,40 @@
 import { PROJECT_DOCS_URL } from './docs';
 
 /**
+ * 构建期注入的展示身份（vite `define`）。
+ * 值由 `build/lib/app-identity.ts` 从根 `package.json` 解析，由 main / renderer 的
+ * vite 配置与 `.config/vitest.config.ts` 三处注入同一份，运行期、构建期、单测同源。
+ */
+declare const __APP_INFO__: {
+  readonly name: string;
+  readonly author: string;
+  readonly authorUrl: string;
+  readonly license: string;
+  readonly repositoryUrl: string;
+};
+
+/**
  * 应用展示元数据单一事实源（更新窗口「关于」区消费）。
  *
- * - 值手工同步自根 `package.json`（name/productName/author/license/repository）；
- *   fork 改名时须与本文件同步，同步义务已登记在文档站「配置项归属」页。
- * - `repositoryUrl` 为去 `.git` 后缀的 https 形式，便于派生 releases/issues 坐标；
- * - `authorUrl` 显式声明（不从 repositoryUrl 推导：仓库可能迁到组织名下，作者主页不变）；
+ * - 身份字段（名称 / 作者 / 协议 / 仓库）不再手写字面量：构建期从根 `package.json`
+ *   注入，fork 改名只需改 `package.json`，不存在两处漂移；
+ * - 仓库子路径（releases / issues）与文档站地址在此派生，同样随注入值变化；
  * - 版本号不在此处：打包后主进程 `app.getVersion()` 才是运行时真值（经快照透传）。
  */
-export const APP_INFO = {
-  name: 'Electron React Template',
-  author: 'BanShan-Alec',
-  license: 'Unlicense',
-  authorUrl: 'https://github.com/BanShan-Alec',
-  repositoryUrl: 'https://github.com/BanShan-Alec/electron-react-monorepo-template',
-  releasesUrl: 'https://github.com/BanShan-Alec/electron-react-monorepo-template/releases',
-  issuesUrl: 'https://github.com/BanShan-Alec/electron-react-monorepo-template/issues',
+export interface AppInfo {
+  name: string;
+  author: string;
+  authorUrl: string;
+  license: string;
+  repositoryUrl: string;
+  releasesUrl: string;
+  issuesUrl: string;
+  docsUrl: string;
+}
+
+export const APP_INFO: AppInfo = {
+  ...__APP_INFO__,
+  releasesUrl: `${__APP_INFO__.repositoryUrl}/releases`,
+  issuesUrl: `${__APP_INFO__.repositoryUrl}/issues`,
   docsUrl: PROJECT_DOCS_URL,
-} as const;
+};
