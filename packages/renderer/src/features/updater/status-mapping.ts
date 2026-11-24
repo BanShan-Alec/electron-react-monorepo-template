@@ -89,6 +89,28 @@ export function getStatusDescription(snapshot: UpdaterSnapshot): string {
   }
 }
 
+/** 是否渲染变更日志卡片：已拿到版本元数据且处于可参考阶段（cancelled/error 保留元数据供用户参考） */
+export function showsChangelog(snapshot: UpdaterSnapshot): boolean {
+  if (!snapshot.version) {
+    return false;
+  }
+  switch (snapshot.state) {
+    case 'available':
+    case 'downloading':
+    case 'downloaded':
+    case 'cancelled':
+    case 'error':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/** 是否渲染下载进度卡片 */
+export function showsProgress(snapshot: UpdaterSnapshot): boolean {
+  return snapshot.state === 'downloading';
+}
+
 /** 单个动作按钮的展示契约（antd Button 映射用） */
 export interface UpdaterAction {
   label: ReactNode;

@@ -4,14 +4,12 @@ import { Tag } from 'antd';
 import type React from 'react';
 import { memo, useState } from 'react';
 import { AppCard } from '@/components/ui/AppCard';
-import { callIpc } from '@/lib/ipc';
+import { openExternal } from '../../utils/open-external';
 
 // 私有常量
 
-// 链接打开失败不打扰用户（含白名单拦截拒绝）：失败行已由 callIpc 统一落盘
-function openExternal(url: string): void {
-  void callIpc('shell.openExternal', [url]).catch(() => {});
-}
+/** 折叠态可见行数（与下方 line-clamp-4 字面类耦合：Tailwind 需静态类名） */
+const COLLAPSED_NOTE_LINES = 4;
 
 // 可抽离的逻辑处理函数/组件
 
@@ -65,8 +63,6 @@ function formatInlineMarkdown(text: string): React.ReactNode[] {
 }
 
 const _ChangelogCard = (props: ChangelogCardProps) => {
-  useLingui();
-
   // ① 变量声明、解构
   const { version, releaseDate, releaseNotes } = props;
   const { i18n } = useLingui();
@@ -82,7 +78,7 @@ const _ChangelogCard = (props: ChangelogCardProps) => {
     ? new Date(releaseDate).toLocaleDateString(i18n.locale)
     : undefined;
   const hasNotes = Boolean(releaseNotes && releaseNotes.length > 0);
-  const isLongNotes = Boolean(releaseNotes && releaseNotes.length > 4);
+  const isLongNotes = Boolean(releaseNotes && releaseNotes.length > COLLAPSED_NOTE_LINES);
 
   const normalizedNotes = (releaseNotes ?? []).map((note, index) => ({
     id: `${index}-${note}`,

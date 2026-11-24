@@ -3,8 +3,8 @@ import { useLingui } from '@lingui/react';
 import { APP_INFO } from '@shared/constants/app-info';
 import type React from 'react';
 import { memo } from 'react';
-import { callIpc } from '@/lib/ipc';
 import appIcon from '../../assets/app-icon.png?url';
+import { openExternal } from '../../utils/open-external';
 
 // 私有常量
 /** 资源链接导航项（顺序即展示顺序，来源统一为 APP_INFO 单一真源）
@@ -34,11 +34,6 @@ function resourceLinkLabel(key: ResourceLinkKey): React.ReactNode {
     case 'docs':
       return t`文档站`;
   }
-}
-
-/** 链接打开失败不打扰用户（含白名单拦截拒绝）：失败行已由 callIpc 统一落盘 */
-function openExternal(url: string): void {
-  void callIpc('shell.openExternal', [url]).catch(() => {});
 }
 
 const _AppInfoHeader = (props: AppInfoHeaderProps) => {

@@ -4,6 +4,8 @@ import {
   getStatusDescription,
   getStatusHeader,
   getUpdaterActions,
+  showsChangelog,
+  showsProgress,
 } from '@/features/updater/status-mapping';
 
 // t 宏是 Vite 插件（@lingui/vite-plugin）的编译期转换，Vitest 管线不执行；
@@ -178,5 +180,31 @@ describe('getUpdaterActions', () => {
       );
       expect(primaries.length).toBeLessThanOrEqual(1);
     }
+  });
+});
+
+describe('showsChangelog', () => {
+  it('无版本元数据时一律不渲染（含 cancelled/error）', () => {
+    for (const state of ['cancelled', 'error', 'available'] as const) {
+      expect(showsChangelog(snapshot({ state }))).toBe(false);
+    }
+  });
+
+  it('有版本元数据时仅 available/downloading/downloaded/cancelled/error 渲染', () => {
+    const visible = ['available', 'downloading', 'downloaded', 'cancelled', 'error'] as const;
+    for (const state of visible) {
+      expect(showsChangelog(snapshot({ state, version: '1.2.3' }))).toBe(true);
+    }
+    for (const state of ['idle', 'checking', 'up-to-date'] as const) {
+      expect(showsChangelog(snapshot({ state, version: '1.2.3' }))).toBe(false);
+    }
+  });
+});
+
+describe('showsProgress', () => {
+  it('仅 downloading 态渲染进度卡片', () => {
+    expect(showsProgress(snapshot({ state: 'downloading' }))).toBe(true);
+    expect(showsProgress(snapshot({ state: 'downloaded' }))).toBe(false);
+    expect(showsProgress(snapshot({ state: 'cancelled' }))).toBe(false);
   });
 });

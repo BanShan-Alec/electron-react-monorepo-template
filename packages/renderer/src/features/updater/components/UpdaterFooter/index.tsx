@@ -44,7 +44,7 @@ const _UpdaterFooter = (props: UpdaterFooterProps) => {
           <span className="block">{t`启动时自动检查更新`}</span>
           <span className="block min-h-4 mt-0.5">
             {autoCheck.failed ? (
-              <span className="text-error">{t`保存失败，请重试`}</span>
+              <span className="text-danger">{t`保存失败，请重试`}</span>
             ) : (
               <span className="invisible" aria-hidden="true">
                 {t`保存失败，请重试`}

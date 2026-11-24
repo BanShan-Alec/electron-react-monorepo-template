@@ -24,32 +24,21 @@ export function useUpdater() {
   };
 
   // ⑤ 逻辑处理函数：失败行已由 callIpc 落盘；错误快照经 updater:event:state 推送展示
-  const handleCheck = async () => {
+  const runSnapshotAction = async (
+    channel: 'updater.check' | 'updater.download' | 'updater.cancel',
+  ) => {
     try {
-      const data = await callIpc('updater.check');
-      setSnapshot(data);
+      setSnapshot(await callIpc(channel));
     } catch {
       // 同上
     }
   };
 
-  const handleDownload = async () => {
-    try {
-      const data = await callIpc('updater.download');
-      setSnapshot(data);
-    } catch {
-      // 同上
-    }
-  };
+  const handleCheck = () => runSnapshotAction('updater.check');
 
-  const handleCancel = async () => {
-    try {
-      const data = await callIpc('updater.cancel');
-      setSnapshot(data);
-    } catch {
-      // 同上
-    }
-  };
+  const handleDownload = () => runSnapshotAction('updater.download');
+
+  const handleCancel = () => runSnapshotAction('updater.cancel');
 
   const handleInstall = async () => {
     try {

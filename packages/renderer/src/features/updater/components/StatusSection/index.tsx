@@ -23,6 +23,7 @@ function renderAction(action: UpdaterAction, key: string): React.ReactNode {
       loading={action.loading}
       disabled={action.disabled}
       aria-label={action.ariaLabel}
+      aria-busy={action.loading}
       onClick={action.onClick}
       className={action.mono ? 'font-mono tabular-nums' : undefined}
     >

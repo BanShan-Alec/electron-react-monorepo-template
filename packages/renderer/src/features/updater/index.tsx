@@ -10,7 +10,7 @@ import { StatusSection } from './components/StatusSection';
 import { UpdaterFooter } from './components/UpdaterFooter';
 import { useAutoCheckSetting } from './hooks/useAutoCheckSetting';
 import { useUpdater } from './hooks/useUpdater';
-import { getStatusHeader } from './status-mapping';
+import { getStatusHeader, showsChangelog, showsProgress } from './status-mapping';
 
 export const UpdaterFeature: React.FC = () => {
   useLingui();
@@ -25,15 +25,8 @@ export const UpdaterFeature: React.FC = () => {
   } = useUpdater();
   const autoCheck = useAutoCheckSetting();
 
-  // 仅在已获取到版本元数据时渲染变更日志卡片；cancelled / error 保留元数据供用户参考
-  const hasVersionMetadata = Boolean(snapshot.version);
-  const showChangelog =
-    hasVersionMetadata &&
-    (snapshot.state === 'available' ||
-      snapshot.state === 'downloading' ||
-      snapshot.state === 'downloaded' ||
-      snapshot.state === 'cancelled' ||
-      snapshot.state === 'error');
+  // 卡片可见性统一由状态映射层裁定（新增状态只改 status-mapping 一处）
+  const showChangelog = showsChangelog(snapshot);
 
   const { title, subtitle } = getStatusHeader(snapshot);
 
@@ -92,7 +85,7 @@ export const UpdaterFeature: React.FC = () => {
           />
         )}
 
-        {snapshot.state === 'downloading' && <ProgressCard progress={snapshot.progress} />}
+        {showsProgress(snapshot) && <ProgressCard progress={snapshot.progress} />}
       </div>
 
       {/* 底部动作区：自动检查偏好 + 关闭 */}

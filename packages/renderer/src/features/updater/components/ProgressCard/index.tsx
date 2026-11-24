@@ -13,7 +13,8 @@ function formatBytes(bytes: number): string {
   if (bytes <= 0) return '0 B';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
 function formatSpeed(bytesPerSecond: number): string {
@@ -21,7 +22,10 @@ function formatSpeed(bytesPerSecond: number): string {
   if (bytesPerSecond < 1024 * 1024) {
     return `${(bytesPerSecond / 1024).toFixed(1)} KB/s`;
   }
-  return `${(bytesPerSecond / (1024 * 1024)).toFixed(2)} MB/s`;
+  if (bytesPerSecond < 1024 * 1024 * 1024) {
+    return `${(bytesPerSecond / (1024 * 1024)).toFixed(2)} MB/s`;
+  }
+  return `${(bytesPerSecond / (1024 * 1024 * 1024)).toFixed(2)} GB/s`;
 }
 
 const _ProgressCard = (props: ProgressCardProps) => {
