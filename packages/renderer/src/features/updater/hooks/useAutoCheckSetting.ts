@@ -22,7 +22,7 @@ export function useAutoCheckSetting(): UseAutoCheckSettingResult {
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  // ③ [已脱敏]IO（显式挂载触发）—— 拉取偏好配置
+  // ③ 网络IO（显式挂载触发）—— 拉取偏好配置
   const { run: fetchConfig } = useIpc('config.get', {
     onSuccess: (data: AppConfig) => {
       setChecked(data.autoCheckUpdate);
@@ -34,7 +34,7 @@ export function useAutoCheckSetting(): UseAutoCheckSettingResult {
     },
   });
 
-  // ③ [已脱敏]IO（显式触发）—— 局部更新
+  // ③ 网络IO（显式触发）—— 局部更新
   const { runAsync: updateConfig } = useIpc('config.update');
 
   // ⑥ 组件 Effect：初次拉取 + 订阅配置变更（外部来源修改时同步开关）

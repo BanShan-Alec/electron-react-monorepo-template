@@ -36,7 +36,7 @@ const _ProgressCard = (props: ProgressCardProps) => {
 
   // ② 组件状态
 
-  // ③ [已脱敏]IO / 异步操作
+  // ③ 网络IO / 异步操作
 
   // ④ 数据转换 / 派生
   const percent = progress?.percent ? Math.min(100, Math.max(0, progress.percent)) : 0;

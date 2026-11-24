@@ -1,6 +1,7 @@
 import type { UpdaterSnapshot } from '@shared/types/updater';
 import { useEffect, useRef, useState } from 'react';
 import { callIpc } from '@/lib/ipc';
+import { shouldAutoCheckOnOpen } from '../status-mapping';
 
 const INITIAL_SNAPSHOT: UpdaterSnapshot = {
   state: 'idle',
@@ -82,7 +83,8 @@ export function useUpdater() {
       const hasNewerEvent = revisionRef.current !== seqBeforeGet;
       if (!hasNewerEvent) setSnapshot(current);
       const effective = hasNewerEvent ? (latestEventRef.current ?? current) : current;
-      if (effective.state !== 'checking' && effective.state !== 'downloading') {
+      // 开窗即查仅限「还没有结果」的阶段（其它阶段有结果或正在推进，见 shouldAutoCheckOnOpen）
+      if (shouldAutoCheckOnOpen(effective.state)) {
         try {
           const seqBeforeCheck = revisionRef.current;
           const data = await callIpc('updater.check');
