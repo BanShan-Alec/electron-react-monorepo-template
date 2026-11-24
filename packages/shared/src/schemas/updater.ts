@@ -6,6 +6,7 @@ export const updaterStateSchema = z.enum([
   'available',
   'downloading',
   'downloaded',
+  'cancelled',
   'up-to-date',
   'error',
 ]);
@@ -26,6 +27,8 @@ export const releaseInfoSchema = z.object({
 export const updaterSnapshotSchema = z.object({
   state: updaterStateSchema,
   version: z.string().optional(),
+  /** 当前运行版本：主进程 app.getVersion() 注入；老主进程缺省时渲染端不展示版本行 */
+  currentVersion: z.string().optional(),
   releaseDate: z.string().optional(),
   releaseNotes: z.array(z.string()).optional(),
   progress: updaterProgressSchema.nullable().optional(),
@@ -59,6 +62,9 @@ export const updaterMockActionSchema = z.discriminatedUnion('type', [
   }),
   z.object({
     type: z.literal('downloaded'),
+  }),
+  z.object({
+    type: z.literal('cancelled'),
   }),
   z.object({
     type: z.literal('up-to-date'),
