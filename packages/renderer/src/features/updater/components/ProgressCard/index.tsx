@@ -2,12 +2,12 @@ import type { UpdaterProgress } from '@app/shared/types/updater';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Progress } from 'antd';
-import type React from 'react';
+import { memo } from 'react';
 import { AppCard } from '@/components/ui/AppCard';
 
-interface ProgressCardProps {
-  progress?: UpdaterProgress | null;
-}
+// 私有常量
+
+// 可抽离的逻辑处理函数/组件
 
 function formatBytes(bytes: number): string {
   if (bytes <= 0) return '0 B';
@@ -24,9 +24,17 @@ function formatSpeed(bytesPerSecond: number): string {
   return `${(bytesPerSecond / (1024 * 1024)).toFixed(2)} MB/s`;
 }
 
-export const ProgressCard: React.FC<ProgressCardProps> = ({ progress }) => {
+const _ProgressCard = (props: ProgressCardProps) => {
   useLingui();
 
+  // ① 变量声明、解构
+  const { progress } = props;
+
+  // ② 组件状态
+
+  // ③ [已脱敏]IO / 异步操作
+
+  // ④ 数据转换 / 派生
   const percent = progress?.percent ? Math.min(100, Math.max(0, progress.percent)) : 0;
   const speedText = progress ? formatSpeed(progress.bytesPerSecond) : '0 KB/s';
   const transferredText = progress ? formatBytes(progress.transferred) : '0 MB';
@@ -54,3 +62,11 @@ export const ProgressCard: React.FC<ProgressCardProps> = ({ progress }) => {
     </AppCard>
   );
 };
+
+// 4. Props 类型定义
+export interface ProgressCardProps {
+  progress?: UpdaterProgress | null;
+}
+
+// 5. 导出与 Memo
+export const ProgressCard = memo(_ProgressCard);

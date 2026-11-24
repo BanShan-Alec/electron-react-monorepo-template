@@ -2,20 +2,18 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Tag } from 'antd';
 import type React from 'react';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { AppCard } from '@/components/ui/AppCard';
 import { callIpc } from '@/lib/ipc';
+
+// 私有常量
 
 // 链接打开失败不打扰用户（含白名单拦截拒绝）：失败行已由 callIpc 统一落盘
 function openExternal(url: string): void {
   void callIpc('shell.openExternal', [url]).catch(() => {});
 }
 
-interface ChangelogCardProps {
-  version?: string;
-  releaseDate?: string;
-  releaseNotes?: string[];
-}
+// 可抽离的逻辑处理函数/组件
 
 function formatInlineMarkdown(text: string): React.ReactNode[] {
   const tokens = text.split(/(\[[^\]]+\]\(https?:\/\/[^\s)]+\)|\*\*[^*]+\*\*|https?:\/\/[^\s]+)/g);
@@ -66,13 +64,19 @@ function formatInlineMarkdown(text: string): React.ReactNode[] {
   });
 }
 
-export const ChangelogCard: React.FC<ChangelogCardProps> = ({
-  version,
-  releaseDate,
-  releaseNotes,
-}) => {
+const _ChangelogCard = (props: ChangelogCardProps) => {
+  useLingui();
+
+  // ① 变量声明、解构
+  const { version, releaseDate, releaseNotes } = props;
   const { i18n } = useLingui();
+
+  // ② 组件状态
   const [expanded, setExpanded] = useState(false);
+
+  // ③ [已脱敏]IO / 异步操作
+
+  // ④ 数据转换 / 派生
 
   const formattedDate = releaseDate
     ? new Date(releaseDate).toLocaleDateString(i18n.locale)
@@ -140,3 +144,13 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
     </AppCard>
   );
 };
+
+// 4. Props 类型定义
+export interface ChangelogCardProps {
+  version?: string;
+  releaseDate?: string;
+  releaseNotes?: string[];
+}
+
+// 5. 导出与 Memo
+export const ChangelogCard = memo(_ChangelogCard);
