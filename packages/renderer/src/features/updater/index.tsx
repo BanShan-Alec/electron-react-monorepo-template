@@ -25,8 +25,9 @@ export const UpdaterFeature: React.FC = () => {
 
   return (
     <div className="h-screen w-screen flex flex-col bg-background text-foreground select-none overflow-hidden border border-border">
-      {/* 应用信息区：静音底 + 图标 + 版本 + 元数据 + 资源链接，兼作窗口拖拽区（单一真源 APP_INFO） */}
-      <AppInfoHeader currentVersion={snapshot.currentVersion} onClose={handleClose} />
+      {/* 应用信息区：静音底 + 图标 + 版本 + 元数据 + 资源链接，兼作窗口拖拽区（单一真源 APP_INFO）；
+          关闭入口只在底栏（对齐 Motrix about-dialog：showCloseButton=false + DialogFooter 关闭） */}
+      <AppInfoHeader currentVersion={snapshot.currentVersion} />
 
       {/* 主体内容区域：应用更新小节（标签 + 状态行 + 提示）→ 下载进度 → 变更日志
           进度卡必须排在日志卡之前：下载中进度是首要信息，排在长日志后面会被挤出首屏 */}

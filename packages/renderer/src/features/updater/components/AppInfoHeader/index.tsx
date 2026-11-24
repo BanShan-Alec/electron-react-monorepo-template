@@ -1,8 +1,6 @@
-import { CloseOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { APP_INFO } from '@shared/constants/app-info';
-import { Button } from 'antd';
 import type React from 'react';
 import { memo } from 'react';
 import appIcon from '../../assets/app-icon.png?url';
@@ -50,7 +48,7 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
   useLingui();
 
   // ① 变量声明、解构
-  const { currentVersion, onClose } = props;
+  const { currentVersion } = props;
 
   // ② 组件状态
 
@@ -71,22 +69,10 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
   // ⑦ 组件渲染
   return (
     <section
-      className="drag-region no-wco relative shrink-0 border-b border-border/60 bg-background-sunken px-6 py-5 select-none"
+      className="drag-region no-wco shrink-0 border-b border-border/60 bg-background-sunken px-6 py-5 select-none"
       aria-labelledby="updater-app-name"
     >
-      {/* 无边框窗口自绘关闭钮：antd 文字按钮，绝对定位在信息区右上角，不占排版流 */}
-      {onClose && (
-        <Button
-          type="text"
-          size="small"
-          aria-label={t`关闭`}
-          icon={<CloseOutlined />}
-          onClick={onClose}
-          className="no-drag absolute top-3 right-3 h-8 w-8 text-foreground-muted hover:text-foreground"
-        />
-      )}
-
-      <div className="flex gap-4 pr-10">
+      <div className="flex gap-4">
         <img src={appIcon} alt="" draggable={false} className="size-20 shrink-0 drop-shadow-sm" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
@@ -157,8 +143,6 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
 export interface AppInfoHeaderProps {
   /** 当前运行版本：来自主进程快照，缺失时不渲染版本行 */
   currentVersion?: string;
-  /** 关闭窗口（隐藏到后台，下载继续）；不传则不渲染右上角关闭钮 */
-  onClose?: () => void;
 }
 
 // 5. 导出与 Memo
