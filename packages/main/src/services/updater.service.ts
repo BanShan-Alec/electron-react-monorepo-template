@@ -330,7 +330,9 @@ export class UpdaterService {
   }
 
   public getSnapshot(): UpdaterSnapshot {
-    return { ...this.snapshot };
+    // currentVersion 统一在出口注入：打包后 app.getVersion() 才是运行时真值，
+    // 私有快照不持有它，所有透传路径（invoke 返回值与 emitState 事件）都在这里覆盖
+    return { ...this.snapshot, currentVersion: app.getVersion() };
   }
 
   public getState(): UpdaterState {
@@ -479,7 +481,11 @@ export class UpdaterService {
       throw new AppError('Download is already in progress', ErrorCode.UPDATER_ALREADY_RUNNING);
     }
 
-    if (this.snapshot.state !== 'available' && this.snapshot.state !== 'error') {
+    if (
+      this.snapshot.state !== 'available' &&
+      this.snapshot.state !== 'cancelled' &&
+      this.snapshot.state !== 'error'
+    ) {
       throw new AppError('No update available to download', ErrorCode.UPDATER_NO_UPDATE);
     }
 
@@ -555,7 +561,8 @@ export class UpdaterService {
         }
         this.cancellationToken = null;
       }
-      this.snapshot.state = 'available';
+      // 取消后不再回退 available：保留 version/releaseNotes 供 cancelled 态展示与重新下载
+      this.snapshot.state = 'cancelled';
       this.snapshot.progress = null;
       this.snapshot.error = null;
       this.snapshot.code = null;
@@ -689,6 +696,15 @@ export class UpdaterService {
         } else {
           this.windowDelegate?.show().catch(() => {});
         }
+        break;
+      }
+      case 'cancelled': {
+        // E2E 取消流驱动：置 state 并保留当前 mock 元数据（version/releaseNotes）
+        this.snapshot.state = 'cancelled';
+        this.snapshot.progress = null;
+        this.snapshot.error = null;
+        this.snapshot.code = null;
+        this.emitState();
         break;
       }
       case 'up-to-date':
