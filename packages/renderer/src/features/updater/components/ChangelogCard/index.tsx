@@ -131,7 +131,7 @@ const _ChangelogCard = (props: ChangelogCardProps) => {
               type="link"
               size="small"
               onClick={() => setExpanded(!expanded)}
-              className="h-auto px-0 text-xs"
+              className="-mx-1 h-6 px-1 text-xs"
             >
               {expanded ? t`收起` : t`展开全部`}
             </Button>

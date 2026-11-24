@@ -26,7 +26,7 @@ const _UpdaterFooter = (props: UpdaterFooterProps) => {
 
   // ⑦ 组件渲染
   return (
-    <footer className="shrink-0 border-t border-border bg-background px-6 py-3.5 flex items-center justify-between gap-4 select-none">
+    <footer className="shrink-0 border-t border-border/60 bg-background-sunken px-6 py-3.5 flex items-center justify-between gap-4 select-none">
       <div className="flex min-w-0 items-center gap-2.5">
         <Switch
           id="updater-auto-check"

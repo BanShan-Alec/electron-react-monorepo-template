@@ -129,17 +129,18 @@ export type UpdaterActionIcon = 'refresh' | 'download' | 'restart';
 /** 单个动作按钮的展示契约（antd Button 映射用） */
 export interface UpdaterAction {
   label: ReactNode;
-  /** 可见文案不可读屏时（percent 按钮）补完整语义 */
-  ariaLabel?: string;
   onClick?: () => void;
   loading?: boolean;
   disabled?: boolean;
   /** antd Button type：每阶段至多一个 primary */
   variant: 'primary' | 'default';
-  /** 数字文案用等宽字（percent 按钮） */
+  /** 数字文案用等宽字（percent 读数） */
   mono?: boolean;
   /** 前置图标（对齐 Motrix 每个动作都带图标） */
   icon?: UpdaterActionIcon;
+  /** 只读数值读数：占按钮位但不可点。不得用 disabled 按钮承载（disabled 色板会
+   *  把 42% 压到 1.8:1，读数必须保持正文对比度） */
+  readOnly?: boolean;
 }
 
 /** 各状态动作的执行器集合（由 StatusSection 装配后传入，保持映射函数纯净） */
@@ -183,11 +184,10 @@ export function getUpdaterActions(
       return {
         primary: {
           label: `${percent}%`,
-          ariaLabel: t`正在下载更新 ${percent}%`,
           icon: 'download',
           variant: 'default',
-          disabled: true,
           mono: true,
+          readOnly: true,
         },
         secondary: { label: t`取消下载`, variant: 'default', onClick: handlers.cancel },
       };

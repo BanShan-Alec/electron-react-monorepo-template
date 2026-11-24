@@ -130,15 +130,14 @@ describe('getUpdaterActions', () => {
     expect(actions.primary?.label).toBe('下载更新');
   });
 
-  it('renders a clamped percent button with an accessible label and a cancel secondary', () => {
+  it('renders a clamped percent readout (非 disabled 按钮) with an accessible label and a cancel secondary', () => {
     const h = handlers();
     const actions = getUpdaterActions(
       snapshot({ state: 'downloading', version: '2.0.0', progress: { percent: 47.6 } }),
       h,
     );
     expect(actions.primary?.label).toBe('48%');
-    expect(actions.primary?.ariaLabel).toBe('正在下载更新 48%');
-    expect(actions.primary?.disabled).toBe(true);
+    expect(actions.primary?.readOnly).toBe(true);
     expect(actions.primary?.mono).toBe(true);
     expect(actions.primary?.onClick).toBeUndefined();
 

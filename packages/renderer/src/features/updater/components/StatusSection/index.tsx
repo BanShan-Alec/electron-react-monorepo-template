@@ -23,10 +23,33 @@ const ACTION_ICONS: Record<UpdaterActionIcon, React.ReactNode> = {
   restart: <RedoOutlined />,
 };
 
+/** 只读数值读数：占动作按钮的版式位但不借用 disabled 按钮
+ * （antd disabled 色板把读数压到 1.8:1，百分比是状态数据，必须保持正文对比度）
+ */
+function renderReadOnly(action: UpdaterAction, key: string): React.ReactNode {
+  return (
+    <span
+      key={key}
+      className="inline-flex h-7 items-center gap-1.5 rounded-md bg-background-sunken px-2 font-mono text-xs tabular-nums text-foreground"
+    >
+      {action.icon && (
+        <span aria-hidden="true" className="text-foreground-secondary">
+          {ACTION_ICONS[action.icon]}
+        </span>
+      )}
+      {action.label}
+    </span>
+  );
+}
+
 /** 单个动作按钮：loading/disabled/aria-label/mono/icon 均由状态映射层给出
  * 尺寸对齐 Motrix 的小号动作按钮（h-7 px-2 text-xs）：状态行与按钮必须能同排放下
  */
 function renderAction(action: UpdaterAction, key: string): React.ReactNode {
+  if (action.readOnly) {
+    return renderReadOnly(action, key);
+  }
+
   return (
     <Button
       key={key}
@@ -35,7 +58,6 @@ function renderAction(action: UpdaterAction, key: string): React.ReactNode {
       icon={action.icon ? ACTION_ICONS[action.icon] : undefined}
       loading={action.loading}
       disabled={action.disabled}
-      aria-label={action.ariaLabel}
       aria-busy={action.loading}
       onClick={action.onClick}
       className={action.mono ? 'h-7 px-2 text-xs font-mono tabular-nums' : 'h-7 px-2 text-xs'}

@@ -71,7 +71,7 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
   // ⑦ 组件渲染
   return (
     <section
-      className="drag-region no-wco relative shrink-0 border-b border-border bg-background-sunken px-6 py-5 select-none"
+      className="drag-region no-wco relative shrink-0 border-b border-border/60 bg-background-sunken px-6 py-5 select-none"
       aria-labelledby="updater-app-name"
     >
       {/* 无边框窗口自绘关闭钮：antd 文字按钮，绝对定位在信息区右上角，不占排版流 */}
@@ -133,7 +133,7 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
       </div>
 
       {/* 分隔线归 nav（与内容列同宽），负边距只作用于链接行，避免把 border-t 一起左移压到窗口边 */}
-      <nav aria-label={t`相关资源`} className="mt-4 border-t border-border pt-3">
+      <nav aria-label={t`相关资源`} className="mt-4 border-t border-border/60 pt-3">
         <div className="-mb-1 -ms-2 flex flex-wrap items-center gap-0.5">
           {RESOURCE_LINKS.map((link) => (
             <a
