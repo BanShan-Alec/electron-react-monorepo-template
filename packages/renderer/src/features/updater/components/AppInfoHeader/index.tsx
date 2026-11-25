@@ -99,7 +99,7 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
           <p className="max-w-md text-xs leading-normal text-foreground-secondary m-0">
             {appTagline()}
           </p>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-foreground-secondary">
+          <div className="mt-auto flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-foreground-secondary">
             <span>
               {t`开发者`}{' '}
               <a
