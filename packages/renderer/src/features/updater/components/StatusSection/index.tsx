@@ -94,8 +94,7 @@ const _StatusSection = (props: StatusSectionProps) => {
       <p className="text-xs font-medium text-foreground-secondary m-0">{t`应用更新`}</p>
 
       <div className="mt-3 flex items-start justify-between gap-4">
-        {/* 高度下限保证按钮换行/文案长短变化时状态行不跳版 */}
-        <div className="min-h-16 min-w-0 flex-1 pt-0.5">
+        <div className="min-w-0 flex-1">
           <h3 className="text-base leading-5 font-semibold tracking-tight text-foreground m-0">
             {title}
           </h3>

@@ -83,7 +83,7 @@ const _ChangelogCard = (props: ChangelogCardProps) => {
   return (
     <AppCard
       size="small"
-      className="min-h-32 flex-1 bg-background-elevated"
+      className="min-h-0 flex-1 bg-background-elevated"
       title={
         <div className="flex items-center justify-between py-1">
           <div className="flex items-center gap-2">

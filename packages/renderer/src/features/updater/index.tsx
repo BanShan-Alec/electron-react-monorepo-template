@@ -31,7 +31,7 @@ export const UpdaterFeature: React.FC = () => {
 
       {/* 主体内容区域：应用更新小节（标签 + 状态行 + 提示）→ 下载进度 → 变更日志
           进度卡必须排在日志卡之前：下载中进度是首要信息，排在长日志后面会被挤出首屏 */}
-      <div className="min-h-0 flex-1 flex flex-col gap-4 overflow-y-auto px-6 py-5">
+      <div className="min-h-0 flex-1 flex flex-col gap-5 overflow-y-auto px-6 py-5">
         <StatusSection
           snapshot={snapshot}
           handlers={{

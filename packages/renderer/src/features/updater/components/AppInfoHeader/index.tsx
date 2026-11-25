@@ -73,13 +73,10 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
       aria-labelledby="updater-app-name"
     >
       <div className="flex gap-4">
-        <img
-          src={appIcon}
-          alt=""
-          draggable={false}
-          className="size-20 shrink-0 drop-shadow-sm [@media(max-height:560px)]:size-16"
-        />
-        <div className="min-w-0 flex-1">
+        {/* 图标与右侧三行文字块等高：两者都取 80（h-20），文字用 justify-between
+            把三行均匀撑满，避免"图标比文字块矮一截" */}
+        <img src={appIcon} alt="" draggable={false} className="size-20 shrink-0 drop-shadow-sm" />
+        <div className="flex min-w-0 flex-1 flex-col justify-between">
           <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
             <h2
               id="updater-app-name"
@@ -93,10 +90,10 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
               </p>
             )}
           </div>
-          <p className="mt-1 max-w-md text-xs leading-normal text-foreground-secondary m-0">
+          <p className="max-w-md text-xs leading-normal text-foreground-secondary m-0">
             {t`类型安全的 Electron 单仓应用模板`}
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-foreground-secondary [@media(max-height:560px)]:mt-2">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-foreground-secondary">
             <span>
               {t`开发者`}{' '}
               <a
