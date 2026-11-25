@@ -68,7 +68,7 @@ review 时的目标值，不进门禁（`.po` 没有槽位元数据，自动检�
 | 应用偏好设置 (ConfigStore)                            | Preferences (ConfigStore)                                                             | Preferences                                                          |
 | 系统与运行环境                                        | System & Runtime Environment                                                          | Runtime environment                                                  |
 | 进程间通信 (IPC Ping)                                 | Inter-Process Communication (IPC Ping)                                                | IPC ping                                                             |
-| 企业级端到端类型安全桌面客户端脚手架                  | Enterprise-Grade End-to-End Type-Safe Desktop Client Boilerplate                      | Type-safe desktop starter                                            |
+| 类型安全 · 契约先行的 Electron 单仓模板               | Enterprise-Grade End-to-End Type-Safe Desktop Client Boilerplate                      | Type-safe, contract-first Electron monorepo template                 |
 | 代码耦合 & 契约混乱                                   | Coupled Code & Messy Contracts                                                        | Coupled and messy                                                    |
 | 物理隔离 & Result 契约                                | Physical Isolation & Result Contract                                                  | Isolated and typed                                                   |
 | Zod 严格模式入参校验与语义化错误码 Result 契约        | Strict Zod Schema Validation & Semantic Error Code Result Contract                    | Strict Zod validation with typed error codes                         |

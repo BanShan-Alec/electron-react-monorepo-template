@@ -3,6 +3,7 @@ import { useLingui } from '@lingui/react';
 import { APP_INFO } from '@shared/constants/app-info';
 import type React from 'react';
 import { memo } from 'react';
+import { appTagline } from '@/lib/brand';
 import appIcon from '../../assets/app-icon.png?url';
 import { openExternal } from '../../utils/open-external';
 
@@ -91,7 +92,7 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
             )}
           </div>
           <p className="max-w-md text-xs leading-normal text-foreground-secondary m-0">
-            {t`类型安全的 Electron 单仓应用模板`}
+            {appTagline()}
           </p>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-foreground-secondary">
             <span>

@@ -161,10 +161,6 @@ msgstr "Code copied"
 msgid "代码耦合 & 契约混乱"
 msgstr "Coupled and messy"
 
-#: src/components/layout/Header/index.tsx
-msgid "企业级端到端类型安全桌面客户端脚手架"
-msgstr "Type-safe desktop starter"
-
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "传统散装 / 进程穿透方式"
 msgstr "Legacy ad-hoc approach"
@@ -645,13 +641,13 @@ msgstr "Check now, or let the app check when it opens."
 msgid "端到端链路耗时分解"
 msgstr "End-to-end timing breakdown"
 
+#: src/lib/brand.ts
+msgid "类型安全 · 契约先行的 Electron 单仓模板"
+msgstr "Type-safe, contract-first Electron monorepo template"
+
 #: src/features/settings/components/SettingsCard/index.tsx
 msgid "类型安全主进程本地持久化存储与动态生效"
 msgstr "Type-safe local config, applied at runtime"
-
-#: src/features/updater/components/AppInfoHeader/index.tsx
-msgid "类型安全的 Electron 单仓应用模板"
-msgstr "A type-safe Electron monorepo app template"
 
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "系统与运行环境"

@@ -161,10 +161,6 @@ msgstr "代码已复制"
 msgid "代码耦合 & 契约混乱"
 msgstr "代码耦合 & 契约混乱"
 
-#: src/components/layout/Header/index.tsx
-msgid "企业级端到端类型安全桌面客户端脚手架"
-msgstr "企业级端到端类型安全桌面客户端脚手架"
-
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "传统散装 / 进程穿透方式"
 msgstr "传统散装 / 进程穿透方式"
@@ -645,13 +641,13 @@ msgstr "立即检查，或让应用在启动时自动检查。"
 msgid "端到端链路耗时分解"
 msgstr "端到端链路耗时分解"
 
+#: src/lib/brand.ts
+msgid "类型安全 · 契约先行的 Electron 单仓模板"
+msgstr "类型安全 · 契约先行的 Electron 单仓模板"
+
 #: src/features/settings/components/SettingsCard/index.tsx
 msgid "类型安全主进程本地持久化存储与动态生效"
 msgstr "类型安全主进程本地持久化存储与动态生效"
-
-#: src/features/updater/components/AppInfoHeader/index.tsx
-msgid "类型安全的 Electron 单仓应用模板"
-msgstr "类型安全的 Electron 单仓应用模板"
 
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "系统与运行环境"

@@ -5,7 +5,7 @@
 # Electron React Template
 
 Electron 桌面端坑位解法合集：每个解法都对应本仓库经过发版验证的真实实现<br />
-仓库同时是一套可 clone 的 Electron Monorepo 模板——[使用此模板](https://banshan-alec.github.io/electron-react-monorepo-template/introduction/use-this-template)，解法就是你的起步代码
+仓库同时是一套可 clone 的模板——**类型安全 · 契约先行的 Electron 单仓模板**：[使用此模板](https://banshan-alec.github.io/electron-react-monorepo-template/introduction/use-this-template)，解法就是你的起步代码
 
 <p>
 <a href="https://github.com/BanShan-Alec/electron-react-monorepo-template/actions/workflows/ci.yml"><img src="https://github.com/BanShan-Alec/electron-react-monorepo-template/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
