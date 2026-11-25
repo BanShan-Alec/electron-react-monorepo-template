@@ -1,15 +1,12 @@
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Button, Tag } from 'antd';
+import { Tag } from 'antd';
 import type React from 'react';
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { AppCard } from '@/components/ui/AppCard';
 import { openExternal } from '../../utils/open-external';
 
 // 私有常量
-
-/** 折叠态可见行数（与下方 line-clamp-4 字面类耦合：Tailwind 需静态类名） */
-const COLLAPSED_NOTE_LINES = 4;
 
 // 可抽离的逻辑处理函数/组件
 
@@ -68,7 +65,6 @@ const _ChangelogCard = (props: ChangelogCardProps) => {
   const { i18n } = useLingui();
 
   // ② 组件状态
-  const [expanded, setExpanded] = useState(false);
 
   // ③ 网络IO / 异步操作
 
@@ -78,7 +74,6 @@ const _ChangelogCard = (props: ChangelogCardProps) => {
     ? new Date(releaseDate).toLocaleDateString(i18n.locale)
     : undefined;
   const hasNotes = Boolean(releaseNotes && releaseNotes.length > 0);
-  const isLongNotes = Boolean(releaseNotes && releaseNotes.length > COLLAPSED_NOTE_LINES);
 
   const normalizedNotes = (releaseNotes ?? []).map((note, index) => ({
     id: `${index}-${note}`,
@@ -88,7 +83,7 @@ const _ChangelogCard = (props: ChangelogCardProps) => {
   return (
     <AppCard
       size="small"
-      className="bg-background-elevated"
+      className="min-h-32 flex-1 bg-background-elevated"
       title={
         <div className="flex items-center justify-between py-1">
           <div className="flex items-center gap-2">
@@ -105,16 +100,12 @@ const _ChangelogCard = (props: ChangelogCardProps) => {
         </div>
       }
     >
-      <div className="text-xs text-foreground-secondary space-y-1.5">
-        <div
-          className={
-            expanded || !isLongNotes
-              ? 'max-h-52 overflow-y-auto pr-1'
-              : 'line-clamp-4 overflow-hidden'
-          }
-        >
+      {/* 日志卡吃掉正文剩余高度并在卡内滚动：窗口高度会随工作区收缩，
+          整页滚动会让「某个元素被折线切断」看起来像 bug */}
+      <div className="flex min-h-0 flex-1 flex-col text-xs text-foreground-secondary">
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
           {hasNotes ? (
-            <ul className="list-disc pl-4 space-y-1">
+            <ul className="list-disc space-y-1 pl-4">
               {normalizedNotes.map((item) => (
                 <li key={item.id} className="leading-relaxed break-words">
                   {formatInlineMarkdown(item.text)}
@@ -125,18 +116,6 @@ const _ChangelogCard = (props: ChangelogCardProps) => {
             <p className="text-foreground-secondary italic">{t`包含常规稳定性改进与性能优化。`}</p>
           )}
         </div>
-        {isLongNotes && (
-          <div className="flex justify-end pt-1">
-            <Button
-              type="link"
-              size="small"
-              onClick={() => setExpanded(!expanded)}
-              className="-mx-1 h-6 px-1 text-xs"
-            >
-              {expanded ? t`收起` : t`展开全部`}
-            </Button>
-          </div>
-        )}
       </div>
     </AppCard>
   );

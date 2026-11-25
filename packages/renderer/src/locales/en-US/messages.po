@@ -193,7 +193,6 @@ msgstr "Save failed: {detail}"
 msgid "保存路径已选定: {filePath}"
 msgstr "Save path selected: {filePath}"
 
-#: src/features/updater/components/AppInfoHeader/index.tsx
 #: src/features/updater/components/UpdaterFooter/index.tsx
 msgid "关闭"
 msgstr "Close"
@@ -305,10 +304,6 @@ msgstr "Safe calculator"
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "定位失败: {detail}"
 msgstr "Couldn't show in folder: {detail}"
-
-#: src/features/updater/components/ChangelogCard/index.tsx
-msgid "展开全部"
-msgstr "Expand all"
 
 #: src/features/devtools/hooks/useDevTools.ts
 msgid "已关闭 DevTools"
@@ -458,10 +453,6 @@ msgstr "Operand A"
 msgid "操作数 B"
 msgstr "Operand B"
 
-#: src/features/updater/components/ChangelogCard/index.tsx
-msgid "收起"
-msgstr "Collapse"
-
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "文件或目录不存在: {selectedPath}"
 msgstr "File or folder not found: {selectedPath}"
@@ -552,10 +543,6 @@ msgstr "Downloading v{version}"
 #: src/features/updater/status-mapping.ts
 msgid "正在下载更新"
 msgstr "Downloading update"
-
-#: src/features/updater/status-mapping.ts
-msgid "正在下载更新 {percent}%"
-msgstr "Downloading update {percent}%"
 
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "正在探测系统运行环境..."

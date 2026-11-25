@@ -69,11 +69,16 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
   // ⑦ 组件渲染
   return (
     <section
-      className="drag-region no-wco shrink-0 border-b border-border/60 bg-background-sunken px-6 py-5 select-none"
+      className="drag-region no-wco shrink-0 border-b border-border/60 bg-background-sunken px-6 py-5 select-none [@media(max-height:560px)]:py-3"
       aria-labelledby="updater-app-name"
     >
       <div className="flex gap-4">
-        <img src={appIcon} alt="" draggable={false} className="size-20 shrink-0 drop-shadow-sm" />
+        <img
+          src={appIcon}
+          alt=""
+          draggable={false}
+          className="size-20 shrink-0 drop-shadow-sm [@media(max-height:560px)]:size-16"
+        />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
             <h2
@@ -91,7 +96,7 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
           <p className="mt-1 max-w-md text-xs leading-normal text-foreground-secondary m-0">
             {t`类型安全的 Electron 单仓应用模板`}
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-foreground-secondary">
+          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-foreground-secondary [@media(max-height:560px)]:mt-2">
             <span>
               {t`开发者`}{' '}
               <a
@@ -119,7 +124,10 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
       </div>
 
       {/* 分隔线归 nav（与内容列同宽），负边距只作用于链接行，避免把 border-t 一起左移压到窗口边 */}
-      <nav aria-label={t`相关资源`} className="mt-4 border-t border-border/60 pt-3">
+      <nav
+        aria-label={t`相关资源`}
+        className="mt-4 border-t border-border/60 pt-3 [@media(max-height:560px)]:mt-3 [@media(max-height:560px)]:pt-2"
+      >
         <div className="-mb-1 -ms-2 flex flex-wrap items-center gap-0.5">
           {RESOURCE_LINKS.map((link) => (
             <a

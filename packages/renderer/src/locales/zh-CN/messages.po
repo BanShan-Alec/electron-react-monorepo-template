@@ -193,7 +193,6 @@ msgstr "保存失败: {detail}"
 msgid "保存路径已选定: {filePath}"
 msgstr "保存路径已选定: {filePath}"
 
-#: src/features/updater/components/AppInfoHeader/index.tsx
 #: src/features/updater/components/UpdaterFooter/index.tsx
 msgid "关闭"
 msgstr "关闭"
@@ -305,10 +304,6 @@ msgstr "安全计算器 (IPC 错误处理)"
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "定位失败: {detail}"
 msgstr "定位失败: {detail}"
-
-#: src/features/updater/components/ChangelogCard/index.tsx
-msgid "展开全部"
-msgstr "展开全部"
 
 #: src/features/devtools/hooks/useDevTools.ts
 msgid "已关闭 DevTools"
@@ -458,10 +453,6 @@ msgstr "操作数 A"
 msgid "操作数 B"
 msgstr "操作数 B"
 
-#: src/features/updater/components/ChangelogCard/index.tsx
-msgid "收起"
-msgstr "收起"
-
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "文件或目录不存在: {selectedPath}"
 msgstr "文件或目录不存在: {selectedPath}"
@@ -552,10 +543,6 @@ msgstr "正在下载 v{version}"
 #: src/features/updater/status-mapping.ts
 msgid "正在下载更新"
 msgstr "正在下载更新"
-
-#: src/features/updater/status-mapping.ts
-msgid "正在下载更新 {percent}%"
-msgstr "正在下载更新 {percent}%"
 
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "正在探测系统运行环境..."

@@ -45,7 +45,7 @@ const _ProgressCard = (props: ProgressCardProps) => {
   const totalText = progress ? formatBytes(progress.total) : '0 MB';
 
   return (
-    <AppCard size="small" className="bg-background-elevated">
+    <AppCard size="small" className="shrink-0 bg-background-elevated">
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
           <span className="font-medium text-foreground">{t`下载进度`}</span>
