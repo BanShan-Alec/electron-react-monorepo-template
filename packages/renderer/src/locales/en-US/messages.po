@@ -321,6 +321,10 @@ msgstr "Safe calculator"
 msgid "定位失败: {detail}"
 msgstr "Couldn't show in folder: {detail}"
 
+#: src/features/updater/components/HeaderActions/index.tsx
+msgid "已关闭"
+msgstr "Off"
+
 #: src/features/devtools/hooks/useDevTools.ts
 msgid "已关闭 DevTools"
 msgstr "DevTools closed"
@@ -332,6 +336,10 @@ msgstr "Shown in folder: {selectedPath}"
 #: src/features/devtools/hooks/useDevTools.ts
 msgid "已在默认浏览器中打开外部页面: {openedUrl}"
 msgstr "Opened in browser: {openedUrl}"
+
+#: src/features/updater/components/HeaderActions/index.tsx
+msgid "已开启"
+msgstr "On"
 
 #: src/features/devtools/hooks/useDevTools.ts
 msgid "已开启 DevTools"

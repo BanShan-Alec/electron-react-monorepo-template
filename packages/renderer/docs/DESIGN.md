@@ -119,9 +119,9 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 - 容器加 `.no-drag`，否则按钮落在窗口拖拽区内点不动。
 - 溢层菜单（`Dropdown` / `Popover` / `Tooltip`）把 `no-drag` 挂 **popup 根节点**
   （`rootClassName="no-drag"`），规则与踩坑记录见 `AGENTS.md` §4.3。
-- 布尔型偏好放进菜单时：**勾选态自己渲染图标**（antd 的 `selectedKeys` 只加类名、不画勾），
-  并同时给 `multiple + selectedKeys` 让 rc-menu 输出 `role=menuitemcheckbox` 与 `aria-checked`——
-  只靠图标则读屏听不出状态，只靠颜色则违反 §5.7。
+- 布尔型偏好放进菜单时：**勾选态自己表达**。antd v6（`@rc-component/menu`）的 `selectedKeys`
+  只给 `<li>` 加类名，既不画勾也不产出 `aria-checked`，所以视觉用勾号图标（`aria-hidden`）、
+  状态用 `sr-only` 文本（`已开启` / `已关闭`）——只靠图标或颜色则读屏与色觉障碍用户都无法感知（§5.7）。
 - 危险/有副作用的关闭动作要二次确认时用 `App.useApp().modal.confirm`，文案只承诺确定会发生的后果
   （如「下载不会被取消」），不承诺取决于用户配置的行为（如「一定在后台继续」）。
 

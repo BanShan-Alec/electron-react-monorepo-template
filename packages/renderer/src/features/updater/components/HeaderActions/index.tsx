@@ -30,12 +30,13 @@ const _HeaderActions = (props: HeaderActionsProps) => {
   const menuItems = [
     {
       key: MORE_MENU_AUTO_CHECK,
-      // 自带勾选图标：antd 的 selectedKeys 只加类名、不渲染勾，
-      // 而菜单点完即关，勾号是用户确认状态的唯一视觉线索（对读屏靠 aria-checked）
+      // 勾选状态自己表达：antd v6（@rc-component/menu）的 selectedKeys 只加类名、不渲染勾，
+      // 也不产出 aria-checked。视觉用勾号，读屏用 sr-only 文本，保证不只靠颜色/图形传状态
       label: (
         <span className="flex items-center gap-3">
           {autoCheckLabel}
           {autoCheck.checked ? <CheckOutlined aria-hidden className="text-primary" /> : null}
+          <span className="sr-only">{autoCheck.checked ? t`已开启` : t`已关闭`}</span>
         </span>
       ),
       // 配置尚未拉回时不放行，避免默认值被当成用户真实偏好写回
@@ -78,9 +79,6 @@ const _HeaderActions = (props: HeaderActionsProps) => {
         // 浮层落在信息区拖拽区矩形内：`no-drag` 必须挂 popup 根节点才能点到（AGENTS §4.3）
         rootClassName="no-drag"
         menu={{
-          // multiple + selectedKeys 让 rc-menu 输出 role=menuitemcheckbox 与 aria-checked
-          multiple: true,
-          selectedKeys: autoCheck.checked ? [MORE_MENU_AUTO_CHECK] : [],
           items: menuItems,
           onClick: ({ key }) => {
             if (key === MORE_MENU_AUTO_CHECK) {

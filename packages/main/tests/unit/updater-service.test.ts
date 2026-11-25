@@ -225,7 +225,7 @@ describe('UpdaterService snapshot contract and cancelled state machine', () => {
 
     const snapshot = service.getSnapshot();
 
-    expect(snapshot.currentVersion).toBeTruthy();
+    expect(snapshot.currentVersion).toBe('1.14.0');
   });
 
   it('transitions downloading to cancelled on cancel() and keeps version metadata', async () => {
