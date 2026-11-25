@@ -18,6 +18,8 @@ vi.mock('@app/main/env', async (importOriginal) => ({
   isTest: true,
   // 默认以安装版副本为基准；免安装副本场景在用例内部通过构造函数注入覆盖
   isInstalledCopy: () => true,
+  // 构建期仓库标识存在，避免用例触发「无法判定副本形态」的告警分支
+  hasBuildRepoRoot: true,
 }));
 
 vi.mock('@app/main/modules/log.module', () => ({
@@ -278,6 +280,20 @@ describe('AutoLaunchService 收权：仅安装版副本可管理系统登录项'
       openAtLogin: true,
       args: ['--hidden'],
     });
+  });
+
+  it('源码运行态（未打包）上报 source-run，不误标为免安装副本', () => {
+    mockStore.get.mockReturnValue(true);
+    const service = new AutoLaunchService({
+      isPlatformSupported: () => true,
+      isPackaged: () => false,
+      isInstalledCopy: () => false,
+    });
+
+    const status = service.getAutoLaunchStatus();
+
+    expect(status.isSupported).toBe(false);
+    expect(status.unsupportedReason).toBe('source-run');
   });
 });
 

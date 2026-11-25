@@ -87,9 +87,9 @@ export function isInstalledCopy(): boolean {
 
 判定看的是**构建期注入的仓库根路径**：可执行文件是否落在构建它的仓库目录内。`pnpm build:unpack` 的产物与 `pnpm build:win` 遗留的 `dist/win-unpacked` 都在仓库内，一律拒绝；装到 `Program Files` / `Applications` / `/opt` 的副本在仓库外，正常放行。
 
-这样不扫盘（不依赖卸载器文件名是否被清理工具删掉）、不读注册表，且与构建目标无关——`--skip-build` 也不会出现「风味串味」。注入只发生在主进程 bundle：`packages/main/vite.config.ts` 的 `define` 写入 `__BUILD_REPO_ROOT__`，渲染层拿不到该常量（仓库路径不向前端暴露）。常量缺失（如早期产物）时按安装版放行，避免把正常用户锁死。
+这样不扫盘（不依赖卸载器文件名是否被清理工具删掉）、不读注册表，且与构建目标无关——`--skip-build` 也不会出现「风味串味」。注入只发生在主进程 bundle：`packages/main/vite.config.ts` 的 `define` 写入 `__BUILD_REPO_ROOT__`，渲染层拿不到该常量（仓库路径不向前端暴露）。常量缺失（如早期产物、打包配置出错）时按安装版放行，并由 `AutoLaunchService` 输出一次 warn，避免无法判定时集体禁用自启，同时保留可诊断性。
 
-不支持时 `getAutoLaunchStatus()` 返回 `isSupported: false` 并带上 `unsupportedReason`（`platform` / `unpacked-copy`），`setAutoLaunch()` 降级为空操作且不抛错，设置页据此显示「仅安装版支持开机自启，当前为免安装副本」。
+不支持时 `getAutoLaunchStatus()` 返回 `isSupported: false` 并带上 `unsupportedReason`，共三种：`platform`（平台无登录项 API）、`source-run`（dev / preview 源码运行，未打包）与 `unpacked-copy`（解包目录里的就地副本）。`setAutoLaunch()` 降级为空操作且不抛错，设置页按原因给出对应文案。
 
 ## 3. 桌面端避坑注意事项
 

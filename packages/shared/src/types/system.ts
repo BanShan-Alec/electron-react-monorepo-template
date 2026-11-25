@@ -40,12 +40,13 @@ export interface AutoLaunchStatus {
   /** 配置要求开启但系统侧未生效：被任务管理器禁用、待用户批准或启动项已被移除 */
   isBlockedBySystem: boolean;
   /** isSupported 为 false 的具体原因，渲染层据此给出准确文案；可用时为 null */
-  unsupportedReason: AutoLaunchUnsupportedReason;
+  unsupportedReason: AutoLaunchUnsupportedReason | null;
 }
 
 /**
  * 开机自启不可用原因
  * - platform：平台未提供登录项 API（Electron 仅支持 darwin / win32）
- * - unpacked-copy：当前是从解包目录启动的免安装副本，不参与系统启动项管理
+ * - source-run：从源码运行（dev / preview），未打包就没有稳定的安装位置可注册
+ * - unpacked-copy：当前是解包目录里的免安装副本，与安装版共用启动项会互相覆盖
  */
-export type AutoLaunchUnsupportedReason = 'platform' | 'unpacked-copy' | null;
+export type AutoLaunchUnsupportedReason = 'platform' | 'source-run' | 'unpacked-copy';

@@ -1,6 +1,6 @@
 import type { AutoLaunchStatus, AutoLaunchUnsupportedReason } from '@app/shared/types/system';
 import { app } from 'electron';
-import { isInstalledCopy } from '../env';
+import { hasBuildRepoRoot, isInstalledCopy, isPackaged } from '../env';
 import { getAppConfigStore } from '../modules/config.module';
 import { getLogManager } from '../modules/log.module';
 
@@ -13,6 +13,8 @@ import { getLogManager } from '../modules/log.module';
 export interface AutoLaunchServiceDeps {
   /** 平台是否提供登录项 API（默认 win32 / darwin） */
   isPlatformSupported?: () => boolean;
+  /** 是否处于已打包形态（默认 app.isPackaged） */
+  isPackaged?: () => boolean;
   /** 当前是否为安装版副本（默认判定可执行文件是否落在构建时的仓库目录内） */
   isInstalledCopy?: () => boolean;
 }
@@ -20,20 +22,35 @@ export interface AutoLaunchServiceDeps {
 export class AutoLaunchService {
   private readonly logger = getLogManager().scoped(this);
   private readonly resolvePlatformSupported: () => boolean;
+  private readonly resolvePackaged: () => boolean;
   private readonly resolveInstalledCopy: () => boolean;
+  private warnedMissingBuildRoot = false;
 
   constructor(deps: AutoLaunchServiceDeps = {}) {
     this.resolvePlatformSupported =
       deps.isPlatformSupported ??
       (() => process.platform === 'win32' || process.platform === 'darwin');
+    this.resolvePackaged = deps.isPackaged ?? (() => isPackaged);
     this.resolveInstalledCopy = deps.isInstalledCopy ?? isInstalledCopy;
   }
 
   /**
    * 本副本能否管理操作系统登录项；不可用时给出具体原因，供渲染层区分文案
+   *
+   * 已打包但缺少构建期仓库标识时无法区分就地副本与安装副本，此时放行并告警（只报一次），
+   * 而不是让旧产物 / 打包配置出错的用户集体丢掉开机自启。
    */
-  getUnsupportedReason(): AutoLaunchUnsupportedReason {
+  getUnsupportedReason(): AutoLaunchUnsupportedReason | null {
     if (!this.resolvePlatformSupported()) return 'platform';
+    if (!this.resolvePackaged()) return 'source-run';
+
+    if (!hasBuildRepoRoot && !this.warnedMissingBuildRoot) {
+      this.warnedMissingBuildRoot = true;
+      this.logger.warn(
+        'Build-time repository root is missing; cannot tell an in-repo copy from an installed one. Treating this build as installed.',
+      );
+    }
+
     if (!this.resolveInstalledCopy()) return 'unpacked-copy';
     return null;
   }
@@ -115,10 +132,7 @@ export class AutoLaunchService {
 
     if (unsupportedReason !== null) {
       // 不做任何系统写操作，也不抛错：设置载入/reset 流程需要保持可用
-      this.logger.info(
-        `Skipping OS startup registration (${unsupportedReason === 'platform' ? 'platform without login item API' : 'not an installed copy'}):`,
-        { autoLaunch },
-      );
+      this.logger.info('Skipping OS startup registration:', { autoLaunch, unsupportedReason });
       return;
     }
 

@@ -334,6 +334,10 @@ msgid "开关 DevTools"
 msgstr "Toggle DevTools"
 
 #: src/features/settings/components/SettingsCard/index.tsx
+msgid "开发或预览模式不管理系统开机自启"
+msgstr "Startup launch is not managed in dev or preview mode"
+
+#: src/features/settings/components/SettingsCard/index.tsx
 msgid "开机后自动在后台启动运行"
 msgstr "Launch automatically in the background on system startup"
 

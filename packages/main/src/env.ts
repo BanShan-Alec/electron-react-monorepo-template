@@ -6,6 +6,9 @@ import { app } from 'electron';
 /** 构建期注入的仓库根目录（仅主进程 bundle，见 packages/main/vite.config.ts） */
 const BUILD_REPO_ROOT = typeof __BUILD_REPO_ROOT__ !== 'undefined' ? __BUILD_REPO_ROOT__ : '';
 
+/** 是否拿到构建期仓库标识；缺失时无法区分就地副本与安装副本（旧产物 / 打包配置出错） */
+export const hasBuildRepoRoot: boolean = Boolean(BUILD_REPO_ROOT);
+
 /**
  * 是否处于自动化测试环境 (Playwright / Vitest)
  * 由测试启动器注入 MODE=test 或 Vitest/NODE_ENV 运行环境

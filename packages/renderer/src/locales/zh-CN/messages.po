@@ -334,6 +334,10 @@ msgid "开关 DevTools"
 msgstr "开关 DevTools"
 
 #: src/features/settings/components/SettingsCard/index.tsx
+msgid "开发或预览模式不管理系统开机自启"
+msgstr "开发或预览模式不管理系统开机自启"
+
+#: src/features/settings/components/SettingsCard/index.tsx
 msgid "开机后自动在后台启动运行"
 msgstr "开机后自动在后台启动运行"
 
