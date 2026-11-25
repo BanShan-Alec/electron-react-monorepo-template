@@ -15,7 +15,7 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
-  // 与 main / renderer 同一份构建期注入：shared/constants/app-info.ts 在单测里也要能求值
+  // 与 renderer 同一份构建期注入：shared/constants/app-info.ts 在单测里也要能求值（主进程不消费该常量，故 main 不注入）
   define: {
     __APP_INFO__: JSON.stringify(APP_DISPLAY),
   },

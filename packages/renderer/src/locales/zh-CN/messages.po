@@ -121,8 +121,8 @@ msgid "Zod 校验"
 msgstr "Zod 校验"
 
 #: src/features/updater/components/HeaderActions/index.tsx
-msgid "下载会在后台继续，重新打开窗口即可查看进度。"
-msgstr "下载会在后台继续，重新打开窗口即可查看进度。"
+msgid "下载不会被取消，重新打开本窗口即可查看进度。"
+msgstr "下载不会被取消，重新打开本窗口即可查看进度。"
 
 #: src/features/updater/status-mapping.ts
 msgid "下载已取消"

@@ -121,8 +121,8 @@ msgid "Zod 校验"
 msgstr "Zod validated"
 
 #: src/features/updater/components/HeaderActions/index.tsx
-msgid "下载会在后台继续，重新打开窗口即可查看进度。"
-msgstr "The download continues in the background. Reopen this window to see progress."
+msgid "下载不会被取消，重新打开本窗口即可查看进度。"
+msgstr "The download is not cancelled. Reopen this window to see progress."
 
 #: src/features/updater/status-mapping.ts
 msgid "下载已取消"
@@ -275,7 +275,7 @@ msgstr "Memory (free / total)"
 
 #: src/features/updater/components/HeaderActions/index.tsx
 msgid "启动时自动检查更新"
-msgstr "Check for updates at launch"
+msgstr "Check at launch"
 
 #: src/features/docs/components/DocsView/index.tsx
 msgid "在浏览器中打开"
@@ -484,7 +484,7 @@ msgstr "The new version is ready to install. Restart to finish."
 
 #: src/features/updater/components/HeaderActions/index.tsx
 msgid "无法保存此设置"
-msgstr "Could not save this setting"
+msgstr "Couldn't save this setting"
 
 #: src/features/updater/status-mapping.ts
 msgid "无法更新"

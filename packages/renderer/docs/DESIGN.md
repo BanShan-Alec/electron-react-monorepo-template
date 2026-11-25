@@ -44,7 +44,7 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 
 ## 3. 颜色与文字
 
-- 三档文字：`text-foreground`（主）/ `text-foreground-secondary`（辅助）/ `text-foreground-muted`（仅 placeholder、disabled）。
+- 三档文字：`text-foreground`（主）/ `text-foreground-secondary`（辅助）/ `text-foreground-muted`（仅 placeholder、disabled；**非文本次要图标**属 §6 已知例外，如头部工具条的静音图标按钮）。
 - 主色实心块上的文字用 `text-on-primary`（antd `colorTextLightSolid`），不写 `text-white`。
 - 颜色链路：`--ant-*`（antd cssVar，作用域 `.css-var-app` 必须挂在 `<html>`）→ `--color-*`（项目语义，`index.css` 的 `:root`）→ Tailwind 类。组件只消费最后一层。
 - React 渲染前的窗口画布由原生 `BrowserWindow.backgroundColor` 独家承担（窗口创建链 `resolveNativeTheme` 解析，与 WCO overlay 同源同时点）；renderer 的 `html, body` 恒透明叠于其上，首帧 `data-theme` 由主进程经 URL query 显式传入。React 根必须不透明满幅，否则切换主题后原生底色会从缝隙透出。
@@ -109,6 +109,21 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 | 同组元素之间             | 间距 | 遵循 §2「组间距 > 组内距」                         |
 
 禁止用默认 `border-border`（1px 实心灰）切分区：它比卡片描边重一档，会把标题栏之类的固定区永久顶到最前面。
+
+### 窗口头部工具条 / 溢出菜单
+
+无边框窗口右上角的悬浮工具条（如更新窗口的「更多 + 关闭」）：
+
+- 图标按钮用 antd `Button type="text" size="small" icon={<X/>}`，尺寸 `h-8 w-8`，
+  默认色 `text-foreground-muted`、hover 升到 `text-foreground`（§6 例外允许 muted 用于非文本图标）。
+- 容器加 `.no-drag`，否则按钮落在窗口拖拽区内点不动。
+- 溢层菜单（`Dropdown` / `Popover` / `Tooltip`）把 `no-drag` 挂 **popup 根节点**
+  （`rootClassName="no-drag"`），规则与踩坑记录见 `AGENTS.md` §4.3。
+- 布尔型偏好放进菜单时：**勾选态自己渲染图标**（antd 的 `selectedKeys` 只加类名、不画勾），
+  并同时给 `multiple + selectedKeys` 让 rc-menu 输出 `role=menuitemcheckbox` 与 `aria-checked`——
+  只靠图标则读屏听不出状态，只靠颜色则违反 §5.7。
+- 危险/有副作用的关闭动作要二次确认时用 `App.useApp().modal.confirm`，文案只承诺确定会发生的后果
+  （如「下载不会被取消」），不承诺取决于用户配置的行为（如「一定在后台继续」）。
 
 ### 空态 / 加载 / 错误
 

@@ -63,5 +63,3 @@ export const UpdaterFeature: React.FC = () => {
     </div>
   );
 };
-
-export default UpdaterFeature;

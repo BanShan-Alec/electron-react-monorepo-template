@@ -105,11 +105,8 @@ export function useUpdater() {
     // 下载进度流式订阅：进度不是完整快照，仅前迸 revision 并叠加在前一状态上
     const unsubProgress = window.api?.updater?.onProgressChanged?.((progress) => {
       revisionRef.current += 1;
-      setSnapshot((prev) => ({
-        ...prev,
-        state: 'downloading',
-        progress,
-      }));
+      // 只有正在下载时才叠加进度：取消/失败后迟到的进度事件不得把状态拨回 downloading
+      setSnapshot((prev) => (prev.state === 'downloading' ? { ...prev, progress } : prev));
     });
 
     return () => {

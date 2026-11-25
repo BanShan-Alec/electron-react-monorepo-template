@@ -79,11 +79,18 @@ const { owner, repo } = parseGitHubRepo(repositoryUrl);
 
 const productName = rootPkg.productName || rootPkg.name || 'Electron React Template';
 
-/** 仓库展示地址：去 `.git` 后缀与尾部斜杠，保证 releases/issues 子路径拼接稳定 */
-const normalizeRepositoryUrl = (url: string): string =>
-  url.replace(/\.git\/?$/i, '').replace(/\/$/, '');
+/**
+ * 仓库展示地址：统一成 https 形式并去掉 `.git` 后缀与尾部斜杠，
+ * 保证「开源仓库」链接可点、releases/issues 子路径拼接稳定。
+ * 支持 https 与 SSH（`git@github.com:owner/repo.git`）两种写法。
+ */
+const normalizeRepositoryUrl = (url: string): string => {
+  const ssh = url.match(/^git@([^:]+):(.+?)(?:\.git)?\/?$/i);
+  if (ssh) return `https://${ssh[1]}/${ssh[2]}`;
+  return url.replace(/\.git\/?$/i, '').replace(/\/$/, '');
+};
 
-/** 作者信息既接受 `author: "Name"` 的简写，也接受 npm 标准对象形态 */
+/** 作者名接受 `author: "Name"` 简写；`author.url` 必须显式提供（简写没有 url 字段），缺失即构建期报错 */
 const authorName = typeof rootPkg.author === 'string' ? rootPkg.author : rootPkg.author?.name;
 const authorUrl = typeof rootPkg.author === 'string' ? undefined : rootPkg.author?.url;
 

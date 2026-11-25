@@ -9,6 +9,9 @@ import type { UseAutoCheckSettingResult } from '../../hooks/useAutoCheckSetting'
 /** 溢出菜单项 key（当前只有一项，用常量避免字面量散落） */
 const MORE_MENU_AUTO_CHECK = 'auto-check';
 
+/** 头部工具条按钮共用样式：静音图标按钮，hover 才升到正文色 */
+const TOOL_BUTTON_CLASS = 'h-8 w-8 text-foreground-muted hover:text-foreground';
+
 // 可抽离的逻辑处理函数/组件
 
 const _HeaderActions = (props: HeaderActionsProps) => {
@@ -16,28 +19,23 @@ const _HeaderActions = (props: HeaderActionsProps) => {
 
   // ① 变量声明、解构
   const { autoCheck, isDownloading, onClose } = props;
-
-  // ② 组件状态
   const { message, modal } = App.useApp();
 
-  // ③ 网络IO / 异步操作：保存偏好失败给一次性提示（菜单点完即关，没有内联失败位）
-  const handleToggleAutoCheck = async () => {
-    const saved = await autoCheck.handleChange(!autoCheck.checked);
-    if (!saved) {
-      message.error(t`无法保存此设置`);
-    }
-  };
+  // ② 组件状态
+
+  // ③ 网络IO / 异步操作（无通信 Hook：偏好读写封装在 useAutoCheckSetting 内）
 
   // ④ 数据转换 / 派生
+  const autoCheckLabel = t`启动时自动检查更新`;
   const menuItems = [
     {
       key: MORE_MENU_AUTO_CHECK,
-      // 自带勾选图标：antd 的 selectedKeys 只加类名，不会给选中项渲染勾，
-      // 而菜单点完即关，用户只能靠这一下勾选确认状态
+      // 自带勾选图标：antd 的 selectedKeys 只加类名、不渲染勾，
+      // 而菜单点完即关，勾号是用户确认状态的唯一视觉线索（对读屏靠 aria-checked）
       label: (
-        <span className="flex items-center justify-between gap-8">
-          {t`启动时自动检查更新`}
-          {autoCheck.checked ? <CheckOutlined className="text-primary" /> : null}
+        <span className="flex items-center gap-3">
+          {autoCheckLabel}
+          {autoCheck.checked ? <CheckOutlined aria-hidden className="text-primary" /> : null}
         </span>
       ),
       // 配置尚未拉回时不放行，避免默认值被当成用户真实偏好写回
@@ -46,6 +44,13 @@ const _HeaderActions = (props: HeaderActionsProps) => {
   ];
 
   // ⑤ 逻辑处理函数
+  const handleToggleAutoCheck = async () => {
+    const saved = await autoCheck.handleChange(!autoCheck.checked);
+    if (!saved) {
+      message.error(t`无法保存此设置`);
+    }
+  };
+
   /** 关闭：下载中先确认（用户可能误以为会中断），其余状态直接关 */
   const handleClose = () => {
     if (!isDownloading) {
@@ -54,7 +59,8 @@ const _HeaderActions = (props: HeaderActionsProps) => {
     }
     modal.confirm({
       title: t`关闭更新窗口？`,
-      content: t`下载会在后台继续，重新打开窗口即可查看进度。`,
+      // 只承诺「不取消下载」这一确定事实：是否留在后台还取决于托盘常驻设置
+      content: t`下载不会被取消，重新打开本窗口即可查看进度。`,
       okText: t`关闭窗口`,
       cancelText: t`继续下载`,
       onOk: onClose,
@@ -69,8 +75,12 @@ const _HeaderActions = (props: HeaderActionsProps) => {
       <Dropdown
         trigger={['click']}
         placement="bottomRight"
+        // 浮层落在信息区拖拽区矩形内：`no-drag` 必须挂 popup 根节点才能点到（AGENTS §4.3）
         rootClassName="no-drag"
         menu={{
+          // multiple + selectedKeys 让 rc-menu 输出 role=menuitemcheckbox 与 aria-checked
+          multiple: true,
+          selectedKeys: autoCheck.checked ? [MORE_MENU_AUTO_CHECK] : [],
           items: menuItems,
           onClick: ({ key }) => {
             if (key === MORE_MENU_AUTO_CHECK) {
@@ -85,7 +95,7 @@ const _HeaderActions = (props: HeaderActionsProps) => {
           aria-label={t`更多`}
           aria-haspopup="menu"
           icon={<MoreOutlined />}
-          className="h-8 w-8 text-foreground-muted hover:text-foreground"
+          className={TOOL_BUTTON_CLASS}
         />
       </Dropdown>
 
@@ -95,7 +105,7 @@ const _HeaderActions = (props: HeaderActionsProps) => {
         aria-label={t`关闭`}
         icon={<CloseOutlined />}
         onClick={handleClose}
-        className="h-8 w-8 text-foreground-muted hover:text-foreground"
+        className={TOOL_BUTTON_CLASS}
       />
     </div>
   );
