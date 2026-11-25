@@ -82,7 +82,8 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
           draggable={false}
           className="size-20 shrink-0 p-1 drop-shadow-sm"
         />
-        <div className="flex min-w-0 flex-1 flex-col">
+        {/* pb-1 与 logo 的 p-1 配对：详情行要跟「可见图形」的底边齐平，而不是图片盒的底边 */}
+        <div className="flex min-w-0 flex-1 flex-col pb-1">
           <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
             <h2
               id="updater-app-name"
