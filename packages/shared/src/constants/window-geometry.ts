@@ -23,15 +23,16 @@ export const POSITION_TOLERANCE_Y_TOP = 10;
 export const POSITION_TOLERANCE_Y_BOTTOM = 50;
 
 /**
- * 更新窗口基准尺寸（不可缩放/最大化/最小化）；高度按三段式布局（固定头 + 滚动身 + 固定脚）预算。
+ * 更新窗口基准尺寸（不可缩放/最大化/最小化）；高度按「固定头 + 滚动身」两段式预算。
  * 宽度对齐 Motrix 关于面板（`sm:max-w-[700px]`）：横向构图下状态文案与动作按钮才能同排。
  *
  * 基准值是「大屏理想尺寸」，实际创建时按工作区收缩（见 main 的 calculateUpdaterWindowSize）：
- * 固定 600 高在 1366×768@150% 这类笔记本上会让底栏的关闭按钮掉出屏幕。
+ * 固定高度在 1366×768@150% 这类笔记本上会让窗口底部掉出屏幕。
+ * 底栏移除后基准高从 520 收到 460（偏好入口挪进头部「更多」菜单）。
  */
 export const UPDATER_WINDOW_WIDTH = 700;
-export const UPDATER_WINDOW_HEIGHT = 520;
+export const UPDATER_WINDOW_HEIGHT = 460;
 
-/** 更新窗口可用下限：头部 169 + 底栏 61 为固定开销，再低正文区不可用（正文本就滚动） */
+/** 更新窗口可用下限：头部约 133 为固定开销，再低正文区不可用（正文本就滚动） */
 export const UPDATER_WINDOW_MIN_WIDTH = 480;
 export const UPDATER_WINDOW_MIN_HEIGHT = 380;

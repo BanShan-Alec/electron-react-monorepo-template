@@ -75,10 +75,10 @@ export function calculateAdaptiveInitialSize(workAreaSize: Pick<Rectangle, 'widt
 }
 
 /**
- * 更新窗口尺寸：基准 700×520，超出工作区时按 95% 宽 / 85% 高收缩，并受各自下限保护。
+ * 更新窗口尺寸：基准 700×460，超出工作区时按 95% 宽 / 85% 高收缩，并受各自下限保护。
  *
- * 为什么必须收缩：更新窗口固定尺寸、不可缩放，而唯一关闭入口在底栏；
- * 1366×768 开 150% 缩放时工作区约 512 DIP 高，520 的原尺寸会让底栏掉出屏幕。
+ * 为什么必须收缩：更新窗口固定尺寸、不可缩放，而关闭入口在窗口右上角；
+ * 1366×768 开 150% 缩放时工作区约 512 DIP 高，基准尺寸可能把关闭钮推出屏幕。
  */
 export function calculateUpdaterWindowSize(workAreaSize: Pick<Rectangle, 'width' | 'height'>): {
   width: number;

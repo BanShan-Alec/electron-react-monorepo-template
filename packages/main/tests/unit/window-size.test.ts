@@ -16,13 +16,13 @@ import {
 } from '../../src/modules/window/window-size';
 
 describe('calculateUpdaterWindowSize (更新窗口小屏保护)', () => {
-  it('大屏下采用基准 700×520', () => {
+  it('大屏下采用基准 700×460', () => {
     const size = calculateUpdaterWindowSize({ width: 1920, height: 1032 });
     expect(size.width).toBe(UPDATER_WINDOW_WIDTH);
     expect(size.height).toBe(UPDATER_WINDOW_HEIGHT);
   });
 
-  it('1366×768 @150%（工作区约 1092×512）下高度收缩到 85%，底栏不会被推出屏幕', () => {
+  it('1366×768 @150%（工作区约 1092×512）下高度收缩到 85%，关闭钮不会被推出屏幕', () => {
     const size = calculateUpdaterWindowSize({ width: 1092, height: 512 });
     expect(size.height).toBe(435); // Math.floor(512 * 0.85)
     expect(size.height).toBeLessThan(512);

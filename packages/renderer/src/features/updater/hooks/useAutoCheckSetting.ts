@@ -9,18 +9,15 @@ import { useIpc } from '@/hooks/useIpc';
 export interface UseAutoCheckSettingResult {
   /** 开关选中态：挂载拉取前按 schema 默认值 true 呈现 */
   checked: boolean;
-  /** 初始配置是否已就绪：未就绪前开关禁用，避免默认值误切换 */
+  /** 初始配置是否已就绪：未就绪前不放行切换，避免默认值误切换 */
   ready: boolean;
-  /** 上一次保存是否失败（用于次级行内联失败文案） */
-  failed: boolean;
-  /** 乐观切换 → 落盘失败回滚 */
-  handleChange: (checked: boolean) => void;
+  /** 乐观切换 → 落盘失败回滚；返回是否保存成功（调用方决定失败怎么提示） */
+  handleChange: (checked: boolean) => Promise<boolean>;
 }
 
 export function useAutoCheckSetting(): UseAutoCheckSettingResult {
   const [checked, setChecked] = useState(true);
   const [ready, setReady] = useState(false);
-  const [failed, setFailed] = useState(false);
 
   // ③ 网络IO（显式挂载触发）—— 拉取偏好配置
   const { run: fetchConfig } = useIpc('config.get', {
@@ -42,7 +39,6 @@ export function useAutoCheckSetting(): UseAutoCheckSettingResult {
     fetchConfig();
     const unsub = window.api?.config?.onChanged?.((config) => {
       setChecked(config.autoCheckUpdate);
-      setFailed(false);
     });
     return () => {
       unsub?.();
@@ -50,17 +46,17 @@ export function useAutoCheckSetting(): UseAutoCheckSettingResult {
   }, [fetchConfig]);
 
   // ⑤ 逻辑处理函数
-  const handleChange = async (next: boolean) => {
+  const handleChange = async (next: boolean): Promise<boolean> => {
     setChecked(next);
-    setFailed(false);
     try {
       await updateConfig({ autoCheckUpdate: next });
+      return true;
     } catch {
-      // 失败行已由 callIpc 落盘；此处仅回滚开关并内联提示
+      // 失败行已由 callIpc 落盘；此处回滚开关，由调用方决定提示方式
       setChecked(!next);
-      setFailed(true);
+      return false;
     }
   };
 
-  return { checked, ready, failed, handleChange };
+  return { checked, ready, handleChange };
 }

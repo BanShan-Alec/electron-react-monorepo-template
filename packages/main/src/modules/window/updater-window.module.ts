@@ -45,7 +45,7 @@ export class UpdaterWindowModule implements AppModule {
     // 显式主题链同 home 窗口：backgroundColor 与 renderer 首帧 query 使用同一解析值
     const resolvedTheme = resolveNativeTheme(getAppConfigStore().get('theme'));
 
-    // 尺寸随工作区收缩 + 视觉居中：固定 700×520 在 150% 缩放的笔记本上会让底栏（唯一关闭入口）掉出屏幕
+    // 尺寸随工作区收缩 + 视觉居中：固定高度在 150% 缩放的笔记本上会让窗口底部（含右上角关闭钮）掉出屏幕
     const workArea = screen.getPrimaryDisplay().workArea;
     const size = calculateUpdaterWindowSize(workArea);
     const position = calculateCenteredCoordinates(size, workArea);

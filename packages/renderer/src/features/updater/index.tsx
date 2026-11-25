@@ -1,9 +1,9 @@
 import type React from 'react';
 import { AppInfoHeader } from './components/AppInfoHeader';
 import { ChangelogCard } from './components/ChangelogCard';
+import { HeaderActions } from './components/HeaderActions';
 import { ProgressCard } from './components/ProgressCard';
 import { StatusSection } from './components/StatusSection';
-import { UpdaterFooter } from './components/UpdaterFooter';
 import { useAutoCheckSetting } from './hooks/useAutoCheckSetting';
 import { useUpdater } from './hooks/useUpdater';
 import { showsChangelog, showsProgress } from './status-mapping';
@@ -26,8 +26,15 @@ export const UpdaterFeature: React.FC = () => {
   return (
     <div className="h-screen w-screen flex flex-col bg-background text-foreground select-none overflow-hidden border border-border">
       {/* 应用信息区：静音底 + 图标 + 版本 + 元数据 + 资源链接，兼作窗口拖拽区（单一真源 APP_INFO）；
-          关闭入口只在底栏（对齐 Motrix about-dialog：showCloseButton=false + DialogFooter 关闭） */}
-      <AppInfoHeader currentVersion={snapshot.currentVersion} />
+          右上角悬浮「更多（偏好）+ 关闭」，底栏已移除（偏好挪进更多菜单） */}
+      <div className="relative shrink-0">
+        <AppInfoHeader currentVersion={snapshot.currentVersion} />
+        <HeaderActions
+          autoCheck={autoCheck}
+          isDownloading={snapshot.state === 'downloading'}
+          onClose={handleClose}
+        />
+      </div>
 
       {/* 主体内容区域：应用更新小节（标签 + 状态行 + 提示）→ 下载进度 → 变更日志
           进度卡必须排在日志卡之前：下载中进度是首要信息，排在长日志后面会被挤出首屏 */}
@@ -53,9 +60,6 @@ export const UpdaterFeature: React.FC = () => {
           />
         )}
       </div>
-
-      {/* 底部动作区：自动检查偏好 + 关闭 */}
-      <UpdaterFooter autoCheck={autoCheck} onClose={handleClose} />
     </div>
   );
 };

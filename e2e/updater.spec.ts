@@ -270,10 +270,11 @@ test.describe
       });
       await stepDelay(1000);
 
-      // 点击底栏「关闭」（唯一关闭入口，对齐 Motrix：无右上角 X）：隐藏窗口、下载继续
+      // 点击右上角 X：下载中先二次确认，确认后隐藏窗口、下载继续
       const closeButton = updaterPage.getByRole('button', { name: '关闭' });
       await expect(closeButton).toBeVisible();
       await closeButton.click();
+      await updaterPage.getByRole('button', { name: '关闭窗口' }).click();
 
       // 断言更新窗口已隐藏/销毁（不存在于可见的 BrowserWindow 列表中）
       await expect
@@ -358,7 +359,7 @@ test.describe
         await expect(page.locator('html')).toHaveAttribute('lang', 'en-US');
 
         updaterPage = await ensureUpdaterWindow(electronApp, page);
-        // 关闭按钮走 t 宏，是与更新状态无关的稳定断言点（底栏是唯一关闭入口，无右上角 X）
+        // 关闭按钮走 t 宏，是与更新状态无关的稳定断言点（右上角 X + 更多菜单）
         await expect(updaterPage.getByRole('button', { name: 'Close' }).first()).toBeVisible();
       } finally {
         // 恢复中文，避免影响同进程内的后续断言

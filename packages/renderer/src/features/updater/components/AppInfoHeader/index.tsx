@@ -73,7 +73,7 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
       className="drag-region no-wco shrink-0 border-b border-border/60 bg-background-sunken px-6 py-4 select-none [@media(max-height:560px)]:py-2"
       aria-labelledby="updater-app-name"
     >
-      <div className="flex gap-4">
+      <div className="flex gap-4 pe-16">
         {/* 图标与右侧三行文字块等高：两者都取 80（h-20），文字用 justify-between
             把三行均匀撑满，避免"图标比文字块矮一截" */}
         <img
