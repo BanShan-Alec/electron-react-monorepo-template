@@ -321,10 +321,6 @@ msgstr "定位失败: {detail}"
 msgid "已关闭 DevTools"
 msgstr "已关闭 DevTools"
 
-#: src/features/updater/components/HeaderActions/index.tsx
-msgid "已关闭启动时自动检查"
-msgstr "已关闭启动时自动检查"
-
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "已在资源管理器中定位: {selectedPath}"
 msgstr "已在资源管理器中定位: {selectedPath}"
@@ -336,10 +332,6 @@ msgstr "已在默认浏览器中打开外部页面: {openedUrl}"
 #: src/features/devtools/hooks/useDevTools.ts
 msgid "已开启 DevTools"
 msgstr "已开启 DevTools"
-
-#: src/features/updater/components/HeaderActions/index.tsx
-msgid "已开启启动时自动检查"
-msgstr "已开启启动时自动检查"
 
 #: src/features/updater/status-mapping.ts
 msgid "已是最新版本"

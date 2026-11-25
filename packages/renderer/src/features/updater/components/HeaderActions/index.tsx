@@ -22,13 +22,10 @@ const _HeaderActions = (props: HeaderActionsProps) => {
 
   // ③ 网络IO / 异步操作：保存偏好失败给一次性提示（菜单点完即关，没有内联失败位）
   const handleToggleAutoCheck = async () => {
-    const next = !autoCheck.checked;
-    const saved = await autoCheck.handleChange(next);
+    const saved = await autoCheck.handleChange(!autoCheck.checked);
     if (!saved) {
       message.error(t`无法保存此设置`);
-      return;
     }
-    message.success(next ? t`已开启启动时自动检查` : t`已关闭启动时自动检查`);
   };
 
   // ④ 数据转换 / 派生
@@ -72,6 +69,7 @@ const _HeaderActions = (props: HeaderActionsProps) => {
       <Dropdown
         trigger={['click']}
         placement="bottomRight"
+        rootClassName="no-drag"
         menu={{
           items: menuItems,
           onClick: ({ key }) => {

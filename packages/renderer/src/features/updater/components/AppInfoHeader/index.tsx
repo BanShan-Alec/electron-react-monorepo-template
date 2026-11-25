@@ -70,24 +70,24 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
   // ⑦ 组件渲染
   return (
     <section
-      className="drag-region no-wco shrink-0 border-b border-border/60 bg-background-sunken px-6 py-4 select-none [@media(max-height:560px)]:py-2"
+      className="drag-region no-wco shrink-0 border-b border-border/60 bg-background-sunken px-6 pt-5 pb-3 select-none"
       aria-labelledby="updater-app-name"
     >
       <div className="flex gap-4 pe-16">
-        {/* 图标与右侧三行文字块等高：两者都取 80（h-20），文字用 justify-between
-            把三行均匀撑满，避免"图标比文字块矮一截" */}
+        {/* 图标盒 64（h-16，内边距 p-1 后可见图形 56）；右侧三行文字靠 mt-auto
+            把详情行压到列底，两者底边对齐后再由下文的 pb-1 抵消 logo 的 p-1 */}
         <img
           src={appIcon}
           alt=""
           draggable={false}
-          className="size-20 shrink-0 p-1 drop-shadow-sm"
+          className="size-16 shrink-0 p-1 drop-shadow-sm"
         />
         {/* pb-1 与 logo 的 p-1 配对：详情行要跟「可见图形」的底边齐平，而不是图片盒的底边 */}
         <div className="flex min-w-0 flex-1 flex-col pb-1">
           <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
             <h2
               id="updater-app-name"
-              className="text-2xl leading-tight font-semibold tracking-tight text-foreground m-0"
+              className="text-xl leading-tight font-semibold tracking-tight text-foreground m-0"
             >
               {APP_INFO.name}
             </h2>

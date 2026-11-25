@@ -321,10 +321,6 @@ msgstr "Couldn't show in folder: {detail}"
 msgid "已关闭 DevTools"
 msgstr "DevTools closed"
 
-#: src/features/updater/components/HeaderActions/index.tsx
-msgid "已关闭启动时自动检查"
-msgstr "App launch check disabled"
-
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "已在资源管理器中定位: {selectedPath}"
 msgstr "Shown in folder: {selectedPath}"
@@ -336,10 +332,6 @@ msgstr "Opened in browser: {openedUrl}"
 #: src/features/devtools/hooks/useDevTools.ts
 msgid "已开启 DevTools"
 msgstr "DevTools opened"
-
-#: src/features/updater/components/HeaderActions/index.tsx
-msgid "已开启启动时自动检查"
-msgstr "App launch check enabled"
 
 #: src/features/updater/status-mapping.ts
 msgid "已是最新版本"
