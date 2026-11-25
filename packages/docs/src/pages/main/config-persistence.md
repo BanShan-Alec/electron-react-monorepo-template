@@ -1,103 +1,72 @@
 ---
 
 title: 配置持久化（Electron-store）
-description: 运行期偏好落盘至 userData，Zod Schema 强校验、坏文件自愈与跨窗口广播。
+description: 用户偏好落在 userData/config.json，Zod schema 唯一真源、写坏即重置；新增配置项需同步六处。
 ---
 
 # 配置持久化（Electron-store）
 
-> **TL;DR**：用户运行时偏好（主题、语言、关闭行为、自动更新等）持久化至 `userData/config.json`；依托 Zod Schema 整体校验与默认值派生，遭遇非法 JSON 或破损字段时自动覆盖自愈，配置变更通过 IPC 广播全量窗口。
+> **TL;DR**：用户偏好存于 `userData/config.json`，由 `@app/shared` 的 schema 单一真源驱动——写坏即回默认、字段漂移不崩；新增一个配置项要同时改契约、副作用、消费、测试与词条，漏一层就是「能写进去但不生效」。
 
 ## 1. 选型理由
 
-桌面客户端的本地配置文件（如 JSON）是不可信输入：
-1. **人为或断电损坏**：用户可能手动编辑导致 JSON 语法错误，或者断电导致写入半截文件。若直接读取，应用将在启动期抛出未捕获异常并直接白屏崩溃。
-2. **跨版本字段漂移**：升级新版本后新增了必填字段，旧版本的配置文件缺失该键，导致运行时类型报错。
+三条硬需求决定了选型：
 
-工程通过 Zod 强类型 Schema 定义结合加载期双重自愈机制，确保配置链路坚不可摧。
+1. **只有主进程碰磁盘**：渲染层经 IPC 读写，偏好值不必再过一趟进程边界。
+2. **启动早期就要同步读**：主题、语言、托盘文案在模块初始化阶段用到，异步读者会引入启动时序竞争。
+3. **坏文件要能自愈**：文件在 `userData` 下，用户可手工编辑、外部工具也可能改动。
+
+| 备选                | 否决理由                                                   |
+| :------------------ | :--------------------------------------------------------- |
+| `localStorage`      | 渲染层私有，主进程启动早期读不到；多窗口各存一份，无法统一 |
+| 自己 `fs.writeFile` | 校验、原子写、损坏兜底全要自造，最容易写出的就是「写一半」 |
+| 直接读 `.env`       | 属于构建期资产，改一次要重新打包，也不进 `userData`        |
+
+`electron-store` 一次给齐同步读写、原子落盘与 schema 校验，因此作为默认实现。
 
 ## 2. 核心机制
 
-### 单一真源 Schema 与默认值派生
+### schema 是唯一真源
 
 → 源码：[packages/shared/src/schemas/config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/schemas/config.ts)
 
 ```ts
-export const configSchema = z.object({
-  theme: z.enum(THEME_MODES).default(DEFAULT_THEME_MODE),
-  minimizeToTray: z.boolean().default(true),
-  closeBehaviorConfirmed: z.boolean().default(false),
-  language: z.enum(LANGUAGE_MODES).default(DEFAULT_LANGUAGE),
-  autoCheckUpdate: z.boolean().default(true),
-  serverCounter: z.number().int().default(0),
-  autoLaunch: z.boolean().default(false),
-});
-
 export type AppConfig = z.infer<typeof configSchema>;
-export const updateConfigInputSchema = configSchema.partial();
+export const updateConfigInputSchema = configBaseSchema.partial();
 export const DEFAULT_CONFIG: AppConfig = configSchema.parse({});
 ```
 
-每个字段均附带 `.default()`，默认值由 Schema 自动派生，全仓杜绝手写字面量。
+默认值只写在 `configSchema` 各字段的 `.default()` 里，`DEFAULT_CONFIG` 由它派生：重置、损坏兜底、纯内存降级三处消费同一个对象，仓库里不存在第二份默认值清单。`updateConfigInputSchema` 是 IPC 入参契约——可被前端更新的字段必须在 `configBaseSchema` 里也登记一次。
 
-### 加载期自愈策略（语法损坏覆盖 + 校验失败重置）
+### 写路径：整对象替换 + 原子落盘
 
-→ 源码：[packages/main/src/modules/config.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/config.module.ts)
+`ConfigStore.set()` 先 `safeParse({ ...当前值, ...增量 })`，通过才整对象写回；非法输入记 warn 后原样返回旧值，不抛错、不断链路（兜住 `counter.service` 这类非 IPC 直连调用方）。整对象写回顺带清掉旧版本残留键，删除一个字段只需从 schema 移除。
 
-1. **第一道防线（语法损坏）**：`electron-store` 构造期直接读取，若 JSON 损坏抛错，立即用 `DEFAULT_CONFIG` 覆盖写入坏文件并重试；若目录不可写则降级为纯内存模式。
-2. **第二道防线（字段校验）**：文件可解析但字段不合规时，`configSchema.safeParse` 失败立即记录错误日志，并将整对象重置为默认值落盘：
+落盘是同步的：`electron-store` 每次 `set` 即写，没有退出前补写。底层 `conf` 经 `atomically` 以临时文件 + rename 替换，正常写入不会留下半截 [已脱敏]ON；只有手工编辑、跨盘或受限环境（退化直写）才可能产生坏文件——这正是下面两道自愈针对的场景。
 
-```ts
-private loadConfig(): AppConfig {
-  if (!this.store) return { ...DEFAULT_CONFIG };
-  const parsed = configSchema.safeParse(this.store.store);
-  if (parsed.success) return parsed.data;
+### 读路径：两道自愈
 
-  // 校验失败即自愈：记录 issues 并整对象覆盖坏文件
-  this.logError('Config reset to defaults: on-disk config failed schema validation:', parsed.error.issues);
-  try {
-    this.store.store = { ...DEFAULT_CONFIG };
-  } catch (error) {
-    this.logWarn('Config write failed:', error);
-  }
-  return { ...DEFAULT_CONFIG };
-}
-```
+1. **语法层**：`conf` 构造期读取整个文件，非法 [已脱敏]ON 直接抛错 → 用 `DEFAULT_CONFIG` 覆盖坏文件后重试一次；目录不可写则降级为纯内存，不阻塞启动。
+2. **契约层**：`configSchema.safeParse` 失败（类型错误、越界、结构异常）→ 记 error 并带 `issues` → 立即把默认值写回磁盘。
 
-配置变更由 `ConfigService` 统一分发，触发原生副作用（如主题切换、托盘多语言重绘）并通过 `broadcast(IPC_CHANNELS.CONFIG_EVENT_CHANGED, updated)` 实时通知全部渲染窗口。
+两道都只重置、不自造：宁可回到默认值，也不带着非法配置启动。
 
-### 开机自启只开放给安装版副本
+### 新增一个配置项的完整链路
 
-→ 源码：[packages/main/src/services/auto-launch.service.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/services/auto-launch.service.ts)
-
-Windows 的登录启动项按 AppUserModelId（AUMID）落到 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`，而仓库的安装版与免安装副本共享同一个 AUMID 与 `userData`。若允许免安装副本写启动项，它会直接覆盖安装版的那一条，造成「开机拉起的是 `dist/win-unpacked` 里的联调副本，桌面快捷方式启动的安装版抢不到单实例锁而闪退」。因此 `AutoLaunchService` 在写系统启动项前先判定副本资格：
-
-```ts
-const BUILD_REPO_ROOT = typeof __BUILD_REPO_ROOT__ !== 'undefined' ? __BUILD_REPO_ROOT__ : '';
-
-export function isInstalledCopy(): boolean {
-  if (!isPackaged) return false;
-  if (!BUILD_REPO_ROOT) return true;
-
-  const exePath = path.resolve(process.execPath);
-  const relative = path.relative(path.resolve(BUILD_REPO_ROOT), exePath);
-  return relative.startsWith('..') || path.isAbsolute(relative);
-}
-```
-
-判定看的是**构建期注入的仓库根路径**：可执行文件是否落在构建它的仓库目录内。`pnpm build:unpack` 的产物与 `pnpm build:win` 遗留的 `dist/win-unpacked` 都在仓库内，一律拒绝；装到 `Program Files` / `Applications` / `/opt` 的副本在仓库外，正常放行。
-
-这样不扫盘（不依赖卸载器文件名是否被清理工具删掉）、不读注册表，且与构建目标无关——`--skip-build` 也不会出现「风味串味」。注入只发生在主进程 bundle：`packages/main/vite.config.ts` 的 `define` 写入 `__BUILD_REPO_ROOT__`，渲染层拿不到该常量（仓库路径不向前端暴露）。常量缺失（如早期产物、打包配置出错）时按安装版放行，并由 `AutoLaunchService` 输出一次 warn，避免无法判定时集体禁用自启，同时保留可诊断性。
-
-不支持时 `getAutoLaunchStatus()` 返回 `isSupported: false` 并带上 `unsupportedReason`，共三种：`platform`（平台无登录项 API）、`source-run`（dev / preview 源码运行，未打包）与 `unpacked-copy`（解包目录里的就地副本）。`setAutoLaunch()` 降级为空操作且不抛错，设置页按原因给出对应文案。
+| 步骤      | 改哪里                                                                                                  | 漏掉的症状                                        |
+| :-------- | :------------------------------------------------------------------------------------------------------ | :------------------------------------------------ |
+| 1. 契约   | `shared/schemas/config.ts`：`configSchema` 加字段（带 `.default()`）；可更新则同时进 `configBaseSchema` | 前端传了也被入参 schema 剥掉，永远写不进去        |
+| 2. 副作用 | `services/config.service.ts`：需联动系统时（主题 / 语言 / 开机自启）在此同步                            | 值存了，界面与系统行为不变，重启才生效            |
+| 3. 消费   | 渲染层 hook 与卡片组件，按需给兜底值                                                                    | 旧配置缺该键时 UI 渲染 `undefined`                |
+| 4. 广播   | 主进程写后 `broadcast(CONFIG_EVENT_CHANGED, updated)`（已在 controller 统一处理）                       | 多窗口不同步（preload 已封装 `config.onChanged`） |
+| 5. 测试   | `packages/main/tests/unit/config-store.test.ts`：默认值、非法值拒绝、重置                               | 契约回退无人守护                                  |
+| 6. 词条   | 新增文案则 `pnpm i18n:extract` → 补英译 → `pnpm i18n:check`                                             | CI 直接失败                                       |
 
 ## 3. 桌面端避坑注意事项
 
-- **Service 内持有 Store 严禁在构造函数立即求值**：
-  - 业务 Service（如 `CounterService`）若需读写配置，必须在具体方法调用时懒加载 `getAppConfigStore()`，切勿在模块顶层 `new Service()` 构造期直接读取，避免与主进程模块初始化时序冲突。
-- **写入路径采用“整对象替换”清理死键**：
-  - 写入配置时使用 `this.store.store = this.config` 进行整对象赋值，可顺带清理掉磁盘上旧版本遗留的无用垃圾字段，保持 `config.json` 干净。
-- **构建期配置与运行期偏好严格分离**：
-  - `userData/config.json` 仅承载用户运行期偏好，构建配置（tsconfig、Biome、Vite）属于静态资产，绝对不进用户存储目录。
-- **开机自启不可交给免安装副本管理**：
-  - 免安装副本与安装版共用 AUMID 与 `userData`，写入系统启动项会覆盖安装版，使开机拉起联调副本、安装版又因单实例锁抢不到而闪退。写入前必须经 `isInstalledCopy()` 判定，联调期如需验证自启行为，请装一个真实安装包再操作。
+- **不要在构造期读 store**：
+  - 业务 Service 需要配置时必须在方法内懒加载 `getAppConfigStore()`，切勿在模块顶层 `new Service()` 的构造期读取，避免与主进程模块装配时序冲突。
+- **不该放进 `config.json` 的东西**：
+  - 密钥与令牌（属于系统钥匙串或环境变量注入）、大体积缓存（走 cache 目录）、构建期常量（`build/` 与 `.env`）、已有专门存储的状态（窗口几何在 `window-state.json`）。
+- **归属判断不在本页**：
+  - 一个值该落在哪一层，见 [配置项归属（Configuration-map）](/dx/configuration-map)；本页只讲「用户偏好」这一层的实现。
