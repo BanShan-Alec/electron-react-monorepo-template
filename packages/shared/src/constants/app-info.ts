@@ -35,6 +35,13 @@ export interface AppInfo {
   docsUrl: string;
 }
 
+// 未注入 define 的构建（如主进程、独立脚本）导入本模块时，给出可读指引而不是裸 ReferenceError
+if (typeof __APP_INFO__ === 'undefined') {
+  throw new Error(
+    '[app-info] __APP_INFO__ 未注入：请在对应 vite/vitest config 的 define 中注入 APP_DISPLAY',
+  );
+}
+
 export const APP_INFO: AppInfo = {
   ...__APP_INFO__,
   releasesUrl: `${__APP_INFO__.repositoryUrl}/releases`,

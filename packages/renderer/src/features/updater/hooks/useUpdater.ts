@@ -29,7 +29,12 @@ export function useUpdater() {
     channel: 'updater.check' | 'updater.download' | 'updater.cancel',
   ) => {
     try {
-      setSnapshot(await callIpc(channel));
+      const data = await callIpc(channel);
+      // 手动动作也纳入 revision 防护：主进程动作内置去重时可能不再推送事件，
+      // 此时 bootstrap 的迟到应答不得覆盖用户刚拿到的较新快照
+      revisionRef.current += 1;
+      latestEventRef.current = data;
+      setSnapshot(data);
     } catch {
       // 同上
     }
@@ -71,7 +76,6 @@ export function useUpdater() {
     const requestId = ++requestIdRef.current;
 
     const bootstrap = async () => {
-      const seqBeforeGet = revisionRef.current;
       let current: UpdaterSnapshot;
       try {
         current = await callIpc('updater.getState');
@@ -79,10 +83,12 @@ export function useUpdater() {
         return;
       }
       if (requestId !== requestIdRef.current) return;
-      // 请求期间已有事件到达：事件即最新快照，应答不回写（但事件可能先于订阅，此时应答仍是唯一数据源）
-      const hasNewerEvent = revisionRef.current !== seqBeforeGet;
-      if (!hasNewerEvent) setSnapshot(current);
-      const effective = hasNewerEvent ? (latestEventRef.current ?? current) : current;
+      // 判据是「是否收到完整 state 事件」而不是 revision 是否前迸：请求期间可能只来了
+      // 进度事件（latestEventRef 仍为 null），此时应答仍是唯一完整快照，必须回写；
+      // 否则快照停在 INITIAL idle，进度订阅也会因 prev.state !== 'downloading' 全部丢弃
+      const latestState = latestEventRef.current;
+      setSnapshot(latestState ?? current);
+      const effective = latestState ?? current;
       // 开窗即查仅限「还没有结果」的阶段（其它阶段有结果或正在推进，见 shouldAutoCheckOnOpen）
       if (shouldAutoCheckOnOpen(effective.state)) {
         try {
