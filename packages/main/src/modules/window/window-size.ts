@@ -8,6 +8,10 @@ import {
   POSITION_TOLERANCE_X,
   POSITION_TOLERANCE_Y_BOTTOM,
   POSITION_TOLERANCE_Y_TOP,
+  UPDATER_WINDOW_HEIGHT,
+  UPDATER_WINDOW_MIN_HEIGHT,
+  UPDATER_WINDOW_MIN_WIDTH,
+  UPDATER_WINDOW_WIDTH,
 } from '@app/shared/constants/window-geometry';
 import type { Display, Rectangle } from 'electron';
 
@@ -31,6 +35,10 @@ export {
   POSITION_TOLERANCE_X,
   POSITION_TOLERANCE_Y_BOTTOM,
   POSITION_TOLERANCE_Y_TOP,
+  UPDATER_WINDOW_HEIGHT,
+  UPDATER_WINDOW_MIN_HEIGHT,
+  UPDATER_WINDOW_MIN_WIDTH,
+  UPDATER_WINDOW_WIDTH,
 };
 
 /**
@@ -62,6 +70,30 @@ export function calculateAdaptiveInitialSize(workAreaSize: Pick<Rectangle, 'widt
 
   const width = clampDimension(targetWidth, MIN_WINDOW_WIDTH, workAreaSize.width);
   const height = clampDimension(targetHeight, MIN_WINDOW_HEIGHT, workAreaSize.height);
+
+  return { width, height };
+}
+
+/**
+ * 更新窗口尺寸：基准 700×520，超出工作区时按 95% 宽 / 85% 高收缩，并受各自下限保护。
+ *
+ * 为什么必须收缩：更新窗口固定尺寸、不可缩放，而唯一关闭入口在底栏；
+ * 1366×768 开 150% 缩放时工作区约 512 DIP 高，520 的原尺寸会让底栏掉出屏幕。
+ */
+export function calculateUpdaterWindowSize(workAreaSize: Pick<Rectangle, 'width' | 'height'>): {
+  width: number;
+  height: number;
+} {
+  const width = clampDimension(
+    Math.min(UPDATER_WINDOW_WIDTH, Math.floor(workAreaSize.width * MAX_WORK_AREA_WIDTH_RATIO)),
+    UPDATER_WINDOW_MIN_WIDTH,
+    workAreaSize.width,
+  );
+  const height = clampDimension(
+    Math.min(UPDATER_WINDOW_HEIGHT, Math.floor(workAreaSize.height * MAX_WORK_AREA_RATIO)),
+    UPDATER_WINDOW_MIN_HEIGHT,
+    workAreaSize.height,
+  );
 
   return { width, height };
 }

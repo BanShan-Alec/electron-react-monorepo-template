@@ -2,13 +2,44 @@ import { describe, expect, it } from 'vitest';
 import {
   calculateAdaptiveInitialSize,
   calculateCenteredCoordinates,
+  calculateUpdaterWindowSize,
   clampDimension,
   DEFAULT_WINDOW_HEIGHT,
   DEFAULT_WINDOW_WIDTH,
   MIN_WINDOW_HEIGHT,
   MIN_WINDOW_WIDTH,
   resolveWindowBounds,
+  UPDATER_WINDOW_HEIGHT,
+  UPDATER_WINDOW_MIN_HEIGHT,
+  UPDATER_WINDOW_MIN_WIDTH,
+  UPDATER_WINDOW_WIDTH,
 } from '../../src/modules/window/window-size';
+
+describe('calculateUpdaterWindowSize (更新窗口小屏保护)', () => {
+  it('大屏下采用基准 700×520', () => {
+    const size = calculateUpdaterWindowSize({ width: 1920, height: 1032 });
+    expect(size.width).toBe(UPDATER_WINDOW_WIDTH);
+    expect(size.height).toBe(UPDATER_WINDOW_HEIGHT);
+  });
+
+  it('1366×768 @150%（工作区约 1092×512）下高度收缩到 85%，底栏不会被推出屏幕', () => {
+    const size = calculateUpdaterWindowSize({ width: 1092, height: 512 });
+    expect(size.height).toBe(435); // Math.floor(512 * 0.85)
+    expect(size.height).toBeLessThan(512);
+    expect(size.width).toBe(UPDATER_WINDOW_WIDTH);
+  });
+
+  it('工作区比基准更窄时宽度同步收缩', () => {
+    const size = calculateUpdaterWindowSize({ width: 640, height: 900 });
+    expect(size.width).toBe(608); // Math.floor(640 * 0.95)
+  });
+
+  it('极端狭小工作区下不低于更新窗口下限', () => {
+    const size = calculateUpdaterWindowSize({ width: 400, height: 300 });
+    expect(size.width).toBe(UPDATER_WINDOW_MIN_WIDTH);
+    expect(size.height).toBe(UPDATER_WINDOW_MIN_HEIGHT);
+  });
+});
 
 describe('window-size 纯算法模块', () => {
   describe('clampDimension', () => {

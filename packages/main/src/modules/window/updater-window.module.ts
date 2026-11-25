@@ -1,7 +1,6 @@
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
-import { UPDATER_WINDOW_HEIGHT, UPDATER_WINDOW_WIDTH } from '@app/shared/constants/window-geometry';
 import { STARTUP_THEME_QUERY_KEY, WINDOW_IDS } from '@app/shared/constants/windows';
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, screen } from 'electron';
 import type { AppInitConfig } from '../../AppInitConfig';
 import type { AppModule } from '../../AppModule';
 import { getPackedEnvArgument } from '../../env';
@@ -13,6 +12,7 @@ import { getLogManager } from '../log.module';
 import { resolveNativeTheme } from '../native-theme.module';
 import { getWindowBackgroundColor } from './titlebar-overlay';
 import { forgetWindow, getWindow, registerWindow, sendToWindow } from './window-registry';
+import { calculateCenteredCoordinates, calculateUpdaterWindowSize } from './window-size';
 
 export class UpdaterWindowModule implements AppModule {
   private readonly preload: { path: string };
@@ -45,10 +45,15 @@ export class UpdaterWindowModule implements AppModule {
     // 显式主题链同 home 窗口：backgroundColor 与 renderer 首帧 query 使用同一解析值
     const resolvedTheme = resolveNativeTheme(getAppConfigStore().get('theme'));
 
+    // 尺寸随工作区收缩 + 视觉居中：固定 700×520 在 150% 缩放的笔记本上会让底栏（唯一关闭入口）掉出屏幕
+    const workArea = screen.getPrimaryDisplay().workArea;
+    const size = calculateUpdaterWindowSize(workArea);
+    const position = calculateCenteredCoordinates(size, workArea);
+
     const browserWindow = new BrowserWindow({
       show: false,
-      width: UPDATER_WINDOW_WIDTH,
-      height: UPDATER_WINDOW_HEIGHT,
+      ...position,
+      ...size,
       resizable: false,
       maximizable: false,
       minimizable: false,
