@@ -1,4 +1,4 @@
-import { CloseOutlined, MoreOutlined } from '@ant-design/icons';
+import { CheckOutlined, CloseOutlined, MoreOutlined } from '@ant-design/icons';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { App, Button, Dropdown } from 'antd';
@@ -22,17 +22,27 @@ const _HeaderActions = (props: HeaderActionsProps) => {
 
   // ③ 网络IO / 异步操作：保存偏好失败给一次性提示（菜单点完即关，没有内联失败位）
   const handleToggleAutoCheck = async () => {
-    const saved = await autoCheck.handleChange(!autoCheck.checked);
+    const next = !autoCheck.checked;
+    const saved = await autoCheck.handleChange(next);
     if (!saved) {
       message.error(t`无法保存此设置`);
+      return;
     }
+    message.success(next ? t`已开启启动时自动检查` : t`已关闭启动时自动检查`);
   };
 
   // ④ 数据转换 / 派生
   const menuItems = [
     {
       key: MORE_MENU_AUTO_CHECK,
-      label: t`启动时自动检查更新`,
+      // 自带勾选图标：antd 的 selectedKeys 只加类名，不会给选中项渲染勾，
+      // 而菜单点完即关，用户只能靠这一下勾选确认状态
+      label: (
+        <span className="flex items-center justify-between gap-8">
+          {t`启动时自动检查更新`}
+          {autoCheck.checked ? <CheckOutlined className="text-primary" /> : null}
+        </span>
+      ),
       // 配置尚未拉回时不放行，避免默认值被当成用户真实偏好写回
       disabled: !autoCheck.ready,
     },
@@ -63,8 +73,6 @@ const _HeaderActions = (props: HeaderActionsProps) => {
         trigger={['click']}
         placement="bottomRight"
         menu={{
-          selectable: true,
-          selectedKeys: autoCheck.checked ? [MORE_MENU_AUTO_CHECK] : [],
           items: menuItems,
           onClick: ({ key }) => {
             if (key === MORE_MENU_AUTO_CHECK) {
