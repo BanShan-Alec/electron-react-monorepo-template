@@ -255,6 +255,11 @@ export class UpdaterService {
           code: null,
         };
         this.emitState();
+        // 用户在 checking 阶段主动关过窗口就不再强行弹回：状态已落库，下次打开窗口即可看到
+        if (this.userDismissedWindow) {
+          this.logger.info('Update available while updater window dismissed; keeping it hidden');
+          return;
+        }
         this.windowDelegate?.show().catch((err) => {
           this.logger.error('Failed to show updater window on update-available:', err);
         });
@@ -528,12 +533,14 @@ export class UpdaterService {
       return this.getSnapshot();
     }
 
+    // 局部持有 token：cancel() 会同步把实例字段置空，catch 里读字段会把「已取消」误判成「下载失败」
+    const token = this.cancellationToken;
     try {
       const updater = this.getAutoUpdater();
-      await updater.downloadUpdate(this.cancellationToken);
+      await updater.downloadUpdate(token);
       return this.getSnapshot();
     } catch (err) {
-      if (this.cancellationToken?.cancelled) {
+      if (token?.cancelled) {
         this.logger.info('Download cancelled by token');
         return this.getSnapshot();
       }

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { defineConfig } from 'vite';
-import { APP_DISPLAY, APP_IDENTITY } from '../../build/lib/app-identity.ts';
+import { APP_IDENTITY } from '../../build/lib/app-identity.ts';
 import { getRepoEnvValue, loadRepoEnv } from '../../build/lib/env.ts';
 import { getSentryBuildOptions } from '../../build/lib/sentry-options.ts';
 
@@ -38,7 +38,6 @@ export default defineConfig({
     __SENTRY_DSN__: JSON.stringify(sentryOptions.sentryDsn),
     __RELEASE_NAME__: JSON.stringify(sentryOptions.releaseName),
     __GITHUB_OWNER__: JSON.stringify(APP_IDENTITY.repositoryOwner),
-    __APP_INFO__: JSON.stringify(APP_DISPLAY),
     __GITHUB_REPO__: JSON.stringify(APP_IDENTITY.repositoryName),
     __ENV_DEFAULTS__: JSON.stringify(envDefaults),
   },

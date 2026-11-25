@@ -99,15 +99,20 @@ export function calculateUpdaterWindowSize(workAreaSize: Pick<Rectangle, 'width'
 }
 
 /**
- * 基于有效工作区（已剔除任务栏/Dock）计算绝对视觉居中坐标
+ * 基于有效工作区（已剔除任务栏/Dock）计算绝对视觉居中坐标。
+ *
+ * 窗口比工作区还大时（极小工作区 + 尺寸下限，如 768p@200% 只剩 ~336 DIP），
+ * 居中会算出负坐标把标题栏/关闭钮推出屏幕 —— 此时改为贴左上角，保证可操作。
  */
 export function calculateCenteredCoordinates(
   size: Pick<Rectangle, 'width' | 'height'>,
   workArea: Rectangle,
 ): { x: number; y: number } {
+  const centeredX = Math.round(workArea.x + (workArea.width - size.width) / 2);
+  const centeredY = Math.round(workArea.y + (workArea.height - size.height) / 2);
   return {
-    x: Math.round(workArea.x + (workArea.width - size.width) / 2),
-    y: Math.round(workArea.y + (workArea.height - size.height) / 2),
+    x: Math.max(workArea.x, Math.min(centeredX, workArea.x + workArea.width - size.width)),
+    y: Math.max(workArea.y, Math.min(centeredY, workArea.y + workArea.height - size.height)),
   };
 }
 

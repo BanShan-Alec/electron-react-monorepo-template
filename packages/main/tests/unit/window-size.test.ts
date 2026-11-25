@@ -107,6 +107,28 @@ describe('window-size 纯算法模块', () => {
       expect(topMargin).toBe(bottomMargin);
     });
 
+    it('窗口比工作区大时贴左上角，不产生负坐标（768p@200% 约 683×336）', () => {
+      const workArea = { x: 0, y: 0, width: 683, height: 336 };
+
+      // home 窗口下限 720×480：居中会得到 (−18, −72)，必须钳到 (0, 0)
+      expect(calculateCenteredCoordinates({ width: 720, height: 480 }, workArea)).toEqual({
+        x: 0,
+        y: 0,
+      });
+
+      // 更新窗口 648×380：宽度还能居中，高度超界 → 贴顶
+      expect(calculateCenteredCoordinates({ width: 648, height: 380 }, workArea)).toEqual({
+        x: 18,
+        y: 0,
+      });
+    });
+
+    it('窗口恰与工作区等高时贴顶（y=0）而非居中为负', () => {
+      const workArea = { x: 0, y: 40, width: 1280, height: 480 };
+      const { y } = calculateCenteredCoordinates({ width: 720, height: 480 }, workArea);
+      expect(y).toBe(40);
+    });
+
     it('考虑副屏或任务栏偏移坐标（如顶部任务栏或副屏坐标偏移）', () => {
       const workArea = { x: 1920, y: 40, width: 1280, height: 680 };
       const size = { width: 1024, height: 571 };

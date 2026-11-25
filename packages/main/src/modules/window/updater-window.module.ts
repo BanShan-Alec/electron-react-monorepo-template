@@ -46,7 +46,13 @@ export class UpdaterWindowModule implements AppModule {
     const resolvedTheme = resolveNativeTheme(getAppConfigStore().get('theme'));
 
     // 尺寸随工作区收缩 + 视觉居中：固定高度在 150% 缩放的笔记本上会让窗口底部（含右上角关闭钮）掉出屏幕
-    const workArea = screen.getPrimaryDisplay().workArea;
+    // 跟随主窗口所在显示器（多屏下别把窗口甩到主屏），无主窗口时回落主显示器
+    const homeWindow = getWindow(WINDOW_IDS.HOME);
+    const display =
+      homeWindow && !homeWindow.isDestroyed()
+        ? screen.getDisplayMatching(homeWindow.getBounds())
+        : screen.getPrimaryDisplay();
+    const workArea = display.workArea;
     const size = calculateUpdaterWindowSize(workArea);
     const position = calculateCenteredCoordinates(size, workArea);
 

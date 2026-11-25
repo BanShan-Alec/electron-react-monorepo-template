@@ -39,7 +39,8 @@ vi.mock('@app/main/modules/config.module', () => {
 
 function createMockUpdater(overrides?: {
   checkForUpdates?: () => Promise<unknown>;
-  downloadUpdate?: () => Promise<unknown>;
+  // 传入 token 以便模拟「取消后 reject」的真实 electron-updater 行为
+  downloadUpdate?: (token?: unknown) => Promise<unknown>;
 }): AppUpdater {
   const emitter = new EventEmitter();
   return Object.assign(emitter, {
@@ -184,6 +185,37 @@ describe('UpdaterService snapshot contract and cancelled state machine', () => {
     expect(snapshot.version).toBe('2.0.0');
     expect(snapshot.releaseNotes).toEqual(['note']);
     expect(snapshot.progress).toBeNull();
+  });
+
+  it('cancel() 期间 downloadUpdate 的 reject 不得把 cancelled 覆盖成 error', async () => {
+    // 复刻 electron-updater：token 取消后 downloadUpdate 才 reject，
+    // 此时 cancel() 已把实例字段置空，catch 若读字段就会误判为下载失败
+    const mockUpdater = createMockUpdater({
+      downloadUpdate: (token) =>
+        new Promise((_resolve, reject) => {
+          const tick = () => {
+            if ((token as { cancelled?: boolean } | undefined)?.cancelled) {
+              reject(new Error('Cancelled'));
+              return;
+            }
+            setTimeout(tick, 5);
+          };
+          tick();
+        }),
+    });
+
+    const service = new UpdaterService(mockUpdater);
+    service.mockEmit({ type: 'available', version: '2.0.0' });
+
+    const pending = service.download();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    await service.cancel();
+    await pending;
+
+    const snapshot = service.getSnapshot();
+    expect(snapshot.state).toBe('cancelled');
+    expect(snapshot.version).toBe('2.0.0');
+    expect(snapshot.error).toBeNull();
   });
 
   it('allows re-download from cancelled state', async () => {
