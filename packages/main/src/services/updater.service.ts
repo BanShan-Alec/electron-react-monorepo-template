@@ -223,6 +223,16 @@ export class UpdaterService {
     return !this.resolveIsPackaged() || !this.detectAppUpdateConfig();
   }
 
+  /**
+   * 解析编译期注入的发布源坐标；owner / repo 任一缺失则视为未配置。
+   * 三处消费方（设定 feed、检查前置守卫、静默检查守卫）共享同一判定，
+   * 区别只在于拿不到坐标时的后续处理。
+   */
+  private resolveFeedSource(): { owner: string; repo: string } | null {
+    const { owner, repo } = this.repository;
+    return owner && repo ? { owner, repo } : null;
+  }
+
   public setWindowDelegate(delegate: { show: () => Promise<unknown>; close?: () => void }): void {
     this.windowDelegate = delegate;
   }
@@ -264,13 +274,12 @@ export class UpdaterService {
       // 自动读取发布配置；未打包形态或配置文件缺失（目录构建 / 便携分发）则用编译期注入的
       // package.json repository.url 坐标手动 setFeedURL，避免检查更新直接抛 ENOENT
       if (this.needsBundledFeed()) {
-        const { owner, repo } = this.repository;
+        const feedSource = this.resolveFeedSource();
 
-        if (owner && repo) {
+        if (feedSource) {
           updater.setFeedURL({
             provider: 'github',
-            owner,
-            repo,
+            ...feedSource,
           });
           if (this.resolveIsPackaged()) {
             this.logger.warn(
@@ -430,19 +439,16 @@ export class UpdaterService {
 
     // 缺少发布配置来源时（未打包形态，或已打包但 resources/app-update.yml 缺失）
     // 必须先有仓库坐标，否则 electron-updater 会直接抛 ENOENT 之类的底层错误
-    if (this.needsBundledFeed()) {
-      const { owner, repo } = this.repository;
-      if (!owner || !repo) {
-        this.logger.warn(
-          'Auto-updater check aborted: neither resources/app-update.yml nor repository.url in package.json provides a publish source.',
-        );
-        this.snapshot.state = 'error';
-        this.snapshot.error =
-          'Auto-update is not configured (resources/app-update.yml missing and repository.url unresolved in package.json)';
-        this.snapshot.code = ErrorCode.UPDATER_NOT_CONFIGURED;
-        this.emitState();
-        throw new AppError(this.snapshot.error, ErrorCode.UPDATER_NOT_CONFIGURED);
-      }
+    if (this.needsBundledFeed() && !this.resolveFeedSource()) {
+      this.logger.warn(
+        'Auto-updater check aborted: neither resources/app-update.yml nor repository.url in package.json provides a publish source.',
+      );
+      this.snapshot.state = 'error';
+      this.snapshot.error =
+        'Auto-update is not configured (resources/app-update.yml missing and repository.url unresolved in package.json)';
+      this.snapshot.code = ErrorCode.UPDATER_NOT_CONFIGURED;
+      this.emitState();
+      throw new AppError(this.snapshot.error, ErrorCode.UPDATER_NOT_CONFIGURED);
     }
 
     try {
@@ -496,14 +502,11 @@ export class UpdaterService {
       return;
     }
 
-    if (this.needsBundledFeed()) {
-      const { owner, repo } = this.repository;
-      if (!owner || !repo) {
-        this.logger.info(
-          'Silent update check skipped: neither resources/app-update.yml nor repository.url in package.json provides a publish source.',
-        );
-        return;
-      }
+    if (this.needsBundledFeed() && !this.resolveFeedSource()) {
+      this.logger.info(
+        'Silent update check skipped: neither resources/app-update.yml nor repository.url in package.json provides a publish source.',
+      );
+      return;
     }
 
     this.logger.info('Starting silent update check on startup...');
