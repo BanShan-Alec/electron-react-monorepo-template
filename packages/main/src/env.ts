@@ -1,6 +1,13 @@
+import path from 'node:path';
 import { APP_ENV, type AppEnv } from '@app/shared/constants/env';
 import type { AppRuntimeEnv } from '@app/shared/types/env';
 import { app } from 'electron';
+
+/** 构建期注入的仓库根目录（仅主进程 bundle，见 packages/main/vite.config.ts） */
+const BUILD_REPO_ROOT = typeof __BUILD_REPO_ROOT__ !== 'undefined' ? __BUILD_REPO_ROOT__ : '';
+
+/** 是否拿到构建期仓库标识；缺失时无法区分就地副本与安装副本（旧产物 / 打包配置出错） */
+export const hasBuildRepoRoot: boolean = Boolean(BUILD_REPO_ROOT);
 
 /**
  * 是否处于自动化测试环境 (Playwright / Vitest)
@@ -26,6 +33,47 @@ export const isDev: boolean = !isPackaged && !isTest && process.env.MODE !== 'pr
  * 判定原则：非测试模式，且已打包或 MODE 显式为 production（例如 preview 预览）
  */
 export const isProd: boolean = !isTest && (isPackaged || process.env.MODE === 'production');
+
+/**
+ * 副本形态判定的可选注入参数
+ *
+ * 默认全部取真实运行环境；测试通过注入构造边界场景，不把判定逻辑剥成外部微型函数。
+ */
+export interface InstalledCopyOptions {
+  /** 是否处于已打包形态（默认 app.isPackaged） */
+  packaged?: boolean;
+  /** 构建期注入的仓库根目录（默认取编译期常量） */
+  repoRoot?: string;
+  /** 可执行文件路径（默认 process.execPath） */
+  execPath?: string;
+}
+
+/**
+ * 当前是否运行于「安装版副本」——由安装包安装到系统位置的可执行文件。
+ *
+ * 仅此形态具备写系统登录项（开机自启）的资格：免安装副本与安装版共用同一个
+ * AppUserModelId 与 userData，一旦允许它写启动项就会相互覆盖（联调副本抢走安装版自启）。
+ *
+ * 判定依据构建期注入的仓库根目录：可执行文件是否落在**构建它的仓库目录内**。
+ * - `pnpm build:unpack` 产物、`pnpm build:win` 遗留的 `dist/win-unpacked` 都在仓库内 → 拒绝
+ * - 安装到 Program Files / Applications / /opt 的副本在仓库外 → 放行
+ *
+ * 不扫盘（不依赖卸载器文件名）、不读注册表，与构建目标无关，因此 `--skip-build`
+ * 也不会出现风味串味；代价是构建机绝对路径会被内联进主进程 bundle（不含渲染层）。
+ * 常量缺失时（如早期产物）按安装版放行，避免把正常用户锁死。
+ */
+export function isInstalledCopy(options: InstalledCopyOptions = {}): boolean {
+  if (!(options.packaged ?? isPackaged)) return false;
+
+  const repoRoot = options.repoRoot ?? BUILD_REPO_ROOT;
+  if (!repoRoot) return true;
+
+  const exePath = path.resolve(options.execPath ?? process.execPath);
+  const relative = path.relative(path.resolve(repoRoot), exePath);
+  // 只把「父目录本身」或「以 ..+分隔符开头的父级路径」视为仓库外；
+  // 不能简单用 startsWith('..')，否则仓库内名为 `..dist` 的目录会被误判为外部并放开自启写入
+  return relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative);
+}
 
 /**
  * 获取当前权威运行环境语义 ('development' | 'production' | 'test')

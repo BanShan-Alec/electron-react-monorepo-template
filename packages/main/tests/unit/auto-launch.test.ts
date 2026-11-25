@@ -16,6 +16,10 @@ vi.mock('@app/main/env', async (importOriginal) => ({
   isPackaged: true,
   currentAppEnv: 'production',
   isTest: true,
+  // 默认以安装版副本为基准；免安装副本场景在用例内部通过构造函数注入覆盖
+  isInstalledCopy: () => true,
+  // 构建期仓库标识存在，避免用例触发「无法判定副本形态」的告警分支
+  hasBuildRepoRoot: true,
 }));
 
 vi.mock('@app/main/modules/log.module', () => ({
@@ -148,7 +152,12 @@ describe('AutoLaunchService', () => {
       mockStore.get.mockReturnValue(true);
 
       const status = service.getAutoLaunchStatus();
-      expect(status).toEqual({ isSupported: false, isEnabled: true, isBlockedBySystem: false });
+      expect(status).toEqual({
+        isSupported: false,
+        isEnabled: true,
+        isBlockedBySystem: false,
+        unsupportedReason: 'platform',
+      });
       // 不应虚构 OS 状态，也不应触发系统调用
       expect(app.getLoginItemSettings).not.toHaveBeenCalled();
 
@@ -204,6 +213,87 @@ describe('AutoLaunchService', () => {
     expect(getStatusSpy).toHaveBeenCalledWith(true);
     // 告警由 getAutoLaunchStatus 内部单点产出，调用方不再重复查一次
     expect(app.getLoginItemSettings).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('AutoLaunchService 收权：仅安装版副本可管理系统登录项', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function createUnpackedCopyService(): AutoLaunchService {
+    return new AutoLaunchService({
+      isPlatformSupported: () => true,
+      isInstalledCopy: () => false,
+    });
+  }
+
+  it('免安装副本写入被降级为无操作，不触碰安装版共用启动项', () => {
+    const service = createUnpackedCopyService();
+
+    service.setAutoLaunch(true);
+
+    expect(app.setLoginItemSettings).not.toHaveBeenCalled();
+  });
+
+  it('免安装副本清除自启也是无操作，不会误删安装版启动项', () => {
+    const service = createUnpackedCopyService();
+
+    service.setAutoLaunch(false);
+
+    expect(app.setLoginItemSettings).not.toHaveBeenCalled();
+  });
+
+  it('免安装副本上报 unsupportedReason=unpacked-copy 且不查询系统状态', () => {
+    mockStore.get.mockReturnValue(true);
+    const service = createUnpackedCopyService();
+
+    const status = service.getAutoLaunchStatus();
+
+    expect(status).toEqual({
+      isSupported: false,
+      isEnabled: true,
+      isBlockedBySystem: false,
+      unsupportedReason: 'unpacked-copy',
+    });
+    expect(app.getLoginItemSettings).not.toHaveBeenCalled();
+  });
+
+  it('免安装副本启动静默校验直接跳过，不告警也不查系统', () => {
+    mockStore.get.mockReturnValue(true);
+    const service = createUnpackedCopyService();
+
+    service.checkStartupStatus(true);
+
+    expect(app.getLoginItemSettings).not.toHaveBeenCalled();
+  });
+
+  it('安装版副本保持原有写入行为', () => {
+    const service = new AutoLaunchService({
+      isPlatformSupported: () => true,
+      isInstalledCopy: () => true,
+    });
+
+    service.setAutoLaunch(true);
+
+    expect(app.setLoginItemSettings).toHaveBeenCalledWith({
+      openAtLogin: true,
+      args: ['--hidden'],
+    });
+  });
+
+  it('源码运行态（未打包）上报 source-run，不误标为免安装副本', () => {
+    mockStore.get.mockReturnValue(true);
+    const service = new AutoLaunchService({
+      isPlatformSupported: () => true,
+      isPackaged: () => false,
+      isInstalledCopy: () => false,
+    });
+
+    const status = service.getAutoLaunchStatus();
+
+    expect(status.isSupported).toBe(false);
+    expect(status.unsupportedReason).toBe('source-run');
   });
 });
 

@@ -27,13 +27,26 @@ export interface SystemInfo {
 }
 
 /**
- * 开机自启状态：平台能力 + 系统侧真实状态 + 配置与系统的冲突标记
+ * 开机自启状态：平台能力 + 当前副本资格 + 系统侧真实状态 + 配置与系统的冲突标记
  */
 export interface AutoLaunchStatus {
-  /** 当前平台是否实现登录项 API；Electron 仅 darwin/win32 提供，其余平台恒为 false */
+  /**
+   * 本副本能否管理操作系统登录项：平台提供登录项 API（仅 darwin / win32）且当前为安装版副本；
+   * 免安装副本（build:unpack 解包目录）恒为 false，避免误写/误删安装版共用的启动项。
+   */
   isSupported: boolean;
-  /** 系统启动项是否处于启用状态；不支持的平台回显配置意图（无系统状态可查） */
+  /** 系统启动项是否处于启用状态；不支持的场景回显配置意图（无系统状态可查） */
   isEnabled: boolean;
   /** 配置要求开启但系统侧未生效：被任务管理器禁用、待用户批准或启动项已被移除 */
   isBlockedBySystem: boolean;
+  /** isSupported 为 false 的具体原因，渲染层据此给出准确文案；可用时为 null */
+  unsupportedReason: AutoLaunchUnsupportedReason | null;
 }
+
+/**
+ * 开机自启不可用原因
+ * - platform：平台未提供登录项 API（Electron 仅支持 darwin / win32）
+ * - source-run：从源码运行（dev / preview），未打包就没有稳定的安装位置可注册
+ * - unpacked-copy：当前是解包目录里的免安装副本，与安装版共用启动项会互相覆盖
+ */
+export type AutoLaunchUnsupportedReason = 'platform' | 'source-run' | 'unpacked-copy';

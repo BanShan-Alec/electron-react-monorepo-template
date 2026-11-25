@@ -7,10 +7,6 @@ msgstr ""
 msgid "{cpuCores, plural, one {# 核} other {# 核}} ({cpuModel})"
 msgstr "{cpuCores, plural, one {# core} other {# cores}} ({cpuModel})"
 
-#: src/features/updater/components/AppInfoHeader/index.tsx
-msgid "{license} 许可证"
-msgstr "{license} License"
-
 #: src/features/usb/components/UsbCard/index.tsx
 msgid "{manufacturerName} 设备"
 msgstr "{manufacturerName} device"
@@ -104,10 +100,6 @@ msgstr "Renderer consumes only window.api"
 msgid "USB 硬件设备监控"
 msgstr "USB devices"
 
-#: src/features/updater/status-mapping.ts
-msgid "v{version} 已准备好安装。"
-msgstr "v{version} is ready to install."
-
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "V8 引擎版本"
 msgstr "V8"
@@ -119,18 +111,6 @@ msgstr "Strict Zod validation with typed error codes"
 #: src/features/calculator/components/CalculatorCard/index.tsx
 msgid "Zod 校验"
 msgstr "Zod validated"
-
-#: src/features/updater/components/HeaderActions/index.tsx
-msgid "下载不会被取消，重新打开本窗口即可查看进度。"
-msgstr "The download is not cancelled. Reopen this window to see progress."
-
-#: src/features/updater/status-mapping.ts
-msgid "下载已取消"
-msgstr "Download cancelled"
-
-#: src/features/updater/status-mapping.ts
-msgid "下载更新"
-msgstr "Download update"
 
 #: src/features/updater/components/ProgressCard/index.tsx
 msgid "下载进度"
@@ -153,9 +133,9 @@ msgstr "Main process: {0}ms"
 msgid "主进程堆内存占用"
 msgstr "Heap usage"
 
-#: src/features/updater/components/AppInfoHeader/index.tsx
-msgid "仓库"
-msgstr "Repository"
+#: src/features/settings/components/SettingsCard/index.tsx
+msgid "仅安装版支持开机自启，当前为免安装副本"
+msgstr "Only the installed build can launch on startup; this is an unpacked copy"
 
 #: src/features/architecture/hooks/useArchitecture.ts
 msgid "代码已复制"
@@ -165,6 +145,10 @@ msgstr "Code copied"
 msgid "代码耦合 & 契约混乱"
 msgstr "Coupled and messy"
 
+#: src/components/layout/Header/index.tsx
+msgid "企业级端到端类型安全桌面客户端脚手架"
+msgstr "Type-safe desktop starter"
+
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "传统散装 / 进程穿透方式"
 msgstr "Legacy ad-hoc approach"
@@ -172,10 +156,6 @@ msgstr "Legacy ad-hoc approach"
 #: src/features/updater/components/ProgressCard/index.tsx
 msgid "传输速率"
 msgstr "Transfer speed"
-
-#: src/features/updater/status-mapping.ts
-msgid "你可以关闭此窗口，下载会在后台继续。"
-msgstr "You can close this window. The download will continue in the background."
 
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "使用 contextBridge.exposeInMainWorld('api', apiBridge) 暴露受限安全 API 与 webUtils，杜绝渲染端渗透。"
@@ -193,7 +173,7 @@ msgstr "Save failed: {detail}"
 msgid "保存路径已选定: {filePath}"
 msgstr "Save path selected: {filePath}"
 
-#: src/features/updater/components/HeaderActions/index.tsx
+#: src/features/updater/index.tsx
 msgid "关闭"
 msgstr "Close"
 
@@ -205,21 +185,9 @@ msgstr "Keep in tray"
 msgid "关闭后应用留在托盘，点击图标可重新打开。"
 msgstr "The app stays in the tray; click its icon to reopen."
 
-#: src/features/updater/components/HeaderActions/index.tsx
-msgid "关闭更新窗口？"
-msgstr "Close the update window?"
-
-#: src/features/updater/components/HeaderActions/index.tsx
-msgid "关闭窗口"
-msgstr "Close window"
-
 #: src/components/close-behavior/CloseBehaviorDialog/index.tsx
 msgid "关闭窗口还是退出应用？"
 msgstr "Close the window or quit the app?"
-
-#: src/features/updater/status-mapping.ts
-msgid "准备好后可以重新开始下载。"
-msgstr "Start the download again when you are ready."
 
 #: src/features/usb/components/UsbCard/index.tsx
 msgid "刷新"
@@ -237,13 +205,9 @@ msgstr "Includes stability and performance fixes."
 msgid "原生对话框与文件定位 (Native Dialogs)"
 msgstr "Native dialogs"
 
-#: src/features/updater/status-mapping.ts
+#: src/features/updater/index.tsx
 msgid "发现新版本"
 msgstr "Update available"
-
-#: src/features/updater/status-mapping.ts
-msgid "发现新版本 v{version}"
-msgstr "New version v{version} available"
 
 #: src/features/logging/components/LoggingCard/index.tsx
 msgid "发送 ERROR"
@@ -257,7 +221,7 @@ msgstr "Send INFO"
 msgid "发送 WARN"
 msgstr "Send WARN"
 
-#: src/features/updater/status-mapping.ts
+#: src/features/updater/index.tsx
 msgid "取消下载"
 msgstr "Cancel download"
 
@@ -272,10 +236,6 @@ msgstr "Save example"
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "可用内存 / 总内存"
 msgstr "Memory (free / total)"
-
-#: src/features/updater/components/HeaderActions/index.tsx
-msgid "启动时自动检查更新"
-msgstr "Check at launch"
 
 #: src/features/docs/components/DocsView/index.tsx
 msgid "在浏览器中打开"
@@ -313,9 +273,17 @@ msgstr "Blocked: {detail}"
 msgid "安全计算器 (IPC 错误处理)"
 msgstr "Safe calculator"
 
+#: src/features/updater/index.tsx
+msgid "安装包下载中，完成后即可进行安装升级。"
+msgstr "Downloading the update. Install when it finishes."
+
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "定位失败: {detail}"
 msgstr "Couldn't show in folder: {detail}"
+
+#: src/features/updater/components/ChangelogCard/index.tsx
+msgid "展开全部"
+msgstr "Expand all"
 
 #: src/features/devtools/hooks/useDevTools.ts
 msgid "已关闭 DevTools"
@@ -333,7 +301,7 @@ msgstr "Opened in browser: {openedUrl}"
 msgid "已开启 DevTools"
 msgstr "DevTools opened"
 
-#: src/features/updater/status-mapping.ts
+#: src/features/updater/index.tsx
 msgid "已是最新版本"
 msgstr "Up to date"
 
@@ -357,10 +325,6 @@ msgstr "Platform"
 msgid "应用偏好设置 (ConfigStore)"
 msgstr "Preferences"
 
-#: src/features/updater/components/StatusSection/index.tsx
-msgid "应用更新"
-msgstr "App updates"
-
 #: src/features/ping/components/PingCard/index.tsx
 msgid "延迟稍高"
 msgstr "High latency"
@@ -369,9 +333,9 @@ msgstr "High latency"
 msgid "开关 DevTools"
 msgstr "Toggle DevTools"
 
-#: src/features/updater/components/AppInfoHeader/index.tsx
-msgid "开发者"
-msgstr "Created by"
+#: src/features/settings/components/SettingsCard/index.tsx
+msgid "开发或预览模式不管理系统开机自启"
+msgstr "Startup launch is not managed in dev or preview mode"
 
 #: src/features/settings/components/SettingsCard/index.tsx
 msgid "开机后自动在后台启动运行"
@@ -381,17 +345,9 @@ msgstr "Launch automatically in the background on system startup"
 msgid "开机自动启动"
 msgstr "Launch on startup"
 
-#: src/features/updater/components/AppInfoHeader/index.tsx
-msgid "开源仓库"
-msgstr "Source repository"
-
-#: src/features/updater/status-mapping.ts
-msgid "当前安装的应用已包含全部最新功能。"
-msgstr "The installed app already includes all the latest features."
-
-#: src/features/updater/status-mapping.ts
-msgid "当前安装的是版本 v{currentVersion}。立即检查，或让应用在启动时自动检查。"
-msgstr "Version v{currentVersion} is installed. Check now, or let the app check when it opens."
+#: src/features/updater/index.tsx
+msgid "当前安装的应用已包含所有最新功能与安全更新。"
+msgstr "You're on the latest version."
 
 #: src/features/settings/components/SettingsCard/index.tsx
 msgid "当前平台不支持开机自启"
@@ -412,6 +368,10 @@ msgstr "Restore defaults"
 #: src/features/settings/hooks/useAppConfig.ts
 msgid "恢复默认配置失败: {detail}"
 msgstr "Couldn't restore defaults: {detail}"
+
+#: src/features/updater/index.tsx
+msgid "您的应用已保持在最新版本，无需更新。"
+msgstr "You're up to date; no update needed."
 
 #: src/features/devtools/components/DevToolsCard/index.tsx
 msgid "打开 GitHub 页面"
@@ -461,12 +421,15 @@ msgstr "Operand A"
 msgid "操作数 B"
 msgstr "Operand B"
 
+#: src/features/updater/components/ChangelogCard/index.tsx
+msgid "收起"
+msgstr "Collapse"
+
 #: src/features/native-dialogs/hooks/useNativeDialogs.ts
 msgid "文件或目录不存在: {selectedPath}"
 msgstr "File or folder not found: {selectedPath}"
 
 #: src/components/layout/Header/index.tsx
-#: src/features/updater/components/AppInfoHeader/index.tsx
 msgid "文档站"
 msgstr "Docs"
 
@@ -478,17 +441,13 @@ msgstr "Loading documentation…"
 msgid "文档站加载超时"
 msgstr "Documentation loading timed out"
 
-#: src/features/updater/status-mapping.ts
-msgid "新版本已准备好安装，重启后完成升级。"
-msgstr "The new version is ready to install. Restart to finish."
+#: src/features/updater/index.tsx
+msgid "新版本已完成下载，重启应用后即可完成升级。"
+msgstr "Update downloaded. Restart to install."
 
-#: src/features/updater/components/HeaderActions/index.tsx
-msgid "无法保存此设置"
-msgstr "Couldn't save this setting"
-
-#: src/features/updater/status-mapping.ts
-msgid "无法更新"
-msgstr "Could not update"
+#: src/features/updater/index.tsx
+msgid "新版本已经准备就绪，包含最新的功能与改进。"
+msgstr "A new version is ready with the latest features."
 
 #: src/features/usb/hooks/useUsbDevices.ts
 msgid "无法读取部分 USB 设备描述符，请检查设备连接或系统权限"
@@ -498,28 +457,35 @@ msgstr "Couldn't read some USB devices. Check the connection or permissions."
 msgid "日志操作失败: {detail}"
 msgstr "Log action failed: {detail}"
 
-#: src/features/updater/components/HeaderActions/index.tsx
-msgid "更多"
-msgstr "More"
+#: src/features/updater/index.tsx
+msgid "暂无可用更新信息。"
+msgstr "No update info yet."
 
 #: src/features/settings/hooks/useAppConfig.ts
 msgid "更新偏好设置失败: {detail}"
 msgstr "Couldn't update preferences: {detail}"
 
-#: src/features/updater/status-mapping.ts
-msgid "更新已可安装"
-msgstr "Update ready to install"
+#: src/features/updater/index.tsx
+msgid "更新发生错误"
+msgstr "Update error"
 
-#: src/features/updater/components/AppInfoHeader/index.tsx
+#: src/features/updater/index.tsx
+msgid "更新失败"
+msgstr "Update failed"
+
+#: src/features/updater/index.tsx
+msgid "更新已准备就绪"
+msgstr "Update ready"
+
 #: src/features/updater/components/ChangelogCard/index.tsx
 msgid "更新日志"
 msgstr "Changelog"
 
-#: src/features/updater/status-mapping.ts
+#: src/features/updater/index.tsx
 msgid "更新服务未配置。"
 msgstr "Update service is not configured."
 
-#: src/features/updater/status-mapping.ts
+#: src/features/updater/index.tsx
 msgid "更新过程中出现未知错误，请稍后重试。"
 msgstr "Something went wrong during the update. Try again."
 
@@ -543,38 +509,37 @@ msgstr "Architecture"
 msgid "检查最新版本与下载安装"
 msgstr "Check, download, and install"
 
+#: src/features/updater/index.tsx
+msgid "检查或下载更新时发生异常，请检查网络后重试。"
+msgstr "Couldn't check or download the update. Check your network."
+
 #: src/features/settings/components/SettingsCard/index.tsx
-#: src/features/updater/status-mapping.ts
 msgid "检查更新"
 msgstr "Check for updates"
 
-#: src/features/updater/status-mapping.ts
-msgid "正在下载 v{version}"
-msgstr "Downloading v{version}"
+#: src/features/updater/index.tsx
+msgid "检查更新中"
+msgstr "Checking for updates"
 
-#: src/features/updater/status-mapping.ts
+#: src/features/updater/index.tsx
 msgid "正在下载更新"
 msgstr "Downloading update"
+
+#: src/features/updater/index.tsx
+msgid "正在与更新服务器建立连接，请稍候..."
+msgstr "Connecting to the update server…"
 
 #: src/features/system-info/components/SystemInfoCard/index.tsx
 msgid "正在探测系统运行环境..."
 msgstr "Probing runtime…"
 
-#: src/features/updater/status-mapping.ts
-msgid "正在检查…"
-msgstr "Checking…"
-
-#: src/features/updater/status-mapping.ts
-msgid "正在检查更新…"
+#: src/features/updater/index.tsx
+msgid "正在检查更新..."
 msgstr "Checking for updates…"
 
 #: src/features/settings/components/SettingsCard/index.tsx
 msgid "正在读取偏好设置..."
 msgstr "Loading preferences…"
-
-#: src/features/updater/status-mapping.ts
-msgid "正在连接更新服务器…"
-msgstr "Contacting the update service…"
 
 #: src/features/ping/components/PingCard/index.tsx
 msgid "正常"
@@ -609,21 +574,9 @@ msgstr "Renderer: {0}ms"
 msgid "点击托盘图标可重新打开"
 msgstr "Click the tray icon to reopen."
 
-#: src/features/updater/components/AppInfoHeader/index.tsx
-msgid "版本 {currentVersion}"
-msgstr "Version {currentVersion}"
-
-#: src/features/updater/status-mapping.ts
-msgid "版本 v{currentVersion} 是当前可用的最新版本。"
-msgstr "Version v{currentVersion} is the latest available release."
-
 #: src/features/architecture/components/ArchitectureView/index.tsx
 msgid "物理隔离 & Result 契约"
 msgstr "Isolated and typed"
-
-#: src/features/updater/status-mapping.ts
-msgid "现在下载，并在准备好时自行选择重启安装。"
-msgstr "Download it now and choose when to restart and install."
 
 #: src/features/logging/components/LoggingCard/index.tsx
 msgid "生产分级日志 (LogManager)"
@@ -645,21 +598,21 @@ msgstr "Language"
 msgid "留在托盘"
 msgstr "Keep in tray"
 
-#: src/features/updater/components/AppInfoHeader/index.tsx
-msgid "相关资源"
-msgstr "Resources"
+#: src/features/updater/index.tsx
+msgid "稍后安装"
+msgstr "Install later"
 
-#: src/features/updater/status-mapping.ts
-msgid "立即检查，或让应用在启动时自动检查。"
-msgstr "Check now, or let the app check when it opens."
+#: src/features/updater/index.tsx
+msgid "稍后提醒"
+msgstr "Remind me later"
+
+#: src/features/updater/index.tsx
+msgid "立即更新"
+msgstr "Update now"
 
 #: src/features/ping/components/PingCard/index.tsx
 msgid "端到端链路耗时分解"
 msgstr "End-to-end timing breakdown"
-
-#: src/lib/brand.ts
-msgid "类型安全 · 契约先行的 Electron 单仓模板"
-msgstr "Type-safe, contract-first Electron monorepo template"
 
 #: src/features/settings/components/SettingsCard/index.tsx
 msgid "类型安全主进程本地持久化存储与动态生效"
@@ -689,13 +642,9 @@ msgstr "Decouple end-to-end latency with libuv native probe & ContextBridge"
 msgid "统一通过 window.api 消费 Result 契约，享受完备 IDE 智能提示，与主进程实现 100% 物理代码隔离。"
 msgstr "Consume Result contracts via window.api with full IDE types and no direct main process imports."
 
-#: src/features/updater/components/HeaderActions/index.tsx
-msgid "继续下载"
-msgstr "Keep downloading"
-
-#: src/features/updater/status-mapping.ts
+#: src/features/updater/index.tsx
 msgid "网络连接失败或超时，请检查网络后重试。"
-msgstr "The network connection failed or timed out. Check your connection and try again."
+msgstr "Network failed or timed out. Check your connection."
 
 #: src/features/usb/hooks/useUsbDevices.ts
 msgid "获取 USB 设备列表失败: {detail}"
@@ -725,14 +674,6 @@ msgstr "Calculation failed: {detail}"
 msgid "计算结果:"
 msgstr "Result:"
 
-#: src/features/updater/status-mapping.ts
-msgid "让 {appName} 保持最新"
-msgstr "Keep {appName} up to date"
-
-#: src/features/updater/status-mapping.ts
-msgid "请稍后重试。"
-msgstr "Try again in a moment."
-
 #: src/features/settings/hooks/useAppConfig.ts
 msgid "读取偏好设置失败: {detail}"
 msgstr "Couldn't read preferences: {detail}"
@@ -748,6 +689,10 @@ msgstr "Diagnostics and links"
 #: src/features/settings/components/SettingsCard/index.tsx
 msgid "跟随系统 (System)"
 msgstr "System"
+
+#: src/features/updater/index.tsx
+msgid "软件更新"
+msgstr "Software update"
 
 #: src/features/settings/components/SettingsCard/index.tsx
 msgid "软件更新 (Updater)"
@@ -793,7 +738,7 @@ msgstr "Increment"
 msgid "遵循 specs-electron-fullstack 规范：Controller -> Service -> Result 契约"
 msgstr "Follows the Controller → Service → Result contract"
 
-#: src/features/updater/status-mapping.ts
+#: src/features/updater/index.tsx
 msgid "重启并安装"
 msgstr "Restart and install"
 
@@ -802,13 +747,13 @@ msgid "重置为 0"
 msgstr "Reset"
 
 #: src/features/docs/components/DocsView/index.tsx
-#: src/features/updater/status-mapping.ts
+#: src/features/updater/index.tsx
 msgid "重试"
 msgstr "Retry"
 
-#: src/features/updater/components/AppInfoHeader/index.tsx
-msgid "问题反馈"
-msgstr "Report an issue"
+#: src/features/updater/index.tsx
+msgid "隐藏到后台"
+msgstr "Hide to background"
 
 #: src/features/devtools/components/DevToolsCard/index.tsx
 msgid "非白名单外链 (example.com)"
