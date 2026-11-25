@@ -21,13 +21,16 @@ test.describe('主窗口初始几何尺寸与工作区视觉居中 E2E 验证', 
       await expect(ctx.page.locator('body')).toHaveClass(/app-startup-ready/, { timeout: 5000 });
 
       const metrics = await ctx.electronApp.evaluate(({ BrowserWindow, screen }) => {
-        // 必须精确匹配 Home 主窗口，防止并发或前序测试残留的 Updater 窗口 (480x460) 造成干扰
+        // 必须精确匹配 Home 主窗口，防止并发或前序测试残留的 Updater 窗口 (700x460 起) 造成干扰
         const homeWindow =
           BrowserWindow.getAllWindows().find(
-            (w) => !w.isDestroyed() && w.isVisible() && !w.webContents.getURL().includes('updater'),
+            (w) =>
+              !w.isDestroyed() &&
+              w.isVisible() &&
+              !w.webContents.getURL().includes('entries/updater'),
           ) ??
           BrowserWindow.getAllWindows().find(
-            (w) => !w.isDestroyed() && !w.webContents.getURL().includes('updater'),
+            (w) => !w.isDestroyed() && !w.webContents.getURL().includes('entries/updater'),
           ) ??
           BrowserWindow.getAllWindows()[0];
 
@@ -79,14 +82,14 @@ test.describe('主窗口初始几何尺寸与工作区视觉居中 E2E 验证', 
       const readBounds = () =>
         first.electronApp.evaluate(({ BrowserWindow }) => {
           const homeWindow = BrowserWindow.getAllWindows().find(
-            (w) => !w.isDestroyed() && !w.webContents.getURL().includes('updater'),
+            (w) => !w.isDestroyed() && !w.webContents.getURL().includes('entries/updater'),
           );
           return homeWindow?.getNormalBounds() ?? null;
         });
 
       await first.electronApp.evaluate(({ BrowserWindow }, bounds) => {
         const homeWindow = BrowserWindow.getAllWindows().find(
-          (w) => !w.isDestroyed() && !w.webContents.getURL().includes('updater'),
+          (w) => !w.isDestroyed() && !w.webContents.getURL().includes('entries/updater'),
         );
         if (!homeWindow) throw new Error('Home window not found');
         homeWindow.setBounds(bounds);
@@ -121,7 +124,7 @@ test.describe('主窗口初始几何尺寸与工作区视觉居中 E2E 验证', 
     try {
       const restored = await second.electronApp.evaluate(({ BrowserWindow }) => {
         const homeWindow = BrowserWindow.getAllWindows().find(
-          (w) => !w.isDestroyed() && !w.webContents.getURL().includes('updater'),
+          (w) => !w.isDestroyed() && !w.webContents.getURL().includes('entries/updater'),
         );
         return homeWindow?.getNormalBounds() ?? null;
       });

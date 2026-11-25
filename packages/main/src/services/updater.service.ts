@@ -314,6 +314,11 @@ export class UpdaterService {
           code: null,
         };
         this.emitState();
+        // 用户在 checking 阶段主动关过窗口就不再强行弹回：状态已落库，下次打开窗口即可看到
+        if (this.userDismissedWindow) {
+          this.logger.info('Update available while updater window dismissed; keeping it hidden');
+          return;
+        }
         this.windowDelegate?.show().catch((err) => {
           this.logger.error('Failed to show updater window on update-available:', err);
         });
@@ -389,7 +394,9 @@ export class UpdaterService {
   }
 
   public getSnapshot(): UpdaterSnapshot {
-    return { ...this.snapshot };
+    // currentVersion 统一在出口注入：打包后 app.getVersion() 才是运行时真值，
+    // 私有快照不持有它，所有透传路径（invoke 返回值与 emitState 事件）都在这里覆盖
+    return { ...this.snapshot, currentVersion: app.getVersion() };
   }
 
   public getState(): UpdaterState {
@@ -534,7 +541,11 @@ export class UpdaterService {
       throw new AppError('Download is already in progress', ErrorCode.UPDATER_ALREADY_RUNNING);
     }
 
-    if (this.snapshot.state !== 'available' && this.snapshot.state !== 'error') {
+    if (
+      this.snapshot.state !== 'available' &&
+      this.snapshot.state !== 'cancelled' &&
+      this.snapshot.state !== 'error'
+    ) {
       throw new AppError('No update available to download', ErrorCode.UPDATER_NO_UPDATE);
     }
 
@@ -577,12 +588,14 @@ export class UpdaterService {
       return this.getSnapshot();
     }
 
+    // 局部持有 token：cancel() 会同步把实例字段置空，catch 里读字段会把「已取消」误判成「下载失败」
+    const token = this.cancellationToken;
     try {
       const updater = this.getAutoUpdater();
-      await updater.downloadUpdate(this.cancellationToken);
+      await updater.downloadUpdate(token);
       return this.getSnapshot();
     } catch (err) {
-      if (this.cancellationToken?.cancelled) {
+      if (token?.cancelled) {
         this.logger.info('Download cancelled by token');
         return this.getSnapshot();
       }
@@ -610,7 +623,8 @@ export class UpdaterService {
         }
         this.cancellationToken = null;
       }
-      this.snapshot.state = 'available';
+      // 取消后不再回退 available：保留 version/releaseNotes 供 cancelled 态展示与重新下载
+      this.snapshot.state = 'cancelled';
       this.snapshot.progress = null;
       this.snapshot.error = null;
       this.snapshot.code = null;
@@ -744,6 +758,15 @@ export class UpdaterService {
         } else {
           this.windowDelegate?.show().catch(() => {});
         }
+        break;
+      }
+      case 'cancelled': {
+        // E2E 取消流驱动：置 state 并保留当前 mock 元数据（version/releaseNotes）
+        this.snapshot.state = 'cancelled';
+        this.snapshot.progress = null;
+        this.snapshot.error = null;
+        this.snapshot.code = null;
+        this.emitState();
         break;
       }
       case 'up-to-date':

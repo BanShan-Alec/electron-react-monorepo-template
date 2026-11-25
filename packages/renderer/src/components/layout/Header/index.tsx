@@ -5,6 +5,7 @@ import { memo } from 'react';
 import { useLocation } from 'wouter';
 import logoCompact from '@/assets/logo-compact.svg?url';
 import { EllipsisText } from '@/components/ui/EllipsisText';
+import { appTagline } from '@/lib/brand';
 
 // 可抽离的逻辑处理函数/组件
 function resolveActiveTab(location: string): HeaderTab {
@@ -77,7 +78,7 @@ const _Header = (props: HeaderProps) => {
 
         {/* 右侧：副标题描述（窄窗隐藏，优先保证导航可用） */}
         <p className="hidden lg:block min-w-0 text-xs text-foreground-secondary leading-snug line-clamp-2 text-right">
-          {t`企业级端到端类型安全桌面客户端脚手架`}
+          {appTagline()}
         </p>
       </div>
     </header>

@@ -44,7 +44,7 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 
 ## 3. 颜色与文字
 
-- 三档文字：`text-foreground`（主）/ `text-foreground-secondary`（辅助）/ `text-foreground-muted`（仅 placeholder、disabled）。
+- 三档文字：`text-foreground`（主）/ `text-foreground-secondary`（辅助）/ `text-foreground-muted`（仅 placeholder、disabled；**非文本次要图标**属 §6 已知例外，如头部工具条的静音图标按钮）。
 - 主色实心块上的文字用 `text-on-primary`（antd `colorTextLightSolid`），不写 `text-white`。
 - 颜色链路：`--ant-*`（antd cssVar，作用域 `.css-var-app` 必须挂在 `<html>`）→ `--color-*`（项目语义，`index.css` 的 `:root`）→ Tailwind 类。组件只消费最后一层。
 - React 渲染前的窗口画布由原生 `BrowserWindow.backgroundColor` 独家承担（窗口创建链 `resolveNativeTheme` 解析，与 WCO overlay 同源同时点）；renderer 的 `html, body` 恒透明叠于其上，首帧 `data-theme` 由主进程经 URL query 显式传入。React 根必须不透明满幅，否则切换主题后原生底色会从缝隙透出。
@@ -85,6 +85,45 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 
 - 统一 `statusBoxClass()`（`lib/classNames.ts`）：凹槽底 + 1px 描边 + 等宽字 + `select-text`。
 - 系统信息、VID/PID、日志路径、错误原文必须可选中复制。
+
+### 只读数值读数
+
+百分比、字节数、速率这类**状态数据**不得借用按钮承载（尤其不得用 `disabled` 按钮：antd 会把文字压到 25% 黑，实测 1.81:1，读数看不清）：
+
+```tsx
+<span className="inline-flex h-7 items-center gap-1.5 rounded-md bg-background-sunken px-2 font-mono text-xs tabular-nums text-foreground">
+  42%
+</span>;
+```
+
+占位与动作按钮同高同位置（版式不跳），但不可点击、不参与按钮色板。只有**可点的东西**才长成按钮。
+
+### 分区手段：色带 / 卡片 / 间距
+
+三种分区手段各司其职，同一屏不混用强度：
+
+| 场景                     | 手段 | 实现                                               |
+| ------------------------ | ---- | -------------------------------------------------- |
+| 窗口固定头尾（不随滚动） | 色带 | `bg-background-sunken` + `border-border/60` 发丝线 |
+| 滚动区里的内容块         | 卡片 | `AppCard`：白底 + 弱描边 + 投影                    |
+| 同组元素之间             | 间距 | 遵循 §2「组间距 > 组内距」                         |
+
+禁止用默认 `border-border`（1px 实心灰）切分区：它比卡片描边重一档，会把标题栏之类的固定区永久顶到最前面。
+
+### 窗口头部工具条 / 溢出菜单
+
+无边框窗口右上角的悬浮工具条（如更新窗口的「更多 + 关闭」）：
+
+- 图标按钮用 antd `Button type="text" size="small" icon={<X/>}`，尺寸 `h-8 w-8`，
+  默认色 `text-foreground-muted`、hover 升到 `text-foreground`（§6 例外允许 muted 用于非文本图标）。
+- 容器加 `.no-drag`，否则按钮落在窗口拖拽区内点不动。
+- 溢层菜单（`Dropdown` / `Popover` / `Tooltip`）把 `no-drag` 挂 **popup 根节点**
+  （`rootClassName="no-drag"`），规则与踩坑记录见 `AGENTS.md` §4.3。
+- 布尔型偏好放进菜单时：**勾选态自己表达**。antd v6（`@rc-component/menu`）的 `selectedKeys`
+  只给 `<li>` 加类名，既不画勾也不产出 `aria-checked`，所以视觉用勾号图标（`aria-hidden`）、
+  状态用 `sr-only` 文本（`已开启` / `已关闭`）——只靠图标或颜色则读屏与色觉障碍用户都无法感知（§5.7）。
+- 危险/有副作用的关闭动作要二次确认时用 `App.useApp().modal.confirm`，文案只承诺确定会发生的后果
+  （如「下载不会被取消」），不承诺取决于用户配置的行为（如「一定在后台继续」）。
 
 ### 空态 / 加载 / 错误
 

@@ -8,6 +8,10 @@ import {
   POSITION_TOLERANCE_X,
   POSITION_TOLERANCE_Y_BOTTOM,
   POSITION_TOLERANCE_Y_TOP,
+  UPDATER_WINDOW_HEIGHT,
+  UPDATER_WINDOW_MIN_HEIGHT,
+  UPDATER_WINDOW_MIN_WIDTH,
+  UPDATER_WINDOW_WIDTH,
 } from '@app/shared/constants/window-geometry';
 import type { Display, Rectangle } from 'electron';
 
@@ -31,6 +35,10 @@ export {
   POSITION_TOLERANCE_X,
   POSITION_TOLERANCE_Y_BOTTOM,
   POSITION_TOLERANCE_Y_TOP,
+  UPDATER_WINDOW_HEIGHT,
+  UPDATER_WINDOW_MIN_HEIGHT,
+  UPDATER_WINDOW_MIN_WIDTH,
+  UPDATER_WINDOW_WIDTH,
 };
 
 /**
@@ -67,15 +75,44 @@ export function calculateAdaptiveInitialSize(workAreaSize: Pick<Rectangle, 'widt
 }
 
 /**
- * 基于有效工作区（已剔除任务栏/Dock）计算绝对视觉居中坐标
+ * 更新窗口尺寸：基准 700×460，超出工作区时按 95% 宽 / 85% 高收缩，并受各自下限保护。
+ *
+ * 为什么必须收缩：更新窗口固定尺寸、不可缩放，而关闭入口在窗口右上角；
+ * 1366×768 开 150% 缩放时工作区约 512 DIP 高，基准尺寸可能把关闭钮推出屏幕。
+ */
+export function calculateUpdaterWindowSize(workAreaSize: Pick<Rectangle, 'width' | 'height'>): {
+  width: number;
+  height: number;
+} {
+  const width = clampDimension(
+    Math.min(UPDATER_WINDOW_WIDTH, Math.floor(workAreaSize.width * MAX_WORK_AREA_WIDTH_RATIO)),
+    UPDATER_WINDOW_MIN_WIDTH,
+    workAreaSize.width,
+  );
+  const height = clampDimension(
+    Math.min(UPDATER_WINDOW_HEIGHT, Math.floor(workAreaSize.height * MAX_WORK_AREA_RATIO)),
+    UPDATER_WINDOW_MIN_HEIGHT,
+    workAreaSize.height,
+  );
+
+  return { width, height };
+}
+
+/**
+ * 基于有效工作区（已剔除任务栏/Dock）计算绝对视觉居中坐标。
+ *
+ * 窗口比工作区还大时（极小工作区 + 尺寸下限，如 768p@200% 只剩 ~336 DIP），
+ * 居中会算出负坐标把标题栏/关闭钮推出屏幕 —— 此时改为贴左上角，保证可操作。
  */
 export function calculateCenteredCoordinates(
   size: Pick<Rectangle, 'width' | 'height'>,
   workArea: Rectangle,
 ): { x: number; y: number } {
+  const centeredX = Math.round(workArea.x + (workArea.width - size.width) / 2);
+  const centeredY = Math.round(workArea.y + (workArea.height - size.height) / 2);
   return {
-    x: Math.round(workArea.x + (workArea.width - size.width) / 2),
-    y: Math.round(workArea.y + (workArea.height - size.height) / 2),
+    x: Math.max(workArea.x, Math.min(centeredX, workArea.x + workArea.width - size.width)),
+    y: Math.max(workArea.y, Math.min(centeredY, workArea.y + workArea.height - size.height)),
   };
 }
 

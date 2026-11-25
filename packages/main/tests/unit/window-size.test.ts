@@ -2,13 +2,44 @@ import { describe, expect, it } from 'vitest';
 import {
   calculateAdaptiveInitialSize,
   calculateCenteredCoordinates,
+  calculateUpdaterWindowSize,
   clampDimension,
   DEFAULT_WINDOW_HEIGHT,
   DEFAULT_WINDOW_WIDTH,
   MIN_WINDOW_HEIGHT,
   MIN_WINDOW_WIDTH,
   resolveWindowBounds,
+  UPDATER_WINDOW_HEIGHT,
+  UPDATER_WINDOW_MIN_HEIGHT,
+  UPDATER_WINDOW_MIN_WIDTH,
+  UPDATER_WINDOW_WIDTH,
 } from '../../src/modules/window/window-size';
+
+describe('calculateUpdaterWindowSize (更新窗口小屏保护)', () => {
+  it('大屏下采用基准 700×460', () => {
+    const size = calculateUpdaterWindowSize({ width: 1920, height: 1032 });
+    expect(size.width).toBe(UPDATER_WINDOW_WIDTH);
+    expect(size.height).toBe(UPDATER_WINDOW_HEIGHT);
+  });
+
+  it('1366×768 @150%（工作区约 1092×512）下高度收缩到 85%，关闭钮不会被推出屏幕', () => {
+    const size = calculateUpdaterWindowSize({ width: 1092, height: 512 });
+    expect(size.height).toBe(435); // Math.floor(512 * 0.85)
+    expect(size.height).toBeLessThan(512);
+    expect(size.width).toBe(UPDATER_WINDOW_WIDTH);
+  });
+
+  it('工作区比基准更窄时宽度同步收缩', () => {
+    const size = calculateUpdaterWindowSize({ width: 640, height: 900 });
+    expect(size.width).toBe(608); // Math.floor(640 * 0.95)
+  });
+
+  it('极端狭小工作区下不低于更新窗口下限', () => {
+    const size = calculateUpdaterWindowSize({ width: 400, height: 300 });
+    expect(size.width).toBe(UPDATER_WINDOW_MIN_WIDTH);
+    expect(size.height).toBe(UPDATER_WINDOW_MIN_HEIGHT);
+  });
+});
 
 describe('window-size 纯算法模块', () => {
   describe('clampDimension', () => {
@@ -74,6 +105,28 @@ describe('window-size 纯算法模块', () => {
       const topMargin = y - workArea.y;
       const bottomMargin = workArea.y + workArea.height - (y + size.height);
       expect(topMargin).toBe(bottomMargin);
+    });
+
+    it('窗口比工作区大时贴左上角，不产生负坐标（768p@200% 约 683×336）', () => {
+      const workArea = { x: 0, y: 0, width: 683, height: 336 };
+
+      // home 窗口下限 720×480：居中会得到 (−18, −72)，必须钳到 (0, 0)
+      expect(calculateCenteredCoordinates({ width: 720, height: 480 }, workArea)).toEqual({
+        x: 0,
+        y: 0,
+      });
+
+      // 更新窗口 648×380：宽度还能居中，高度超界 → 贴顶
+      expect(calculateCenteredCoordinates({ width: 648, height: 380 }, workArea)).toEqual({
+        x: 18,
+        y: 0,
+      });
+    });
+
+    it('窗口恰与工作区等高时贴顶（y=0）而非居中为负', () => {
+      const workArea = { x: 0, y: 40, width: 1280, height: 480 };
+      const { y } = calculateCenteredCoordinates({ width: 720, height: 480 }, workArea);
+      expect(y).toBe(40);
     });
 
     it('考虑副屏或任务栏偏移坐标（如顶部任务栏或副屏坐标偏移）', () => {

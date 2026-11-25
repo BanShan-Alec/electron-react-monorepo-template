@@ -2,20 +2,13 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Tag } from 'antd';
 import type React from 'react';
-import { useState } from 'react';
+import { memo } from 'react';
 import { AppCard } from '@/components/ui/AppCard';
-import { callIpc } from '@/lib/ipc';
+import { openExternal } from '../../utils/open-external';
 
-// 链接打开失败不打扰用户（含白名单拦截拒绝）：失败行已由 callIpc 统一落盘
-function openExternal(url: string): void {
-  void callIpc('shell.openExternal', [url]).catch(() => {});
-}
+// 私有常量
 
-interface ChangelogCardProps {
-  version?: string;
-  releaseDate?: string;
-  releaseNotes?: string[];
-}
+// 可抽离的逻辑处理函数/组件
 
 function formatInlineMarkdown(text: string): React.ReactNode[] {
   const tokens = text.split(/(\[[^\]]+\]\(https?:\/\/[^\s)]+\)|\*\*[^*]+\*\*|https?:\/\/[^\s]+)/g);
@@ -66,19 +59,21 @@ function formatInlineMarkdown(text: string): React.ReactNode[] {
   });
 }
 
-export const ChangelogCard: React.FC<ChangelogCardProps> = ({
-  version,
-  releaseDate,
-  releaseNotes,
-}) => {
+const _ChangelogCard = (props: ChangelogCardProps) => {
+  // ① 变量声明、解构
+  const { version, releaseDate, releaseNotes } = props;
   const { i18n } = useLingui();
-  const [expanded, setExpanded] = useState(false);
+
+  // ② 组件状态
+
+  // ③ 网络IO / 异步操作
+
+  // ④ 数据转换 / 派生
 
   const formattedDate = releaseDate
     ? new Date(releaseDate).toLocaleDateString(i18n.locale)
     : undefined;
   const hasNotes = Boolean(releaseNotes && releaseNotes.length > 0);
-  const isLongNotes = Boolean(releaseNotes && releaseNotes.length > 4);
 
   const normalizedNotes = (releaseNotes ?? []).map((note, index) => ({
     id: `${index}-${note}`,
@@ -88,7 +83,7 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
   return (
     <AppCard
       size="small"
-      className="bg-background-elevated"
+      className="min-h-0 flex-1 bg-background-elevated"
       title={
         <div className="flex items-center justify-between py-1">
           <div className="flex items-center gap-2">
@@ -105,16 +100,12 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
         </div>
       }
     >
-      <div className="text-xs text-foreground-secondary space-y-1.5">
-        <div
-          className={
-            expanded || !isLongNotes
-              ? 'max-h-52 overflow-y-auto pr-1'
-              : 'line-clamp-4 overflow-hidden'
-          }
-        >
+      {/* 日志卡吃掉正文剩余高度并在卡内滚动：窗口高度会随工作区收缩，
+          整页滚动会让「某个元素被折线切断」看起来像 bug */}
+      <div className="flex min-h-0 flex-1 flex-col text-xs text-foreground-secondary">
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
           {hasNotes ? (
-            <ul className="list-disc pl-4 space-y-1">
+            <ul className="list-disc space-y-1 pl-4">
               {normalizedNotes.map((item) => (
                 <li key={item.id} className="leading-relaxed break-words">
                   {formatInlineMarkdown(item.text)}
@@ -125,18 +116,17 @@ export const ChangelogCard: React.FC<ChangelogCardProps> = ({
             <p className="text-foreground-secondary italic">{t`包含常规稳定性改进与性能优化。`}</p>
           )}
         </div>
-        {isLongNotes && (
-          <div className="flex justify-end pt-1">
-            <button
-              type="button"
-              onClick={() => setExpanded(!expanded)}
-              className="text-primary hover:text-primary-hover text-xs font-normal cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            >
-              {expanded ? t`收起` : t`展开全部`}
-            </button>
-          </div>
-        )}
       </div>
     </AppCard>
   );
 };
+
+// 4. Props 类型定义
+export interface ChangelogCardProps {
+  version?: string;
+  releaseDate?: string;
+  releaseNotes?: string[];
+}
+
+// 5. 导出与 Memo
+export const ChangelogCard = memo(_ChangelogCard);

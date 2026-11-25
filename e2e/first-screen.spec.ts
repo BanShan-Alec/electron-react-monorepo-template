@@ -68,7 +68,7 @@ test.describe('首屏渐进式加载 (First Screen Loading) E2E 验证', () => {
     electronApp,
   }) => {
     // updater 是独立入口，未接壳（spec Out of Scope 第 4 条），打开回归验证
-    const existing = electronApp.windows().find((w) => w.url().includes('updater'));
+    const existing = electronApp.windows().find((w) => w.url().includes('entries/updater'));
     let updaterPage = existing;
     if (!updaterPage) {
       const [win] = await Promise.all([

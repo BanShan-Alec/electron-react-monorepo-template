@@ -59,7 +59,7 @@ stateDiagram-v2
 
 → 源码：[packages/shared/src/schemas/updater.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/schemas/updater.ts) · [packages/main/src/services/updater.service.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/services/updater.service.ts)
 
-初始化阶段显式关闭官方默认行为：`autoDownload = false`、`autoInstallOnAppQuit = false`，并开启 `fullChangelog`（`updater.service.ts:190`）。入口方法各自带状态守卫：`check()` 在 `checking` / `downloading` 态直接抛 `UPDATER_ALREADY_RUNNING`（:319-322），`download()` 只接受 `available` 或 `error` 态（:460），`install()` 只接受 `downloaded` 态（:554-555）。因此安装永远需要用户显式确认：更新窗口存活时在窗口内确认；用户此前关闭过更新窗口时，`update-downloaded` 会降级为系统通知，点击通知再拉起更新窗口确认，不存在静默强装。
+初始化阶段显式关闭官方默认行为：`autoDownload = false`、`autoInstallOnAppQuit = false`，并开启 `fullChangelog`（`updater.service.ts:190`）。入口方法各自带状态守卫：`check()` 在 `checking` / `downloading` 态直接抛 `UPDATER_ALREADY_RUNNING`（:319-322），`download()` 只接受 `available` / `cancelled` / `error` 态（:479-488），`install()` 只接受 `downloaded` 态（:554-555）。因此安装永远需要用户显式确认：更新窗口存活时在窗口内确认；用户此前关闭过更新窗口时，`update-downloaded` 会降级为系统通知，点击通知再拉起更新窗口确认，不存在静默强装。
 
 ### 关键实现：取消下载
 
@@ -100,7 +100,7 @@ public async cancel(): Promise<UpdaterSnapshot> {
 
 → 源码：[packages/main/src/services/updater.service.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/services/updater.service.ts)
 
-取消后状态退回 `available` 而不是 `idle`，用户可以重新发起下载；退出流程最多等待取消 2 秒，随后继续关闭进程。若取消时主窗口已销毁且未开启托盘常驻，`cancel()` 内部会直接 `app.quit()`，避免留下无界面进程（`updater.service.ts:547`）。
+取消后状态置为 `cancelled`（保留版本元数据，更新日志不随取消消失），主按钮回到「重试」，用户可以重新发起下载；退出流程最多等待取消 2 秒，随后继续关闭进程。若取消时主窗口已销毁且未开启托盘常驻，`cancel()` 内部会直接 `app.quit()`，避免留下无界面进程（`updater.service.ts:547`）。
 
 下载完成后的入口分两路：`update-downloaded` 在 `userDismissedWindow` 为真时调用 `showDownloadedNotification()` 发系统通知，点击通知经 `windowDelegate.show()` 重新拉起更新窗口；否则直接拉起更新窗口。dev 模拟下载路径复用同一套判定（`updater.service.ts:278-286`、`:659-671`），通知文案与点击行为统一封装在 `showDownloadedNotification()`（`:590-604`）。已下载完成的安装包由 electron-updater 保留在缓存中（`pending/update-info.json`），下次启动重新检查到同一版本时可复用缓存、无需重新下载即可进入安装。
 

@@ -178,7 +178,7 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
           !w.isDestroyed() &&
           Boolean(w.webContents) &&
           !w.webContents.isDestroyed() &&
-          !w.webContents.getURL().includes('updater'),
+          !w.webContents.getURL().includes('entries/updater'),
       );
       return win?.isVisible();
     });
@@ -191,7 +191,7 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
           !w.isDestroyed() &&
           Boolean(w.webContents) &&
           !w.webContents.isDestroyed() &&
-          !w.webContents.getURL().includes('updater'),
+          !w.webContents.getURL().includes('entries/updater'),
       );
       win?.close();
     });
@@ -206,7 +206,7 @@ test.describe('应用偏好设置模块 (Settings Features) E2E 自动化测试'
                 !w.isDestroyed() &&
                 Boolean(w.webContents) &&
                 !w.webContents.isDestroyed() &&
-                !w.webContents.getURL().includes('updater'),
+                !w.webContents.getURL().includes('entries/updater'),
             );
             return win === undefined;
           }),

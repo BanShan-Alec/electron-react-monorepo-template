@@ -4,7 +4,7 @@ import { sentryVitePlugin } from '@sentry/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import { APP_IDENTITY } from '../../build/lib/app-identity.ts';
+import { APP_DISPLAY, APP_IDENTITY } from '../../build/lib/app-identity.ts';
 import { findRepoRoot } from '../../build/lib/repo-paths.ts';
 import { getSentryBuildOptions } from '../../build/lib/sentry-options.ts';
 import { appTitlePlugin } from './plugins/app-title.ts';
@@ -19,6 +19,10 @@ export default defineConfig({
   // 环境变量单一事实源：Monorepo 全局统一定义在根目录 .env，子包不设独立 .env
   envDir: rootDir,
   base: './',
+  // 展示身份单一事实源：根 package.json → APP_DISPLAY → 编译期常量（消费方见 shared/constants/app-info.ts）
+  define: {
+    __APP_INFO__: JSON.stringify(APP_DISPLAY),
+  },
   // 运行时环境单一事实源：由 Preload 通过 additionalArguments 注入至 window.__APP_ENV__，前端不走编译期 define
   plugins: [
     tailwindcss(),
