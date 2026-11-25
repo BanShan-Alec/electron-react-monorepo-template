@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { ErrorCode, type ErrorCodeType } from '@app/shared/constants/error-codes';
 import { IPC_CHANNELS } from '@app/shared/constants/ipc-channels';
 import { APP_FEATURES, buildSentryTags, SENTRY_TAGS } from '@app/shared/constants/telemetry';
@@ -41,6 +43,34 @@ export const OTA_STAGES = {
 } as const;
 
 export type OtaStage = (typeof OTA_STAGES)[keyof typeof OTA_STAGES];
+
+const APP_UPDATE_CONFIG_FILE = 'app-update.yml';
+
+/**
+ * UpdaterService 可注入依赖
+ *
+ * 默认实现面向真实运行环境；测试通过注入覆盖打包态判定、配置文件探测与发布源坐标，
+ * 由公开 API（check / checkSilently）驱动端到端验证，不额外剥离内部逻辑。
+ */
+export interface UpdaterServiceDeps {
+  /** electron-updater 实例（默认取 electronUpdater.autoUpdater） */
+  updater?: AppUpdater;
+  /** 是否处于已打包形态（默认 app.isPackaged） */
+  isPackaged?: () => boolean;
+  /** 已打包形态下 resources/app-update.yml 是否存在（默认探测 process.resourcesPath） */
+  hasAppUpdateConfig?: () => boolean;
+  /** GitHub 发布源坐标（默认编译期注入的 bundledRepository） */
+  repository?: { readonly owner: string; readonly repo: string };
+}
+
+/**
+ * 已打包形态下 electron-updater 只会读取 resources/app-update.yml；
+ * 目录构建（build:unpack）、便携版或手工拷贝的安装目录可能缺失该文件。
+ */
+function hasBundledAppUpdateConfig(): boolean {
+  const resourcesPath = process.resourcesPath;
+  return Boolean(resourcesPath) && existsSync(join(resourcesPath, APP_UPDATE_CONFIG_FILE));
+}
 
 /**
  * release notes 在本应用里只按纯文本渲染（ChangelogCard 直接插文本，不走 innerHTML），
@@ -97,6 +127,9 @@ export class UpdaterService {
   private windowDelegate: { show: () => Promise<unknown>; close?: () => void } | null = null;
   private userDismissedWindow = false;
   private readonly customUpdater?: AppUpdater;
+  private readonly resolveIsPackaged: () => boolean;
+  private readonly detectAppUpdateConfig: () => boolean;
+  private readonly repository: { readonly owner: string; readonly repo: string };
 
   private classifyError(err: unknown, fallback: ErrorCodeType): ErrorCodeType {
     if (err instanceof AppError) {
@@ -174,9 +207,20 @@ export class UpdaterService {
     }
   }
 
-  constructor(customUpdater?: AppUpdater) {
-    this.customUpdater = customUpdater;
+  constructor(deps: UpdaterServiceDeps = {}) {
+    this.customUpdater = deps.updater;
+    this.resolveIsPackaged = deps.isPackaged ?? (() => isPackaged);
+    this.detectAppUpdateConfig = deps.hasAppUpdateConfig ?? hasBundledAppUpdateConfig;
+    this.repository = deps.repository ?? bundledRepository;
     this.initElectronUpdater();
+  }
+
+  /**
+   * 是否需要显式配置发布源：未打包形态（源码运行）或已打包但缺少 app-update.yml
+   * 两种情况 electron-updater 都拿不到发布配置，需要回退到编译期注入的仓库坐标。
+   */
+  private needsBundledFeed(): boolean {
+    return !this.resolveIsPackaged() || !this.detectAppUpdateConfig();
   }
 
   public setWindowDelegate(delegate: { show: () => Promise<unknown>; close?: () => void }): void {
@@ -216,10 +260,11 @@ export class UpdaterService {
         updater.channel = channel;
       }
 
-      // 已打包生产态 (app.isPackaged) 下由 electron-updater 自动读取 resources/app-update.yml；
-      // 未打包形态（源码运行）用编译期注入的 package.json repository.url 坐标手动 setFeedURL
-      if (!isPackaged) {
-        const { owner, repo } = bundledRepository;
+      // 已打包生产态 (app.isPackaged) 且存在 resources/app-update.yml 时由 electron-updater
+      // 自动读取发布配置；未打包形态或配置文件缺失（目录构建 / 便携分发）则用编译期注入的
+      // package.json repository.url 坐标手动 setFeedURL，避免检查更新直接抛 ENOENT
+      if (this.needsBundledFeed()) {
+        const { owner, repo } = this.repository;
 
         if (owner && repo) {
           updater.setFeedURL({
@@ -227,9 +272,14 @@ export class UpdaterService {
             owner,
             repo,
           });
+          if (this.resolveIsPackaged()) {
+            this.logger.warn(
+              `Auto-updater fell back to bundled repository feed: resources/${APP_UPDATE_CONFIG_FILE} is missing in the packaged app.`,
+            );
+          }
         } else {
           this.logger.warn(
-            'Auto-updater skipped setFeedURL: repository.url missing in package.json (unpackaged mode).',
+            'Auto-updater skipped setFeedURL: repository.url missing in package.json and app-update.yml unavailable.',
           );
         }
       }
@@ -378,16 +428,18 @@ export class UpdaterService {
       return this.getSnapshot();
     }
 
-    // 仅在未打包形态下检查仓库配置（已打包状态直接由 electron-updater 读取 resources/app-update.yml）
-    if (!isPackaged && !this.customUpdater) {
-      const { owner, repo } = bundledRepository;
+    // 缺少发布配置来源时（未打包形态，或已打包但 resources/app-update.yml 缺失）
+    // 必须先有仓库坐标，否则 electron-updater 会直接抛 ENOENT 之类的底层错误
+    if (this.needsBundledFeed()) {
+      const { owner, repo } = this.repository;
       if (!owner || !repo) {
         this.logger.warn(
-          'Auto-updater check aborted: repository.url missing in package.json (unpackaged mode).',
+          'Auto-updater check aborted: neither resources/app-update.yml nor repository.url in package.json provides a publish source.',
         );
         this.snapshot.state = 'error';
         this.snapshot.error =
-          'Auto-update is not configured (repository.url missing in package.json)';
+          'Auto-update is not configured (resources/app-update.yml missing and repository.url unresolved in package.json)';
+        this.snapshot.code = ErrorCode.UPDATER_NOT_CONFIGURED;
         this.emitState();
         throw new AppError(this.snapshot.error, ErrorCode.UPDATER_NOT_CONFIGURED);
       }
@@ -444,11 +496,11 @@ export class UpdaterService {
       return;
     }
 
-    if (!isPackaged) {
-      const { owner, repo } = bundledRepository;
+    if (this.needsBundledFeed()) {
+      const { owner, repo } = this.repository;
       if (!owner || !repo) {
         this.logger.info(
-          'Silent update check skipped: repository.url missing in package.json (unpackaged mode).',
+          'Silent update check skipped: neither resources/app-update.yml nor repository.url in package.json provides a publish source.',
         );
         return;
       }

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { join } from 'node:path';
-import type { Configuration } from 'electron-builder';
+import type { AfterPackContext, Configuration } from 'electron-builder';
 import { APP_IDENTITY } from './lib/app-identity';
 
 // 基于当前构建脚本目录确定全局确定的根目录
@@ -67,6 +67,15 @@ const config: Configuration = {
   artifactName: '${name}-${version}-${os}-${arch}.${ext}',
   asarUnpack: ['**/*.node'],
   /**
+   * 目录型构建（build:unpack / 便携分发）没有 nsis 这类 updater-aware target，
+   * electron-builder 自带的 app-update.yml 写入逻辑会被跳过，导致打包后的应用
+   * 点击「检查更新」时抛 ENOENT。此处对所有打包形态补齐该文件（已存在则不覆盖，
+   * 安装包构建由 electron-builder 写入的完整配置优先）。
+   */
+  afterPack: (context: AfterPackContext) => {
+    ensureAppUpdateConfig(context);
+  },
+  /**
    * Electron Fuses（构建期写入二进制熔丝开关）
    * - runAsNode / enableNodeOptionsEnvironmentVariable：防止客户端被当作通用 Node 运行器或注入 NODE_OPTIONS
    * - onlyLoadAppFromAsar + enableEmbeddedAsarIntegrityValidation：锁死仅从 app.asar 加载并校验完整性（Win/Mac 生效；防篡改需配合 OS 代码签名）
@@ -95,6 +104,34 @@ const config: Configuration = {
 };
 
 export default config;
+
+const APP_UPDATE_CONFIG_FILE = 'app-update.yml';
+
+/**
+ * 写入 electron-updater 运行时读取的 resources/app-update.yml
+ * 内容与 electron-builder 为 nsis target 生成的配置保持同构（含 updaterCacheDirName）。
+ */
+function ensureAppUpdateConfig(context: AfterPackContext): void {
+  const resourcesDir = context.packager.getResourcesDir(context.appOutDir);
+  const targetPath = join(resourcesDir, APP_UPDATE_CONFIG_FILE);
+  if (fs.existsSync(targetPath)) return;
+
+  const { repositoryOwner, repositoryName } = APP_IDENTITY;
+  if (!repositoryOwner || !repositoryName) {
+    console.warn('[electron-builder] 跳过 app-update.yml 生成：repository.url 未解析出 owner/repo');
+    return;
+  }
+
+  const entries: Array<[string, string]> = [
+    ['provider', 'github'],
+    ['owner', repositoryOwner],
+    ['repo', repositoryName],
+    ['releaseType', 'release'],
+    ['updaterCacheDirName', context.packager.appInfo.updaterCacheDirName],
+  ];
+  fs.mkdirSync(resourcesDir, { recursive: true });
+  fs.writeFileSync(targetPath, `${entries.map(([key, value]) => `${key}: ${value}`).join('\n')}\n`);
+}
 
 /**
  * 显式读取指定 workspace 子包的 package.json 中的 files 配置，生成打包匹配规则

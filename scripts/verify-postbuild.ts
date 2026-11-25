@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { _electron as electron, type Page } from '@playwright/test';
+import { APP_IDENTITY } from '../build/lib/app-identity.ts';
 import { getRepoEnvValue, loadRepoEnv } from '../build/lib/env.ts';
 import { getDistDir } from '../build/lib/repo-paths.ts';
 
@@ -200,6 +201,23 @@ async function verifyPostbuild(options: PostbuildVerificationOptions = {}): Prom
 
   console.log(`📦 [verify-postbuild] 发现解包产物: ${artifact.executablePath}`);
   console.log(`📄 [verify-postbuild] 发现 asar 归档: ${artifact.asarPath}`);
+
+  // 0. 发布配置完整性：已打包形态下 electron-updater 只认 resources/app-update.yml，
+  //    目录构建（--dir）不含 nsis target，需由 build/electron-builder.ts 的 afterPack 补齐；
+  //    缺失时用户点击「检查更新」会直接拿到 ENOENT。仓库已声明发布源时按硬门禁校验。
+  const appUpdateConfigPath = path.join(path.dirname(artifact.asarPath), 'app-update.yml');
+  if (APP_IDENTITY.repositoryOwner && APP_IDENTITY.repositoryName) {
+    if (!fs.existsSync(appUpdateConfigPath)) {
+      throw new Error(
+        `❌ [verify-postbuild] 缺少 ${appUpdateConfigPath}，打包后的应用将无法检查更新（检查更新报 ENOENT）。`,
+      );
+    }
+    console.log('✅ [verify-postbuild] 发布配置 app-update.yml 已就位！');
+  } else {
+    console.warn(
+      '⚠️ [verify-postbuild] 仓库未声明发布源（repository.url），跳过 app-update.yml 完整性校验。',
+    );
+  }
 
   // 1. asar 体积门禁校验与详细监控
   const asarStat = fs.statSync(artifact.asarPath);
