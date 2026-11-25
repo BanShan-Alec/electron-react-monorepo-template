@@ -45,7 +45,8 @@ function createService(updater: AppUpdater, overrides: UpdaterServiceDeps = {}):
 
 function createMockUpdater(overrides?: {
   checkForUpdates?: () => Promise<unknown>;
-  downloadUpdate?: () => Promise<unknown>;
+  // 传入 token 以便模拟「取消后 reject」的真实 electron-updater 行为
+  downloadUpdate?: (token?: unknown) => Promise<unknown>;
 }): AppUpdater {
   const emitter = new EventEmitter();
   return Object.assign(emitter, {
