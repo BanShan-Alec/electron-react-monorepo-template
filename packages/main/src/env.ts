@@ -35,6 +35,20 @@ export const isDev: boolean = !isPackaged && !isTest && process.env.MODE !== 'pr
 export const isProd: boolean = !isTest && (isPackaged || process.env.MODE === 'production');
 
 /**
+ * 副本形态判定的可选注入参数
+ *
+ * 默认全部取真实运行环境；测试通过注入构造边界场景，不把判定逻辑剥成外部微型函数。
+ */
+export interface InstalledCopyOptions {
+  /** 是否处于已打包形态（默认 app.isPackaged） */
+  packaged?: boolean;
+  /** 构建期注入的仓库根目录（默认取编译期常量） */
+  repoRoot?: string;
+  /** 可执行文件路径（默认 process.execPath） */
+  execPath?: string;
+}
+
+/**
  * 当前是否运行于「安装版副本」——由安装包安装到系统位置的可执行文件。
  *
  * 仅此形态具备写系统登录项（开机自启）的资格：免安装副本与安装版共用同一个
@@ -48,13 +62,17 @@ export const isProd: boolean = !isTest && (isPackaged || process.env.MODE === 'p
  * 也不会出现风味串味；代价是构建机绝对路径会被内联进主进程 bundle（不含渲染层）。
  * 常量缺失时（如早期产物）按安装版放行，避免把正常用户锁死。
  */
-export function isInstalledCopy(): boolean {
-  if (!isPackaged) return false;
-  if (!BUILD_REPO_ROOT) return true;
+export function isInstalledCopy(options: InstalledCopyOptions = {}): boolean {
+  if (!(options.packaged ?? isPackaged)) return false;
 
-  const exePath = path.resolve(process.execPath);
-  const relative = path.relative(path.resolve(BUILD_REPO_ROOT), exePath);
-  return relative.startsWith('..') || path.isAbsolute(relative);
+  const repoRoot = options.repoRoot ?? BUILD_REPO_ROOT;
+  if (!repoRoot) return true;
+
+  const exePath = path.resolve(options.execPath ?? process.execPath);
+  const relative = path.relative(path.resolve(repoRoot), exePath);
+  // 只把「父目录本身」或「以 ..+分隔符开头的父级路径」视为仓库外；
+  // 不能简单用 startsWith('..')，否则仓库内名为 `..dist` 的目录会被误判为外部并放开自启写入
+  return relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative);
 }
 
 /**
