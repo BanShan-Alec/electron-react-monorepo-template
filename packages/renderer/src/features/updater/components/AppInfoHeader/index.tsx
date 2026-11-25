@@ -80,9 +80,9 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
           src={appIcon}
           alt=""
           draggable={false}
-          className="size-20 shrink-0 p-3 drop-shadow-sm"
+          className="size-20 shrink-0 p-1 drop-shadow-sm"
         />
-        <div className="flex min-w-0 flex-1 flex-col justify-between">
+        <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
             <h2
               id="updater-app-name"
@@ -96,10 +96,10 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
               </p>
             )}
           </div>
-          <p className="mt-1 max-w-md text-xs leading-normal text-foreground-secondary m-0">
+          <p className="max-w-md text-xs leading-normal text-foreground-secondary m-0">
             {appTagline()}
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-foreground-secondary [@media(max-height:560px)]:mt-2">
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-foreground-secondary">
             <span>
               {t`开发者`}{' '}
               <a
