@@ -128,10 +128,7 @@ const _AppInfoHeader = (props: AppInfoHeaderProps) => {
       </div>
 
       {/* 分隔线归 nav（与内容列同宽），负边距只作用于链接行，避免把 border-t 一起左移压到窗口边 */}
-      <nav
-        aria-label={t`相关资源`}
-        className="mt-4 border-t border-border/60 pt-3 [@media(max-height:560px)]:mt-2 [@media(max-height:560px)]:pt-1"
-      >
+      <nav aria-label={t`相关资源`} className="mt-3 border-t border-border/60 pt-1">
         <div className="-mb-1 -ms-2 flex flex-wrap items-center gap-0.5">
           {RESOURCE_LINKS.map((link) => (
             <a
