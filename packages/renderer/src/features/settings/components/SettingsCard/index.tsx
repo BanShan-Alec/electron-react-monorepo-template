@@ -22,6 +22,14 @@ const _SettingsCard = (props: SettingsCardProps) => {
   const { appConfig, autoLaunchStatus, onUpdate, onReset, isLoading } = props;
   // 乐观判定：状态未到达前按支持渲染，到达后若明确不支持再禁用并切换文案
   const isAutoLaunchSupported = autoLaunchStatus?.isSupported !== false;
+  const autoLaunchHint = (() => {
+    if (isAutoLaunchSupported) return t`开机后自动在后台启动运行`;
+    if (autoLaunchStatus?.unsupportedReason === 'unpacked-copy') {
+      // 免安装副本与安装版共用同一启动项，写入会互相覆盖，因此只开放给安装版
+      return t`仅安装版支持开机自启，当前为免安装副本`;
+    }
+    return t`当前平台不支持开机自启`;
+  })();
 
   // 组件状态
 
@@ -127,7 +135,7 @@ const _SettingsCard = (props: SettingsCardProps) => {
                 ) : null}
               </span>
               <span className="text-xs text-foreground-secondary block mt-0.5">
-                {isAutoLaunchSupported ? t`开机后自动在后台启动运行` : t`当前平台不支持开机自启`}
+                {autoLaunchHint}
               </span>
             </label>
             <Switch

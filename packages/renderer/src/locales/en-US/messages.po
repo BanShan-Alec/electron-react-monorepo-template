@@ -133,6 +133,10 @@ msgstr "Main process: {0}ms"
 msgid "主进程堆内存占用"
 msgstr "Heap usage"
 
+#: src/features/settings/components/SettingsCard/index.tsx
+msgid "仅安装版支持开机自启，当前为免安装副本"
+msgstr "Only the installed build can launch on startup; this is an unpacked copy"
+
 #: src/features/architecture/hooks/useArchitecture.ts
 msgid "代码已复制"
 msgstr "Code copied"

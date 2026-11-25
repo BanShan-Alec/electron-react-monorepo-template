@@ -1,6 +1,10 @@
+import path from 'node:path';
 import { APP_ENV, type AppEnv } from '@app/shared/constants/env';
 import type { AppRuntimeEnv } from '@app/shared/types/env';
 import { app } from 'electron';
+
+/** 构建期注入的仓库根目录（仅主进程 bundle，见 packages/main/vite.config.ts） */
+const BUILD_REPO_ROOT = typeof __BUILD_REPO_ROOT__ !== 'undefined' ? __BUILD_REPO_ROOT__ : '';
 
 /**
  * 是否处于自动化测试环境 (Playwright / Vitest)
@@ -26,6 +30,29 @@ export const isDev: boolean = !isPackaged && !isTest && process.env.MODE !== 'pr
  * 判定原则：非测试模式，且已打包或 MODE 显式为 production（例如 preview 预览）
  */
 export const isProd: boolean = !isTest && (isPackaged || process.env.MODE === 'production');
+
+/**
+ * 当前是否运行于「安装版副本」——由安装包安装到系统位置的可执行文件。
+ *
+ * 仅此形态具备写系统登录项（开机自启）的资格：免安装副本与安装版共用同一个
+ * AppUserModelId 与 userData，一旦允许它写启动项就会相互覆盖（联调副本抢走安装版自启）。
+ *
+ * 判定依据构建期注入的仓库根目录：可执行文件是否落在**构建它的仓库目录内**。
+ * - `pnpm build:unpack` 产物、`pnpm build:win` 遗留的 `dist/win-unpacked` 都在仓库内 → 拒绝
+ * - 安装到 Program Files / Applications / /opt 的副本在仓库外 → 放行
+ *
+ * 不扫盘（不依赖卸载器文件名）、不读注册表，与构建目标无关，因此 `--skip-build`
+ * 也不会出现风味串味；代价是构建机绝对路径会被内联进主进程 bundle（不含渲染层）。
+ * 常量缺失时（如早期产物）按安装版放行，避免把正常用户锁死。
+ */
+export function isInstalledCopy(): boolean {
+  if (!isPackaged) return false;
+  if (!BUILD_REPO_ROOT) return true;
+
+  const exePath = path.resolve(process.execPath);
+  const relative = path.relative(path.resolve(BUILD_REPO_ROOT), exePath);
+  return relative.startsWith('..') || path.isAbsolute(relative);
+}
 
 /**
  * 获取当前权威运行环境语义 ('development' | 'production' | 'test')

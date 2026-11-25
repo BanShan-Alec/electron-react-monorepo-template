@@ -133,6 +133,10 @@ msgstr "主进程: {0}ms"
 msgid "主进程堆内存占用"
 msgstr "主进程堆内存占用"
 
+#: src/features/settings/components/SettingsCard/index.tsx
+msgid "仅安装版支持开机自启，当前为免安装副本"
+msgstr "仅安装版支持开机自启，当前为免安装副本"
+
 #: src/features/architecture/hooks/useArchitecture.ts
 msgid "代码已复制"
 msgstr "代码已复制"

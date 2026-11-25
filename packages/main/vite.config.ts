@@ -39,6 +39,8 @@ export default defineConfig({
     __RELEASE_NAME__: JSON.stringify(sentryOptions.releaseName),
     __GITHUB_OWNER__: JSON.stringify(APP_IDENTITY.repositoryOwner),
     __GITHUB_REPO__: JSON.stringify(APP_IDENTITY.repositoryName),
+    // 仅注入主进程 bundle：用于判定可执行文件是否落在构建时的仓库目录内（免安装副本识别）
+    __BUILD_REPO_ROOT__: JSON.stringify(repoEnv.rootDir),
     __ENV_DEFAULTS__: JSON.stringify(envDefaults),
   },
   plugins: [
