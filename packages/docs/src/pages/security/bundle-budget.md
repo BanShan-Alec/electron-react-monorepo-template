@@ -51,7 +51,7 @@ flowchart LR
 
 ### 前置根依赖白名单门禁（指针）
 
-`scripts/verify-prebuild.ts` 在打包前静态校验根目录 `package.json` 的 `dependencies` 仅限 `@app/main`（防止多余运行时库被扫描进 `app.asar`）。该门禁的完整源码摘录与依赖归属规则见 [依赖管理（Monorepo）](/engineering/dependency-management)。
+`scripts/verify-prebuild.ts` 在打包前静态校验根目录 `package.json` 的 `dependencies` 仅限 `@app/main`（防止多余运行时库被扫描进 `app.asar`）。该门禁的依赖归属规则与校验判据见 [依赖管理（Monorepo）](/engineering/dependency-management)。
 
 ### 后置 ASAR 物理体积门禁（`verify-postbuild`）
 
@@ -90,4 +90,4 @@ if (asarSizeMb > maxAsarSizeMb) {
   - 原生 `.node` 依赖走 `asarUnpack`，独立静态大文件走 `extraResources`，避免 ASAR 归档膨胀拖慢读取性能。
 - **页面职责边界**：
   - **本页负责**：渲染层 `manualChunks` 拆分策略与打包后 `app.asar` 体积门禁及构成剖析。
-  - **本页不负责**：根依赖白名单门禁源码与说明见 [依赖管理（Monorepo）](/engineering/dependency-management)；`electron-builder` 文件排除清单见 [应用打包](/delivery/packaging)；打包产物启动与 Playwright 冒烟测试见 [产物冒烟测试](/testing/artifact-smoke)。
+  - **本页不负责**：根依赖白名单门禁规则与判据见 [依赖管理（Monorepo）](/engineering/dependency-management)；`electron-builder` 文件排除清单见 [应用打包](/delivery/packaging)；打包产物启动与 Playwright 冒烟测试见 [产物冒烟测试](/testing/artifact-smoke)。

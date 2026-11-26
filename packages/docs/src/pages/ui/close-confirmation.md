@@ -9,7 +9,7 @@ description: 拦截主窗口首次关闭事件，交互确认托盘常驻或彻�
 > **TL;DR**：主进程拦截主窗口首次关闭事件（`!closeBehaviorConfirmed`），通过 `closeReady` 握手与渲染端弹窗确认「留在托盘」或「退出应用」；决策写入 `ConfigStore` 后重放 `window.close()` 进入托盘/退出分流，设置页可随时更改。
 
 - **本页负责**：首次点击关闭按钮的拦截状态机（`closeBehaviorConfirmed` / `closeRequestPending` / `closeGuardBypass`）、`closeReady` 就绪握手、渲染端确认弹窗与设置页修改入口。
-- **本页不负责**：确认后的「关闭自然销毁退守托盘」与单实例唤醒机制见 [托盘常驻与单实例](/main/tray-single-instance)；配置 schema 与落盘自愈见 [配置持久化](/main/config-persistence)。
+- **本页不负责**：确认后的「关闭自然销毁退守托盘」与单实例唤醒机制见 [托盘常驻、单实例与开机自启](/main/tray-single-instance)；配置 schema 与落盘自愈见 [配置持久化](/main/config-persistence)。
 
 ## 1. 选型理由
 
@@ -69,7 +69,7 @@ browserWindow.on('close', (event) => {
 });
 ```
 
-用户做出非 `'cancel'` 选择后，主进程 `respondCloseRequest` 写入 `{ minimizeToTray: choice === 'window', closeBehaviorConfirmed: true }` 并广播配置变更，置位 `closeGuardBypass = true` 后再次调用 `window.close()` 放行进入常规分流（常规分流见 [托盘常驻与单实例](/main/tray-single-instance)）。
+用户做出非 `'cancel'` 选择后，主进程 `respondCloseRequest` 写入 `{ minimizeToTray: choice === 'window', closeBehaviorConfirmed: true }` 并广播配置变更，置位 `closeGuardBypass = true` 后再次调用 `window.close()` 放行进入常规分流（常规分流见 [托盘常驻、单实例与开机自启](/main/tray-single-instance)）。
 
 ### 渲染端就绪握手与决策回传
 

@@ -9,7 +9,7 @@ description: 采用 ModuleRunner 微内核将系统能力解耦为可插拔模�
 > **TL;DR**：主进程横向系统能力一律实现 `AppModule` 接口（仅包含 `enable()` 方法），由微内核 `ModuleRunner` 串成顺序 Promise 链执行；系统能力可插拔，入口删一行即可整体卸载。
 
 **本页负责**：`AppModule` 协议、`ModuleRunner` 链式驱动机制与 `initApp` 主进程装配时序。
-**本页不负责**：业务域 Controller / Service 分层（见 [分层架构（Controller / Service）](/architecture/layering)）、托盘与单实例内部实现（见 [托盘常驻与单实例（Tray + Single-instance）](/main/tray-single-instance)）、CSP 与来源白名单策略（见 [内容安全策略（CSP）](/security/csp)）、首屏启动壳门禁（见 [首屏体验（Startup-orchestration）](/ui/first-screen)）。
+**本页不负责**：业务域 Controller / Service 分层（见 [分层架构（Controller / Service）](/architecture/layering)）、托盘与单实例内部实现（见 [托盘常驻、单实例与开机自启（Tray + Single-instance + Auto-launch）](/main/tray-single-instance)）、CSP 与来源白名单策略（见 [内容安全策略（CSP）](/security/csp)）、首屏启动壳门禁（见 [首屏体验（Startup-orchestration）](/ui/first-screen)）。
 
 ## 1. 选型理由
 

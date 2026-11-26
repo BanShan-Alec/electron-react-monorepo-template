@@ -63,7 +63,7 @@ pnpm preview
 | `pnpm dev` / `preview`         | 开发态编排（单实例与端口预检） / 三包生产预览             | [开发编排](/dx/dev-orchestration)                 |
 | `pnpm typecheck`               | 全仓 Monorepo 跨包类型检查（`tsc -b --noEmit`）           | [编译配置继承](/engineering/tsconfig-inheritance) |
 | `pnpm lint` / `lint:fix`       | Biome 架构红线扫描与代码格式化（含 Markdown）             | [代码规范与风格](/engineering/code-style)         |
-| `pnpm test`                    | 运行 Main、Preload、Renderer、Shared 的 Vitest 单元测试   | [单元测试（Vitest）](/testing/unit-tests)         |
+| `pnpm test`                    | 运行 Main、Preload、Renderer、Shared 与 `build/` 单元测试 | [单元测试（Vitest）](/testing/unit-tests)         |
 | `pnpm verify:prebuild`         | 打包前置门禁：校验根 `name`、根依赖白名单与渲染层样式令牌 | [依赖管理](/engineering/dependency-management)    |
 | `pnpm test:e2e:build`          | 全量构建后通过 Playwright 真实窗口运行端到端断言          | [端到端测试（Playwright）](/testing/e2e-electron) |
 | `pnpm build:win\|mac\|linux`   | 构建对应桌面平台安装包（NSIS / DMG / DEB）                | [应用打包](/delivery/packaging)                   |

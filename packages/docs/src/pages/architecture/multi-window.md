@@ -9,7 +9,7 @@ description: 采用 MPA 架构隔离主窗口与更新弹窗，Vite 双物理入
 > **TL;DR**：拒绝将 SPA 单页思维硬套在 Electron 多窗口上；主应用（`home`）与更新弹窗（`updater`）各自拥有独立的 HTML 入口与编译产物，更新小窗无需背负主应用的路由与业务组件包袱。
 
 **本页负责**：Vite 双物理入口（MPA）划分、`@app/renderer` `exports` 映射与主进程多窗口路径解析。
-**本页不负责**：`manualChunks` 路径正则分包与 ASAR 体积门禁（见 [分包与体积门禁（Chunk + Asar）](/security/bundle-budget)）、窗口初始传参时序分层（见 [窗口初始传参（Window-params）](/architecture/window-params)）、窗口几何持久化与单实例唤醒（见 [窗口位置与尺寸（Window-state）](/ui/window-state) 与 [托盘常驻与单实例（Tray + Single-instance）](/main/tray-single-instance)）。
+**本页不负责**：`manualChunks` 路径正则分包与 ASAR 体积门禁（见 [分包与体积门禁（Chunk + Asar）](/security/bundle-budget)）、窗口初始传参时序分层（见 [窗口初始传参（Window-params）](/architecture/window-params)）、窗口几何持久化与单实例唤醒（见 [窗口位置与尺寸（Window-state）](/ui/window-state) 与 [托盘常驻、单实例与开机自启（Tray + Single-instance + Auto-launch）](/main/tray-single-instance)）。
 
 ## 1. 选型理由
 

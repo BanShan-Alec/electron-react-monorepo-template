@@ -99,4 +99,4 @@ export function findRepoRoot(fromDir: string): string {
   - `.node` 原生插件通过 `asarUnpack: ['**/*.node']` 解包，托盘图标通过 `extraResources` 外置到 `process.resourcesPath/buildResources`，确保操作系统底层 API 可直接读取物理文件路径。
 - **页面职责边界**：
   - **本页负责**：构建期根目录探测、运行期 `require.resolve` 模块寻址与托盘等外置原生资源锚点解析。
-  - **本页不负责**：`extraResources` 与 `asarUnpack` 打包配置见 [应用打包](/delivery/packaging)；托盘菜单多语言与图标缩放策略见 [托盘常驻与单实例](/main/tray-single-instance)。
+  - **本页不负责**：`extraResources` 与 `asarUnpack` 打包配置见 [应用打包](/delivery/packaging)；托盘菜单多语言与图标缩放策略见 [托盘常驻、单实例与开机自启](/main/tray-single-instance)。

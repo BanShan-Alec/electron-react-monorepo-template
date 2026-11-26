@@ -1,12 +1,12 @@
 ---
 
 title: 单元测试（Vitest）
-description: 借助 Vitest 原生 ESM 与别名推导秒级执行全仓单元测试，纯 Node 环境覆盖四包纯逻辑与边界断言。
+description: 借助 Vitest 原生 ESM 与别名推导秒级执行全仓单元测试，纯 Node 环境覆盖四业务包与 build 构建底座纯逻辑。
 ---
 
 # 单元测试（Vitest）
 
-> **TL;DR**：全仓采用 Vitest 统一驱动单元测试。配置文件收敛至 `.config/vitest.config.ts`，在纯 Node 环境下并行覆盖 `main`、`preload`、`renderer`、`shared` 四个包的纯逻辑与契约校验，通过源码单一真源常量驱动边界断言，DOM 交互交给 Playwright E2E。
+> **TL;DR**：全仓采用 Vitest 统一驱动单元测试。配置文件收敛至 `.config/vitest.config.ts`，在纯 Node 环境下并行覆盖 `main`、`preload`、`renderer`、`shared` 四包及 `build/` 构建底座的纯逻辑与契约校验，通过源码单一真源常量驱动边界断言，DOM 交互交给 Playwright E2E。
 
 > **本页职责边界**：本页负责全仓 Vitest 单测矩阵、运行命令、路径别名与编译期常量对齐；不负责主进程构造器注入与 `EventEmitter` 打桩技巧（见 [主进程单元测试（EventEmitter）](/testing/main-process-tests)）、`BENCHMARK=true` 性能基线采样（见 [性能基线（Benchmark）](/testing/performance-baseline)），以及真实 Electron 窗口测试（见 [端到端测试（Playwright）](/testing/e2e-electron)）。
 
@@ -19,16 +19,17 @@ description: 借助 Vitest 原生 ESM 与别名推导秒级执行全仓单元测
 
 ## 2. 核心机制
 
-全仓 4 个业务包（`main` / `preload` / `renderer` / `shared`）的单元测试均由根目录 `.config/vitest.config.ts` 统一调度，本地开发与 CI `test` Job 共享同一套筛选与路径解析配置。
+全仓 4 个业务包（`main` / `preload` / `renderer` / `shared`）与 `build/` 构建底座的单元测试均由根目录 `.config/vitest.config.ts` 统一调度，本地开发与 CI `test` Job 共享同一套筛选与路径解析配置。
 
 ```mermaid
 flowchart LR
     RootCmd["pnpm test"] --> Config[".config/vitest.config.ts"]
-    Config -->|"environment: node + tsconfigPaths"| Matrix{"四包单测矩阵"}
+    Config -->|"environment: node + tsconfigPaths"| Matrix{"单测矩阵"}
     Matrix --> Main["packages/main/tests/unit"]
     Matrix --> Preload["packages/preload/tests/unit"]
     Matrix --> Renderer["packages/renderer/tests/unit"]
     Matrix --> Shared["packages/shared/tests/unit"]
+    Matrix --> Build["build/tests"]
     RootCmd2["pnpm test:pr-review"] --> PrReview["packages/pr-review/tests/unit"]
     RootCmd3["pnpm test:bench"] -->|"BENCHMARK=true"| Bench["性能基线 /testing/performance-baseline"]
 ```
@@ -71,14 +72,14 @@ export default defineConfig({
 → 源码：[package.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/package.json)
 
 ```bash
-pnpm test            # 运行 main / preload / renderer / shared 四包单元测试（排除 benchmark 与 pr-review）
+pnpm test            # 运行 main / preload / renderer / shared 与 build/ 单元测试（排除 benchmark 与 pr-review）
 pnpm test:watch      # 监听模式，本地开发增量反馈
 pnpm test:pr-review  # 单独运行 packages/pr-review 单元测试（根 pnpm test 已将其排除）
 ```
 
 ### 跨包纯逻辑与源码常量直连断言
 
-四包单测均在无浏览器、无 Electron 窗口的纯 Node 进程中运行：例如 `shared` 校验运行时环境 Base64URL 编解码（[env-packer.test.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/tests/unit/env-packer.test.ts)），`preload` 用轻量 `ipcRenderer` mock 验证粘性事件回放（[sticky.test.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/tests/unit/sticky.test.ts)），`renderer` 用 React `renderToString` 与 `@ant-design/cssinjs` 提取样式校验主题变量（[design-tokens.test.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/tests/unit/design-tokens.test.ts)），`main` 则直接引入源码阈值常量驱动边界断言：
+各包与构建底座单测均在无浏览器、无 Electron 窗口的纯 Node 进程中运行：例如 `build` 校验根 `.env` 幂等自注册（[env.test.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/tests/env.test.ts)），`shared` 校验运行时环境 Base64URL 编解码（[env-packer.test.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/tests/unit/env-packer.test.ts)），`preload` 用轻量 `ipcRenderer` mock 验证粘性事件回放（[sticky.test.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/tests/unit/sticky.test.ts)），`renderer` 用 React `renderToString` 与 `@ant-design/cssinjs` 提取样式校验主题变量（[design-tokens.test.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/tests/unit/design-tokens.test.ts)），`main` 则直接引入源码阈值常量驱动边界断言：
 
 → 源码：[packages/main/tests/unit/renderer-log-line.test.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/tests/unit/renderer-log-line.test.ts)
 

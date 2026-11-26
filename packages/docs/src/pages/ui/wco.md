@@ -9,7 +9,7 @@ description: 采用 Window Controls Overlay，保留 Win11 贴靠与原生管理
 > **TL;DR**：采用 Window Controls Overlay（WCO）让内容延伸至标题栏同时保留系统窗口管理能力（Win11 贴靠、最大化动画与原生控制按钮）；窗口底色与 Overlay 同源配置杜绝白闪，win32 挂载低频重绘守护消除无边框黑边残影。
 
 - **本页负责**：WCO 跨平台配置分支、窗口底色与 Overlay 同源、拖拽区避让及 win32 重绘守护。
-- **本页不负责**：窗口尺寸计算与 `windowStatePersistence` 见 [窗口位置与尺寸](/ui/window-state)；关闭按钮拦截分流见 [首次关闭确认](/ui/close-confirmation) 与 [托盘常驻与单实例](/main/tray-single-instance)；`nativeTheme` 运行时主题广播见 [主题链路](/ui/theme-pipeline)。
+- **本页不负责**：窗口尺寸计算与 `windowStatePersistence` 见 [窗口位置与尺寸](/ui/window-state)；关闭按钮拦截分流见 [首次关闭确认](/ui/close-confirmation) 与 [托盘常驻、单实例与开机自启](/main/tray-single-instance)；`nativeTheme` 运行时主题广播见 [主题链路](/ui/theme-pipeline)。
 
 ## 1. 选型理由
 
