@@ -35,9 +35,8 @@ export const SIDEBAR_GROUPS: NavigationGroup[] = [
     text: 'AI 协同',
     collapsed: true,
     items: [
-      { text: 'AI 协作者约定（Agents.md）', link: '/ai/collaboration-convention' },
       { text: '全栈端到端功能开发（Fullstack-SOP）', link: '/ai/fullstack-sop' },
-      { text: 'AI 友好代码约定（Reference-style）', link: '/ai/friendly-conventions' },
+      { text: 'AI 产出验收清单（Review-checklist）', link: '/ai/friendly-conventions' },
       { text: 'AI 评审闭环（Open-code-review）', link: '/ai/review-loop' },
     ],
   },
@@ -59,7 +58,6 @@ export const SIDEBAR_GROUPS: NavigationGroup[] = [
       { text: '多窗口入口（MPA）', link: '/architecture/multi-window' },
       { text: '窗口初始传参（Window-params）', link: '/architecture/window-params' },
       { text: '功能域组织（Features）', link: '/architecture/feature-domains' },
-      { text: '组件目录结构（Component-folder）', link: '/architecture/component-structure' },
       {
         text: 'React 组件编写规范（Code-partition + Hooks）',
         link: '/architecture/react-conventions',
