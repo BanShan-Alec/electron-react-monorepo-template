@@ -4,14 +4,12 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import electronPath from 'electron';
 import { build, createServer, type Plugin, type ViteDevServer } from 'vite';
-import { applyRepoEnv, getRepoEnvValue, loadRepoEnv } from '../build/lib/env.ts';
+import { ensureRepoEnv } from '../build/lib/env.ts';
 import { ensureNoAppInstanceRunning } from './instance-guard.ts';
 import { ensurePortsAvailable, killProcessTree } from './port-guard.ts';
 
-// 统一从 build/lib/env.ts 加载根 .env（外部注入优先），并向上锁定仓库根
-const repoEnv = loadRepoEnv(__dirname);
-applyRepoEnv(repoEnv);
-const ROOT_DIR = repoEnv.rootDir;
+// 统一从 build/lib/env.ts 幂等注入根 .env 到 process.env（外部注入优先），并向上锁定仓库根
+const ROOT_DIR = ensureRepoEnv(__dirname);
 
 // MODE 由 package.json 脚本经 cross-env 注入(dev=development / preview=production)。
 // 未注入时归一为 production:主进程的 isDev / isProd 与窗口加载路径统一按生产语义,
@@ -39,7 +37,7 @@ if (process.platform === 'win32') {
 
 /** 从环境变量解析可选端口；未配置或留空返回 undefined。 */
 function parseOptionalPort(key: string): number | undefined {
-  const raw = getRepoEnvValue(repoEnv, key).trim();
+  const raw = (process.env[key] ?? '').trim();
   return raw ? Number(raw) || undefined : undefined;
 }
 

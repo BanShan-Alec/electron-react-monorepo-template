@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { _electron as electron, type Page } from '@playwright/test';
 import { APP_IDENTITY } from '../build/lib/app-identity.ts';
-import { getRepoEnvValue, loadRepoEnv } from '../build/lib/env.ts';
+import { ensureRepoEnv } from '../build/lib/env.ts';
 import { getDistDir } from '../build/lib/repo-paths.ts';
 
 /** electron-updater 打包态读取的发布配置文件（与 electron-builder 生成物同名） */
@@ -187,12 +187,9 @@ function analyzeAsarSize(asarPath: string): void {
  * 3. 真实拉起已打包程序执行 Playwright Smoke 烟雾健康检查（验证 body.app-startup-ready 揭幕与无未捕获异常）
  */
 async function verifyPostbuild(options: PostbuildVerificationOptions = {}): Promise<void> {
-  const repoEnv = loadRepoEnv(__dirname, 'production');
-  const distDir = options.distDir
-    ? path.resolve(repoEnv.rootDir, options.distDir)
-    : getDistDir(repoEnv.rootDir);
-  const maxAsarSizeMb =
-    options.maxAsarSizeMb ?? Number(getRepoEnvValue(repoEnv, 'MAX_ASAR_SIZE_MB') || 10);
+  const rootDir = ensureRepoEnv(__dirname, 'production');
+  const distDir = options.distDir ? path.resolve(rootDir, options.distDir) : getDistDir(rootDir);
+  const maxAsarSizeMb = options.maxAsarSizeMb ?? Number(process.env.MAX_ASAR_SIZE_MB || 10);
 
   console.log('\n🔍 [verify-postbuild] 开始打包产物 Smoke 自动化验证...');
 

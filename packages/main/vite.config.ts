@@ -3,18 +3,18 @@ import path from 'node:path';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { defineConfig } from 'vite';
 import { APP_IDENTITY } from '../../build/lib/app-identity.ts';
-import { getRepoEnvValue, loadRepoEnv } from '../../build/lib/env.ts';
+import { ensureRepoEnv } from '../../build/lib/env.ts';
 import { getSentryBuildOptions } from '../../build/lib/sentry-options.ts';
 import { RUNTIME_ENV_KEYS, type RuntimeEnvKey } from '../shared/src/constants/env.ts';
 
-const repoEnv = loadRepoEnv(__dirname, 'production');
+const rootDir = ensureRepoEnv(__dirname, 'production');
 const sentryOptions = getSentryBuildOptions(__dirname);
 const isDev = process.env.MODE === 'development';
 
 // 仅打包带 EL_ 前缀的运行时白名单默认值，入口启动时内存回填至 process.env
 const bundledRuntimeEnv = RUNTIME_ENV_KEYS.reduce(
   (acc, key) => {
-    acc[key] = getRepoEnvValue(repoEnv, key);
+    acc[key] = process.env[key] ?? '';
     return acc;
   },
   {} as Record<RuntimeEnvKey, string>,
@@ -31,7 +31,7 @@ export default defineConfig({
     __GITHUB_OWNER__: JSON.stringify(APP_IDENTITY.repositoryOwner),
     __GITHUB_REPO__: JSON.stringify(APP_IDENTITY.repositoryName),
     // 仅注入主进程 bundle：用于判定可执行文件是否落在构建时的仓库目录内（免安装副本识别）
-    __BUILD_REPO_ROOT__: JSON.stringify(repoEnv.rootDir),
+    __BUILD_REPO_ROOT__: JSON.stringify(rootDir),
     __BUNDLED_RUNTIME_ENV__: JSON.stringify(bundledRuntimeEnv),
   },
   plugins: [

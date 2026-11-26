@@ -2,13 +2,11 @@ import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { applyRepoEnv, loadRepoEnv } from '../build/lib/env.ts';
+import { ensureRepoEnv } from '../build/lib/env.ts';
 import { getDistDir } from '../build/lib/repo-paths.ts';
 
-// 统一从 build/lib/env.ts 加载根 .env（外部注入优先），并向上锁定仓库根
-const repoEnv = loadRepoEnv(__dirname, 'production');
-applyRepoEnv(repoEnv);
-const ROOT_DIR = repoEnv.rootDir;
+// 统一从 build/lib/env.ts 幂等注入根 .env 到 process.env（外部注入优先），并向上锁定仓库根
+const ROOT_DIR = ensureRepoEnv(__dirname, 'production');
 
 const DEFAULT_ELECTRON_BUILDER_CONFIG = join(ROOT_DIR, 'build', 'electron-builder.ts');
 
