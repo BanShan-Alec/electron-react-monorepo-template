@@ -6,71 +6,113 @@ description: 遵循 shared ➔ preload ➔ main ➔ renderer 单向流转闭环�
 
 # 全栈端到端功能开发（Fullstack-SOP）
 
-> **TL;DR**：新增跨进程功能必须严格遵照「契约先行、单向穿透」流水线：在 `shared` 声明 Schema 与通道常量，经 `preload` 安全桥接，主进程 `main` 校验并执行业务，最终由 `renderer` 纯展示消费。类型安全与 W3C 全链路追踪全自动闭环。
+> **TL;DR**：新增跨进程功能必须按「契约先行、单向穿透」四步推进：在 `shared` 声明 Zod Schema 与通道常量，经 `preload` 透明转发，在 `main` 校验并执行业务返回 `Result<T>`，最后由 `renderer` 的 `useIpc` / `useManualRequest` 消费展示。
+
+**边界声明**：本页负责跨端新功能串联落地的四步顺序与每步验收判据；不负责单层详细规范与豁免细则（见各包 `AGENTS.md`、主进程 [分层架构](/architecture/layering) 与 [类型安全的 IPC 契约](/security/ipc-contract)）及提交前验收清单（见 [AI 产出验收清单](/ai/friendly-conventions)）。
 
 ## 1. 选型理由
 
-- **契约单一事实源（Contract-First）**：Electron 桌面端包含主进程（Node.js）与渲染进程（Chromium），若通信双方各自手写类型，字段变更极易引发静默崩坏。先在 `shared` 定义 Zod Schema 与通道常量，确保类型与运行时校验唯一真源。
-- **透明注入全链路追踪**：跨进程排错极为痛苦。通过 Preload 的 `invokeTraced` 自动注入 traceparent、Main 端的 `handleTraced` 自动解包创建 Span，开发者无需手动关心跨端链路传递。
-- **严格单向调用流**：杜绝逆向调用与跨包泄漏，确保架构边界清晰、可测性高。
+- **契约单一事实源（Contract-First）**：Electron 主进程（Node.js）与渲染进程（Chromium）分属不同运行时，若双方各自手写类型，字段变更会静默失效。由 `@app/shared` 统一派生入参类型与通道常量，可让 `tsc -b --noEmit` 在编译期拦截跨端漂移。
+- **全链路追踪无感注入**：Preload 经 `invokeTraced` 自动注入 `__trace_carrier`，Main 经 `handleTraced` 解包还原 W3C Trace Context，业务代码无需手动传递 `traceId`。
+- **单向流转隔离副作用**：所有依赖单向穿透至纯业务 `Service`，避免渲染层或控制层混入原生细节，方便独立单测。
 
-## 2. 核心流转时序与开发范式
+## 2. 核心机制
 
-以新增 `notes` 领域为例，严格按以下四步流水线开发：
+### 跨端四步调用时序
 
-### Step 1: 契约层（`@app/shared` - 跨端唯一真源）
+```mermaid
+sequenceDiagram
+  autonumber
+  participant R as Renderer (useIpc / callIpc)
+  participant P as Preload (invokeTraced)
+  participant C as Main Controller (handleTraced)
+  participant S as Main Service
 
-→ 规范直链：[packages/shared/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/AGENTS.md)
+  R->>P: callIpc('counter.increment', [{ step }])
+  P->>C: invoke(IPC_CHANNELS.COUNTER_INCREMENT, { __trace_carrier, payload })
+  C->>C: stepInputSchema.safeParse(rawInput ?? {})
+  alt 校验失败
+    C-->>R: failResult(message, VALIDATION_ERROR)
+  else 校验通过
+    C->>S: counterService.increment(step)
+    S-->>C: CounterResult
+    C-->>R: successResult(data) / catchToResult(err)
+  end
+```
+
+以仓库内已有的 `counter` 领域为例，新增跨端功能按以下四步依次落地：
+
+### Step 1：契约层（`@app/shared`）
+
+在 `schemas/<domain>.ts` 用 Zod 定义入参并就近导出 `z.infer` 类型，在 `types/<domain>.ts` 定义纯返回结构，在 `constants/ipc-channels.ts` 声明通道常量，最后扩充 `types/api.ts` 的 `ElectronApi` 接口（规则见 [packages/shared/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/AGENTS.md)）。
+
+- **完成判据**：未新增任何桶文件（`index.ts`），且消费方全部通过 `@app/shared/<layer>/<file>` 子路径直出导入。
+
+→ 源码：[packages/shared/src/schemas/counter.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/schemas/counter.ts) · [types/api.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/types/api.ts)
 ```ts
-// 1. schemas/notes.ts: 入参校验与推导类型
-export const createNoteInputSchema = z.object({
-  title: z.string().min(1),
-  content: z.string().default(''),
+// schemas/counter.ts：入参契约与类型同源派生
+export const stepInputSchema = z.object({
+  step: z.number().int().min(1).max(100).default(1),
 });
-export type CreateNoteInput = z.infer<typeof createNoteInputSchema>;
+export type StepInput = z.infer<typeof stepInputSchema>;
 
-// 2. constants/ipc-channels.ts: 通道常量
-export const IPC_CHANNELS = { NOTES_CREATE: 'notes:create' } as const;
-
-// 3. types/api.ts: 扩充全局 ElectronApi 契约
+// constants/ipc-channels.ts：COUNTER_INCREMENT: 'counter:increment'
+// types/api.ts（节选）：在 ElectronApi 中声明统一签名 (input?, options?) => Promise<Result<T>>
 export interface ElectronApi {
-  notes: { create: (input: CreateNoteInput) => Promise<Result<NoteItem>> };
+  counter: {
+    increment: (input?: StepInput, options?: IpcCallOptions) => Promise<Result<CounterResult>>;
+  };
 }
 ```
 
-### Step 2: 安全桥接层（`@app/preload` - 零逻辑透明转发）
+### Step 2：安全桥接层（`@app/preload`）
 
-→ 规范直链：[packages/preload/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/AGENTS.md)
+在 [packages/preload/src/index.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/src/index.ts) 的 `apiBridge` 中挂载对应方法，统一经 `invokeTraced(IPC_CHANNELS.<KEY>, input, options)` 转发（第 0 位固定为业务载荷，无参传 `undefined`；第 1 位固定为可选 `IpcCallOptions`）。若需主进程主动推送，必须显式区分为粘性通道（`createStickyChannel`）或瞬态通道（返回取消函数）。
+
+- **完成判据**：`apiBridge` 类型与 `ElectronApi` 100% 对齐，执行 `pnpm typecheck` 与 `pnpm --filter @app/preload run build` 无报错。
+
+### Step 3：主进程服务与控制层（`@app/main`）
+
+在 `services/<domain>.service.ts` 编写零 IPC 感知的单例业务类（如 [counter.service.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/services/counter.service.ts)），在 `controllers/<domain>.controller.ts` 通过 `handleTraced` 校验入参并返回 `Result<T>`，并在 [controllers/index.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/controllers/index.ts) 的 `registerAllControllers()` 中显式登记（完整新域代码骨架见 [main-domain-sop.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.agents/rules/main-domain-sop.md)）。
+
+- **完成判据**：Controller 内不含业务逻辑，入参已 `.safeParse`，异常经 `catchToResult(err)` 兜底。
+
+→ 源码：[packages/main/src/controllers/counter.controller.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/controllers/counter.controller.ts)（节选）
 ```ts
-// src/index.ts: 经 invokeTraced 透明包装并暴露给 window.api
-export const apiBridge: ElectronApi = {
-  notes: { create: (input) => invokeTraced(IPC_CHANNELS.NOTES_CREATE, input) },
-};
+handleTraced(
+  IPC_CHANNELS.COUNTER_INCREMENT,
+  async (_event, rawInput: unknown): Promise<Result<CounterResult>> => {
+    const parseResult = stepInputSchema.safeParse(rawInput ?? {});
+    if (!parseResult.success) {
+      return failResult(parseResult.error.issues[0].message, ErrorCode.VALIDATION_ERROR);
+    }
+    try {
+      return successResult(counterService.increment(parseResult.data.step));
+    } catch (err) {
+      return catchToResult(err);
+    }
+  },
+);
 ```
 
-### Step 3: 主进程核心层（`@app/main` - 业务执行与入参校验）
+### Step 4：渲染展示层（`@app/renderer`）
 
-→ 规范直链：[packages/main/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/AGENTS.md)
+在 `features/<domain>/hooks/` 下封装业务 Hook（单一通道优先用 `useIpc('domain.method')`，多通道编排使用 `useManualRequest` + `callIpc`），在 `features/<domain>/components/<Xxx>/index.tsx` 按七段式纯展示渲染，并仅通过 `features/<domain>/index.tsx` 向外导出入口组件（规则见 [packages/renderer/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/AGENTS.md)）。
+
+- **完成判据**：组件内不碰 `window.api`，请求均为 `manual: true` 显式触发，全仓执行 `pnpm typecheck && pnpm lint && pnpm test` 全绿。
+
+→ 源码：[packages/renderer/src/features/counter/hooks/useCounter.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/features/counter/hooks/useCounter.ts)（节选）
 ```ts
-// 1. services/notes.service.ts: 纯数据逻辑单例（零 IPC 依赖）
-export class NotesService { async create(input: CreateNoteInput): Promise<NoteItem> { ... } }
-
-// 2. controllers/notes.controller.ts: handleTraced 校验入参并返回 Result<T>
-handleTraced(IPC_CHANNELS.NOTES_CREATE, async (_event, rawInput: unknown) => {
-  const parsed = createNoteInputSchema.safeParse(rawInput);
-  if (!parsed.success) return failResult(parsed.error.issues[0].message, ErrorCode.VALIDATION_ERROR);
-  try { return successResult(await notesService.create(parsed.data)); } catch (err) { return catchToResult(err); }
-});
-```
-
-### Step 4: 渲染展示层（`@app/renderer` - 响应式调用与七段式渲染）
-
-→ 规范直链：[packages/renderer/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/AGENTS.md)
-```tsx
-// features/notes/hooks/useNotes.ts: 消费统一封装的 useIpc（点分路径推导类型，无需传冗余函数引用）
-const { runAsync, loading } = useIpc('notes.create');
-
-// features/notes/components/NotesCard/index.tsx: 遵循七段式语义模板纯展示渲染
+// 单通道场景可用 useIpc('counter.get')；多动作编排在 useManualRequest 内统一路由 callIpc
+async function runCounterAction(action: CounterAction, step: number): Promise<CounterResult> {
+  if (action === 'increment') {
+    return callIpc('counter.increment', [{ step }]);
+  }
+  if (action === 'decrement') {
+    return callIpc('counter.decrement', [{ step }]);
+  }
+  return callIpc('counter.reset');
+}
 ```
 
 ## 3. 桌面端避坑注意事项

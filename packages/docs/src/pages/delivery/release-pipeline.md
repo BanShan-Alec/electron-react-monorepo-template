@@ -1,115 +1,116 @@
 ---
 
 title: 发版流水线（Changelogen）
-description: 本地 changelogen 提版锁定 tag，CI 三平台并行纯构建，由单一发布任务统一汇聚产物。
+description: 本地 changelogen 按约定式提交推导版本并推送 v* tag，CI 三平台矩阵纯构建后由单一 publish Job 汇聚发布。
 ---
 
 # 发版流水线（Changelogen）
 
-> **TL;DR**：发版版本提升必须发生在开发者本地，CI 绝不擅自更改 `package.json` 的版本。本地通过 `changelogen` 解析 Conventional Commits 生成变更日志并推送 `v*` tag，CI 矩阵并行构建各平台产物，最终由单一 Publish Job 汇总发布 GitHub Release。
+> **TL;DR**：版本号决策权严格留在本地。开发者执行 `pnpm release`（由 `changelogen` 依据 `.config/changelog.config.ts` 推导 semver、更新 `package.json` 与 `CHANGELOG.md` 并推送 `v*` tag），随后 GitHub Actions 三平台并行执行 `-p never` 纯构建，最终由单一 `publish` Job 汇总全部产物创建 GitHub Release。
+
+> **本页职责边界**：本页负责本地 `changelogen` 提版与 semver 映射规则、GitHub Actions 三平台矩阵构建与 `publish` 聚合发布流水线；不负责本地 Commit 格式校验与 Husky 钩子拦截（见 [提交信息规范（Commitlint）](/engineering/commit-convention)）、`electron-builder` 打包配置（见 [应用打包（Electron-builder）](/delivery/packaging)），以及 PR 阶段 5 路校验门禁（见 [CI 并行门禁（GitHub-Actions）](/delivery/ci-gates)）。
 
 ## 1. 选型理由
 
-- **单版本事实源（Single Source of Truth）**：CI 环境若自动提版并 push back，极易造成多任务并发锁冲突与 Git 历史混乱。将版本提升和 CHANGELOG 决策留在本地，CI 仅作为无状态的纯构建执行器。
-- **三平台矩阵构建解耦发布**：Windows、macOS 与 Linux 打包耗时差异巨大，若每个构建矩阵各自上传 Release，会导致 Release 内容不完整或互相覆盖。必须采用“矩阵并行纯打包 (`-p never`) -> 汇聚 Artifact -> 单一 Publish Job 发布”的标准架构。
-- **自动化语义化变更日志**：`changelogen` 解析 Conventional Commits 的 type（feat、fix、perf 等），自动归类并映射 semver 版本号。
+- **单版本事实源避免 CI 回写冲突**：若让 CI 自动修改 `package.json` 并 push back，多人并发合入或重试任务极易引起分支冲突与历史分叉。本仓库规定版本提升与 CHANGELOG 生成只在本地经 `changelogen` 完成，CI 保持无状态纯执行。
+- **矩阵构建与发布解耦（`-p never` → 单一 `publish`）**：Windows、macOS、Linux 构建耗时差异极大，若各矩阵自行发布会导致 Release 产物残缺或相互覆盖；统一先传 `-p never` 暂存 Artifact，全部成功后再聚合发布。
+- **可控的 semver 映射规则**：通过 `.config/changelog.config.ts` 显式收敛各提交类型对应的版本号增量与变更日志小节。
 
 ## 2. 核心机制
 
-### 本地发版命令（统一脚本入口）
+```mermaid
+flowchart LR
+    Local["本地 pnpm release / release:patch|minor|major"] --> Tag["changelogen 更新版本、CHANGELOG 并推 v* tag"]
+    Tag --> Matrix["CI 三平台矩阵 Build (windows / macos / ubuntu)"]
+    Matrix -->|"build:* -- -p never + if-no-files-found: error"| Artifacts["upload-artifact (exe/dmg/deb/zip/yml/blockmap)"]
+    Artifacts -->|"needs: build · 仅 refs/tags/v*"| Publish["publish Job (permissions: contents: write)"]
+    Publish --> Release["softprops/action-gh-release 统一发版"]
+```
+
+### 本地发版脚本与 semver 规则真源
+
+根目录 `package.json` 暴露统一 `changelogen` 命令；当需要强制升级主版本时，使用 `pnpm release:major`：
 
 → 源码：[package.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/package.json)
 
 ```json
-{
-  "scripts": {
-    "changelog": "changelogen",
-    "release": "changelogen --release",
-    "release:patch": "changelogen --release --patch",
-    "release:minor": "changelogen --release --minor",
-    "release:major": "changelogen --release --major"
-  }
-}
+"changelog": "changelogen",
+"release": "changelogen --release",
+"release:patch": "changelogen --release --patch",
+"release:minor": "changelogen --release --minor",
+"release:major": "changelogen --release --major"
 ```
 
-### GitHub Actions 发版矩阵流水线
+提交类型到 semver 的真实映射定义在 `.config/changelog.config.ts`：`feat` 映射为 `minor`，其余 `fix`、`perf`、`refactor`、`docs`、`build`、`chore`、`test`、`style`、`ci` 均映射为 `patch`（**没有任何 commit type 自动映射为 `major`**，且全部 10 类变更均在 `CHANGELOG.md` 生成对应小节而非折叠）：
+
+→ 源码：[.config/changelog.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.config/changelog.config.ts)
+
+```ts
+export default {
+  types: {
+    feat: { title: '🚀 新增特性 (Features)', semver: 'minor' },
+    fix: { title: '🩹 缺陷修复 (Bug Fixes)', semver: 'patch' },
+    perf: { title: '⚡ 性能优化 (Performance)', semver: 'patch' },
+    refactor: { title: '💅 代码重构 (Refactoring)', semver: 'patch' },
+    docs: { title: '📖 文档更新 (Documentation)', semver: 'patch' },
+    build: { title: '📦 构建与依赖 (Build & Deps)', semver: 'patch' },
+    chore: { title: '🏡 工程维护 (Chores)', semver: 'patch' },
+    test: { title: '✅ 测试相关 (Testing)', semver: 'patch' },
+    style: { title: '🎨 代码风格 (Styles)', semver: 'patch' },
+    ci: { title: '🤖 持续集成 (CI/CD)', semver: 'patch' },
+  },
+};
+```
+
+### GitHub Actions 三平台矩阵与聚合发布
+
+工作流在推送 `v*` tag 或手动 `workflow_dispatch` 时触发（手动触发仅走完 `build` 验证管线，不执行 `publish`）。`build` 矩阵在三平台均显式传入 `-- -p never` 禁止直接上传，并收集 `.exe`、`.dmg`、`.deb`、`.zip`、`.yml`、`.blockmap`；`publish` 阶段申请 `contents: write` 权限，读取根 `package.json` 的 `productName` 拼接 Release 标题（`${{ steps.identity.outputs.product_name }} ${{ github.ref_name }}`），并通过 `softprops/action-gh-release` 统一发版。
+
+需要注意，Linux 构建步骤会提前安装 `libarchive-tools` 以支持 `.deb` / `fpm` 归档打包；`build` 阶段同时注入 `SENTRY_AUTH_TOKEN` 供打包插件上传 SourceMap（见 [源码映射隔离（Source-map）](/delivery/sourcemap)）。
 
 → 源码：[.github/workflows/release.yml](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.github/workflows/release.yml)
 
 ```yaml
-name: Release App
-
-on:
-  push:
-    tags: ["v*"]
-  workflow_dispatch: # 手动触发仅构建不发布，用于验证流水线
-
+# 节选：三平台 -p never 纯构建暂存产物，单 publish Job 聚合发版
 jobs:
   build:
-    name: Build (${{ matrix.os }})
     strategy:
       fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+      matrix: { os: [windows-latest, macos-latest, ubuntu-latest] }
     steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-env
-
-      # 三平台统一传入 -p never：只纯构建与校验，严禁在此阶段直接发布
-      - name: Build Application (Windows)
-        if: runner.os == 'Windows'
+      - if: runner.os == 'Windows'
         run: pnpm run build:win -- -p never
-
-      - name: Build Application (macOS)
-        if: runner.os == 'macOS'
+      - if: runner.os == 'macOS'
         run: pnpm run build:mac -- -p never
-
-      - name: Build Application (Linux)
-        if: runner.os == 'Linux'
+      - if: runner.os == 'Linux'
         run: pnpm run build:linux -- -p never
-
-      # 真实打包产物输出至 dist/，打包后暂存为 Artifact
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: artifacts-${{ matrix.os }}
-          path: |
-            dist/*.exe
-            dist/*.dmg
-            dist/*.deb
-            dist/*.zip
-            dist/*.yml
-            dist/*.blockmap
-          if-no-files-found: error # 严禁产物缺失时静默放行
-
+          if-no-files-found: error
   publish:
-    name: Publish GitHub Release
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
+    permissions: { contents: write }
     steps:
-      - name: Download all build artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
+        with: { path: release-artifacts, merge-multiple: true }
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
-          path: release-artifacts
-          merge-multiple: true # 汇聚全平台安装包、blockmap 与 latest*.yml
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: ${{ github.ref_name }} 版本发布
-          body: |
-            📖 完整变更日志见 [CHANGELOG.md](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md)
+          name: ${{ steps.identity.outputs.product_name }} ${{ github.ref_name }}
           files: release-artifacts/*
           generate_release_notes: true
 ```
 
+- **官方文档**：[UnJS Changelogen](https://github.com/unjs/changelogen) — 读它能解决什么：理解 `--release` 参数、Conventional Commits 到 semver 的自动推导与 Git tag 推送机制。
+
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点                      | 事故表现与原因                                                                                                      | 本仓库对齐方案                                                                                             |
-| :---------------------------- | :------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------- |
-| **CI 自动改版本导致回滚冲突** | 在 GitHub Actions 中跑 `npm version` 并 push，多人协作或重试任务时会造成提交历史分叉。                              | 铁律：CI 不修改 `package.json`，版本号以本地 `changelogen` 产出且已打入 tag 的提交为准。                   |
-| **产物未齐就暴露给用户**      | 某个平台先构建完立即创建 Release，用户或自动升级客户端尝试拉取其他平台安装包遭遇 404。                              | 构建阶段全传 `-p never`，待 Windows、macOS、Linux 三个 job 全部成功后，才由独立的 `publish` job 统一发版。 |
-| **OTA 关键索引丢失**          | 仅将 `.exe` 或 `.dmg` 上传到 Release，遗漏了 `latest.yml` 与 `*.blockmap`，导致已安装客户端无法检查更新与差分下载。 | `release-artifacts/*` 全量包含升级元数据，并设置 `if-no-files-found: error` 严防静默漏传。                 |
-| **分支保护与发版权限**        | `GITHUB_TOKEN` 缺少写权限导致 Release 创建失败。                                                                    | `release.yml` 显式声明 `permissions: contents: write`。                                                    |
+| 避坑要点                    | 事故表现与原因                                                                                  | 本仓库对齐方案                                                                                 |
+| :-------------------------- | :---------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------- |
+| **CI 自动提版造成历史分叉** | 在 Actions 中运行 `npm version` 并回推主分支，并发发版或重试极易导致分支保护拦截与历史冲突。    | 严禁 CI 修改 `package.json`；本地 `changelogen --release` 锁定版本号后通过 `v*` tag 触发构建。 |
+| **矩阵各自发布导致残缺**    | Windows 先构建完即创建 Release，用户或自动更新客户端在 macOS/Linux 尚未上传前拉取报错 404。     | 构建命令统一传 `-- -p never`，待三平台全部成功后由 `needs: build` 的 `publish` 统一发布。      |
+| **OTA 更新元数据漏传**      | Release 只附带安装包而漏掉 `latest*.yml` 与 `*.blockmap`，客户端检查更新失败或退化为全量下载。  | 上传规则显式覆盖 `*.yml` 与 `*.blockmap`，并配置 `if-no-files-found: error` 严防静默漏传。     |
+| **默认只读权限无法发版**    | 工作流全局设 `permissions: contents: read`，`publish` 若未单独提权会导致创建 Release 返回 403。 | `publish` Job 显式声明 `permissions: contents: write`，最小权限粒度只授予发布阶段。            |
+
+- **规范协作约定**：本地提交前需满足中文 Conventional Commits 规则（见 [提交信息规范（Commitlint）](/engineering/commit-convention)），才能被 `changelogen` 准确归类进发布日志。

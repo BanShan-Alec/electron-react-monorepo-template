@@ -1,23 +1,22 @@
 ---
 
 title: 环境变量管理（Dotenv）
-description: 根 .env 单一加载入口，白名单快照经启动参数透传，渲染层安全获取冻结的 window.**APP_ENV**。
+description: 根 .env 作为唯一默认值真源，白名单快照经启动参数透传，渲染层安全获取冻结的 window.**APP_ENV**。
 ---
 
 # 环境变量管理（Dotenv）
 
-> **TL;DR**：根 `.env` 作为唯一的默认值源头，构建期由 Vite 白名单抽取快照，启动时通过 Base64URL JSON 编码挂载到窗口启动参数，Preload 在页面渲染前解包并深度冻结为全局 `window.__APP_ENV__`。
+> **TL;DR**：根 `.env` 是唯一环境变量文件，构建期由 Vite `loadEnv` 按外部注入优先加载并内联白名单默认值；启动窗口时通过 `--app-meta=` Base64URL 参数透传给 Preload，解包并深度冻结为只读的 `window.__APP_ENV__`。
 
-## 1. 选型理由
+## 1. 优先级与边界原则
 
-Electron 项目的环境变量经常面临以下痛点：
-1. **多源覆盖时序混乱**：本地 `.env` 经常错误反向覆盖 CI 或命令行显式注入的 `MODE`。
-2. **渲染进程孤岛**：渲染进程受沙箱隔离，无法直接读取 Node 的 `process.env`。
-3. **安全泄露隐患**：若将包含证书凭证的构建期变量整体注入客户端，极易导致安全资产泄漏。
+本页负责根 `.env` 的构建期加载优先级、白名单快照透传契约以及新增环境变量的标准流水线。本页不负责 `BrowserWindow` 通用初始传参方案对比（见 [窗口初始传参](/architecture/window-params)）、端口与开发编排配置归属（见 [配置项归属](/dx/configuration-map)），也不负责 GitHub Repository Secrets 在 CI 发布流水线中的注入配置（见 [发版流水线](/delivery/release-pipeline)）。
 
-为此，工程建立了严格的单向管道链路（流程图见 §2）：构建期把根 `.env` 的白名单快照编译进主进程，主进程再把它序列化进窗口启动参数，Preload 解包后冻结注入渲染层。
+- **优先级固定为「外部注入 > 根 `.env` > 调用方默认值」**：禁止使用 `Object.assign(process.env, loadEnv(...))`，防止本地 `.env` 反向覆盖 CI 或 `cross-env` 注入的 `MODE` 与发布变量。
+- **禁止在子包设独立 `.env`**：`packages/renderer/vite.config.ts` 与各构建脚本统一向上锁定仓库根目录。
+- **构建期加载语义参考**：关于 Vite `loadEnv` 对 `.env` 与 `.env.[mode]` 的分层解析规则，详见 [Vite 环境变量与模式文档](https://vite.dev/guide/env-and-mode)。
 
-## 2. 核心机制
+## 2. 单向传递链路与契约
 
 ```mermaid
 flowchart LR
@@ -49,11 +48,9 @@ flowchart LR
   expose -->|"contextBridge"| consume
 ```
 
-### 关键实现
+### ① 构建期：只补空位的根 `.env` 加载
 
-#### ① 构建期：加载根 `.env`，只补空位
-
-`applyRepoEnv` 只补齐缺失键，已存在的外部注入（shell / CI）始终优先：
+`loadRepoEnv` 通过 Vite `loadEnv(mode, rootDir, '')` 读取根 `.env`，`applyRepoEnv` 仅在 `process.env[key] === undefined` 时回填，确保外部 Shell 或 CI Secrets 始终胜出：
 
 → 源码：[build/lib/env.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/lib/env.ts)
 
@@ -67,9 +64,9 @@ export function applyRepoEnv(env: RepoEnv): void {
 }
 ```
 
-#### ② 主进程：快照打包为 `--app-meta=` 启动参数
+### ② 主进程与共享编解码：`--app-meta=` 启动参数
 
-创建窗口时 `getPackedEnvArgument()` 拼上 `--app-meta=` 前缀塞进 `additionalArguments`；编解码本身用 `TextEncoder` + `btoa` 实现，Node 与 Preload 沙箱通用（`toBase64Url` / `fromBase64Url` 为同文件辅助函数）。
+主进程创建窗口时调用 [getPackedEnvArgument](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/env.ts) 将快照编码为 `--app-meta=<base64url>` 写入 `additionalArguments`；编解码使用纯 Web 标准 `TextEncoder` + `btoa`/`atob`，Node 与沙箱 Preload 通用：
 
 → 源码：[packages/shared/src/utils/env-packer.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/utils/env-packer.ts)
 
@@ -87,13 +84,14 @@ export function unpackRuntimeEnv(encodedStr: string): AppRuntimeEnv {
 }
 ```
 
-#### ③ Preload：解包、冻结、注入主世界
+### ③ Preload：解包、容错与冻结注入
+
+Preload 在页面脚本执行前同步读取 `process.argv` 并通过 `contextBridge` 冻结挂载，保证 `window.__APP_ENV__` 不可篡改：
 
 → 源码：[packages/preload/src/index.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/src/index.ts)
 
-节选：运行时环境解包与注入（省略 import 与常量定义）：
-
 ```ts
+// 节选：运行时环境解包与冻结注入
 const metaArg = process.argv.find((arg) => arg.startsWith(APP_ENV_ARG_PREFIX));
 let runtimeEnv: AppRuntimeEnv | null = null;
 if (metaArg) {
@@ -106,17 +104,13 @@ if (metaArg) {
 contextBridge.exposeInMainWorld('__APP_ENV__', Object.freeze(runtimeEnv ?? {}));
 ```
 
-## 3. 桌面端避坑注意事项
+## 3. 新增环境变量与安全清单
 
-- **启动参数序列化契约保持纯粹直传**：
-  - `packRuntimeEnv` 与 `unpackRuntimeEnv` 保持纯粹的 Base64URL 直传序列化契约，不介入多余的 trim 或隐式类型转换。空字符串或缺失字段的兜底与有效性校验统一交由消费业务端自行规范判定（如 `apiBaseUrl || '/'`）。
-- **严禁向启动参数注入 Secret 机密凭据**：
-  - 窗口启动参数（`additionalArguments`）可通过操作系统任务管理器、Process Explorer 或进程命令行探针直接明文/Base64查看。因此，代码签名私钥、OAuth Client Secret、CI Auth Token 等机密信息严禁放入 `AppRuntimeEnv`。
-  - **机密凭证的正规出处**：打包证书与发布 Token 统一走 GitHub Actions Secrets / CI 环境变量并在 `build/` 打包脚本中消费；业务敏感调用推荐由后端鉴权代理或主进程安全内存中按需拉取，不入客户端启动参数。
-- **渲染层读取规范**：
-  - 渲染进程业务代码禁止依赖 Web 习惯的 `import.meta.env.VITE_xxx`，统一使用类型强约束的 `window.__APP_ENV__.apiBaseUrl`、`window.__APP_ENV__.mode`。
-- **新增一个环境变量的标准流水线**：
-  1. `.env.example` 登记键名与示例值；
-  2. `packages/main/vite.config.ts` 中的 `ALLOWED_ENV_KEYS` 白名单追加该键；
-  3. `packages/shared/src/types/env.ts` 在 `AppRuntimeEnv` 补充 TypeScript 字段定义；
-  4. `packages/main/src/env.ts` 的 `getRuntimeEnvSnapshot()` 中完成值抽取。
+- **新增变量四步清单**：
+  1. 在 [.env.example](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.env.example) 登记键名与示例默认值；
+  2. 在 [packages/main/vite.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/vite.config.ts) 的 `ALLOWED_ENV_KEYS` 与 [packages/main/src/env.d.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/env.d.ts) 的 `EnvKey` 联合类型同步追加该键；
+  3. 在 [packages/shared/src/types/env.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/types/env.ts) 的 `AppRuntimeEnv` 补充字段类型；
+  4. 在 [packages/main/src/env.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/env.ts) 的 `getRuntimeEnvSnapshot()` 提取该值（支持运行期通过 `APP_<KEY>` 覆盖）。
+- **验收判据**：运行 `pnpm typecheck` 通过后，启动 `pnpm dev` 在渲染层控制台验证 `Object.isFrozen(window.__APP_ENV__) === true` 且目标字段非 `undefined`。
+- **严禁将 Secret 注入启动参数**：`additionalArguments` 可通过系统任务管理器或进程命令行查看，证书私钥、Sentry Auth Token 与 API 密钥只允许留在 CI Secrets / 主进程安全内存，严禁进入 `AppRuntimeEnv`。
+- **序列化契约不隐式清洗**：`packRuntimeEnv` / `unpackRuntimeEnv` 保持原样透传，空值兜底由消费端自行处理；渲染层统一读取 `window.__APP_ENV__`，禁止使用 `import.meta.env.VITE_*`。

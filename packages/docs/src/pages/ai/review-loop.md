@@ -1,97 +1,79 @@
 ---
 
 title: AI 评审闭环（Open-code-review）
-description: PR 自动化审查流水线，置顶单一看板治理评论刷屏，配合本地 CLI 驱动拉取与一键合并。
+description: 解释 PR 自动审查的评论治理与安全触发边界，配合本地 pr-review CLI 实现拉取修复与安全合入闭环。
 ---
 
 # AI 评审闭环（Open-code-review）
 
-> **TL;DR**：告别 AI 评论在 PR 中的无序刷屏。通过 GitHub Actions 集成 `open-code-review`，配置置顶看板（`sticky_summary`）与旧线程自动解决（`resolve_outdated`）。本地配套 `pnpm pr-review` CLI 命令集，实现“拉取审查 -> 针对修复 -> 门禁全绿一键合并”的高效工程闭环。
+> **TL;DR**：通过 GitHub Actions 集成 `open-code-review` 实现「单看板原地更新 + 旧线程自动关闭 + 仅增量审查」，本地统一经 `pnpm pr-review <cmd>` 拉取看板、触发复查与校验合并。
+
+**边界声明**：本页负责解释自动化评审工作流的触发安全边界、评论治理参数设计原因与常见故障排查；`pnpm pr-review` 各子命令的详细参数与 Agent 操作 SOP 以 [.agents/skills/pr-review/SKILL.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.agents/skills/pr-review/SKILL.md) 为唯一真源。
 
 ## 1. 选型理由
 
-- **治理 PR 评论刷屏**：AI 审查每次改动若重复在行内发表全量评论，几轮下来 PR 评论量破百，重要人工讨论被彻底淹没。
-- **动态清理已过时意见**：代码根据建议修复并 push 新提交后，CI 必须自动将对应的旧 review threads 标为已解决（Resolved）。
-- **本地开发者闭环体验**：无需频繁在网页与终端间切换，通过本地专属 CLI 工具链一站式查询审查看板、查看状态和安全合并。
+- **治理论坛式评论刷屏**：传统评审机器人每推一次提交就在行内重新发表全量评论，多轮迭代后重要人工讨论被淹没。通过置顶单一 Summary 看板并启用 `sticky_summary` 原地更新，保持 PR 页面可读性。
+- **自动清理已修复线程**：开发按建议修复并推送后，开启 `resolve_outdated` 由 CI 自动将对应旧 review threads 标为 Resolved，无需手工逐条点关闭。
+- **控制外网暴露面与费用**：公开仓库中 `issue_comment` 在默认分支上下文下可读 Secrets，必须过滤仓库成员身份与 PR 状态，避免路人评论触发恶意消耗。
 
 ## 2. 核心机制
 
-### GitHub Actions 审查与评论治理配置
+### 评审与本地修复闭环
 
-→ 源码：[.github/workflows/open-code-review.yml](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.github/workflows/open-code-review.yml)
+```mermaid
+flowchart LR
+  open["开 PR 或评论 /review<br/>(pnpm pr-review create / trigger)"] --> guard["Actions 安全与同源过滤<br/>同源 PR 或协作者 open PR"]
+  guard --> ocr["OpenCodeReview 增量审查<br/>sticky_summary + resolve_outdated"]
+  ocr --> pull["本地拉取看板并修复<br/>pnpm pr-review pull"]
+  pull -->|"修复后推流复查"| open
+  pull -->|"5 项 Required Checks 全绿"| merge["安全 Squash 合并<br/>pnpm pr-review merge"]
+```
 
+### 工作流安全边界与核心治理参数
+
+工作流定义在 [.github/workflows/open-code-review.yml](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.github/workflows/open-code-review.yml)，仅在 PR 创建 / 重开 / Ready 时自动触发，后续 push 不自动消耗额度，需显式评论 `/review` 或 `/ocr` 触发复查。关于 `pull_request` / `issue_comment` 触发事件在权限与 Secrets 上的安全边界，可查阅 [GitHub Actions 事件触发文档](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request)（读它能确认为何 Fork PR 无法访问仓库密钥以及 `permissions` 最小授权原则）。
+
+→ 源码：[.github/workflows/open-code-review.yml](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.github/workflows/open-code-review.yml)（节选）
 ```yaml
-name: OpenCodeReview
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
 
-on:
-  pull_request:
-    types: [opened, reopened, ready_for_review]
-  issue_comment:
-    types: [created] # 支持评论 /review 或 /ocr 重新触发
+permissions:
+  contents: write # 支持 resolve_outdated 自动关闭已修复的 review threads
+  pull-requests: write # 发表行内 review 与 summary 看板
+  issues: write
 
 jobs:
   review:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write # 自动 resolve 旧线程需要 contents 写权限
-      pull-requests: write # 发表 review 评论
-      issues: write
-    steps:
-      - uses: actions/checkout@v4
-
-      # 关键步骤：统一 PR 元信息（从 issue_comment 评论事件中反查 PR base/head）
-      - name: Resolve PR Info
-        id: pr_info
-        uses: actions/github-script@v7
-        with:
-          script: |
-            if (context.eventName === 'issue_comment') {
-              const { data: pr } = await github.rest.pulls.get({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: context.issue.number,
-              });
-              core.setOutput('base_ref', pr.base.ref);
-              core.setOutput('head_sha', pr.head.sha);
-              core.setOutput('pr_number', pr.number);
-            } else {
-              core.setOutput('base_ref', context.payload.pull_request.base.ref);
-              core.setOutput('head_sha', context.payload.pull_request.head.sha);
-              core.setOutput('pr_number', context.payload.pull_request.number);
-            }
-
-      - uses: alibaba/open-code-review@main
-        with:
-          pr_number: ${{ steps.pr_info.outputs.pr_number }}
-          base_ref: ${{ steps.pr_info.outputs.base_ref }}
-          head_sha: ${{ steps.pr_info.outputs.head_sha }}
-          # 核心评论治理参数
-          checkpoint_range: "true" # 记录检查点，仅对最新 push 增量审查
-          sticky_summary: "true" # 置顶单一看板并原地更新，彻底杜绝刷屏
-          resolve_outdated: "true" # 代码修复后，自动 resolve 对应的旧 review threads
-          route_severity_below: "" # 关闭向 Summary 倾倒 Low 建议，保持看板精简
-          language: "Chinese" # 评审输出统一为中文
-          review_concurrency: "4" # 压低并发避免触发大模型供应商 429 限流
+    if: >
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event.issue.pull_request && github.event.issue.state == 'open' &&
+       contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+       (startsWith(github.event.comment.body, '/review') || startsWith(github.event.comment.body, '/ocr')))
 ```
 
-### 本地 PR 审查工具链（CLI 常用命令表）
+在 `alibaba/open-code-review@main` 步骤中，关键治理策略围绕减噪、权限收敛与防限流设置：
 
-→ 工具包：`@app/pr-review`
+- **增量审查与去重**：`checkpoint_range: "true"` 与 `incremental: "true"` 仅对最新推送的提交范围增量扫描，避免重复覆盖历史行内位置。
+- **单看板与线程自净**：`sticky_summary: "true"` 原地更新置顶看板，`resolve_outdated: "true"` 在代码修复后自动关闭对应旧线程，`route_severity_below: ""` 禁止低优建议灌入看板。
+- **限流与产物保留期**：`review_concurrency: "4"` 为上游 LLM 供应商留出并发余量；`upload_artifacts: "false"` 交由后续步骤统一将审查产物（`/tmp/ocr-result.json` 与 `/tmp/ocr-stderr.log`）保留 1 天。
 
-| 命令                     | 核心功能与作用                                                  | 典型使用场景                     |
-| :----------------------- | :-------------------------------------------------------------- | :------------------------------- |
-| `pnpm pr-review create`  | 自动根据当前分支第一个提交生成 PR 标题与结构化正文并提交        | 本地开发完毕，一键发起 PR        |
-| `pnpm pr-review pull`    | 自动下载 Actions 审查产物并转化为本地可勾选的 Markdown 任务清单 | 拉取 AI 评审建议并在本地对照修改 |
-| `pnpm pr-review trigger` | 往 PR 发表 `/review` 评论，触发 GitHub Actions 重新审查         | 代码修改推送到远端后发起复查     |
-| `pnpm pr-review status`  | 检查 PR 的 5 大 CI 门禁状态与 Review 决议                       | 确认当前 PR 是否达到合入标准     |
-| `pnpm pr-review merge`   | 严格校验 5 项 Required Checks 全部绿色通过后执行安全合并        | 门禁全绿，一键合入主分支         |
+### 本地闭环入口指针
 
-## 3. 桌面端避坑注意事项
+日常本地协同严禁手写散装 `gh` 命令拼凑逻辑，统一通过 `@app/pr-review` CLI 驱动：
 
-| 避坑要点                               | 事故表现与原因                                                                                                                            | 本仓库对齐方案                                                                                                                                   |
-| :------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------- |
-| **LLM 供应商 429 限流**                | AI 审查对 PR 中每个变动文件并发发起大模型调用，触发 API 频率上限导致 Review 中断或返回 Partial 结果。                                     | 工作流显式设置 `review_concurrency: '4'`，平滑削峰留出频率余量。                                                                                 |
-| **CI 自动关闭线程权限不足**            | 开启 `resolve_outdated: 'true'` 但未配置写权限，GitHub Actions 抛出 HTTP 403 异常。                                                       | 工作流顶部必须显式授予 `permissions: contents: write`。                                                                                          |
-| **门禁未绿强行合入**                   | 开发者在单元测试或 E2E 尚未跑完时手动合并 PR，导致破坏性改动流入 main 分支。                                                              | `pnpm pr-review merge` 内部硬编码状态机，严格轮询直至 5 个 Required Checks 全部通过方放行合并。                                                  |
-| **重复触发竞态冲突**                   | 连续快速评论 `/review` 启动多个审查 Job，互相覆盖 Summary 评论。                                                                          | 配置 `concurrency: group: ocr-${{ pr_number }}, cancel-in-progress: true`，新任务自动取消旧任务。                                                |
-| **公开仓库路人恶意刷额度与 Fork 噪音** | 公开仓库下 `issue_comment` 在默认分支上下文自带 Secrets，任何路人或已合并 PR 评论 `/review` 都会消耗额度；Fork PR 因无 Secrets 必败报错。 | `pull_request` 校验同源（`head.repo.full_name == repository`）；`issue_comment` 校验 `state == 'open'` 与 `OWNER / MEMBER / COLLABORATOR` 权限。 |
+- **发起与查看**：`pnpm pr-review create` 自动推流并按 PR 模板建单，`pnpm pr-review status` 汇总门禁与冲突状态。
+- **拉取与复查**：`pnpm pr-review pull` 将审查产物与 CI 状态落盘为 `packages/pr-review/reviews/pr-<PR>-round-<N>.md` 本地看板，修复推流后以 `pnpm pr-review trigger` 发送 `/review` 触发复查。
+- **安全合并**：`pnpm pr-review merge` 校验分支同步与 5 项 Required Checks 全绿后执行 squash 合并；完整子命令参数、人工批注格式及 AI 红线见 [SKILL.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.agents/skills/pr-review/SKILL.md) 与 [CICD.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.github/CICD.md)。
+
+## 3. 桌面端避坑注意事项与失败排查
+
+| 故障症状 / 避坑要点            | 原因分析                                                                              | 仓库对齐方案与排查手段                                                                            |
+| :----------------------------- | :------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------ |
+| **工作流报 HTTP 403 权限不足** | 未声明写权限时，`resolve_outdated` 或发表行内评论会被 `GITHUB_TOKEN` 拒绝。           | 在工作流顶部显式授予 `permissions: contents: write` 与 `pull-requests: write`。                   |
+| **Actions 跑出红叉或缺少密钥** | 仓库未配置 `OCR_LLM_URL` / `OCR_LLM_TOKEN` / `OCR_LLM_MODEL`，或外部 Fork PR 无密钥。 | 通过 `if` 跳过 Fork PR；未启用 AI 评审时删该 workflow 文件，且 `AI Code Review` 保持非 required。 |
+| **评论 `/review` 无任何反应**  | PR 非 `open` 状态、评论未以 `/review` 或 `/ocr` 开头，或评论者无协作者权限。          | 对照 `if` 条件确认 PR 状态与账号权限（`OWNER / MEMBER / COLLABORATOR`）。                         |
+| **LLM 429 限流导致部分失败**   | PR 变动文件较多时并发请求突破供应商每 Key 并发上限。                                  | 工作流显式设置 `review_concurrency: "4"` 削峰，必要时可再次评论 `/review` 补跑。                  |
+| **`pr-review merge` 被拒绝**   | 仓库启用 `strict: true` 分支保护，分支落后于 `main` 或 5 项必选门禁未全绿。           | 先执行 `git merge origin/main` 同步主干并推送，等 CI 全绿后再合并。                               |

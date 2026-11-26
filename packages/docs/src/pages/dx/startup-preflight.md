@@ -1,18 +1,20 @@
 ---
 
 title: 启动预检（Single-instance + Port）
-description: 启动服务前先探测单实例锁与端口冲突，交互确认后定向清理，非 TTY 环境快速报错。
+description: 启动开发或预览会话前先探测单实例锁与端口冲突，交互确认后定向终止，非 TTY 环境立即报错退出。
 ---
 
 # 启动预检（Single-instance + Port）
 
-> **TL;DR**：执行 `pnpm dev` 时，先探测后台残留的 Electron 实例（打包版或旧 dev 会话），再检测 Vite 与调试端口占用；检测到冲突后交互式提示强杀释放，非 TTY 环境直接阻断报错。
+> **TL;DR**：`pnpm dev` 按「先单实例、后端口」顺序探测后台残留应用与端口占用，`pnpm preview` 仅执行单实例预检；TTY 下交互确认并按进程树强杀释放，非 TTY（CI/无交互脚本）直接抛错阻断。
 
 ## 1. 选型理由
 
-Electron 开发者常遇到两种极为隐蔽的“假死”现象：
-1. **单实例锁静默退出**：如果上一次的开发会话未退出干净，或者后台托盘常驻着已打包的应用，新拉起的实例因申请单实例锁失败会瞬间自行退出。终端无报错、窗口无弹出，开发者往往误以为是构建闪退。
-2. **端口占用与顺延迷航**：Vite 默认会自动顺延端口（如 5173 被占则自动改用 5174），但如果未被主进程获知，主进程窗口仍然试图连接旧地址，导致白屏超时。
+Electron 本地启动常出现两类隐蔽的「假死」问题：
+1. **单实例锁静默退出**：上次开发会话未清理干净，或本地安装的打包版在系统托盘常驻时，新拉起的 Electron 抢锁失败会瞬间静默退出，看似闪退却毫无构建报错。
+2. **端口占用导致连接错位**：若 5173 等端口被残留进程占用，未清理或顺延地址未透传都会让窗口连向错误服务或直接白屏超时。
+
+本页负责启动开发/预览命令前的单实例锁冲突与端口占用预检；三路构建与热重载编排见 [开发编排](/dx/dev-orchestration)，调试端口开关见 [远程调试端口](/dx/debug-port)，运行态 Electron 单实例锁与托盘唤醒逻辑见 [托盘常驻与单实例](/main/tray-single-instance)。
 
 ## 2. 核心机制
 
@@ -38,58 +40,47 @@ flowchart TD
   end
 ```
 
-`startDevServer` 固定先 `ensureNoAppInstanceRunning`、后 `ensurePortsAvailable`；`runPreview` 只复用单实例预检，不启动 dev server，因此没有端口需要探测。非 TTY 时 `promptUserToKill` / `promptUserToKillInstances` 会在创建 readline 前直接抛错。两个入口都在 [scripts/dev.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/dev.ts)。
+`startDevServer` 固定先执行 `ensureNoAppInstanceRunning(ROOT_DIR)`、再执行 `ensurePortsAvailable`；`runPreview` 不起渲染层 Dev Server，仅复用单实例预检。脚本启动时先由 `loadRepoEnv(__dirname)` 内部调用 [findRepoRoot](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/lib/repo-paths.ts) 从脚本目录向上定位仓库根（同时存在 `package.json` 与 `pnpm-workspace.yaml`），在 Windows 平台还会先执行 `chcp 65001` 切换控制台代码页避免中文乱码，两者均位于 [scripts/dev.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/dev.ts)。
 
-脚本在 Win32 下先执行 `chcp 65001` 切换控制台代码页，避免 Git Bash 等终端的中文日志乱码（`scripts/dev.ts:32-37`）；仓库根由 `loadRepoEnv(__dirname)` 内部的 `findRepoRoot` 从脚本目录向上锁定，不依赖 `process.cwd()`（`scripts/dev.ts:11-15`、`build/lib/repo-paths.ts`）。
+### 单实例探测（按仓库根路径隔离）
 
-### 单实例探测
-
-Windows 分支用 PowerShell `Get-Process`：按 `APP_IDENTITY.productName` 匹配打包版，dev 实例则要求可执行文件路径落在本仓根目录下，避免误杀其他项目 / worktree。POSIX 分支用 `pgrep -f` 按同样的两个特征匹配：
+Windows 通过 PowerShell `Get-Process`、POSIX 通过 `pgrep -f` 同时匹配两类特征：按 `APP_IDENTITY.productName` 识别已安装打包版，按本仓根目录下的 Electron 二进制路径识别开发态实例（避免误杀其他项目或平行 worktree）：
 
 → 源码：[scripts/instance-guard.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/instance-guard.ts)
 
-节选：`findRunningAppInstances()` 内的匹配特征（省略函数体与平台分支）：
-
 ```ts
+// 节选：findPosixInstances() 内的双特征匹配模式
 const patterns = [`${repoRoot}/node_modules/electron/dist/electron`, APP_IDENTITY.productName];
 ```
 
-### 端口探测
+### 端口探测与交互释放
 
-`ensurePortsAvailable` 按 `rendererPort` → `rendererCdpPort` → `mainInspectPort` 的顺序逐个调用 `ensureSinglePortAvailable`，未配置（`undefined`）的端口自动跳过：
+`ensurePortsAvailable` 依次校验 `rendererPort`、`rendererCdpPort` 与 `mainInspectPort`（自动跳过未定义端口）；Windows 解析 `netstat -ano` 的 `LISTENING` 行，POSIX 按 `lsof` → `ss` → `fuser` 逐级降级查询 PID：
 
 → 源码：[scripts/port-guard.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/port-guard.ts)
 
 ```ts
-export async function ensureSinglePortAvailable(port: number, desc: string): Promise<void> {
-  const pid = await findOccupyingPid(port);
-  if (pid === null || pid === process.pid) {
-    return;
-  }
+// 节选：ensureSinglePortAvailable() 探测与交互释放决策边界
+const pid = await findOccupyingPid(port);
+if (pid === null || pid === process.pid) {
+  return;
+}
 
-  const procName = await getProcessName(pid);
-  const shouldKill = await promptUserToKill(port, desc, pid, procName);
-
-  if (shouldKill) {
-    console.log(`[dev] 正在终止进程 ${procName} (PID: ${pid}) 及其子进程树...`);
-    await killProcessTree(pid);
-    // 等待 300ms 确保系统彻底释放套接字
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    console.log(`\x1b[32m[dev] 端口 ${port} (${desc}) 已成功释放。\x1b[0m`);
-  } else {
-    console.log('[dev] 用户取消了端口释放，服务启动终止。');
-    process.exit(1);
-  }
+const procName = await getProcessName(pid);
+const shouldKill = await promptUserToKill(port, desc, pid, procName);
+if (shouldKill) {
+  await killProcessTree(pid);
+  // 等待 300ms 确保系统彻底释放套接字
+  await new Promise((resolve) => setTimeout(resolve, 300));
+} else {
+  console.log('[dev] 用户取消了端口释放，服务启动终止。');
+  process.exit(1);
 }
 ```
 
-- Windows 下调用 `netstat -ano` 解析 `LISTENING` 行获取 PID；POSIX 下按 `lsof -i :<port> -t -sTCP:LISTEN` ➔ `ss -lptn "sport = :<port>"` ➔ `fuser <port>/tcp` 逐级降级探测。
-
 ## 3. 桌面端避坑注意事项
 
-- **预检时序必须是「先单实例，后端口」**：
-  - 如果上次的 dev 会话残留在后台，强杀对端 Electron 实例通常会连带导致其父级 dev 进程自动退出，从而顺带释放 5173 等端口。颠倒顺序会导致用户经历两次不必要的二次确认。
-- **Preview 模式下无需预检端口**：
-  - `pnpm preview` 不需要启动 Vite Dev Server，直接加载本地 `file://`，因此预览模式只运行单实例探测，不浪费时间做端口预检。
-- **清理后二次复检**：
-  - 单实例路径在进程树强杀后会再次执行 `findRunningAppInstances`；若残留进程拥有高权限无法强杀，会给出醒目的红色手动终止警告，不假装清理成功。端口路径没有二次探测，只等待 300ms 让系统释放套接字。
+- **预检顺序必须是「先单实例，后端口」**：旧 dev 会话残留时，强杀对端 Electron 实例通常会连带终止其父级 dev 进程并顺带释放 5173/9222 端口，反过来会让用户重复确认两次。
+- **非 TTY 环境严禁挂起等待输入**：在 CI 或无交互管道中，`promptUserToKill` 与 `promptUserToKillInstances` 会在创建 `readline` 前检查 `process.stdin.isTTY`，不满足立即抛错并提示先从托盘右键退出残留实例。
+- **精准隔离其他工作区与项目**：Windows 按本仓路径前缀过滤 `electron` 进程，POSIX 匹配 `${repoRoot}/node_modules/electron/dist/electron`，避免误杀同时打开的其他仓库或平行 worktree 开发实例。
+- **强杀后的复检差异**：`ensureNoAppInstanceRunning` 在等待 300ms 后会再次调用 `findRunningAppInstances` 复检，若遇到高权限进程残留会输出红色告警提示手动退出；`ensureSinglePortAvailable` 则直接等待 300ms 释放套接字。

@@ -1,86 +1,101 @@
 ---
 
 title: 日志与链路排查（Usage）
-description: 诊断面板一键唤起日志目录，利用 W3C traceId 串联跨端日志排障实践。
+description: 通过诊断卡片唤起日志目录，利用 W3C trace_id 串联 renderer-<window>.log、main.log 与 traces.ndjson 进行跨进程排障。
 ---
 
 # 日志与链路排查（Usage）
 
-> **TL;DR**：渲染端禁止裸写 `console.log`，统一调用 `logger` 双写落盘；一次 IPC 交互跨越主进程与渲染进程，以统一的 `traceId` 串起调用拓扑，通过内置诊断面板可一键定位日志文件。
+> **TL;DR**：通过应用内「打开日志目录」一键定位平台日志文件夹，先从 `renderer-<window>.log` 提取报错行的 `trace_id`，再到 `main.log` 与 `traces.ndjson` 检索同 ID，即可拼出完整跨端调用证据链。
 
 ## 1. 选型理由
 
-桌面端排查故障面临天然的跨进程壁垒：
-1. **控制台不留痕**：安装包在普通用户电脑上运行，无 DevTools 窗口，原生 `console.log` 随着进程销毁荡然无存。
-2. **时序割裂无关联**：渲染端发生按钮超时，主进程发生底座异常，两端日志各自独立切分文件，无法在大量日志中精确定位同一次操作。
+桌面端排障存在两道天然屏障：
+1. **控制台不留痕**：打包交付给用户后没有 DevTools 终端，原生 `console.log` 随进程关闭消失，且渲染端受沙箱隔离无法直接写盘。
+2. **双端文件孤立**：前端只看到 IPC 调用失败，主进程日志按异步并发交错落盘，缺少共同索引就无法定位是哪一次请求触发了底层错误。
 
-工程通过分级日志引擎（electron-log）与 W3C Trace 链路上下文追踪，打通双端排错通道。
+本页负责运行态日志定位与跨进程 `trace_id` 排查方法；日志分文件轮转、脱敏与滑窗限流原理见 [本地日志](/main/logging)，W3C `traceparent` 注入、`AsyncLocalStorage` 续接与 Span 采集机制见 [全链路追踪](/main/tracing)。
 
-## 2. 排查核心操作与文件清单
+## 2. 核心机制
 
-### 认清三类核心日志文件
+```mermaid
+flowchart LR
+  ui["点击「打开日志目录」"] --> dir["打开日志文件夹"]
+  dir --> rlog["1. renderer-<window>.log 定位报错行"]
+  rlog -->|"提取 [trace_id:...]"| mlog["2. main.log 检索主进程堆栈与 Result.code"]
+  rlog -->|"同 trace_id 过滤"| tlog["3. traces.ndjson 查看 Span 耗时与事件"]
+```
 
-在 Dashboard 的「日志管理 (LogManager)」卡片点击「打开日志目录」，系统资源管理器将自动展开对应平台的应用数据夹：
+### 日志文件分工与目录定位
 
-| 文件名                    | 记录内容与排错重点                                                                     |
-| :------------------------ | :------------------------------------------------------------------------------------- |
-| **`main.log`**            | 主进程日志，包含应用生命周期、未捕获异常、IPC 处理报错与系统级事件                     |
-| **`renderer-<窗口>.log`** | 渲染层日志（按窗口隔离，如 `renderer-home.log`），包含 UI 操作、状态异常与前端网络错误 |
-| **`traces.ndjson`**       | W3C 规范的调用拓扑，每行记录一个 Span，通过 `trace_id` 将跨进程调用串联成树            |
+在 Dashboard 的「生产分级日志 (LogManager)」卡片点击「打开日志目录」，渲染层会调用 `diagnostics.openLogFolder`，由主进程 `LogManager.openLogFolder()` 通过 `shell.openPath` 打开日志文件所在目录：
 
-### 跨进程 traceId 穿透排障
+| 文件名                    | 记录内容与排障重点                                                          |
+| :------------------------ | :-------------------------------------------------------------------------- |
+| **`main.log`**            | 主进程生命周期、未捕获异常、IPC 入口日志与业务报错                          |
+| **`renderer-<窗口>.log`** | 按窗口名隔离的渲染端日志（如 `renderer-home.log`），记录 UI 错误与 IPC 失败 |
+| **`traces.ndjson`**       | W3C Span 拓扑记录，每行一条 JSON，记录 `duration_ms`、`status` 与结构化事件 |
 
-渲染进程发起 IPC 请求失败时，统一捕获携带 `traceId` 的 `IpcError` 并打入日志：
+### 渲染端 IPC 失败日志与类型守卫
+
+渲染层统一经 `callIpc` 发起请求；失败时由 `logIpc` 先用 `typeof logger.withTrace === 'function'` 守卫检测 Preload 日志桥能力，再区分开发态（附完整 `error` 对象与栈）和生产态（收敛为单行错误消息）写入磁盘：
 
 → 源码：[packages/renderer/src/lib/ipc.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/lib/ipc.ts)
 
 ```ts
-// 渲染端记录日志时自动挂载 traceId
-const targetLogger = traceId ? logger.withTrace(traceId) : logger;
-targetLogger.error('业务调用失败', { error: err.message });
+// 节选：logIpc 失败分支的类型守卫与环境分流
+const line = `${IPC_LOG_PREFIX} ${channel} failed ${cost}`;
+const targetLogger =
+  traceId && typeof logger.withTrace === 'function' ? logger.withTrace(traceId) : logger;
+const traceMarker = traceId ? { __trace_id: traceId } : undefined;
+
+if (isDev) {
+  if (traceMarker) {
+    targetLogger.error(line, error, traceMarker);
+  } else {
+    targetLogger.error(line, error);
+  }
+  return;
+}
+const reason = error instanceof Error ? error.message : String(error);
+if (traceMarker) {
+  targetLogger.error(`${line}: ${reason}`, traceMarker);
+} else {
+  targetLogger.error(`${line}: ${reason}`);
+}
 ```
 
-排障四步走：
-1. 打开 `renderer-home.log`，定位报错行，提取方括号内的 `[trace_id:xxxx]`；
-2. 打开 `main.log`，全文搜索该 `trace_id`，立即找到主进程对应该请求的执行堆栈；
-3. 若需排查执行耗时瓶颈，前往 `traces.ndjson` 过滤该 `trace_id` 查看每个 Span 的毫秒级耗时；
-4. 也可在命令行直接检索：Git Bash 用 `grep <trace_id> logs/main.log`，PowerShell 用 `Select-String <trace_id> logs\main.log`。
+### 实战：四步串联同 `trace_id` 三端日志
 
-### 实战：一次真实排障
+按以下四步即可快速定位跨端异常：
+1. 在 `renderer-<窗口>.log` 定位失败记录并复制 `[trace_id:xxxx]`；
+2. 在 `main.log` 全文检索该 `trace_id`，对齐主进程处理入口与 `Result.code`；
+3. 在 `traces.ndjson` 过滤同 ID 查看该 Span 的 `duration_ms` 与 `events` 结构化详情；
+4. 命令行快速检索：Git Bash 用 `grep <trace_id> main.log`，PowerShell 用 `Select-String <trace_id> main.log`。
 
-下面是本仓开发态一次真实运行的完整记录：home 窗口请求打开外链 `https://example.com`，被主进程外链白名单拦截。三个文件里的同一个 `trace_id`，串出这次调用的完整证据链。
+以「打开外链 `https://example.com` 被主进程安全白名单拦截」为例，一次失败在三份文件中的真实格式如下（主进程 `.862` 早于渲染端 `.865` 落盘，因渲染端需等待 IPC 返回）：
 
-**渲染端最先落盘**——`[ipc]` 前缀说明这是请求层统一捕获的业务失败，`2.7ms` 是渲染端计时：
+→ 源码：[packages/main/src/modules/log.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/log.module.ts)
 
 ```text
+# 1. renderer-home.log（渲染层等待 IPC 返回后落盘，附完整 Error 堆栈）
 [2026-10-20 17:03:55.865] [error] [trace_id:2611dd45ea5ca5a37b97c91eb46e504a] [Renderer] [home] [ipc] diagnostics.performAction failed 2.7ms {
   name: 'Error',
   message: 'Disallowed external URL: https://example.com',
   stack: 'Error: Disallowed external URL: https://example.com\n' +
     '    at async Object.<anonymous> (http://localhost:5173/src/features/devtools/hooks/useDevTools.ts:18:16)'
 }
-```
 
-主进程紧接着两行：`Handling` 是入口登记，`failed` 行带出真正的拒绝原因与 `Result.code`：
-
-```text
+# 2. main.log（主进程处理更早落盘，带 span_id 与 Result.code）
 [2026-10-20 17:03:55.862] [debug] [trace_id:2611dd45ea5ca5a37b97c91eb46e504a span_id:2fd06c93e53731f5] [IPC] [home] Handling diagnostics:perform-action
 [2026-10-20 17:03:55.864] [warn]  [trace_id:2611dd45ea5ca5a37b97c91eb46e504a span_id:2fd06c93e53731f5] [IPC] [home] diagnostics:perform-action failed (0.6ms): Disallowed external URL: https://example.com [code: INVALID_ARGUMENT]
-```
 
-`traces.ndjson` 里同一 trace 的 Span：`status: ERROR`、总耗时 `1.83ms`，`events.business_error` 里是结构化的错误码与消息，机器可检索：
-
-```text
+# 3. traces.ndjson（单行 Span JSON，记录耗时、错误码与事件）
 {"type":"span","name":"ipc.receive:diagnostics:perform-action","trace_id":"2611dd45ea5ca5a37b97c91eb46e504a","span_id":"2fd06c93e53731f5","parent_id":"5d50e42213267f2f","start_time":1792487035862,"duration_ms":1.83,"status":"ERROR","attributes":{"ipc.channel":"diagnostics:perform-action","rpc.system":"electron-ipc","window.id":1,"window.name":"home","app.result_success":false,"app.result_code":"INVALID_ARGUMENT"},"events":[{"name":"business_error","time_ms":1792487035864,"attributes":{"error.message":"Disallowed external URL: https://example.com","error.code":"INVALID_ARGUMENT"}}]}
 ```
 
-注意时间戳：主进程 `debug`（`.862`）比渲染端 `error`（`.865`）更早落盘——渲染端的失败日志要等 IPC 返回后才写。两端各记各的视角，靠 `trace_id` 而不是时间对齐。
-
 ## 3. 桌面端避坑注意事项
 
-- **杜绝裸写 `console.log`**：
-  - 生产打包后 `console.log` 只在调试工具中一闪而过，排查线上 Bug 等同盲打。必须统一使用 Preload 暴露的 `window.logger.info()`、`logger.error()`。
-- **高频日志背压与限流保护**：
-  - 若在主进程 `main.log` 中检索到 `Dropped N renderer log line(s)`，代表渲染进程在极短时间内产生了海量刷屏日志被 IPC 背压队列主动丢弃，请排查组件是否存在死循环触发日志。
-- **跨平台路径兼容**：
-  - 严禁在代码中写死 `%APPDATA%` 或 `~/Library`，日志目录路径统一由主进程 `app.getPath('userData')` 获取，通过系统安全 API `shell.openPath(dir)` 唤起。
+- **严禁裸写 `console.log` 替代 `window.logger`**：只有通过 Preload 暴露的 `logger.info` / `logger.error` 才会经 `DIAGNOSTICS_LOG` 通道落盘；开发态调试日志若未走 `logger`，生产排障时将完全丢失。
+- **警惕 `Dropped N renderer log line(s)` 限流告警**：如果在 `main.log` 发现该 `warn`（来自 `DiagnosticsService` 滑窗节流器，详见 [本地日志](/main/logging)），说明渲染端存在每秒超过限流阈值的高频刷屏（常见于 `useEffect` 依赖死循环）。
+- **勿在代码中写死日志路径**：不同系统日志目录位置各异，统一依赖 `LogManager.getLogDirectory()` 与 `shell.openPath(dir)` 定位与打开，并按 `trace_id` 而非毫秒时间戳对齐跨端日志。

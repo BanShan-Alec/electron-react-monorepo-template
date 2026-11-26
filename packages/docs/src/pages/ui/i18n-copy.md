@@ -8,11 +8,12 @@ description: 英文优先短短语：R1–R11 规则、术语表、长度预算�
 
 > **TL;DR**：英文优先短句/短语，不逐字对译；按钮 ≤3 词、卡片标题 ≤5 词、说明句 ≤12 词，统一 Sentence case。
 
-适用范围：`zh-CN` 源文案与 `en-US` 译文。规则与工具无关；本仓用 Lingui 落地，机制与选型见 [国际化（i18n）](/ui/i18n)。
+- **本页负责**：`zh-CN` 源文案与 `en-US` 译文的撰写规范（R1–R11）、长度预算、固定术语表与人工 Review 清单。
+- **本页不负责**：Lingui 编译期词条提取、按需加载 Chunk 与主/渲染进程国际化分层见 [国际化（i18n）](/ui/i18n)。
 
 ## 四条原则
 
-**Useful / Concise / Human / Clear**——有用、短、像人话、说得清。其中 Concise 是硬约束：界面空间有限，英文长度直接决定布局是否成立。
+**Useful / Concise / Human / Clear**——有用、短、像人话、说得清。其中 Concise 是硬约束：桌面端界面空间有限，英文长度通常为中文的 1.5–2.5 倍，译文长度直接决定按钮与定宽槽位是否溢出。
 
 ## 规则
 
@@ -32,7 +33,7 @@ description: 英文优先短短语：R1–R11 规则、术语表、长度预算�
 
 ## 长度预算
 
-review 时的目标值，不进门禁（`.po` 没有槽位元数据，自动检查误报高）：
+review 时的目标值，不进机器门禁（`.po` 没有槽位元数据，自动检查误报高）：
 
 | 槽位               | 上限    |
 | ------------------ | ------- |
@@ -91,6 +92,8 @@ review 时的目标值，不进门禁（`.po` 没有槽位元数据，自动检�
 
 ## 机器门禁
 
-- `pnpm i18n:extract`：改完源码文案后重新抽词条。
-- `pnpm i18n:check`：缺译即非零退出（CI 已接入）。
-- `pnpm verify:prebuild`：拦截空译文与译文中的中文残留。
+→ 源码：[package.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/package.json)、[scripts/verify-prebuild.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/verify-prebuild.ts)
+
+- `pnpm i18n:extract`：改完源码文案后重新抽取词条并清理废弃条目。
+- `pnpm i18n:check`（底层执行 `lingui check missing`）：校验 `en-US` 等词条文件不存在空译文或漏翻，缺译即非零退出（CI 已接入）。
+- **门禁边界**：`scripts/verify-prebuild.ts` **不检查** `en-US` 词条；译文中的中文残留与长度预算当前**无任何机器门禁**，依赖上文 Review checklist 在 PR 评审阶段人工把关。

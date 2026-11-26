@@ -24,32 +24,94 @@ description: 用户偏好落在 userData/config.json，Zod schema 唯一真源�
 
 `electron-store` 一次给齐同步读写、原子落盘与 schema 校验，因此作为默认实现。
 
+→ 官方文档：[electron-store（GitHub）](https://github.com/sindresorhus/electron-store)（读它能了解底层 `conf` 的 `cwd` 路径解析、原子写入退化行为与默认存储位置约定）。
+
 ## 2. 核心机制
+
+```mermaid
+flowchart LR
+  Start["new ConfigStore()"] --> Open{"openStore()<br/>JSON 解析是否通过?"}
+  Open -->|否| Rewrite["写回 DEFAULT_CONFIG<br/>并重试构造"]
+  Rewrite -->|仍失败| Mem["store = null<br/>降级纯内存默认值"]
+  Open -->|是| Parse{"loadConfig()<br/>configSchema.safeParse"}
+  Parse -->|通过| Ready["内存 config 就绪"]
+  Parse -->|失败| ResetDisk["store.store = DEFAULT_CONFIG<br/>覆盖坏文件"] --> Ready
+  Set["set(partial)"] --> Validate{"safeParse({ ...config, ...partial })"}
+  Validate -->|失败| Keep["记 warn 并返回旧值"]
+  Validate -->|通过| Persist["store.store = this.config<br/>整对象原子替换"]
+```
 
 ### schema 是唯一真源
 
 → 源码：[packages/shared/src/schemas/config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/schemas/config.ts)
 
 ```ts
+// 节选：AppConfig 类型、可更新字段契约与默认值单一来源
 export type AppConfig = z.infer<typeof configSchema>;
+
 export const updateConfigInputSchema = configBaseSchema.partial();
+export type UpdateConfigInput = z.infer<typeof updateConfigInputSchema>;
+
+// 默认值单一来源：由 configSchema 各字段的 .default() 派生，勿在此手写字面量
 export const DEFAULT_CONFIG: AppConfig = configSchema.parse({});
 ```
 
 默认值只写在 `configSchema` 各字段的 `.default()` 里，`DEFAULT_CONFIG` 由它派生：重置、损坏兜底、纯内存降级三处消费同一个对象，仓库里不存在第二份默认值清单。`updateConfigInputSchema` 是 IPC 入参契约——可被前端更新的字段必须在 `configBaseSchema` 里也登记一次。
 
-### 写路径：整对象替换 + 原子落盘
-
-`ConfigStore.set()` 先 `safeParse({ ...当前值, ...增量 })`，通过才整对象写回；非法输入记 warn 后原样返回旧值，不抛错、不断链路（兜住 `counter.service` 这类非 IPC 直连调用方）。整对象写回顺带清掉旧版本残留键，删除一个字段只需从 schema 移除。
-
-落盘是同步的：`electron-store` 每次 `set` 即写，没有退出前补写。底层 `conf` 经 `atomically` 以临时文件 + rename 替换，正常写入不会留下半截 JSON；只有手工编辑、跨盘或受限环境（退化直写）才可能产生坏文件——这正是下面两道自愈针对的场景。
-
 ### 读路径：两道自愈
 
-1. **语法层**：`conf` 构造期读取整个文件，非法 JSON 直接抛错 → 用 `DEFAULT_CONFIG` 覆盖坏文件后重试一次；目录不可写则降级为纯内存，不阻塞启动。
-2. **契约层**：`configSchema.safeParse` 失败（类型错误、越界、结构异常）→ 记 error 并带 `issues` → 立即把默认值写回磁盘。
+`ConfigStore` 启动时依次过两道兜底，宁可回到默认值，也不带着非法配置启动：
 
-两道都只重置、不自造：宁可回到默认值，也不带着非法配置启动。
+1. **语法层（`openStore`）**：底层 `conf` 在构造期读取整个文件，非法 JSON 直接抛错 → 用 `DEFAULT_CONFIG` 覆盖坏文件后重试一次；目录不可写则降级为 `store = null` 纯内存模式，不阻塞启动。
+2. **契约层（`loadConfig`）**：读取后执行 `configSchema.safeParse`，失败即记 error 并立即将 `DEFAULT_CONFIG` 写回磁盘。
+
+→ 源码：[packages/main/src/modules/config.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/config.module.ts)
+
+```ts
+  // 节选：ConfigStore.loadConfig 契约层损坏自愈
+  private loadConfig(): AppConfig {
+    if (!this.store) {
+      return { ...DEFAULT_CONFIG };
+    }
+    const parsed = configSchema.safeParse(this.store.store);
+    if (parsed.success) {
+      return parsed.data;
+    }
+    // 检验失败即重置：默认值立即写回，覆盖坏文件
+    this.logError(
+      'Config reset to defaults: on-disk config failed schema validation:',
+      parsed.error.issues,
+    );
+    try {
+      this.store.store = { ...DEFAULT_CONFIG };
+    } catch (error) {
+      this.logWarn('Config write failed:', error);
+    }
+    return { ...DEFAULT_CONFIG };
+  }
+```
+
+### 写路径：整对象替换 + 原子落盘
+
+→ 源码：[packages/main/src/modules/config.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/config.module.ts)
+
+```ts
+  // 节选：ConfigStore.set 非法输入拒绝与同步持久化
+  public set(partial: Partial<AppConfig>): AppConfig {
+    // IPC 入口已校验，此处兜住非 IPC 直连调用方（如 counter.service）：
+    // 非法输入拒绝并留痕，不抛错不断链路
+    const parsed = configSchema.safeParse({ ...this.config, ...partial });
+    if (!parsed.success) {
+      this.logWarn('Invalid config update rejected:', parsed.error.issues);
+      return { ...this.config };
+    }
+    this.config = parsed.data;
+    this.persist();
+    return { ...this.config };
+  }
+```
+
+`persist()` 执行 `this.store.store = this.config` 整对象替换，顺带清掉旧版本残留键（删除配置项只需从 schema 移除）。`electron-store` 每次 `set` 即同步落盘（底层 `conf` 经 `atomically` 以临时文件 + rename 替换），无需在 `before-quit` 补写。
 
 ### 新增一个配置项的完整链路
 
@@ -68,5 +130,6 @@ export const DEFAULT_CONFIG: AppConfig = configSchema.parse({});
   - 业务 Service 需要配置时必须在方法内懒加载 `getAppConfigStore()`，切勿在模块顶层 `new Service()` 的构造期读取，避免与主进程模块装配时序冲突。
 - **不该放进 `config.json` 的东西**：
   - 密钥与令牌（属于系统钥匙串或环境变量注入）、大体积缓存（走 cache 目录）、构建期常量（`build/` 与 `.env`）、已有专门存储的状态（窗口几何由 Electron `windowStatePersistence` 存 Chromium `Local State`，见 [窗口位置与尺寸](/ui/window-state)）。
-- **归属判断不在本页**：
-  - 一个值该落在哪一层，见 [配置项归属（Configuration-map）](/dx/configuration-map)；本页只讲「用户偏好」这一层的实现。
+- **页面职责边界**：
+  - **本页负责**：用户偏好配置（`userData/config.json`）的 schema 派生、同步读写、损坏自愈与新增配置项全链路。
+  - **本页不负责**：配置项跨层归属判定见 [配置项归属](/dx/configuration-map)；窗口几何持久化见 [窗口位置与尺寸](/ui/window-state)；开机自启的系统登录项写入资格见 [托盘常驻与单实例](/main/tray-single-instance)。
