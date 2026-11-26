@@ -105,9 +105,9 @@ export const devServerUrl: string | undefined =
     : undefined;
 
 /**
- * 打包态在入口最早期将构建期白名单默认值（ELECTRON_APP_*）内存回填至 process.env：
+ * 打包态在入口最早期将构建期白名单默认值（EL_*）内存回填至 process.env：
  * - 仅在 process.env[key] === undefined 时写入，外部注入（含显式空字符串）始终优先
- * - 保证 dev 与 packed 下所有业务代码统一通过 process.env.ELECTRON_APP_* ?? ... 读取
+ * - 保证 dev 与 packed 下所有业务代码统一通过 process.env.EL_* ?? ... 读取
  */
 export function hydrateBundledRuntimeEnv(
   defaults: Partial<Record<RuntimeEnvKey, string>> | undefined = typeof __BUNDLED_RUNTIME_ENV__ !==
@@ -149,10 +149,10 @@ export function getRuntimeEnvSnapshot(): AppRuntimeEnv {
     mode: currentAppEnv,
     appVersion: app.getVersion(),
     appName: app.getName(),
-    channel: process.env.ELECTRON_APP_DISTRIBUTION_CHANNEL || undefined,
-    apiBaseUrl: process.env.ELECTRON_APP_API_BASE_URL || undefined,
-    systemCode: process.env.ELECTRON_APP_SYSTEM_CODE || undefined,
-    sentryDsn: process.env.ELECTRON_APP_SENTRY_DSN || undefined,
+    channel: process.env.EL_DISTRIBUTION_CHANNEL || undefined,
+    apiBaseUrl: process.env.EL_API_BASE_URL || undefined,
+    systemCode: process.env.EL_SYSTEM_CODE || undefined,
+    sentryDsn: process.env.EL_SENTRY_DSN || undefined,
     releaseName: typeof __RELEASE_NAME__ !== 'undefined' ? __RELEASE_NAME__ : undefined,
   };
 }

@@ -26,7 +26,7 @@ import { getWindow, sendToWindow } from '../modules/window/window-registry';
 
 function isOtaSentryEnabled(): boolean {
   if (isTest || !isPackaged) return false;
-  return Boolean(process.env.ELECTRON_APP_SENTRY_DSN);
+  return Boolean(process.env.EL_SENTRY_DSN);
 }
 
 /**
@@ -263,7 +263,7 @@ export class UpdaterService {
       updater.autoInstallOnAppQuit = false;
       updater.fullChangelog = true;
 
-      const channel = process.env.ELECTRON_APP_DISTRIBUTION_CHANNEL ?? '';
+      const channel = process.env.EL_DISTRIBUTION_CHANNEL ?? '';
       if (channel) {
         updater.channel = channel;
       }

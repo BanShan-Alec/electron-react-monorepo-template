@@ -11,7 +11,7 @@ const repoEnv = loadRepoEnv(__dirname, 'production');
 const sentryOptions = getSentryBuildOptions(__dirname);
 const isDev = process.env.MODE === 'development';
 
-// 仅打包带 ELECTRON_APP_ 前缀的运行时白名单默认值，入口启动时内存回填至 process.env
+// 仅打包带 EL_ 前缀的运行时白名单默认值，入口启动时内存回填至 process.env
 const bundledRuntimeEnv = RUNTIME_ENV_KEYS.reduce(
   (acc, key) => {
     acc[key] = getRepoEnvValue(repoEnv, key);

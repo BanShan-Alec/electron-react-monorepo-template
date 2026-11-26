@@ -32,39 +32,39 @@ describe('runtime env hydration and snapshot', () => {
     }
   });
 
-  it('fills undefined ELECTRON_APP_* slots from bundled defaults', () => {
+  it('fills undefined EL_* slots from bundled defaults', () => {
     hydrateBundledRuntimeEnv({
-      ELECTRON_APP_API_BASE_URL: 'https://api.example.com',
-      ELECTRON_APP_SYSTEM_CODE: 'ELECTRON_APP',
-      ELECTRON_APP_DISTRIBUTION_CHANNEL: 'latest',
-      ELECTRON_APP_SENTRY_DSN: 'https://sentry.example.com/1',
+      EL_API_BASE_URL: 'https://api.example.com',
+      EL_SYSTEM_CODE: 'ELECTRON_APP',
+      EL_DISTRIBUTION_CHANNEL: 'latest',
+      EL_SENTRY_DSN: 'https://sentry.example.com/1',
     });
 
-    expect(process.env.ELECTRON_APP_API_BASE_URL).toBe('https://api.example.com');
-    expect(process.env.ELECTRON_APP_SYSTEM_CODE).toBe('ELECTRON_APP');
-    expect(process.env.ELECTRON_APP_DISTRIBUTION_CHANNEL).toBe('latest');
-    expect(process.env.ELECTRON_APP_SENTRY_DSN).toBe('https://sentry.example.com/1');
+    expect(process.env.EL_API_BASE_URL).toBe('https://api.example.com');
+    expect(process.env.EL_SYSTEM_CODE).toBe('ELECTRON_APP');
+    expect(process.env.EL_DISTRIBUTION_CHANNEL).toBe('latest');
+    expect(process.env.EL_SENTRY_DSN).toBe('https://sentry.example.com/1');
   });
 
   it('does not overwrite existing external process.env values including empty string', () => {
-    process.env.ELECTRON_APP_API_BASE_URL = 'https://staging.example.com';
-    process.env.ELECTRON_APP_SENTRY_DSN = '';
+    process.env.EL_API_BASE_URL = 'https://staging.example.com';
+    process.env.EL_SENTRY_DSN = '';
 
     hydrateBundledRuntimeEnv({
-      ELECTRON_APP_API_BASE_URL: 'https://api.example.com',
-      ELECTRON_APP_SENTRY_DSN: 'https://sentry.example.com/1',
-      ELECTRON_APP_DISTRIBUTION_CHANNEL: 'beta',
+      EL_API_BASE_URL: 'https://api.example.com',
+      EL_SENTRY_DSN: 'https://sentry.example.com/1',
+      EL_DISTRIBUTION_CHANNEL: 'beta',
     });
 
-    expect(process.env.ELECTRON_APP_API_BASE_URL).toBe('https://staging.example.com');
-    expect(process.env.ELECTRON_APP_SENTRY_DSN).toBe('');
-    expect(process.env.ELECTRON_APP_DISTRIBUTION_CHANNEL).toBe('beta');
+    expect(process.env.EL_API_BASE_URL).toBe('https://staging.example.com');
+    expect(process.env.EL_SENTRY_DSN).toBe('');
+    expect(process.env.EL_DISTRIBUTION_CHANNEL).toBe('beta');
   });
 
   it('reads process.env directly in getRuntimeEnvSnapshot and normalizes empty strings to undefined', () => {
-    process.env.ELECTRON_APP_API_BASE_URL = 'https://custom.example.com';
-    process.env.ELECTRON_APP_SYSTEM_CODE = '';
-    process.env.ELECTRON_APP_DISTRIBUTION_CHANNEL = 'canary';
+    process.env.EL_API_BASE_URL = 'https://custom.example.com';
+    process.env.EL_SYSTEM_CODE = '';
+    process.env.EL_DISTRIBUTION_CHANNEL = 'canary';
 
     const snapshot = getRuntimeEnvSnapshot();
 

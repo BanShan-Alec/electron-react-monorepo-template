@@ -12,10 +12,10 @@ const SENTRY_LOGGER_SCOPE = 'SentryModule';
 const logger = getLogManager().scoped(SENTRY_LOGGER_SCOPE);
 
 /**
- * 获取用于 Sentry 初始化的 DSN（dev / packed 统一读取 process.env.ELECTRON_APP_SENTRY_DSN）
+ * 获取用于 Sentry 初始化的 DSN（dev / packed 统一读取 process.env.EL_SENTRY_DSN）
  */
 export function getSentryDsn(): string {
-  return process.env.ELECTRON_APP_SENTRY_DSN ?? '';
+  return process.env.EL_SENTRY_DSN ?? '';
 }
 
 /**

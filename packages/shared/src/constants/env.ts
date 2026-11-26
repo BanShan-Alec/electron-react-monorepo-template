@@ -14,7 +14,7 @@ export type AppEnv = (typeof APP_ENV)[keyof typeof APP_ENV];
  * 统一运行时环境变量前缀与白名单键（防 OS 环境变量冲突 + 客户端入包边界唯一真源）
  * 带此前缀的变量才会随打包内联默认值并透传至主进程 / 渲染层运行时；不带前缀仅限构建/开发脚本使用。
  */
-export const RUNTIME_ENV_PREFIX = 'ELECTRON_APP_' as const;
+export const RUNTIME_ENV_PREFIX = 'EL_' as const;
 
 export const RUNTIME_ENV_KEYS = [
   `${RUNTIME_ENV_PREFIX}API_BASE_URL`,
