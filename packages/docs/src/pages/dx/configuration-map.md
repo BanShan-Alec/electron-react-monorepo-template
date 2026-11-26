@@ -47,3 +47,5 @@ description: 一个值该改哪、何时生效、有什么副作用——身份�
   - 用户的暗黑主题、语言偏好等数据属于用户运行时数据，严禁通过修改代码文件或 `.env` 实现，必须经由 `@app/shared` 的 Zod 契约持久化在 `userData/config.json` 中。
 - **修改 `@app/shared` 常量跨包生效**：
   - 路径别名（paths）已全部映射至源码 `src/*`，但在修改 shared 常量后，若在纯 `pnpm preview` 状态，请确保重新构建受影响的 Main 与 Renderer 包。
+- **构建期配置与运行期偏好严格分离**：
+  - `userData/config.json` 只承载用户运行期偏好；构建配置（`tsconfig`、Biome、Vite、`build/*.ts`）属于仓库资产，绝不进用户存储目录，也不通过 IPC 暴露给渲染层。

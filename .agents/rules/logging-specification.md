@@ -42,7 +42,7 @@ logger.error(`Renderer process gone unexpectedly: reason=${details.reason}`);
 
 - **生命周期事件记 info**：窗口创建（`Window started`，主进程在创建窗口时写入 `renderer-<window>.log`，每窗口一次）、文档加载（`Document started`，两个 entry 各一行，每次 reload 各一行）、路由切换（`Route changed`，每次路径变化一行）、ErrorBoundary 崩溃（error 级，message 带崩溃组件名，附 `componentStack`）。
 - **用户动作只记操作结果**：成功/失败各一行，不记意图与参数；本地路径、URL、业务数据一律不入日志。
-- **走 IPC 的动作只补成功行**：失败已被 `lib/ipc.ts` 的 `logIpc` 中心化记录（channel + 耗时 + 错误文案），feature 层再记即双写。
+- **走 IPC 的动作只补成功行**：失败已被 `packages/renderer/src/lib/ipc.ts` 的 `logIpc` 中心化记录（channel + 耗时 + 错误文案），feature 层再记即双写。
 - **错误态呈现必须记行（铁律「UI 有错 ⇒ 渲染日志必有行」）**：错误经事件推送或初始快照到达（如 updater 的 `state === 'error'`），不存在调用失败行，消费方必须补一行呈现日志（error 态记 warn）；它与同一失败的调用失败行并存属预期语义，不算双写。
 - **主进程 service 层已叙事的事件不重复记**：config 变更、更新检查/可用/下载等主进程已有 info 日志，渲染层不碰。
 - **debug 级仅开发构建生效**：渲染 `logger.debug` 与主进程 `scoped().debug` 在生产构建均 no-op。
@@ -56,15 +56,16 @@ logger.error(`Renderer process gone unexpectedly: reason=${details.reason}`);
 
 ## 7. 渲染层 IPC 调用合规基线（2026-10-24 全量审计）
 
-全仓 26 个 `window.api.*` 调用点的合规基线；新增调用一律经 `callIpc`/`useIpc`（`lib/ipc.ts` 头注释纪律：禁止裸调 + 自行消费 Result），code review 按此核对：
+渲染层每个 `window.api.*` 消费点必须归入下表六类之一；新增调用一律经 `callIpc` / `useIpc` / `useManualRequest`（`packages/renderer/src/lib/ipc.ts` 头注释纪律：禁止裸调 + 自行消费 Result），code review 按类别核对——各类条数随迭代漂移，本表不维护计数：
 
-| 类别              | 数量 | 失败日志                                        | UI 反馈                   |
-| ----------------- | ---- | ----------------------------------------------- | ------------------------- |
-| callIpc 直用      | 11   | `logIpc` 自动落盘                               | 调用方 onError 提供       |
-| useIpc hook       | 6    | 同上                                            | 同上，附带 loading 状态机 |
-| 事件订阅（onXxx） | 3    | 失败语义由快照承载，消费方记呈现行              | 随快照状态渲染            |
-| fire-and-forget   | 2    | `callIpc` + 空 catch（如 `shell.openExternal`） | 不打扰用户                |
-| 同步读取          | 1    | 不适用（`usePlatform`，非 Result）              | 不适用                    |
+| 类别                                 | 失败日志                                        | UI 反馈                         |
+| :----------------------------------- | :---------------------------------------------- | :------------------------------ |
+| callIpc 直用                         | `logIpc` 自动落盘                               | 调用方 onError 提供             |
+| useIpc hook                          | 同上                                            | 同上，附带 loading 状态机       |
+| useManualRequest 包裹（manual-only） | 同上（内层 callIpc 落盘）                       | 调用方承接 runAsync，附 loading |
+| fire-and-forget                      | `callIpc` + 空 catch（如 `shell.openExternal`） | 不打扰用户                      |
+| 事件订阅（onXxx）                    | 失败语义由快照承载，消费方记呈现行              | 随快照状态渲染                  |
+| 同步读取                             | 不适用（`usePlatform`，非 Result）              | 不适用                          |
 
 裸调违规于 2026-10-24 审计后清零（修复见 PR #54、#55）。
 

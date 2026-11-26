@@ -9,6 +9,7 @@ Preload 运行在拥有部分 Node 能力但启用了沙箱与上下文隔离的
 | 文件/模块                 | 核心职责                                                        | 依赖与可见性约束                                                 |
 | :------------------------ | :-------------------------------------------------------------- | :--------------------------------------------------------------- |
 | `index.ts`                | 聚合实现并暴露 `apiBridge`（`contextBridge.exposeInMainWorld`） | 必须显式声明类型为 `ElectronApi`，严禁泄露 Node 原生模块         |
+| `env.ts`                  | 从启动参数解包运行环境（`resolveIsDev`）                        | 供 `logger.ts` 等非 `index` 入口复用；解包失败按非开发构建处理   |
 | `logger.ts`               | 渲染进程全局 logger 桥接                                        | 调用经 `invokeTraced` 转发至主进程落盘，实现日志统一流转         |
 | `sticky.ts`               | 通用粘性事件通道（`createStickyChannel`）                       | 捕获主进程先发推送并在注册时微任务重放，消灭时序竞态             |
 | `telemetry/ipc-tracer.ts` | 跨进程全链路追踪桥接                                            | 生成 W3C traceparent 并挂载 `__trace_carrier` 实现跨进程追踪透传 |
@@ -47,6 +48,8 @@ export const apiBridge: ElectronApi = {
 // 挂载至渲染进程 window.api
 contextBridge.exposeInMainWorld('api', apiBridge);
 ```
+
+**新增推送通道必须先声明类别**（粘性 / 瞬态）：粘性状态一律走 `src/sticky.ts` 的 `createStickyChannel`（常驻监听 + 缓存重放 + 引用守卫）；瞬态通知可用裸 `ipcRenderer.on` 包装，但**必须返回取消函数**供渲染层 cleanup 成对释放。消费侧契约详见 [renderer/AGENTS.md](../renderer/AGENTS.md) §4。
 
 ## 4. 提交前门禁
 

@@ -6,14 +6,14 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 
 - 组件库：antd v6 官方默认算法；布局壳：Tailwind v4 语义类。
 - 视觉基线 = antd 默认。偏离 antd 的地方必须在本文件登记，不允许“顺手改一下”。
-- 2026-10-29 决策：**不承诺 WCAG 2.2 AA**，不为对比度改品牌主色；已知例外见 §6。
+- 2026-10-29 决策：**不承诺 WCAG 2.2 AA**，不为对比度改品牌主色；已知例外见 §7。
 
 ## 1. 五条纪律
 
 1. **禁硬编码**：颜色只用 `var(--color-*)` / Tailwind 语义类；字号不进任意值；间距走 4px 阶。
 2. **层级秩序**：`index.css` 首行 `@layer theme, base, antd, components, utilities`，`AppProviders` 用 `<StyleProvider layer>` 收 antd 样式。覆盖只看层：utilities 压 antd；自有组件类进 `components`；**不写层外裸样式**。唯一豁免：`tokens.css` 的 `:root` 平台原语令牌（color-scheme / 滚动条 / 语法高亮——无 antd 对应物）。
 3. **改品牌 = 改一个种子**：`BRAND_PRIMARY` → `ConfigProvider.theme.cssVar = { key: 'css-var-app' }` → antd 注入 `--ant-*`；`index.css` 的 `:root` 再映射成项目语义 `--color-*`。
-4. **antd 组件样式只经 `antd-theme.ts` / `ConfigProvider`**：不在组件里写 `:global`、不覆盖 `.ant-*` 内部类；需要固定形态时封装组件（见 §4）。
+4. **antd 组件样式只经 `antd-theme.ts` / `ConfigProvider`**：不在组件里写 `:global`、不覆盖 `.ant-*` 内部类；需要固定形态时封装组件（见 §5 recipes）。
 5. **深浅色**：`applyColorScheme()` 统一切换 `data-theme` 与 `css-var-app` 作用域类；antd 算法由 `ConfigProvider` 随 `resolvedTheme` 切换。组件内不读 `prefers-color-scheme`。
 
 ## 2. 十二个系统
@@ -49,10 +49,49 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 - 颜色链路：`--ant-*`（antd cssVar，作用域 `.css-var-app` 必须挂在 `<html>`）→ `--color-*`（项目语义，`index.css` 的 `:root`）→ Tailwind 类。组件只消费最后一层。
 - React 渲染前的窗口画布由原生 `BrowserWindow.backgroundColor` 独家承担（窗口创建链 `resolveNativeTheme` 解析，与 WCO overlay 同源同时点）；renderer 的 `html, body` 恒透明叠于其上，首帧 `data-theme` 由主进程经 URL query 显式传入。React 根必须不透明满幅，否则切换主题后原生底色会从缝隙透出。
 - 语义色（success / warning / danger / primary）**只做图标、圆点、描边、表面**；承载信息的文字用中性色。
-- 语义状态用 `StatusTag`（§4）。antd 的 `Tag color="warning|success|error"` 文字色是基色，浅色下 1.83–3.68:1，禁止承载信息。
+- 语义状态用 `StatusTag`（§5）。antd 的 `Tag color="warning|success|error"` 文字色是基色，浅色下 1.83–3.68:1，禁止承载信息。
 - 代码文字用 `font-mono`；数字与版本号同理。
 
-## 4. 组件 recipes
+## 4. 内容列与滚动模型（触发式切换）
+
+基线仍是页面滚动（`entries/home/App.tsx` 的 `<main>` 用 `overflow-hidden` 钳制，内层 `div` 承担唯一的 `overflow-y-auto` + 卡片流）。**当某个 feature 引入长列表 / 表格 / 虚拟化数据区（预期内容高度超过视口）时**，该 feature 切换为数据区滚动模型：
+
+高度链纪律（从 `main` 容器到数据区的每个 flex 祖先）：
+
+1. 每个允许子元素收缩的 flex 祖先必须 `min-h-0`。**`flex-1` 不带 `min-h-0` 是不够的**——默认的 intrinsic 最小高度会让内容把页面撑开，这是此模型最常见的失效方式。
+2. 链上**恰好一个** `overflow-auto`：最内层数据区。需要钳制的祖先用 `overflow-hidden`；禁止出现两个竞争滚动区。
+3. 非滚动区（表头、过滤器、摘要、footer）一律 `shrink-0`。
+4. sticky 表头是滚动区的**第一个子元素**（`sticky top-0` 才能解析到正确的滚动容器），且必须有不透明背景 + `border-b` + 已登记的 z-index（沿用 §2 的 30/50 登记制，禁止新造层级）。
+
+人工验证清单（改完面板必查）：
+
+- 页面无文档级滚动条，只有数据区滚动；
+- 短视口（约 600px 高）下表头与 footer 仍可见可用；
+- sticky 表头滚动时内容不从其下方透出。
+
+结构示意（类名为本文已登记的 Tailwind 语义类与 4px 阶间距）：
+
+```tsx
+function DeviceList({ items }: { items: Item[] }) {
+  // 链上唯一的滚动者：数据区
+  return (
+    <div className="max-h-80 overflow-y-auto flex flex-col gap-2.5">
+      {items.map((item) => (
+        <div key={item.id} className="flex items-center justify-between gap-3">
+          {/* 可收缩文本列：必须 min-w-0，否则 truncate 失效 */}
+          <div className="min-w-0">
+            <div className="truncate">{item.name}</div>
+          </div>
+          {/* 非滚动侧内容：不参与收缩 */}
+          <div className="shrink-0">{item.meta}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+## 5. 组件 recipes
 
 ### 卡片：`AppCard`
 
@@ -131,13 +170,13 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 - 首次加载用 `Skeleton`；异步动作的进行中用按钮 `loading`，不整卡 Spin。
 - 错误用 `Alert` 给语义结论，原始报文降级为 secondary 文案。
 
-## 5. 动作层级
+## 6. 动作层级
 
 - 每张卡最多一个 `type="primary"`；刷新、导出、打开目录类工具动作一律 default。
 - 破坏性动作不因“危险”就变主色；危险靠文案与二次确认表达。
 - 一屏 primary 目标 ≤3；新增 primary 前先问“它是不是这张卡唯一该做的事”。
 
-## 6. 可访问性基线（不承诺 AA）
+## 7. 可访问性基线（不承诺 AA）
 
 - UI 文字 ≥12px；项目自有正文/数据文字 ≥4.5:1（当前均满足）。
 - 已知例外（记录在案，不作为缺陷上报）：
@@ -147,12 +186,12 @@ AI 在 renderer 写样式的执行层规范。**颜色值不在这里复制**：
 - 自定义可点元素必须有 `focus-visible` 焦点环（2px + offset）；禁止 `focus:outline-none` 无替代。
 - 纯图标按钮必须有 `aria-label`，文案走 `t` 宏，不硬编码英文。
 
-## 7. 动效
+## 8. 动效
 
 - 交互过渡 150–200ms；只过渡具体属性（`transition-colors` / `box-shadow`），禁止 `transition-all`。
 - 动效只确认状态变化，不做入场表演。豁免：启动壳 logo 入场（实现位于入口内联 HTML，品牌时刻）。
 
-## 8. 提交前清单
+## 9. 提交前清单
 
 1. `pnpm typecheck`、`pnpm lint`、`pnpm test` 全绿。
 2. 无 `text-[Npx]`、无 tsx 内 hex 颜色、无未定义语义类（`verify:prebuild` 会拦前两项）。

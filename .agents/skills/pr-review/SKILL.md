@@ -53,13 +53,13 @@ description: 项目专用的 Pull Request 生命周期与 OpenCodeReview (OCR) �
 ### 阶段 3：按 Review 建议修改代码 (AI Agent 闭环修复)
 
 当用户指示“审阅完毕，按建议修改”、“修复 review 问题”或“根据 pr-XX-round-N.md 修复”：
-1. **读取看板**：使用 `view_file` 读取最新的 `packages/pr-review/reviews/pr-<PR>-round-<轮次>.md`；
+1. **读取看板**：读取 `packages/pr-review/reviews/pr-<PR>-round-<轮次>.md`；
 2. **判断用户处置意向**：
    - 包含 `- [x] **采纳修复**` 且**未勾选** `- [x] **忽略本项**`：**必须执行修复**；
    - 勾选了 `- [x] **忽略本项**`：**跳过**；
    - 存在 `> **人工批注 / 修改要求**` 且非默认模板文字：**严格遵照用户填写的批注要求处理**；
    - ⚠️ **防御 LLM 幻觉**：若评审建议声称某个第三方库 API 更名（例如声称 wouter v3 废弃 Redirect 更名为 Navigate），必须先在本地 `node_modules` 或源码中核实，切勿盲从幻觉建议导致编译报错。
-3. **精准代码修改**：使用 `replace_file_content` 针对性修复源码。
+3. **精准代码修改**：按看板定位到的行做精确文本替换（禁止整文件重写），保持 diff 最小。
 4. **本地流水线全量验证**：
 
    ```bash
