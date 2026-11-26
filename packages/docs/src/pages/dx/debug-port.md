@@ -41,7 +41,13 @@ flowchart LR
 // 节选：scripts/dev.ts 从 process.env 读取端口配置（由 ensureRepoEnv 幂等填充）
 function parseOptionalPort(key: string): number | undefined {
   const raw = (process.env[key] ?? '').trim();
-  return raw ? Number(raw) || undefined : undefined;
+  if (!raw) return undefined;
+  const port = Number(raw);
+  if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+    console.warn(`[dev] 环境变量 ${key}="${raw}" 不是合法端口（需为 1-65535 整数），已忽略。`);
+    return undefined;
+  }
+  return port;
 }
 
 const config: {

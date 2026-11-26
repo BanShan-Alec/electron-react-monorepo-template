@@ -35,10 +35,16 @@ if (process.platform === 'win32') {
   }
 }
 
-/** 从环境变量解析可选端口；未配置或留空返回 undefined。 */
+/** 从环境变量解析可选端口；未配置或留空返回 undefined，非法值打警告后忽略。 */
 function parseOptionalPort(key: string): number | undefined {
   const raw = (process.env[key] ?? '').trim();
-  return raw ? Number(raw) || undefined : undefined;
+  if (!raw) return undefined;
+  const port = Number(raw);
+  if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+    console.warn(`[dev] 环境变量 ${key}="${raw}" 不是合法端口（需为 1-65535 整数），已忽略。`);
+    return undefined;
+  }
+  return port;
 }
 
 /**
