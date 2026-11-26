@@ -97,8 +97,8 @@ contents.setWindowOpenHandler(({ url }) => {
   - 生产态主窗口运行在 `file://`，内置文档页通过 `<iframe sandbox="allow-scripts allow-same-origin allow-popups allow-forms">`（[DocsView](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/features/docs/components/DocsView/index.tsx)）加载在线文档站。必须同时满足：**① 主框架 CSP 放行 `frame-src ${PROJECT_DOCS_ORIGIN}`**；**② `onHeadersReceived` 严格按 `mainFrame` 门控**（否则文档站子框架会被套上无 `'unsafe-eval'` 的 `script-src`，运行时抛 `EvalError` 白屏）；**③ iframe 保留 `allow-same-origin`** 使其自身 Service Worker 得以在文档站 origin 下注册（离线缓存机制见 [文档站离线缓存](/ui/docs-tab-offline)）。
 - **首屏协调器内联脚本与 `script-src`**：
   - 首屏启动协调器内联在 `index.html` 中，若生产态移除 `script-src` 的 `'unsafe-inline'`，Chromium 会静默拦截内联脚本执行，导致 `body.app-startup-ready` 缺失并引发 E2E / 冒烟超时。
-- **动态放行 `API_BASE_URL` 与追加叠加语义**：
-  - 生产态通过 `getValidOrigin(getEnv('API_BASE_URL'))` 将网关 Origin 注入 `connect-src`，切勿恢复 `https:` 通配。`onHeadersReceived` 对已有 `Content-Security-Policy` 响应头做数组追加（叠加收紧而非覆盖）。
+- **动态放行 `ELECTRON_APP_API_BASE_URL` 与追加叠加语义**：
+  - 生产态通过 `getValidOrigin(process.env.ELECTRON_APP_API_BASE_URL ?? '')` 将网关 Origin 注入 `connect-src`，切勿恢复 `https:` 通配。`onHeadersReceived` 对已有 `Content-Security-Policy` 响应头做数组追加（叠加收紧而非覆盖）。
 - **页面职责边界**：
   - **本页负责**：主进程分环境 CSP 注入、`mainFrame` 门控、`frame-src` 放行，以及 `setWindowOpenHandler` / `will-navigate` 外链与导航拦截。
   - **本页不负责**：文档站 iframe 的 Service Worker 缓存策略与 `offline.html` 回退见 [文档站离线缓存](/ui/docs-tab-offline)；`BrowserWindow` 沙箱参数见 [渲染进程沙箱](/security/sandbox)。

@@ -63,6 +63,7 @@ description: 把模板转为自己项目的八组原子任务，提供引导 Age
 - **`productName`**：桌面窗口标题、安装器与快捷方式展示名；默认由 `name` 转为 Title Case。
 - **`appId`**：应用全局唯一标识（Windows AUMID、macOS Bundle Identifier）；推荐反向域名 `com.<org-or-author>.<clean-name>`。
 - **`author` / `repository` / `license`**：更新为项目拥有者的名称、个人或组织主页 `author.url`、真实 GitHub 仓库地址与协议类型。
+- **运行时环境变量前缀（可选）**：若要将默认的 `ELECTRON_APP_` 替换为自家产品缩写，需同步修改 `packages/shared/src/constants/env.ts` 的 `RUNTIME_ENV_PREFIX`、根 `.env` / `.env.example` 与 `packages/main/src/env.d.ts`，改后由 `pnpm typecheck` 兜底检查漏改。
 
 - **判据**：`pnpm verify:prebuild` 与 `pnpm build:unpack` 通过（缺失 `author.url` 等必填展示字段会在构建期报错）；`productName` 与 `appId` 对外发版后不可再改。
 
