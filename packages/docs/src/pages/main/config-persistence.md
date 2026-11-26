@@ -22,7 +22,11 @@ description: 用户偏好落在 userData/config.json，Zod schema 唯一真源�
 | 自己 `fs.writeFile` | 校验、原子写、损坏兜底全要自造，最容易写出的就是「写一半」 |
 | 直接读 `.env`       | 属于构建期资产，改一次要重新打包，也不进 `userData`        |
 
-`electron-store` 一次给齐同步读写、原子落盘与 schema 校验，因此作为默认实现。
+`electron-store` 仅承担同步读写、原子落盘与 `userData` 路径管理（[config.module.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/modules/config.module.ts) 中 `new Store<AppConfig>({ cwd: customDir })` 刻意不传 `schema` 与 `defaults`），契约校验与默认值全部交给 `@app/shared` 的 Zod：
+
+- **跨端单一真源**：一份 Zod schema 同时推导 TS 类型（`z.infer`）、派生 `DEFAULT_CONFIG`（`.default()`）、校验 IPC 入参（`updateConfigInputSchema`）与磁盘读写；若改用 `electron-store` 内置 JSON Schema（Ajv），必须在 `@app/shared` 外再维护第二份定义，必然漂移。
+- **可控自愈与无痛升级**：`safeParse()` 在读路径自动按 `.default()` 补全新增字段并剥离旧版废弃键，在写路径拒绝非法输入并输出结构化 `error.issues` 而不断链；`electron-store` 内置校验遇非法数据会直接抛异常。
+- **收敛校验引擎**：不向 `new Store()` 传 `schema` 就不会触发底层 Ajv 编译校验，全仓 IPC 与配置持久化统一收敛到同一套 Zod 引擎。
 
 → 官方文档：[electron-store（GitHub）](https://github.com/sindresorhus/electron-store)（读它能了解底层 `conf` 的 `cwd` 路径解析、原子写入退化行为与默认存储位置约定）。
 
@@ -126,10 +130,12 @@ export const DEFAULT_CONFIG: AppConfig = configSchema.parse({});
 
 ## 3. 桌面端避坑注意事项
 
+- **切勿向 `new Store()` 传入 `schema` 或 `defaults`**：
+  - 这会绕开 `openStore` + `loadConfig` 的两道自愈链路，并在 `@app/shared` 之外制造第二份默认值导致契约漂移。
 - **不要在构造期读 store**：
   - 业务 Service 需要配置时必须在方法内懒加载 `getAppConfigStore()`，切勿在模块顶层 `new Service()` 的构造期读取，避免与主进程模块装配时序冲突。
 - **不该放进 `config.json` 的东西**：
   - 密钥与令牌（属于系统钥匙串或环境变量注入）、大体积缓存（走 cache 目录）、构建期常量（`build/` 与 `.env`）、已有专门存储的状态（窗口几何由 Electron `windowStatePersistence` 存 Chromium `Local State`，见 [窗口位置与尺寸](/ui/window-state)）。
 - **页面职责边界**：
   - **本页负责**：用户偏好配置（`userData/config.json`）的 schema 派生、同步读写、损坏自愈与新增配置项全链路。
-  - **本页不负责**：配置项跨层归属判定见 [配置项归属](/dx/configuration-map)；窗口几何持久化见 [窗口位置与尺寸](/ui/window-state)；开机自启的系统登录项写入资格见 [托盘常驻与单实例](/main/tray-single-instance)。
+  - **本页不负责**：配置项跨层归属判定见 [配置项归属](/dx/configuration-map)；窗口几何持久化见 [窗口位置与尺寸](/ui/window-state)；开机自启启动顺序与登录项写入资格见 [托盘常驻、单实例与开机自启](/main/tray-single-instance)。

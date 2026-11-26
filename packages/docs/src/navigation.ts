@@ -93,7 +93,7 @@ export const SIDEBAR_GROUPS: NavigationGroup[] = [
       { text: '本地日志（Electron-log）', link: '/main/logging' },
       { text: '崩溃上报（Sentry）', link: '/main/crash-reporting' },
       {
-        text: '托盘常驻与单实例（Tray + Single-instance）',
+        text: '托盘常驻、单实例与开机自启（Tray + Single-instance + Auto-launch）',
         link: '/main/tray-single-instance',
       },
       { text: '配置持久化（Electron-store）', link: '/main/config-persistence' },
