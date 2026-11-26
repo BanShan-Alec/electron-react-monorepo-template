@@ -55,7 +55,7 @@ const patterns = [`${repoRoot}/node_modules/electron/dist/electron`, APP_IDENTIT
 
 ### 端口探测与交互释放
 
-`ensurePortsAvailable` 依次校验 `rendererPort`、`rendererCdpPort` 与 `mainInspectPort`（自动跳过未定义端口）；Windows 解析 `netstat -ano` 的 `LISTENING` 行，POSIX 按 `lsof` → `ss` → `fuser` 逐级降级查询 PID：
+`ensurePortsAvailable` 依次校验根 `.env` 中的 `DEV_RENDERER_PORT`、`DEV_RENDERER_CDP_PORT` 与 `DEV_MAIN_INSPECT_PORT`（自动跳过未配置或留空端口）；Windows 解析 `netstat -ano` 的 `LISTENING` 行，POSIX 按 `lsof` → `ss` → `fuser` 逐级降级查询 PID：
 
 → 源码：[scripts/port-guard.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/port-guard.ts)
 

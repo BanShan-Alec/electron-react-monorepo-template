@@ -1,12 +1,12 @@
 ---
 
 title: 远程调试端口（CDP）
-description: 渲染层 CDP 端口与主进程断点端口集中配置在 scripts/dev.ts，通过可注释属性控制开关并联动预检与启动参数。
+description: 渲染层 CDP 端口与主进程断点端口集中配置在根 .env，由 scripts/dev.ts 读取并联动预检与启动参数。
 ---
 
 # 远程调试端口（CDP）
 
-> **TL;DR**：渲染进程 CDP 端口（默认 `9222`）与主进程断点端口（默认 `9229`，默认注释关闭）集中声明在 `scripts/dev.ts` 的 `config` 对象；注释字段即同步关闭启动参数、日志与端口预检。
+> **TL;DR**：渲染进程 CDP 端口（`DEV_RENDERER_CDP_PORT`，默认 `9222`）与主进程断点端口（`DEV_MAIN_INSPECT_PORT`，默认注释关闭）集中声明在根 `.env`；在 `.env` 中注释或留空即同步关闭启动参数、日志与端口预检。
 
 ## 1. 选型理由
 
@@ -22,22 +22,28 @@ Electron 同时嵌入 Chromium 渲染引擎与 Node.js 主进程运行时，本�
 
 ```mermaid
 flowchart LR
-  config["scripts/dev.ts · config"] -->|"过滤 undefined 端口"| guard["ensurePortsAvailable()"]
+  env["根 .env / 外部注入"] -->|"getRepoEnvValue()"| config["scripts/dev.ts · config"]
+  config -->|"过滤 undefined 端口"| guard["ensurePortsAvailable()"]
   config -->|"buildElectronArgs()"| args["Electron 启动参数"]
-  args -->|"mainInspectPort 已启用"| inspect["--inspect-brk=9229"]
-  args -->|"rendererCdpPort 已启用"| cdp["--remote-debugging-port=9222"]
+  args -->|"DEV_MAIN_INSPECT_PORT 已启用"| inspect["--inspect-brk=9229"]
+  args -->|"DEV_RENDERER_CDP_PORT 已启用"| cdp["--remote-debugging-port=9222"]
   inspect --> ide["IDE Node 调试器附加"]
   cdp --> chrome["Chrome chrome://inspect"]
 ```
 
-### 集中式端口配置（可注释开关）
+### 集中式端口配置（`.env` 注释即开关）
 
-`scripts/dev.ts` 先将未注入的 `process.env.MODE` 归一为 `'production'`，再初始化 `config`；其中 `mainInspectPort` 与 `rendererCdpPort` 均为可选字段，注释掉即可让关联逻辑自动跳过：
+`scripts/dev.ts` 先将未注入的 `process.env.MODE` 归一为 `'production'`，再通过 `getRepoEnvValue` 从根 `.env`（外部 Shell 注入优先）读取三个端口变量；其中 `DEV_MAIN_INSPECT_PORT` 与 `DEV_RENDERER_CDP_PORT` 为可选开关，在 `.env` 中注释或留空即可让关联逻辑自动跳过：
 
 → 源码：[scripts/dev.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/dev.ts)
 
 ```ts
-// 节选：scripts/dev.ts 集中式端口与模式配置
+// 节选：scripts/dev.ts 从根 .env 读取端口配置
+function parseOptionalPort(key: string): number | undefined {
+  const raw = getRepoEnvValue(repoEnv, key).trim();
+  return raw ? Number(raw) || undefined : undefined;
+}
+
 const config: {
   mode: string;
   rendererPort: number;
@@ -45,11 +51,9 @@ const config: {
   rendererCdpPort?: number;
 } = {
   mode: process.env.MODE ?? 'production',
-  rendererPort: 5173,
-
-  // 按需注释:注释掉即关闭对应能力
-  // mainInspectPort: 9229, // 主进程调试断点端口(--inspect-brk)
-  rendererCdpPort: 9222, // 渲染进程 CDP 端口(--remote-debugging-port)
+  rendererPort: parseOptionalPort('DEV_RENDERER_PORT') ?? 5173,
+  mainInspectPort: parseOptionalPort('DEV_MAIN_INSPECT_PORT'),
+  rendererCdpPort: parseOptionalPort('DEV_RENDERER_CDP_PORT'),
 };
 ```
 
@@ -82,6 +86,6 @@ function buildElectronArgs(): string[] {
 ## 3. 桌面端避坑注意事项
 
 - **未注入 `MODE` 时默认按生产行为启动**：`scripts/dev.ts` 会在解析 `config` 前把缺失的 `process.env.MODE` 归一为 `'production'`，保证直接运行脚本时不会出现「开发语义 + 加载 `dist`」的混合态。
-- **注释即联动停用预检**：`ensurePortsAvailable` 会忽略 `port` 为 `undefined` 的条目；注释掉 `mainInspectPort` 后，启动阶段不会扫描 9229 端口，避免误杀其他本地 Node 调试进程。
-- **Chrome 与 IDE 远程附加姿势**：启用 `rendererCdpPort` 后在 Chrome 打开 `chrome://inspect` 点击目标页面的 `inspect` 即可接入独立 DevTools；取消注释 `mainInspectPort` 后，进程会在首行暂停等待 VS Code 等 Node 调试器附加 `127.0.0.1:9229`。
+- **注释即联动停用预检**：`ensurePortsAvailable` 会忽略 `port` 为 `undefined` 的条目；在根 `.env` 中注释掉 `DEV_MAIN_INSPECT_PORT` 后，启动阶段不会扫描 9229 端口，避免误杀其他本地 Node 调试进程。
+- **Chrome 与 IDE 远程附加姿势**：启用 `DEV_RENDERER_CDP_PORT` 后在 Chrome 打开 `chrome://inspect` 点击目标页面的 `inspect` 即可接入独立 DevTools；取消注释 `DEV_MAIN_INSPECT_PORT` 后，进程会在首行暂停等待 VS Code 等 Node 调试器附加 `127.0.0.1:9229`。
 - **生产安装包绝不能默认注入调试参数**：`--remote-debugging-port` 与 `--inspect-brk` 仅由 `scripts/dev.ts` 在本地 `dev` / `preview` 阶段注入，打包产物（`build/electron-builder.ts`）不会携带这些启动参数。
