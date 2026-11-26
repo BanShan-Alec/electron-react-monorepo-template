@@ -121,7 +121,7 @@ app.on('render-process-gone', (_event, webContents, details) => {
 - **SourceMap 隔离不由运行时负责**：
   - `hidden` SourceMap 生成、Vite 构建期上传与上传后物理删除由构建打包链保障，见 [源码映射隔离](/delivery/sourcemap)。
 - **开发态与未配 DSN 时全链路静默**：
-  - 本地 `pnpm dev` 或未配置 `ELECTRON_APP_SENTRY_DSN` 时双端均跳过初始化。排查“为何没收到报错”前先核实是否已打包且注入有效 DSN。
+  - 本地 `pnpm dev` 或未配置 `EL_SENTRY_DSN` 时双端均跳过初始化。排查“为何没收到报错”前先核实是否已打包且注入有效 DSN。
 - **前端忽略无害噪声（`ignoreErrors`）**：
   - 渲染端 `initSentry` 已显式过滤 `ResizeObserver loop completed with undelivered notifications`、`ResizeObserver loop limit exceeded`、`Network Error`、`Failed to fetch`、`Load failed`，避免消耗事件配额。
 - **打包态退出会被 Sentry 拖长（最长约 2 秒，最坏约 4 秒）**：
