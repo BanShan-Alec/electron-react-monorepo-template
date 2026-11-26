@@ -25,7 +25,7 @@ export const SIDEBAR_GROUPS: NavigationGroup[] = [
     collapsed: true,
     items: [
       { text: '依赖管理（Monorepo）', link: '/engineering/dependency-management' },
-      { text: '环境变量管理（Dotenv）', link: '/engineering/env-vars' },
+      { text: '环境变量管理（Env-vars）', link: '/engineering/env-vars' },
       { text: '编译配置继承（Tsconfig）', link: '/engineering/tsconfig-inheritance' },
       { text: '代码规范与风格（Biome）', link: '/engineering/code-style' },
       { text: '提交信息规范（Commitlint）', link: '/engineering/commit-convention' },

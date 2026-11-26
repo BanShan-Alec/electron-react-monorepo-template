@@ -6,25 +6,25 @@ description: 单一所有者速查表：明确应用身份、构建脚手架、�
 
 # 配置项归属（Configuration-map）
 
-> **TL;DR**：每个配置项只允许一个所有者（Single Owner）——应用身份在根 `package.json`、构建入口在 `scripts/build.ts` 与 `build/`、环境差异在根 `.env`、开发编排在 `scripts/dev.ts`、共享常量在 `packages/shared`、用户偏好在 `userData/config.json`。
+> **TL;DR**：每个配置项只允许一个所有者（Single Owner）——应用身份在根 `package.json`、构建入口在 `scripts/build.ts` 与 `build/`、环境差异与开发端口在根 `.env`（由 `scripts/dev.ts` 编排）、共享常量在 `packages/shared`、用户偏好在 `userData/config.json`。
 
 ## 1. 边界与六层配置归属法则
 
-本页负责回答「某个配置项该改哪份文件、何时生效、联动哪些侧面」，是全仓配置修改的索引清单。本页不展开各层的内部实现细节：环境变量加密透传见 [环境变量管理](/engineering/env-vars)，开发编排与端口开关见 [开发编排](/dx/dev-orchestration) 与 [远程调试端口](/dx/debug-port)，配置持久化与窗口恢复机制见 [配置持久化](/main/config-persistence) 与 [窗口位置与尺寸](/ui/window-state)。
+本页负责回答「某个配置项该改哪份文件、何时生效、联动哪些侧面」，是全仓配置修改的索引清单。本页不展开各层的内部实现细节：环境变量分层管理与白名单透传见 [环境变量管理](/engineering/env-vars)，开发编排与端口开关见 [开发编排](/dx/dev-orchestration) 与 [远程调试端口](/dx/debug-port)，配置持久化与窗口恢复机制见 [配置持久化](/main/config-persistence) 与 [窗口位置与尺寸](/ui/window-state)。
 
 在新增配置前，先按三条原则判定归属：
 - **随代码仓库走的产品身份与安全阈值**（如 `productName`、外链域名白名单、窗口几何常数）写入根 `package.json` 或 `packages/shared`，禁止下放 `.env` 造成环境漂移。
 - **随部署或构建环境变化的开关与地址**（如 `API_BASE_URL`、`MAX_ASAR_SIZE_MB`、`SENTRY_DSN`）写入根 `.env`，并通过 [环境变量管理](/engineering/env-vars) 白名单透传。
-- **用户在桌面端运行时可自由修改的偏好**（如主题、语言、托盘驻留）统一归入 `userData/config.json`，并经过 Zod 契约校验（见 [类型安全的 IPC 契约](/security/ipc-contract) 与 [托盘常驻与单实例](/main/tray-single-instance)）。
+- **用户在桌面端运行时可自由修改的偏好**（如主题、语言、托盘驻留）统一归入 `userData/config.json`，并经过 Zod 契约校验（见 [类型安全的 IPC 契约](/security/ipc-contract) 与 [托盘常驻、单实例与开机自启](/main/tray-single-instance)）。
 
-| 配置层级                | 存储载体                       | 包含范围                                            | 生效机制与时机                  |
-| :---------------------- | :----------------------------- | :-------------------------------------------------- | :------------------------------ |
-| **应用身份 / OTA 坐标** | 根 `package.json`              | `name`、`productName`、`appId`、`repository`        | 构建期与物理打包期注入          |
-| **构建入口与配置**      | `scripts/build.ts` 与 `build/` | 打包调度、`electron-builder.ts`、NSIS、`lib/`       | `pnpm build:*` 打包期执行       |
-| **环境差异变量**        | 根 `.env` / Shell              | `API_BASE_URL`、发布通道、`MAX_ASAR_SIZE_MB`、`DSN` | 构建期内联快照 + 运行时参数覆盖 |
-| **开发态编排**          | `scripts/dev.ts`               | Vite 端口、CDP 远程调试、主进程断点端口             | `pnpm dev` / `pnpm preview` 时  |
-| **跨端契约常量**        | `packages/shared`              | 窗口几何比例、IPC 通道名、外链安全白名单            | 源码编译进产物（需重启/重构建） |
-| **用户偏好设置**        | `userData/config.json`         | 主题模式、语言 Locale、托盘最小化、关闭确认         | 运行时读写（经 IPC 瞬时生效）   |
+| 配置层级                | 存储载体                       | 包含范围                                                              | 生效机制与时机                  |
+| :---------------------- | :----------------------------- | :-------------------------------------------------------------------- | :------------------------------ |
+| **应用身份 / OTA 坐标** | 根 `package.json`              | `name`、`productName`、`appId`、`repository`                          | 构建期与物理打包期注入          |
+| **构建入口与配置**      | `scripts/build.ts` 与 `build/` | 打包调度、`electron-builder.ts`、NSIS、`lib/`                         | `pnpm build:*` 打包期执行       |
+| **环境差异变量**        | 根 `.env` / Shell              | `API_BASE_URL`、发布通道、`MAX_ASAR_SIZE_MB`、`DSN`                   | 构建期内联快照 + 运行时参数覆盖 |
+| **开发态编排**          | 根 `.env` + `scripts/dev.ts`   | `DEV_RENDERER_PORT`、`DEV_RENDERER_CDP_PORT`、`DEV_MAIN_INSPECT_PORT` | `pnpm dev` / `pnpm preview` 时  |
+| **跨端契约常量**        | `packages/shared`              | 窗口几何比例、IPC 通道名、外链安全白名单                              | 源码编译进产物（需重启/重构建） |
+| **用户偏好设置**        | `userData/config.json`         | 主题模式、语言 Locale、托盘最小化、关闭确认                           | 运行时读写（经 IPC 瞬时生效）   |
 
 ## 2. 常见改动速查表（Cheat-Sheet）
 
@@ -38,9 +38,9 @@ description: 单一所有者速查表：明确应用身份、构建脚手架、�
 | **前端品牌主色**       | `packages/renderer/src/styles/design-tokens.ts`                                                 | Vite 实时热更    | Ant Design 主题算法与 CSS 变量作用域自动联动（详见 [设计规范与令牌](/ui/design-tokens)）                                                                                                                                                          |
 | **应用元信息单一真源** | 根 `package.json` ➔ `productName` / `author.name` / `author.url` / `license` / `repository.url` | 重新构建打包     | 由 `build/lib/app-identity.ts` 注入为 `__APP_INFO__`（renderer 与 vitest 共用），`shared/constants/app-info.ts` 仅派生子路径；缺字段构建立即报错                                                                                                  |
 | **API 请求基础地址**   | 根 `.env` ➔ `API_BASE_URL`                                                                      | 重启开发或重构建 | 运行期可通过 `APP_API_BASE_URL` 环境变量免打包覆盖（详见 [环境变量管理](/engineering/env-vars)）                                                                                                                                                  |
-| **开发态渲染端口**     | `scripts/dev.ts` ➔ `config.rendererPort`                                                        | 重启 `pnpm dev`  | 端口被占时预检交互式提示释放，并通过 `VITE_DEV_SERVER_URL` 告知主进程                                                                                                                                                                             |
-| **主进程源码级断点**   | `scripts/dev.ts` ➔ `config.mainInspectPort`                                                     | 取消注释并重启   | 启用后传入 `--inspect-brk=9229`，阻塞等待 IDE 调试器附加（见 [远程调试端口](/dx/debug-port)）                                                                                                                                                     |
-| **渲染层 CDP 端口**    | `scripts/dev.ts` ➔ `config.rendererCdpPort`                                                     | 注释即关闭并重启 | 注释后停止注入 `--remote-debugging-port` 与启动日志，[启动预检](/dx/startup-preflight) 不再探测该端口                                                                                                                                             |
+| **开发态渲染端口**     | 根 `.env` ➔ `DEV_RENDERER_PORT`                                                                 | 重启 `pnpm dev`  | 默认 `5173`；端口被占时预检交互式提示释放，并通过 `VITE_DEV_SERVER_URL` 告知主进程                                                                                                                                                                |
+| **主进程源码级断点**   | 根 `.env` ➔ `DEV_MAIN_INSPECT_PORT`                                                             | 取消注释并重启   | 启用后传入 `--inspect-brk=9229`，阻塞等待 IDE 调试器附加（见 [远程调试端口](/dx/debug-port)）                                                                                                                                                     |
+| **渲染层 CDP 端口**    | 根 `.env` ➔ `DEV_RENDERER_CDP_PORT`                                                             | 注释或留空即关闭 | 注释或留空后停止注入 `--remote-debugging-port` 与启动日志，[启动预检](/dx/startup-preflight) 不再探测该端口                                                                                                                                       |
 | **打包体积限制阈值**   | 根 `.env` ➔ `MAX_ASAR_SIZE_MB`                                                                  | 下次执行打包校验 | 由 `scripts/verify-postbuild.ts` 校验 `app.asar` 体积（默认 10MB，见 [分包与体积门禁](/security/bundle-budget)）                                                                                                                                  |
 | **Sentry 异常上报源**  | 根 `.env` ➔ `SENTRY_DSN`                                                                        | 打包构建时生效   | 生产环境上传 SourceMap 需在 CI Secrets 配置 `SENTRY_AUTH_TOKEN`（见 [崩溃上报](/main/crash-reporting)）                                                                                                                                           |
 | **外链打开域名白名单** | `packages/shared/src/constants/security.ts`                                                     | 重新构建主进程   | 拦截非白名单外链通过系统浏览器打开，防范桌面端开放重定向风险                                                                                                                                                                                      |
