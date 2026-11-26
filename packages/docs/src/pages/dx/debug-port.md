@@ -22,7 +22,7 @@ Electron 同时嵌入 Chromium 渲染引擎与 Node.js 主进程运行时，本�
 
 ```mermaid
 flowchart LR
-  env["根 .env / 外部注入"] -->|"getRepoEnvValue()"| config["scripts/dev.ts · config"]
+  env["根 .env / 外部注入"] -->|"ensureRepoEnv() 注入 process.env"| config["scripts/dev.ts · config"]
   config -->|"过滤 undefined 端口"| guard["ensurePortsAvailable()"]
   config -->|"buildElectronArgs()"| args["Electron 启动参数"]
   args -->|"DEV_MAIN_INSPECT_PORT 已启用"| inspect["--inspect-brk=9229"]
@@ -33,14 +33,14 @@ flowchart LR
 
 ### 集中式端口配置（`.env` 注释即开关）
 
-`scripts/dev.ts` 先将未注入的 `process.env.MODE` 归一为 `'production'`，再通过 `getRepoEnvValue` 从根 `.env`（外部 Shell 注入优先）读取三个端口变量；其中 `DEV_MAIN_INSPECT_PORT` 与 `DEV_RENDERER_CDP_PORT` 为可选开关，在 `.env` 中注释或留空即可让关联逻辑自动跳过：
+`scripts/dev.ts` 先调用 `ensureRepoEnv(__dirname)` 将根 `.env` 空位幂等注入 `process.env`，再把未注入的 `process.env.MODE` 归一为 `'production'`，最后通过 `parseOptionalPort` 直接读取 `process.env` 中的三个端口变量；其中 `DEV_MAIN_INSPECT_PORT` 与 `DEV_RENDERER_CDP_PORT` 为可选开关，在 `.env` 中注释或留空即可让关联逻辑自动跳过：
 
 → 源码：[scripts/dev.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/dev.ts)
 
 ```ts
-// 节选：scripts/dev.ts 从根 .env 读取端口配置
+// 节选：scripts/dev.ts 从 process.env 读取端口配置（由 ensureRepoEnv 幂等填充）
 function parseOptionalPort(key: string): number | undefined {
-  const raw = getRepoEnvValue(repoEnv, key).trim();
+  const raw = (process.env[key] ?? '').trim();
   return raw ? Number(raw) || undefined : undefined;
 }
 

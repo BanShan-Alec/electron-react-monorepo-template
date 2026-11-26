@@ -47,7 +47,7 @@
 ## 五、Node 脚本与构建配置
 
 - 脚本与构建配置统一 ESM（`import` / `export`）：`scripts/*.ts`、`build/*.ts`、各包 `vite.config.ts`。
-- 仓库根一律用 `build/lib/repo-paths.ts` 的 `findRepoRoot()` 推导，不要用 `process.cwd()`；环境变量统一用 `build/lib/env.ts` 的 `loadRepoEnv()`，不要各自调 `loadEnv`。
+- 仓库根一律用 `build/lib/repo-paths.ts` 的 `findRepoRoot()` 推导，不要用 `process.cwd()`；环境变量统一用 `build/lib/env.ts` 的 `ensureRepoEnv()`，不要各自调 `loadEnv`。
 
 ## 六、文档同步纪律（架构规约与代码同源）
 

@@ -40,7 +40,7 @@ flowchart TD
   end
 ```
 
-`startDevServer` 固定先执行 `ensureNoAppInstanceRunning(ROOT_DIR)`、再执行 `ensurePortsAvailable`；`runPreview` 不起渲染层 Dev Server，仅复用单实例预检。脚本启动时先由 `loadRepoEnv(__dirname)` 内部调用 [findRepoRoot](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/lib/repo-paths.ts) 从脚本目录向上定位仓库根（同时存在 `package.json` 与 `pnpm-workspace.yaml`），在 Windows 平台还会先执行 `chcp 65001` 切换控制台代码页避免中文乱码，两者均位于 [scripts/dev.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/dev.ts)。
+`startDevServer` 固定先执行 `ensureNoAppInstanceRunning(ROOT_DIR)`、再执行 `ensurePortsAvailable`；`runPreview` 不起渲染层 Dev Server，仅复用单实例预检。脚本启动时先由 `ensureRepoEnv(__dirname)` 内部调用 [findRepoRoot](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/lib/repo-paths.ts) 从脚本目录向上定位仓库根（同时存在 `package.json` 与 `pnpm-workspace.yaml`），在 Windows 平台还会先执行 `chcp 65001` 切换控制台代码页避免中文乱码，两者均位于 [scripts/dev.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/dev.ts)。
 
 ### 单实例探测（按仓库根路径隔离）
 

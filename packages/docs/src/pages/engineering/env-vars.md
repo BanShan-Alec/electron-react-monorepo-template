@@ -22,7 +22,7 @@ description: 梳理环境变量从哪里生成、在哪里消费、固定 EL_ �
 | **4**  | 共享默认值（根 `.env` 与 `.env.example`）        | 入库唯一默认真源  | `EL_*`（进运行时）、`DEV_*_PORT` / `MAX_ASAR_SIZE_MB`（仅脚本）           |
 
 - **固定前缀即安全边界**：采用全局固定前缀 `EL_`（定义于 [packages/shared/src/constants/env.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/constants/env.ts)）同时防 OS 环境变量撞名与划定入包边界——带 `EL_` 前缀才进客户端运行时，不带前缀只留给构建、开发与 CI 脚本，不在 `.env` 设动态前缀开关（避免「改了前缀但代码键名未变」的假可配陷阱）。
-- **严禁子包私建 `.env`**：[packages/renderer/vite.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/vite.config.ts) 与构建脚本统一向上锁定仓库根；[build/lib/env.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/lib/env.ts) 的 `applyRepoEnv` 仅在 `process.env[key] === undefined` 时回填，禁止覆盖外部注入。
+- **严禁子包私建 `.env`**：[packages/renderer/vite.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/vite.config.ts) 与构建脚本统一调用 [build/lib/env.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/lib/env.ts) 的 `ensureRepoEnv()` 向上锁定仓库根，仅在 `process.env[key] === undefined` 时幂等回填，禁止覆盖外部注入。
 - **分层解析参考**：关于 Vite `loadEnv` 对 `.env`、`.env.[mode]` 与 `.local` 文件的合并规则，详见 [Vite 环境变量与模式文档](https://vite.dev/guide/env-and-mode)。
 
 ## 2. 哪里消费：四类消费面与流向图
@@ -32,8 +32,8 @@ flowchart LR
   S1["1. 运行期外部 EL_*"] --> MRun
   S2["2. CI Secrets / cross-env"] --> Build
   S2 --> MBuild
-  S3["3-4. 根 .env.local / .env"] --> Build["构建与开发脚本<br/>loadRepoEnv / getRepoEnvValue"]
-  S3 --> MBuild["主进程编译期<br/>define __BUNDLED_RUNTIME_ENV__"]
+  S3["3-4. 根 .env.local / .env"] -->|"ensureRepoEnv()"| Build["构建与开发脚本<br/>process.env.*"]
+  S3 -->|"ensureRepoEnv()"| MBuild["主进程编译期<br/>define __BUNDLED_RUNTIME_ENV__"]
   MBuild -->|"入口 hydrateBundledRuntimeEnv()"| MRun["主进程运行时<br/>process.env.EL_*"]
   MRun -->|"--app-meta= 快照"| RRun["渲染进程<br/>只读 window.__APP_ENV__"]
 ```
@@ -42,8 +42,8 @@ flowchart LR
 
 | 消费面             | 真实消费方                                                                                                                              | 读取入口                                                                                                                                             | 消费哪些变量                                                                                    |
 | :----------------- | :-------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------- |
-| **构建与开发脚本** | `scripts/dev.ts`、`scripts/build.ts`、`verify-postbuild.ts`、`sentry-options.ts`                                                        | [build/lib/env.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/lib/env.ts)（`loadRepoEnv` / `getRepoEnvValue`） | 无前缀脚本变量（`MODE`、`DEV_*_PORT`、`MAX_ASAR_SIZE_MB`、`SENTRY_ORG`/`PROJECT`/`AUTH_TOKEN`） |
-| **主进程编译期**   | [packages/main/vite.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/vite.config.ts) | `loadRepoEnv` 过滤 `RUNTIME_ENV_KEYS` 注入 `__BUNDLED_RUNTIME_ENV__`                                                                                 | 仅 4 个 `EL_*` 白名单键（`API_BASE_URL`、`SYSTEM_CODE`、`DISTRIBUTION_CHANNEL`、`SENTRY_DSN`）  |
+| **构建与开发脚本** | `scripts/dev.ts`、`scripts/build.ts`、`verify-postbuild.ts`、`sentry-options.ts`                                                        | [build/lib/env.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/build/lib/env.ts) `ensureRepoEnv()` 后读 `process.env` | 无前缀脚本变量（`MODE`、`DEV_*_PORT`、`MAX_ASAR_SIZE_MB`、`SENTRY_ORG`/`PROJECT`/`AUTH_TOKEN`） |
+| **主进程编译期**   | [packages/main/vite.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/vite.config.ts) | `ensureRepoEnv()` 后按 `RUNTIME_ENV_KEYS` 过滤注入 `__BUNDLED_RUNTIME_ENV__`                                                                         | 仅 4 个 `EL_*` 白名单键（`API_BASE_URL`、`SYSTEM_CODE`、`DISTRIBUTION_CHANNEL`、`SENTRY_DSN`）  |
 | **主进程运行时**   | `csp.ts`、`sentry.module.ts`、`updater.service.ts`、`getRuntimeEnvSnapshot()`                                                           | 直接读取 `process.env.EL_* ?? ''`（dev 与 packed 完全统一）                                                                                          | 入口先执行 `hydrateBundledRuntimeEnv()` 仅补 `undefined` 空位，外部注入始终优先                 |
 | **渲染进程**       | `Header`、`ErrorBoundary`、`ipc.ts`、`lib/sentry.ts`、`useNativeDialogs`                                                                | 只读冻结的 `window.__APP_ENV__`（经 `--app-meta=` 传入 Preload 冻结）                                                                                | `mode`、`appVersion`、`appName`、`apiBaseUrl`、`systemCode`、`sentryDsn`、`releaseName`         |
 
@@ -71,7 +71,7 @@ export function hydrateBundledRuntimeEnv(
 
 ## 3. 按消费面新增变量清单
 
-- **仅构建 / 开发脚本使用**（不带 `EL_` 前缀）：在 [.env.example](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.env.example) 与 `.env` 登记键名 → 在脚本内通过 `loadRepoEnv` + `getRepoEnvValue` 读取即可，**不要加入 `RUNTIME_ENV_KEYS`**。
+- **仅构建 / 开发脚本使用**（不带 `EL_` 前缀）：在 [.env.example](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.env.example) 与 `.env` 登记键名 → 在脚本入口调 `ensureRepoEnv()` 后直接读 `process.env.<KEY>`，**不要加入 `RUNTIME_ENV_KEYS`**。
 - **主进程与渲染层运行时共用**（统一 `EL_` 前缀，支持同名外部覆写）：
   1. 在 `.env.example` 与 `.env` 以 `EL_<KEY>` 登记默认值；
   2. 在 [packages/shared/src/constants/env.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/constants/env.ts) 的 `RUNTIME_ENV_KEYS` 与 [packages/main/src/env.d.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/env.d.ts) 的 `NodeJS.ProcessEnv` 同步加键；

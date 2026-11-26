@@ -61,8 +61,7 @@ flowchart LR
 
 ```ts
 // 节选：verifyPostbuild 读取体积上限、剖析组成并在超限时阻断
-const maxAsarSizeMb =
-  options.maxAsarSizeMb ?? Number(getRepoEnvValue(repoEnv, 'MAX_ASAR_SIZE_MB') || 10);
+const maxAsarSizeMb = options.maxAsarSizeMb ?? Number(process.env.MAX_ASAR_SIZE_MB || 10);
 // ... 省略产物发现与 app-update.yml 校验
 const asarStat = fs.statSync(artifact.asarPath);
 const asarSizeMb = asarStat.size / (1024 * 1024);
