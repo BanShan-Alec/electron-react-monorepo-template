@@ -69,7 +69,7 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   server: {
-    // port 从 scripts/dev.ts 的 config.rendererPort 注入
+    // port 从 scripts/dev.ts 读取根 .env 的 DEV_RENDERER_PORT 后注入
     strictPort: true,
     host: true,
     hmr: {
