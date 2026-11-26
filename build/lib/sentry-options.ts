@@ -26,7 +26,7 @@ export function getSentryBuildOptions(fromDir: string): SentryBuildOptions {
     appName: APP_IDENTITY.name,
     appVersion: APP_IDENTITY.version,
     releaseName: `${APP_IDENTITY.name}@${APP_IDENTITY.version}`,
-    sentryDsn: value('SENTRY_DSN'),
+    sentryDsn: value('ELECTRON_APP_SENTRY_DSN'),
     sentryOrg: value('SENTRY_ORG'),
     sentryProject: value('SENTRY_PROJECT'),
     sentryAuthToken: value('SENTRY_AUTH_TOKEN'),

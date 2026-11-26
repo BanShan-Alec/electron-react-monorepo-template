@@ -1,7 +1,6 @@
 import { PROJECT_DOCS_ORIGIN } from '@app/shared/constants/docs';
 import { session } from 'electron';
 import type { AppModule } from '../../AppModule';
-import { getEnv } from '../../env';
 import type { ModuleContext } from '../../ModuleContext';
 import { getLogManager } from '../log.module';
 
@@ -71,7 +70,7 @@ export class ContentSecurityPolicyModule implements AppModule {
     const isDev = !import.meta.env.PROD;
 
     // 动态提取 API 网关 Origin，若配置则允许渲染进程 connect-src 跨域直连
-    const apiBaseUrl = getEnv('API_BASE_URL');
+    const apiBaseUrl = process.env.ELECTRON_APP_API_BASE_URL ?? '';
     const apiOrigin = getValidOrigin(apiBaseUrl);
 
     // 开发态：允许自身、内联脚本/样式、eval、data/blob 协议、https/http 与 ws:（支持 Vite HMR 和本地开发服务器）；

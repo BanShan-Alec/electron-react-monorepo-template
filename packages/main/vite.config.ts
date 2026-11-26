@@ -5,26 +5,19 @@ import { defineConfig } from 'vite';
 import { APP_IDENTITY } from '../../build/lib/app-identity.ts';
 import { getRepoEnvValue, loadRepoEnv } from '../../build/lib/env.ts';
 import { getSentryBuildOptions } from '../../build/lib/sentry-options.ts';
+import { RUNTIME_ENV_KEYS, type RuntimeEnvKey } from '../shared/src/constants/env.ts';
 
 const repoEnv = loadRepoEnv(__dirname, 'production');
 const sentryOptions = getSentryBuildOptions(__dirname);
-const prefix = getRepoEnvValue(repoEnv, 'ENV_PREFIX') || 'APP_';
 const isDev = process.env.MODE === 'development';
 
-// 严格白名单过滤：仅暴露业务需要的默认配置，杜绝全量泄露风险
-const ALLOWED_ENV_KEYS = [
-  'API_BASE_URL',
-  'SYSTEM_CODE',
-  'DISTRIBUTION_CHANNEL',
-  'SENTRY_DSN',
-] as const;
-
-const envDefaults = ALLOWED_ENV_KEYS.reduce(
+// 仅打包带 ELECTRON_APP_ 前缀的运行时白名单默认值，入口启动时内存回填至 process.env
+const bundledRuntimeEnv = RUNTIME_ENV_KEYS.reduce(
   (acc, key) => {
     acc[key] = getRepoEnvValue(repoEnv, key);
     return acc;
   },
-  {} as Record<string, string>,
+  {} as Record<RuntimeEnvKey, string>,
 );
 
 const pkgPath = path.resolve(__dirname, 'package.json');
@@ -33,15 +26,13 @@ const runtimeDependencies = Object.keys(pkg.dependencies ?? {});
 
 export default defineConfig({
   define: {
-    __ENV_PREFIX__: JSON.stringify(prefix),
     __APP_VERSION__: JSON.stringify(sentryOptions.appVersion),
-    __SENTRY_DSN__: JSON.stringify(sentryOptions.sentryDsn),
     __RELEASE_NAME__: JSON.stringify(sentryOptions.releaseName),
     __GITHUB_OWNER__: JSON.stringify(APP_IDENTITY.repositoryOwner),
     __GITHUB_REPO__: JSON.stringify(APP_IDENTITY.repositoryName),
     // 仅注入主进程 bundle：用于判定可执行文件是否落在构建时的仓库目录内（免安装副本识别）
     __BUILD_REPO_ROOT__: JSON.stringify(repoEnv.rootDir),
-    __ENV_DEFAULTS__: JSON.stringify(envDefaults),
+    __BUNDLED_RUNTIME_ENV__: JSON.stringify(bundledRuntimeEnv),
   },
   plugins: [
     sentryVitePlugin({

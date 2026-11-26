@@ -58,8 +58,10 @@ describe('ContentSecurityPolicyModule', () => {
 
   it('applies tightened CSP header on intercepted responses in production mode', () => {
     const originalProd = import.meta.env.PROD;
+    const originalApiBaseUrl = process.env.ELECTRON_APP_API_BASE_URL;
     try {
       (import.meta.env as { PROD: boolean }).PROD = true;
+      delete process.env.ELECTRON_APP_API_BASE_URL;
       const cspModule = new ContentSecurityPolicyModule();
       cspModule.enable({
         app: mockApp as unknown as Electron.App,
@@ -91,6 +93,11 @@ describe('ContentSecurityPolicyModule', () => {
       expect(activePolicy).not.toContain('ws:');
     } finally {
       (import.meta.env as { PROD: boolean }).PROD = originalProd;
+      if (originalApiBaseUrl !== undefined) {
+        process.env.ELECTRON_APP_API_BASE_URL = originalApiBaseUrl;
+      } else {
+        delete process.env.ELECTRON_APP_API_BASE_URL;
+      }
     }
   });
 
@@ -118,10 +125,10 @@ describe('ContentSecurityPolicyModule', () => {
 
   it('dynamically injects valid API_BASE_URL origin into production connect-src', () => {
     const originalProd = import.meta.env.PROD;
-    const originalApiBaseUrl = process.env.APP_API_BASE_URL;
+    const originalApiBaseUrl = process.env.ELECTRON_APP_API_BASE_URL;
     try {
       (import.meta.env as { PROD: boolean }).PROD = true;
-      process.env.APP_API_BASE_URL = 'https://api.example.com/v1';
+      process.env.ELECTRON_APP_API_BASE_URL = 'https://api.example.com/v1';
 
       const cspModule = new ContentSecurityPolicyModule();
       cspModule.enable({
@@ -146,9 +153,9 @@ describe('ContentSecurityPolicyModule', () => {
     } finally {
       (import.meta.env as { PROD: boolean }).PROD = originalProd;
       if (originalApiBaseUrl !== undefined) {
-        process.env.APP_API_BASE_URL = originalApiBaseUrl;
+        process.env.ELECTRON_APP_API_BASE_URL = originalApiBaseUrl;
       } else {
-        delete process.env.APP_API_BASE_URL;
+        delete process.env.ELECTRON_APP_API_BASE_URL;
       }
     }
   });
