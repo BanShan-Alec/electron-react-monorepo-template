@@ -1,136 +1,117 @@
 ---
 
 title: 产物冒烟测试（Dist-smoke）
-description: 打包后真实拉起解包产物，断言启动揭幕门禁并捕获运行时异常，环境受限显式跳过。
+description: 打包后真实拉起解包二进制产物，断言启动协调器揭幕并捕获未处理异常，跨平台或无显示服务环境显式安全跳过。
 ---
 
 # 产物冒烟测试（Dist-smoke）
 
-> **TL;DR**：打包构建成功不等于可运行。通过 Playwright 真实拉起解包二进制，断言 `body.app-startup-ready` 协调器类名挂载并捕获 `pageerror` 运行时异常，结合 ASAR 体积硬防线，白屏与 ASAR 结构损坏 100% 阻断在发版之前。
+> **TL;DR**：`electron-builder` 构建成功不代表安装包可正常运行。`scripts/verify-postbuild.ts` 在打包后自动跨平台定位解包二进制，结合发布配置校验、Playwright 拉起真实 exe/app/binary、等待 `body.app-startup-ready` 揭幕并去重捕获 `pageerror`，将白屏与运行时崩溃拦在发版前。
+
+> **本页职责边界**：本页负责打包后产物的跨平台发现、真实二进制启动、`body.app-startup-ready` 揭幕门禁与 `pageerror` 去重捕获；不负责 `app.asar` 体积上限（`MAX_ASAR_SIZE_MB`）与模块构成分析（见 [分包与体积门禁（Chunk + Asar）](/security/bundle-budget)）、源码态功能 E2E（见 [端到端测试（Playwright）](/testing/e2e-electron)），以及打包配置本身（见 [应用打包（Electron-builder）](/delivery/packaging)）。
 
 ## 1. 选型理由
 
-- **打包命令成功不等于产物可用**：`electron-builder` 退出码为 0 仅代表静态资源打包流程完成；若原生模块架构不匹配、ASAR 解包路径缺失、或构建期发生 SyntaxError，用户下载后会直接白屏或崩溃。
-- **杜绝 `#root` 静态假断言**：HTML 模板原本就包含 `<div id="root"></div>`，即使 React 运行时抛错挂死，DOM 依然能找到该节点。必须以 React 与主进程双向揭幕门禁（`body.app-startup-ready`）作为唯一真源。
-- **环境受限显式跳过而非误报**：在 Linux 交叉编译 Windows exe 或无 Xvfb 桌面显示服务时，守卫自动安全跳过启动，同时严格保留 ASAR 体积门禁。
+- **打包成功不等于运行期健康**：`electron-builder` 退出码为 0 只说明资源打包结束；若原生 `.node` 模块架构错配、ASAR 路径缺失或构建期引入运行时异常，客户端会在用户侧直接白屏。
+- **杜绝 `#root` 静态假阳性**：HTML 模板本身自带 `<div id="root"></div>`，即使 React 运行时报错挂死，DOM 仍存在 `#root`。必须等待 React 首帧 commit 与主进程双门禁共同解锁的 `body.app-startup-ready` 类名。
+- **跨平台宿主机安全降级**：在 Linux 交叉构建 Windows 产物或无图形界面的纯命令行容器下，自动跳过二进制拉起测试并保留静态检查，避免误报失败。
 
 ## 2. 核心机制
 
-### 冒烟脚本实现与启动断言
+```mermaid
+flowchart LR
+    Build["pnpm build:unpack / build:win"] --> Detect["detectUnpackedArtifact()"]
+    Detect --> Static["静态门禁: app-update.yml + ASAR 体积<br/>(详见 /security/bundle-budget)"]
+    Static --> Guard{"宿主平台与 DISPLAY 守卫"}
+    Guard -->|"跨平台或无 DISPLAY"| Skip["打印告警并安全退出"]
+    Guard -->|"可运行环境"| Launch["electron.launch(executablePath)"]
+    Launch --> Assert["等待 body.app-startup-ready + WeakSet 去重 pageerror"]
+```
+
+### 跨平台探测与宿主机安全守卫
+
+`detectUnpackedArtifact(distDir)` 统一抹平 Windows（`win-unpacked/*.exe`）、macOS（`mac*/Contents/MacOS/*`）与 Linux（`linux-unpacked/*`）路径差异。随后先完成静态门禁（`resources/app-update.yml` 存在性校验与 `app.asar` 体积门禁，后者规则见 [分包与体积门禁（Chunk + Asar）](/security/bundle-budget)），再判定当前宿主机是否能拉起目标二进制：
 
 → 源码：[scripts/verify-postbuild.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/verify-postbuild.ts)
 
 ```ts
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { _electron as electron } from '@playwright/test';
-import { loadRepoEnv, getRepoEnvValue } from '../build/lib/env.ts';
-import { getDistDir } from '../build/lib/repo-paths.ts';
+// 节选：跨平台宿主与 Linux 无显示服务环境守卫
+if (process.platform !== artifact.platform) {
+  console.warn(
+    `⚠️ [verify-postbuild] 目标平台 (${artifact.platform}) 与当前宿主平台 (${process.platform}) 不一致，跳过真实进程启动测试。`,
+  );
+  return;
+}
 
-export async function verifyPostbuild(options: PostbuildVerificationOptions = {}): Promise<void> {
-  const repoEnv = loadRepoEnv(__dirname, 'production');
-  const distDir = options.distDir
-    ? path.resolve(repoEnv.rootDir, options.distDir)
-    : getDistDir(repoEnv.rootDir);
-  const maxAsarSizeMb =
-    options.maxAsarSizeMb ?? Number(getRepoEnvValue(repoEnv, 'MAX_ASAR_SIZE_MB') || 10);
-
-  const artifact = detectUnpackedArtifact(distDir);
-  if (!artifact) {
-    throw new Error(`[verify-postbuild] 未在 ${distDir} 找到解包产物`);
-  }
-
-  // 1. asar 体积门禁校验（防止产物异常膨胀，上限 10MB）
-  const asarStat = fs.statSync(artifact.asarPath);
-  const asarSizeMb = asarStat.size / (1024 * 1024);
-  if (asarSizeMb > maxAsarSizeMb) {
-    throw new Error(
-      `[verify-postbuild] asar 体积超标 (${asarSizeMb.toFixed(2)} MB > ${maxAsarSizeMb} MB)`,
-    );
-  }
-
-  // 2. 跨平台宿主与桌面显示服务兼容性守卫
-  if (process.platform !== artifact.platform) {
-    console.warn(
-      `⚠️ [verify-postbuild] 目标平台 (${artifact.platform}) 与宿主不一致，跳过真实启动测试。`,
-    );
-    return;
-  }
-  if (process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) {
-    console.warn('⚠️ [verify-postbuild] Linux 环境无可用 DISPLAY，跳过进程拉起测试。');
-    return;
-  }
-
-  // 3. 真实启动打包二进制进行 Smoke 校验
-  const tempUserDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-smoke-test-'));
-  try {
-    const app = await electron.launch({
-      executablePath: artifact.executablePath,
-      args: [
-        `--user-data-dir=${tempUserDataDir}`,
-        '--no-sandbox',
-        '--disable-gpu',
-        '--disable-dev-shm-usage',
-      ],
-      timeout: 30000,
-    });
-
-    try {
-      const pageErrors: Error[] = [];
-      const errorFingerprints = new Set<string>();
-      const attachedPages = new WeakSet<Page>();
-
-      const recordPageError = (err: Error) => {
-        const fingerprint = `${err.name}:${err.message}\n${err.stack ?? ''}`;
-        if (errorFingerprints.has(fingerprint)) return;
-        errorFingerprints.add(fingerprint);
-        pageErrors.push(err);
-        console.error('❌ [verify-postbuild] 捕获到页面未处理异常 (pageerror):', err);
-      };
-
-      const attachPage = (p: Page) => {
-        if (attachedPages.has(p)) return;
-        attachedPages.add(p);
-        p.on('pageerror', recordPageError);
-      };
-
-      app.on('window', attachPage);
-      const page = await app.firstWindow();
-      attachPage(page);
-
-      // 核心断言：必须等待启动协调器揭幕成功，坚决不用脆弱的 #root
-      await page.waitForSelector('body.app-startup-ready', { timeout: 15000 });
-
-      if (pageErrors.length > 0) {
-        throw new Error(`[verify-postbuild] 启动阶段捕获到 ${pageErrors.length} 个未处理异常`);
-      }
-    } finally {
-      await app.close();
-    }
-  } finally {
-    fs.rmSync(tempUserDataDir, { recursive: true, force: true });
-  }
+// 无显示服务环境守卫（如无 Xvfb 的 Linux 纯命令行服务器或容器）
+if (process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) {
+  console.warn(
+    '⚠️ [verify-postbuild] 检测到当前 Linux 环境无可用 DISPLAY/WAYLAND 桌面显示服务，跳过运行时进程拉起测试。',
+  );
+  return;
 }
 ```
 
-### 打包链路自动串联
+### 真实二进制启动与异常去重断言
+
+在独立的 `tempUserDataDir` 下拉起解包产物，同时订阅 `app.on('window')` 与 `firstWindow()` 防止漏听首窗，并用 `WeakSet<Page>` 与错误指纹 `Set` 去重 `pageerror`，在 15 秒内断言 `body.app-startup-ready` 挂载成功。
+
+→ 源码：[scripts/verify-postbuild.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/verify-postbuild.ts)
+
+```ts
+// 节选：拉起真实打包产物，去重监听 pageerror 并等待启动协调器揭幕
+const app = await electron.launch({
+  executablePath: artifact.executablePath,
+  args: [`--user-data-dir=${tempUserDataDir}`, '--no-sandbox', '--disable-gpu'],
+  timeout: 30000,
+});
+const pageErrors: Error[] = [];
+const errorFingerprints = new Set<string>();
+const attachedPages = new WeakSet<Page>();
+const attachPage = (p: Page) => {
+  if (attachedPages.has(p)) return;
+  attachedPages.add(p);
+  p.on('pageerror', (err) => {
+    const fp = `${err.name}:${err.message}\n${err.stack ?? ''}`;
+    if (!errorFingerprints.has(fp)) {
+      errorFingerprints.add(fp);
+      pageErrors.push(err);
+    }
+  });
+};
+app.on('window', attachPage);
+const page = await app.firstWindow();
+attachPage(page);
+await page.waitForSelector('body.app-startup-ready', { timeout: 15000 });
+```
+
+### 打包流程自动串联与独立执行
+
+打包脚本 `scripts/build.ts` 会在构建结束后默认自动调用 `verifyPostbuild`（仅 `--skip-verify` 可跳过）；也可在已有 `dist/` 产物后单独执行 `pnpm verify:postbuild` 复验。校验在 `finally` 块中同时保证关闭 Electron 实例并清理临时 `userData` 目录。
+
+若 `waitForSelector('body.app-startup-ready')` 超时或 `pageErrors.length > 0`，脚本立即抛出异常并以非零退出码阻断打包流。
 
 → 源码：[scripts/build.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/build.ts)
 
 ```ts
-// 4. 打包完成后默认触发验真，发版前必过；可通过 --skip-verify 参数作为逃生门
+// 节选：打包完成后默认串联后置冒烟验真
 if (!values['skip-verify']) {
-  await verifyPostbuild({ distDir: getDistDir(ROOT_DIR) });
+  try {
+    await verifyPostbuild({ distDir: getDistDir(ROOT_DIR) });
+  } catch (verifyError) {
+    console.error('❌ Post-packaging verification failed:', verifyError);
+    process.exit(1);
+  }
 }
 ```
 
+- **官方文档**：[Playwright `electron.launch`](https://playwright.dev/docs/api/class-electron#electron-launch) — 读它能解决什么：理解通过 `executablePath` 直接拉起已打包原生可执行文件与传入 `--user-data-dir` 的参数机制。
+
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点                     | 事故表现与原因                                                                                                                                        | 本仓库对齐方案                                                                                                                |
-| :--------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------- |
-| **禁止 `#root` 假阳性**      | 若仅断言 `#root`，React 抛出全局语法错误导致白屏时，由于 index.html 预置了该 DOM 节点，冒烟测试依然判定为成功通过。                                   | 必须断言 `body.app-startup-ready` 协调器类名挂载（React 首帧 commit 且主进程双门禁解锁后注入），并全局捕获 `pageerror` 堆栈。 |
-| **首次窗口与多窗口异常去重** | Playwright 的 `app.on('window')` 无法捕获在此之前已创建的窗口，故需显式监听 `firstWindow()`；若两处均挂载监听，同一异常会被触发两次导致计数翻倍误报。 | 使用 `WeakSet<Page>` 确保每个窗口只注册一次监听，并结合 `errorFingerprints` 对错误内容幂等去重。                              |
-| **单实例锁污染**             | 若直接拉起产物而未传独立配置，测试实例会尝试激活本地已运行的开发态进程并立即退出，导致冒烟误报或挂死。                                                | 每次必须通过 `fs.mkdtempSync` 创建独立的 `tempUserDataDir` 并于 `finally` 强制安全清理。                                      |
-| **无头 CI 平台隔离**         | Linux 交叉编译构建出的 Windows exe 或 macOS 无头 runner 强行 `electron.launch` 会直接触发 SIGSEGV。                                                   | `process.platform !== artifact.platform` 时显式安全跳过启动测试，但 ASAR 静态体积门禁照常执行。                               |
-| **ASAR 产物发现差异**        | 各系统产物路径不同（Windows 在 `win-unpacked/*.exe`，macOS 在 `mac*/*.app/Contents/MacOS/*`）。                                                       | `detectUnpackedArtifact` 集中抹平平台路径差异，统一返回 `{ executablePath, asarPath, platform }`。                            |
+| 避坑要点                     | 事故表现与原因                                                                                | 本仓库对齐方案                                                                                      |
+| :--------------------------- | :-------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------- |
+| **依赖 `#root` 产生假阳性**  | React 抛全局异常导致白屏时，HTML 预置的 `#root` 节点依然存在，校验误判通过。                  | 强制等待 `body.app-startup-ready`（React 首帧与主进程双门禁就绪后注入），并检查 `pageErrors` 为空。 |
+| **首窗与多窗异常重复计数**   | `app.on('window')` 错失首窗或与 `firstWindow()` 重复绑定监听，同一异常计数翻倍。              | 同时挂载 `window` 与 `firstWindow()`，并用 `WeakSet<Page>` 与指纹集合幂等去重。                     |
+| **单实例锁拦截冒烟进程**     | 未传独立目录时，打包产物会激活本地已开启的开发态进程后立即退出，导致等待超时。                | 每次启动前 `fs.mkdtempSync` 建隔离目录并在 `finally` 强制删除。                                     |
+| **`--skip-verify` 逃生边界** | 若发版流水线误带 `--skip-verify` 参数，将绕过 `app-update.yml`、ASAR 体积与启动冒烟全部防线。 | `--skip-verify` 仅限本地调试打包脚本使用，CI 与发版流禁止携带该参数。                               |

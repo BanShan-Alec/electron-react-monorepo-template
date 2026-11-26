@@ -1,120 +1,85 @@
 ---
 
-title: AI 友好代码约定（Reference-style）
-description: 提供 AI 协作提示词，并指向组件规范、Zod 契约与提交校验的单一真源。
+title: AI 产出验收清单（Review-checklist）
+description: 交付或审查 AI 生成代码前的机器门禁命令、架构边界核对表与高频越界排查清单。
 ---
 
-# AI 友好代码约定（Reference-style）
+# AI 产出验收清单（Review-checklist）
 
-> **TL;DR**：让 AI 产出稳定代码的关键是明确规则入口和可验证边界。本页提供初始化提示词，并链接到组件、契约与提交规范的唯一真源，避免重复维护实现细节。
+> **TL;DR**：AI 写出可编译的代码不等于符合本仓库架构。提交前先跑通根 `AGENTS.md` 门禁矩阵，再按本清单逐项核对「机器无法自动判定」的跨端边界、React 组件顺序与豁免条款。
 
-## 1. 选型理由
+**边界声明**：本页负责 AI 生成代码提交前的双层验收核对；不负责规则分层原理（见 [与 AI 协作](/introduction/ai-collaboration)）、全栈四步编码顺序（见 [全栈端到端功能开发](/ai/fullstack-sop)）或 PR 工具链命令（见 [AI 评审闭环](/ai/review-loop)）。
 
-- **代码风格收敛**：不同 AI 编程助手（Claude Code / Cursor / Windsurf / Copilot）生成的组件结构天差地别，缺乏固定锚点会导致 Git Diff 中充斥大量代码块搬家噪声。
-- **机器可判定性（Machine-verifiable）**：约定必须挂在编译器、Linter 或 Git Hook 上，AI 生成完毕后直接跑 `pnpm lint` 和 `pnpm typecheck` 即可自检修复，不依赖评审人主观口味。
-- **单一真源与杜绝空话**：拒绝“请遵循规范”的空洞说教，直接提供可复制的骨架模板与单一真源契约模式。
+## 1. 机器门禁必跑清单
 
-## 2. 核心代码与实现模板
+AI 改动完任何代码后，必须按改动范围执行对应校验命令，并如实报告结果：
 
-### 1. 复制即用的 AI System Prompt 规范注入
-
-```markdown
-你是一个精通 Electron 45、React 19 和 TypeScript 的资深架构师。在本仓库编写代码时，必须无条件遵循以下铁律：
-1. 【禁止桶文件】：严禁新建只做 re-export 的 index.ts，严禁使用 export *。
-2. 【组件规范】：Renderer 组件结构、Props 与空段处理遵循 `packages/renderer/AGENTS.md` §5，不在提示词中重复维护模板。
-3. 【IPC 单一真源】：跨端通信必须在 packages/shared 定义 Zod Schema 与 IPC 通道常量。
-4. 【Commit 规范】：提交信息 subject 必须包含简体中文，格式：<type>(<scope>): <中文说明>。
+```bash
+pnpm typecheck && pnpm lint && pnpm test && pnpm verify:prebuild
 ```
 
-### 2. React 组件 7 段式标准注释骨架
+| 改动范围                | 追加必跑命令                                 | 拦截目标与说明                                                                 |
+| :---------------------- | :------------------------------------------- | :----------------------------------------------------------------------------- |
+| 任意 TS / TSX / MD 改动 | `pnpm typecheck && pnpm lint`                | 跨包类型、`noBarrelFile`、`noReExportAll`、`useReactCompiler` 与格式统一校验   |
+| 渲染层文案或 `t\`...\`` | `pnpm i18n:extract` 补译后 `pnpm i18n:check` | 抽取中文词条并验证 `en-US/messages.po` 无缺译                                  |
+| `packages/pr-review`    | `pnpm test:pr-review`                        | 根 `pnpm test` 刻意排除了该包，必须单独执行                                    |
+| 依赖、样式令牌或主进程  | `pnpm verify:prebuild`                       | 校验根 `name` 正则、根 `dependencies` 白名单（仅 `@app/main`）与渲染层颜色字号 |
+| 跨端交互或打包行为      | `pnpm test:e2e:build`                        | 构建三包并用 Playwright 拉起真实 Electron 窗口回归                             |
 
-→ 规范真源：[packages/renderer/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/AGENTS.md) · [架构文档](/architecture/react-conventions)
+## 2. 跨端架构与契约核查
 
-```tsx
-import { memo } from 'react';
-
-// 私有常量与可抽离工具函数
-const STEP_OPTIONS = [1, 5, 10];
-
-interface CounterCardProps {
-  step: number;
-  onStepChange: (step: number) => void;
-}
-
-const _CounterCard = (props: CounterCardProps) => {
-  // 1. 变量声明、解构
-  const { step, onStepChange } = props;
-
-  // 2. 组件状态
-  // const [count, setCount] = useState(0);
-
-  // 3. 网络IO (必须使用 useManualRequest 或 useIpc，严禁自动轮询)
-
-  // 4. 数据转换（React Compiler 自动记忆化推导，无需手动 useMemo）
-  const formattedStep = `步长: ${step}`;
-
-  // 5. 逻辑处理函数（React Compiler 自动记忆化推导，无需手动 useCallback）
-  const handleSelect = (nextStep: number) => {
-    onStepChange(nextStep);
-  };
-
-  // 6. 组件Effect (挂载请求与清理闭环)
-
-  // 7. 组件渲染 (JSX)
-  return (
-    <div className="p-4 border rounded">
-      <span>{formattedStep}</span>
-      <button type="button" onClick={() => handleSelect(5)}>
-        设为5
-      </button>
-    </div>
-  );
-};
-
-export const CounterCard = memo(_CounterCard);
-```
-
-### 3. Zod 强类型 IPC 契约模式
+- **契约唯一真源（`@app/shared`）**：入参校验模型与导出类型必须从 Zod `z.infer` 就近派生，禁止在 `types/` 手写第二份入参类型；严格按子路径直出导入，禁止新增只做重导出的 `index.ts` 或 `export *`（规则真源见 [packages/shared/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/AGENTS.md)）。
 
 → 源码：[packages/shared/src/schemas/close-behavior.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/schemas/close-behavior.ts)
-
 ```ts
 import { z } from 'zod';
 
-// 1. 定义入参枚举契约（单一真源）
 export const closeBehaviorChoiceSchema = z.enum(['window', 'quit', 'cancel']);
 export type CloseBehaviorChoice = z.infer<typeof closeBehaviorChoiceSchema>;
-
-// 2. 在主进程 Controller 中一行校验，入参自动具备类型推导：
-// const validatedChoice = closeBehaviorChoiceSchema.parse(rawInput);
 ```
 
-### 4. 中文 Commitlint 正则与 Biome 门禁
+- **安全桥接（`@app/preload`）**：`apiBridge` 必须显式标注为 `ElectronApi`；所有调用走 `invokeTraced`，禁止裸调 `ipcRenderer.invoke` 或在模块顶层缓存启动快照 Promise；新增推送通道需明确粘性（`createStickyChannel`）或瞬态（返回取消函数），见 [packages/preload/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/preload/AGENTS.md)。
+- **主进程分层（`@app/main`）**：Service 保持纯业务逻辑、零 `ipcMain` 感知；Controller 经 `handleTraced` 注册、入参用 `.safeParse` 校验、异常经 `catchToResult` 统一返回 `Result<T>` 并在 `controllers/index.ts` 集中挂载（唯一追踪豁免为 `IPC_CHANNELS.DIAGNOSTICS_LOG`），见 [packages/main/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/AGENTS.md)。
 
-→ 源码：[.config/commitlint.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.config/commitlint.config.ts)
+## 3. 渲染层与提交规范核查
 
+对照 [packages/renderer/AGENTS.md](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/AGENTS.md) §5–6 与 [React 组件编写规范](/architecture/react-conventions) 逐项排查：
+
+- **Feature 边界与请求纪律**：外部只能从 `features/<domain>/index.tsx` 导入入口组件；异步通信必须通过 `useIpc('domain.method')` 或 `useManualRequest`（强制 `manual: true`），严禁在组件内裸写 `window.api.*` 解构；仅 `useManualRequest.ts` 本身在 Biome 配置中获得 `noRestrictedImports` 豁免。
+- **组件结构与七段式顺序**：组件采用一组件一文件夹 `Xxx/index.tsx`、具名 `export interface XxxProps` 与 `export const Xxx = memo(_Xxx)`；函数体严格保持「解构 ➔ State ➔ IO ➔ 派生 ➔ Handlers ➔ Effect ➔ JSX」单向顺序，不倒置；常量与纯函数提取至组件外部。
+- **React Compiler 与 Ant Design 优先**：禁止 AI 机械套用样板式 `useMemo` / `useCallback`，严禁在 render 期读写 `ref.current`；优先复用 Ant Design 与仓库封装组件（状态点用 `<Badge>`、标签用 `<StatusTag>`、按钮加载用 `<Button loading>`），无边框拖拽区上方浮层根节点须挂 `.no-drag`。
+- **提交信息含简体中文**：Commit subject 必须含简体中文且匹配 Conventional Commits 类型枚举（见 [提交信息规范](/engineering/commit-convention)）。
+
+→ 源码：[.config/commitlint.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/.config/commitlint.config.ts)（节选）
 ```ts
-// 强制提交说明包含中文（机器判定）
-plugins: [
-  {
-    rules: {
-      'subject-chinese': ({ subject }) => {
-        const hasChinese = /[\u4e00-\u9fa5]/.test(subject || '');
-        return [hasChinese, '提交说明 (subject) 必须包含简体中文描述意图'];
+const Configuration: UserConfig = {
+  extends: ['@commitlint/config-conventional'],
+  plugins: [
+    {
+      rules: {
+        'subject-chinese': (parsed) => {
+          const { subject } = parsed;
+          if (!subject) {
+            return [false, '提交说明（subject）不能为空'];
+          }
+          const hasChinese = /[\u4e00-\u9fa5]/.test(subject);
+          return [
+            hasChinese,
+            '提交说明（subject）必须包含简体中文描述，例如: feat: 增加系统托盘功能',
+          ];
+        },
       },
     },
+  ],
+  rules: {
+    'subject-chinese': [RuleConfigSeverity.Error, 'always'],
+    'subject-case': [RuleConfigSeverity.Disabled],
   },
-],
-rules: {
-  'subject-chinese': [2, 'always'], // 2 即 error 级别
-}
+};
 ```
 
-## 3. 桌面端避坑注意事项
+## 4. 工程红线与文档同步核查
 
-| 避坑要点                       | 事故表现与原因                                                                    | 本仓库对齐方案                                                                                                                                                        |
-| :----------------------------- | :-------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **组件结构漂移导致 Diff 噪声** | 组件状态、请求与副作用随意交错，反复重排会掩盖真正的业务改动。                    | 按 [Renderer 组件规范](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/AGENTS.md#L48) 的顺序组织；空段处理以该规则为准。 |
-| **过度手动使用 useMemo**       | AI 在 React 19 环境下仍机械地给所有函数套 `useCallback`，代码冗长且徒增闭包开销。 | 本仓库已开启 **React Compiler** 自动记忆化，禁止 AI 编写样板式 `useMemo` / `useCallback`。                                                                            |
-| **Commit 校验不可判定**        | 仅口头要求“提交写清楚”，导致出现大量无意义的 `git commit -m "fix"`。              | Commitlint 规则强制拦截无中文提交，Husky 挂钩校验失败立即中断 commit。                                                                                                |
-| **随意引入桶文件导出**         | AI 习惯新建 `index.ts` 并写 `export * from './xxx'`，导致模块加载变慢。           | Biome 规则开启 `"noBarrelFile": "error"` 与 `"noReExportAll": "error"`，硬性阻断。                                                                                    |
+- **根目录依赖与配置归属**：根 `package.json` 的 `dependencies` 仅允许 `@app/main`；跨包工具配置必须落在 `.config/` 与根 `devDependencies`，包专属配置进对应包目录，禁止把 `*.config.*` 散放在根目录。
+- **Node 隔离与路径推导**：渲染层源码禁止引入 `node:fs`、`__dirname` 或 `process`（`tsconfig` 仅凭约定隔离）；Node 脚本与构建配置须通过 `findRepoRoot()` 或 `import.meta.dirname` 推导路径，不依赖 `process.cwd()`。
+- **文档与代码同 PR 同步**：凡新增或删除目录、模块、导出、脚本或依赖，必须在同一 PR 内更新对应包的 `AGENTS.md`（若触及文档站页面或路径，则同步更新 `packages/docs/src/navigation.ts`）。

@@ -1,6 +1,12 @@
 import path from 'node:path';
-import { APP_ENV, type AppEnv } from '@app/shared/constants/env';
+import {
+  APP_ENV,
+  type AppEnv,
+  RUNTIME_ENV_KEYS,
+  type RuntimeEnvKey,
+} from '@app/shared/constants/env';
 import type { AppRuntimeEnv } from '@app/shared/types/env';
+import { APP_ENV_ARG_PREFIX, packRuntimeEnv } from '@app/shared/utils/env-packer';
 import { app } from 'electron';
 
 /** 构建期注入的仓库根目录（仅主进程 bundle，见 packages/main/vite.config.ts） */
@@ -98,29 +104,27 @@ export const devServerUrl: string | undefined =
     ? process.env.VITE_DEV_SERVER_URL
     : undefined;
 
-import type { EnvKey } from './env.d';
-
 /**
- * 读取动态环境配置：
- * 优先级 1：外部动态注入的带前缀环境变量 process.env[`${__ENV_PREFIX__}${key}`] (如 APP_API_BASE_URL)
- * 优先级 2：调用处传入的显式 fallback (若提供)
- * 优先级 3：编译期 Vite define 注入的静态默认值快照 __ENV_DEFAULTS__[key]
+ * 打包态在入口最早期将构建期白名单默认值（EL_*）内存回填至 process.env：
+ * - 仅在 process.env[key] === undefined 时写入，外部注入（含显式空字符串）始终优先
+ * - 保证 dev 与 packed 下所有业务代码统一通过 process.env.EL_* ?? ... 读取
  */
-export function getEnv(key: EnvKey, fallback?: string): string {
-  const prefix = typeof __ENV_PREFIX__ !== 'undefined' ? __ENV_PREFIX__ : 'APP_';
-  const prefixedKey = `${prefix}${key}`;
-  const envVal = process.env[prefixedKey];
-  if (envVal !== undefined && envVal !== '') {
-    return envVal;
+export function hydrateBundledRuntimeEnv(
+  defaults: Partial<Record<RuntimeEnvKey, string>> | undefined = typeof __BUNDLED_RUNTIME_ENV__ !==
+  'undefined'
+    ? __BUNDLED_RUNTIME_ENV__
+    : undefined,
+): void {
+  if (!defaults) return;
+  for (const key of RUNTIME_ENV_KEYS) {
+    const value = defaults[key];
+    if (process.env[key] === undefined && value !== undefined) {
+      process.env[key] = value;
+    }
   }
-  if (fallback !== undefined) {
-    return fallback;
-  }
-  if (typeof __ENV_DEFAULTS__ !== 'undefined' && __ENV_DEFAULTS__[key] !== undefined) {
-    return __ENV_DEFAULTS__[key];
-  }
-  return '';
 }
+
+hydrateBundledRuntimeEnv();
 
 /**
  * 编译期从根 package.json 的 repository.url 解析出的 GitHub 发布源坐标
@@ -145,17 +149,13 @@ export function getRuntimeEnvSnapshot(): AppRuntimeEnv {
     mode: currentAppEnv,
     appVersion: app.getVersion(),
     appName: app.getName(),
-    channel: getEnv('DISTRIBUTION_CHANNEL') || undefined,
-    apiBaseUrl: getEnv('API_BASE_URL') || undefined,
-    systemCode: getEnv('SYSTEM_CODE') || undefined,
-    sentryDsn:
-      getEnv('SENTRY_DSN') ||
-      (typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__ ? __SENTRY_DSN__ : undefined),
+    channel: process.env.EL_DISTRIBUTION_CHANNEL || undefined,
+    apiBaseUrl: process.env.EL_API_BASE_URL || undefined,
+    systemCode: process.env.EL_SYSTEM_CODE || undefined,
+    sentryDsn: process.env.EL_SENTRY_DSN || undefined,
     releaseName: typeof __RELEASE_NAME__ !== 'undefined' ? __RELEASE_NAME__ : undefined,
   };
 }
-
-import { APP_ENV_ARG_PREFIX, packRuntimeEnv } from '@app/shared/utils/env-packer';
 
 /**
  * 将运行时环境快照序列化为命令行启动参数（压缩混淆形式）

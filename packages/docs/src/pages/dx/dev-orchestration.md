@@ -6,73 +6,99 @@ description: 单命令串联渲染层 dev server、preload 与主进程 watch �
 
 # 开发编排（Vite + Electron）
 
-> **TL;DR**：`pnpm dev` 编程式拉起 Vite Dev Server，同时启动 Preload 与 Main 双路增量构建；`pnpm preview` 一次性构建三包产物后以生产行为启动；退出时以递归方式彻底强杀全量子进程树。
+> **TL;DR**：`pnpm dev` 编程式拉起 Vite Dev Server，同时启动 Preload 与 Main 双路增量构建，实现「三路编排、分级重载」；`pnpm preview` 仅构建主/预加载/渲染三包后以生产行为启动，退出时按进程树彻底清场。
 
 ## 1. 选型理由
 
-Electron 项目的本地开发回路远比普通 Web 应用复杂：
-- **四路并发时序**：渲染进程需要 Dev Server（HMR），Preload 模块需要增量打包，主进程需要增量构建并在代码变更时重启 Electron，三者启动存在强依赖关系。
-- **孤儿僵尸进程**：关闭终端时，如果仅杀死主进程 PID，Chromium 的渲染进程、GPU 进程和 Utility 进程往往残留在系统后台，继续霸占单实例锁和本地端口。
+Electron 本地的开发回路远比普通 Web 应用复杂，核心面临两大难题：
+- **三路并发与时序依赖**：渲染层需要 Vite Dev Server（HMR），Preload 需要增量构建并触发页面刷新，主进程需要在重新打包后重启 Electron 进程，三者启动顺序与地址透传存在强依赖。
+- **孤儿僵尸进程**：直接杀死主进程 PID 往往会让 Chromium 渲染进程、GPU 进程或托盘实例残留在后台，继续霸占单实例锁与本地端口。
 
-工程通过统一的 `scripts/dev.ts` 脚本接管全生命周期，实现「一键拉起、细粒度热更、退出即清场」。
+本页负责 `pnpm dev` 与 `pnpm preview` 的构建编排、分级重载与进程树退出清理机制；启动前单实例与端口占用探测见 [启动预检](/dx/startup-preflight)，调试端口开关与参数拼装见 [远程调试端口](/dx/debug-port)。
+
+为什么使用 Vite 的编程式 API（`createServer` 与 `build`）而非串联多条 CLI 命令，可参考 [Vite JavaScript API 文档](https://vite.dev/guide/api-javascript.html)，它解释了如何直接获取 `resolvedUrls` 并通过 `server.ws.send` 广播刷新信号。
 
 ## 2. 核心机制
 
-### 开发态三路装配与分级重载
+```mermaid
+flowchart LR
+  dev["pnpm dev (startDevServer)"] --> preflight["单实例与端口预检"]
+  preflight --> vite["createServer() 监听渲染端口"]
+  vite -->|"注入 VITE_DEV_SERVER_URL"| preload["preload watch build"]
+  vite -->|"注入 VITE_DEV_SERVER_URL"| main["main watch build"]
+  preload -->|"clients.size > 0"| reload["server.ws.send full-reload"]
+  main -->|"removeListener + killProcessTree"| spawn["spawn Electron (cwd: ROOT_DIR)"]
+  preview["pnpm preview (runPreview)"] --> build3["构建 main/preload/renderer 三包"] --> spawnPreview["spawn Electron 加载 dist"]
+```
+
+### 编程式三路编排与分级重载
+
+`startDevServer` 先通过 `createServer()` 拉起渲染层并读取 `server.resolvedUrls.local[0]` 写入 `process.env.VITE_DEV_SERVER_URL`，再以 `build({ build: { watch: {} } })` 并行启动 Preload 与 Main 监听：
+
+- **Preload 增量重建**：仅当已连接 WebSocket 客户端时才发送 `full-reload`，防止冷启动首轮构建早于窗口挂载时触发首屏二次重载：
 
 → 源码：[scripts/dev.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/dev.ts)
 
-1. **渲染层**：编程式拉起 Vite，获取真实监听地址注入 `VITE_DEV_SERVER_URL`。
-2. **Preload 层**：构建完成后，通过 Vite WebSocket 广播页面全量刷新（Full Reload）；**没有已连接客户端时直接跳过**——冷启动时首轮 watch 构建早于窗口连上 HMR，空广播会让刚加载完的首屏立刻重载、启动壳动画重播一遍：
 ```ts
-if (server.ws.clients.size === 0) return;
-server.ws.send({ type: 'full-reload' });
-```
-
-3. **Main 主进程**：代码重建完成后，杀掉旧的 Electron 实例并重载拉起：
-```ts
-// packages/main 增量写入触发后
-if (electronApp?.pid) {
-  await killProcessTree(electronApp.pid);
+// 节选：createPreloadReloaderPlugin 仅在存在活跃客户端时广播刷新
+writeBundle() {
+  if (server.ws.clients.size === 0) {
+    return;
+  }
+  server.ws.send({
+    type: 'full-reload',
+  });
 }
-electronApp = spawn(String(electronPath), [...args, '.'], { stdio: 'inherit' });
 ```
 
-### 生产预览态（Preview）与快速启动
+- **Main 增量重建**：重启前必须先移除旧进程上的 `exit` 监听器，避免强杀旧实例时误触发当前脚本退出；启动新实例时显式固定 `cwd: ROOT_DIR`，确保 `.` 入口按仓库根解析：
 
-`pnpm preview` 提供无需真实打包的生产形态预演：
-- 一次性构建 `@app/main`、`@app/preload`、`@app/renderer` 三包。
-- 窗口直接加载本地 `file://` 静态 HTML 文件，模拟真实打包环境下的 CSP 安全策略与行为。
-- 支持 `pnpm preview -- --skip-build`，启动前严格校验入口产物完整性，避免白屏挂死。
+→ 源码：[scripts/dev.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/dev.ts)
 
-### 递归强杀子进程树（跨平台清场）
+```ts
+// 节选：createElectronLauncherPlugin 主进程重建后安全替换实例
+if (electronApp !== null) {
+  electronApp.removeListener('exit', process.exit);
+  if (electronApp.pid) {
+    await killProcessTree(electronApp.pid);
+  } else {
+    electronApp.kill('SIGINT');
+  }
+  electronApp = null;
+}
+
+const args = buildElectronArgs();
+electronApp = spawn(String(electronPath), [...args, '.'], {
+  stdio: 'inherit',
+  cwd: ROOT_DIR,
+});
+electronApp?.addListener('exit', process.exit);
+```
+
+### 生产预览态（Preview）与跨平台进程树清场
+
+`runPreview` 不启动渲染层 Dev Server，默认构建 `@app/main`、`@app/preload`、`@app/renderer` 三包（跳过 `@app/docs`）后加载本地 `dist` 产物；传入 `pnpm preview -- --skip-build` 时直接校验核心入口是否存在，缺失则立即报错退出。无论是主进程重载还是 `SIGINT` / `SIGTERM` 退出，均通过 `killProcessTree` 跨平台清场：
 
 → 源码：[scripts/port-guard.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/port-guard.ts)
 
 ```ts
-export async function killProcessTree(pid: number): Promise<void> {
+// 节选：killProcessTree 跨平台递归终止进程树
+if (process.platform === 'win32') {
+  execSync(`taskkill /pid ${pid} /T /F`, { stdio: 'ignore' });
+} else {
   try {
-    if (process.platform === 'win32') {
-      execSync(`taskkill /pid ${pid} /T /F`, { stdio: 'ignore' });
-    } else {
-      try {
-        execSync(`pkill -TERM -P ${pid}`, { stdio: 'ignore' });
-      } catch {}
-      try {
-        process.kill(-pid, 'SIGKILL');
-      } catch {
-        process.kill(pid, 'SIGKILL');
-      }
-    }
+    execSync(`pkill -TERM -P ${pid}`, { stdio: 'ignore' });
   } catch {}
+  try {
+    process.kill(-pid, 'SIGKILL');
+  } catch {
+    process.kill(pid, 'SIGKILL');
+  }
 }
 ```
 
 ## 3. 桌面端避坑注意事项
 
-- **编程式 Dev Server vs CLI 启动**：
-  - 必须使用 Vite 的编程式 API `createServer()`。只有这样才能可靠拿到 `server.resolvedUrls`，即使发生端口自愈顺延，透传给主进程的地址也能保持绝对准确。
-- **Preview 模式严禁使用 Watch 监听**：
-  - `pnpm preview` 的使命是检验打包静态产物。如果在预览态中混入热更新逻辑，将掩盖由于编译打包导致的文件路径解析错误（如 ASAR 内相对路径断裂）。
-- **进程树清理必不可少**：
-  - 无论在开发态重载还是终端收到 `SIGINT` 时，必须调用 `killProcessTree`。单杀主进程 PID 会在 Windows 和 macOS 上留下无头 Chromium 僵尸进程，导致后续二次启动直接闪退。
+- **严禁在 `dev` 中用 CLI 串行代替编程式 `createServer`**：端口被占用或顺延后，只有从 `server.resolvedUrls` 读取真实地址注入 `VITE_DEV_SERVER_URL`，主进程窗口才不会连向错误端口导致白屏。
+- **`--skip-build` 仅在产物完整时使用**：改动过主进程、Preload 或共享常量后若带 `--skip-build` 启动 `pnpm preview`，会直接跑在旧产物上甚至触发入口文件缺失拦截。
+- **重启前必须先摘除 `exit` 监听**：`createElectronLauncherPlugin` 若漏掉 `removeListener('exit', process.exit)`，热重载杀掉旧 Electron 实例会连带把整个 watch 编排进程一起退出。

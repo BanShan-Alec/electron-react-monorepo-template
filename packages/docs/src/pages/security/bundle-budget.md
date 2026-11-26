@@ -1,78 +1,93 @@
 ---
 
 title: 分包与体积门禁（Chunk + Asar）
-description: 渲染层按稳定性分块，前置校验根依赖白名单，后置硬门禁实测 ASAR 体积。
+description: 渲染层按稳定性分块，构建前后分别守住根依赖边界与 app.asar 物理体积上限。
 ---
 
 # 分包与体积门禁（Chunk + Asar）
 
-> **TL;DR**：渲染端第三方依赖按稳定性精细分块；打包前由静态脚本拦截根目录非法生产依赖（前置门禁）；打包后实测 `app.asar` 归档物理体积（后置门禁，默认 10MB），超限立即阻断流水线并输出 Top 5 膨胀分析。
+> **TL;DR**：渲染端第三方依赖按稳定性拆分为 `vendor-react` 与 `vendor-antd`；打包前由静态门禁拦截根目录非法依赖（见依赖管理页），打包后实测 `app.asar` 体积（默认上限 10MB）并输出模块占比与 Top 5 文件。
 
 ## 1. 选型理由
 
 桌面客户端体积极易悄悄膨胀失控：
-1. **依赖链污染**：开发者随手在根目录安装一个工具库，打包工具递归收集，几百 MB 垃圾依赖被全量卷进最终安装包。
-2. **打包配置退化**：Vite 分包规则失效，所有第三方库全被揉进一个巨大的单体 JS 文件中，启动解析极其缓慢。
+1. **依赖链污染**：在根目录误装运行时库或引入重型调试包，打包工具会将大量无关 `node_modules` 卷入 `app.asar`。
+2. **分包策略退化**：若不做路径级拆分，第三方运行时与业务代码揉进同一产物，影响缓存复用与首屏解析效率。
 
-工程通过前置与后置双向硬门禁，构建对体积劣化的免疫机制。
+工程通过「渲染端精细分块 + 打包前置依赖拦截 + 打包后 ASAR 体积校验」控制交付体积。
+
+→ 官方文档：[Vite 构建分块策略（manualChunks）](https://vite.dev/guide/build#chunking-strategy)（读它能了解 Rolldown / Rollup `manualChunks` 的分块原理与外围依赖隔离方式）。
 
 ## 2. 核心机制
 
-### 渲染端精细路径分包（Vite manualChunks）
+```mermaid
+flowchart LR
+  Chunk["1. 渲染层构建<br/>manualChunks 拆分 vendor-react / vendor-antd"] --> Pre["2. 打包前置门禁<br/>verifyPrebuild 校验根依赖白名单"]
+  Pre --> Pack["3. electron-builder<br/>打包生成 app.asar"]
+  Pack --> Size["4. 后置体积门禁<br/>verifyPostbuild 校验 MAX_ASAR_SIZE_MB + analyzeAsarSize"]
+  Size --> Smoke["5. 运行时冒烟<br/>Playwright 验真（见 /testing/artifact-smoke）"]
+```
+
+### 渲染端精细路径分包（`manualChunks`）
+
+以正则精确匹配 `node_modules` 子路径，避免 `@lingui/react` 等外围库误入核心运行时分块：
 
 → 源码：[packages/renderer/vite.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/vite.config.ts)
 
 ```ts
-manualChunks(id) {
-  if (id.includes('node_modules')) {
-    // 1. 最核心 React 运行时（精准路径正则过滤，防外围包污染）
-    if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) {
-      return 'vendor-react';
-    }
-    // 2. UI 框架及其底层 RC 库
-    if (/[\\/]node_modules[\\/](antd|@ant-design|rc-[a-z0-9-]+)[\\/]/.test(id)) {
-      return 'vendor-antd';
-    }
-  }
-}
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            // 1. 最稳定核心运行时：React 核心包（精准路径匹配，避免 @lingui/react 等外围库污染）
+            if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) {
+              return 'vendor-react';
+            }
+            // 2. UI 框架：Ant Design 及其样式/图标/底层 RC 库
+            if (/[\\/]node_modules[\\/](antd|@ant-design|rc-[a-z0-9-]+)[\\/]/.test(id)) {
+              return 'vendor-antd';
+            }
+          }
+        },
 ```
 
-### 前置根依赖白名单门禁（verify-prebuild）
+### 前置根依赖白名单门禁（指针）
 
-→ 源码：[scripts/verify-prebuild.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/verify-prebuild.ts)
+`scripts/verify-prebuild.ts` 在打包前静态校验根目录 `package.json` 的 `dependencies` 仅限 `@app/main`（防止多余运行时库被扫描进 `app.asar`）。该门禁的依赖归属规则与校验判据见 [依赖管理（Monorepo）](/engineering/dependency-management)。
 
-```ts
-const rootDeps = Object.keys(rootPkg.dependencies || {});
-const allowedRootDeps = ['@app/main'];
+### 后置 ASAR 物理体积门禁（`verify-postbuild`）
 
-const illegalRootDeps = rootDeps.filter((dep) => !allowedRootDeps.includes(dep));
-if (illegalRootDeps.length > 0) {
-  console.error(`[verify:prebuild] 根目录存在非法生产依赖: ${illegalRootDeps.join(', ')}`);
-  process.exit(1);
-}
-```
-
-### 后置 ASAR 物理体积门禁（verify-postbuild）
+打包完成后，`verifyPostbuild` 先读取 `MAX_ASAR_SIZE_MB`（默认 `10`），调用 `analyzeAsarSize` 解析 ASAR 文件头打印模块占比与 Top 5 最大文件，超限立即抛错中断流水线：
 
 → 源码：[scripts/verify-postbuild.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/scripts/verify-postbuild.ts)
 
 ```ts
-const maxAsarSizeMb = Number(getRepoEnvValue(repoEnv, 'MAX_ASAR_SIZE_MB') || 10);
+// 节选：verifyPostbuild 读取体积上限、剖析组成并在超限时阻断
+const maxAsarSizeMb = options.maxAsarSizeMb ?? Number(process.env.MAX_ASAR_SIZE_MB || 10);
+// ... 省略产物发现与 app-update.yml 校验
+const asarStat = fs.statSync(artifact.asarPath);
+const asarSizeMb = asarStat.size / (1024 * 1024);
+console.log(
+  `📊 [verify-postbuild] asar 总体积: ${asarSizeMb.toFixed(2)} MB (${asarStat.size.toLocaleString()} bytes) [阈值上限: ${maxAsarSizeMb.toFixed(2)} MB]`,
+);
+
+analyzeAsarSize(artifact.asarPath);
 
 if (asarSizeMb > maxAsarSizeMb) {
-  // 输出体积构成分析（占比 + TOP 5 最大文件）
-  printAsarCompositionBreakdown(asarPath);
   throw new Error(
-    `❌ asar 体积超标 (${asarSizeMb.toFixed(2)} MB > ${maxAsarSizeMb} MB)，构建中断！`,
+    `❌ [verify-postbuild] asar 体积超过门禁上限 (${asarSizeMb.toFixed(2)} MB > ${maxAsarSizeMb.toFixed(2)} MB)，发生体积异常膨胀防劣化失败！`,
   );
 }
 ```
 
+校验通过后继续执行跨平台进程拉起与 `body.app-startup-ready` 冒烟验真，完整流程见 [产物冒烟测试](/testing/artifact-smoke)。
+
 ## 3. 桌面端避坑注意事项
 
 - **`MAX_ASAR_SIZE_MB` 阈值配置**：
-  - 默认体积上限可在根 `.env` 中声明 `MAX_ASAR_SIZE_MB=15` 动态调整。若业务引入大尺寸本地静态模型或数据文件，应通过此变量明确提升门槛，而非绕过校验。
-- **`--skip-verify` 仅作紧急逃生通道**：
-  - 打包命令支持通过 `-- --skip-verify` 跳过后置体积门禁与冒烟测试。该选项仅供调试打包脚本本身时使用，正式发版流水线中严禁开启。
-- **静态资源避免全量打包进 ASAR**：
-  - 音视频大文件或 Native 可执行文件应通过 `extraResources` 放在 ASAR 外部，避免造成 ASAR 解压缩读取性能急剧下降。
+  - 默认上限为 `10` MB，可在根目录 `.env` 声明 `MAX_ASAR_SIZE_MB`（或在调用 `verifyPostbuild({ maxAsarSizeMb })` 时覆盖）。引入大体积本地数据时应同步评估阈值与分包，而非跳过校验。
+- **`--skip-verify` 仅作紧急调试逃生门**：
+  - `scripts/build.ts` 支持传入 `--skip-verify`（如 `pnpm build:win -- --skip-verify`）跳过后置体积门禁与冒烟测试，仅用于排查打包器自身问题，发版流水线严禁开启。
+- **静态大文件与原生插件勿打入 ASAR**：
+  - 原生 `.node` 依赖走 `asarUnpack`，独立静态大文件走 `extraResources`，避免 ASAR 归档膨胀拖慢读取性能。
+- **页面职责边界**：
+  - **本页负责**：渲染层 `manualChunks` 拆分策略与打包后 `app.asar` 体积门禁及构成剖析。
+  - **本页不负责**：根依赖白名单门禁规则与判据见 [依赖管理（Monorepo）](/engineering/dependency-management)；`electron-builder` 文件排除清单见 [应用打包](/delivery/packaging)；打包产物启动与 Playwright 冒烟测试见 [产物冒烟测试](/testing/artifact-smoke)。

@@ -1,58 +1,59 @@
 ---
 
 title: 多窗口入口（MPA）
-description: 采用 MPA 架构隔离主窗口与更新弹窗，Vite 双物理入口与精确 manualChunks 分包。
+description: 采用 MPA 架构隔离主窗口与更新弹窗，Vite 双物理入口与 exports 精确路径解析。
 ---
 
 # 多窗口入口（MPA）
 
-> **TL;DR**：拒绝将 SPA 单页思维硬套在 Electron 多窗口上；主应用（home）与更新弹窗（updater）各自拥有独立的 HTML 入口与编译产物，更新小窗无需背负主应用的路由与业务组件包袱。
+> **TL;DR**：拒绝将 SPA 单页思维硬套在 Electron 多窗口上；主应用（`home`）与更新弹窗（`updater`）各自拥有独立的 HTML 入口与编译产物，更新小窗无需背负主应用的路由与业务组件包袱。
+
+**本页负责**：Vite 双物理入口（MPA）划分、`@app/renderer` `exports` 映射与主进程多窗口路径解析。
+**本页不负责**：`manualChunks` 路径正则分包与 ASAR 体积门禁（见 [分包与体积门禁（Chunk + Asar）](/security/bundle-budget)）、窗口初始传参时序分层（见 [窗口初始传参（Window-params）](/architecture/window-params)）、窗口几何持久化与单实例唤醒（见 [窗口位置与尺寸（Window-state）](/ui/window-state) 与 [托盘常驻、单实例与开机自启（Tray + Single-instance + Auto-launch）](/main/tray-single-instance)）。
 
 ## 1. 选型理由
 
-许多桌面开发者习惯把 Web 的 SPA 单入口搬进 Electron：
-- 一个轻量的版本更新通知弹窗，由于共享同一 SPA 入口，不得不加载主应用庞大的路由树、图表库与几十个业务卡片。
-- 主应用的逻辑异常或崩溃容易连带导致更新窗口无法弹出，用户丧失自我修复路径。
+许多桌面应用习惯把 Web 的 SPA 单入口直接搬进 Electron：
+1. **轻量辅助窗背负冗余体积**：一个只负责展示进度条的更新弹窗，若共享同一 SPA 入口，不得不加载主应用完整的路由树、文档能力与业务卡片。
+2. **故障隔离能力弱**：主应用入口异常容易连带影响更新弹窗独立拉起，削弱用户修复或升级路径。
 
-工程采用多页面应用（MPA）架构，在构建期实现物理层面的代码隔离。
+项目采用多页面应用（MPA）架构，在构建期与进程运行时实现物理级隔离。
+
+→ 官方文档：[构建多页面应用（vite.dev）](https://vite.dev/guide/build.html#multi-page-app)，读它可了解 Vite 多 HTML 入口的构建输入解析与产物输出机制。
 
 ## 2. 核心机制
 
-### Vite 多页面物理入口与分包（manualChunks）
+```mermaid
+flowchart LR
+  MAIN["@app/main initApp"] -->|"dev: DevServer URL<br/>prod: require.resolve('@app/renderer')"| HOME["BrowserWindow: home<br/>src/entries/home/index.html"]
+  MAIN -->|"dev: DevServer URL<br/>prod: require.resolve('@app/renderer/updater')"| UPD["BrowserWindow: updater<br/>src/entries/updater/index.html"]
+  HOME <-->|"经主进程 broadcast 同步状态"| UPD
+```
+
+### Vite 多页面物理入口
+
+在 `packages/renderer/vite.config.ts` 中分别声明 `home` 与 `updater` 两个 HTML 入口，使 Vite 按独立入口树打包；配套的 `manualChunks` 精细分包策略与 ASAR 体积门禁见 [分包与体积门禁（Chunk + Asar）](/security/bundle-budget)：
 
 → 源码：[packages/renderer/vite.config.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/vite.config.ts)
 
 ```ts
+// 节选：多页面物理入口定义（output.manualChunks 分包细则见 /security/bundle-budget）
 rollupOptions: {
   input: {
     home: path.resolve(currentDir, 'src/entries/home/index.html'),
     updater: path.resolve(currentDir, 'src/entries/updater/index.html'),
-  },
-  output: {
-    chunkFileNames: 'assets/[name]-[hash].js',
-    manualChunks(id) {
-      if (id.includes('node_modules')) {
-        // 核心 React 运行时（精准路径正则，避免 @lingui/react 等外围库污染）
-        if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) {
-          return 'vendor-react';
-        }
-        // UI 框架与基础控件库
-        if (/[\\/]node_modules[\\/](antd|@ant-design|rc-[a-z0-9-]+)[\\/]/.test(id)) {
-          return 'vendor-antd';
-        }
-      }
-    },
   },
 }
 ```
 
 ### 主进程按需加载与物理路径解析
 
-主进程仅依赖统一的 URL / 本地文件路径抽象加载窗口，不感知前端打包实现：
+主进程在启动入口区分开发态与生产态，开发态传入 Dev Server 对应路径的 `URL`，生产态通过 `require.resolve` 解析包导出路径：
 
 → 源码：[packages/main/src/index.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/index.ts)
 
 ```ts
+// 节选：主进程传入双窗口入口配置
 initApp({
   windows: {
     home: devServer
@@ -62,31 +63,26 @@ initApp({
       ? new URL('src/entries/updater/index.html', devServer)
       : { path: require.resolve('@app/renderer/updater') },
   },
+  preload: { path: require.resolve('@app/preload') },
 });
 ```
 
-渲染包的 `package.json` 通过 `exports` 对外暴露确切的 HTML 物理路径：
+`@app/renderer` 的 `package.json` 通过 `exports` 对外暴露构建后的 HTML 物理位置，主进程无需硬编码 `dist/` 目录层级：
+
+→ 源码：[packages/renderer/package.json](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/package.json)
 
 ```json
 "exports": {
   ".": { "default": "./dist/src/entries/home/index.html" },
-  "./updater": { "default": "./dist/src/entries/updater/index.html" }
+  "./updater": { "default": "./dist/src/entries/updater/index.html" },
+  "./updater.html": { "default": "./dist/src/entries/updater/index.html" },
+  "./package.json": "./package.json"
 }
 ```
 
 ## 3. 桌面端避坑注意事项
 
-- **`manualChunks` 正则匹配必须包含路径分隔符**：
-  - 严禁简单使用 `id.includes('react')` 进行分包匹配，否则名称包含 `react` 的第三方库（如 `@lingui/react`）会被错误混入底层的 React 核心块，破坏模块缓存稳定性。必须使用 `/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/` 进行精确路径正则过滤。
-- **MPA 跨物理窗口状态同步单一真源原则**：
-  - 多页面物理入口意味着各窗口拥有完全独立的 Chromium 渲染进程、独立的 JS 堆内存与独立的 Zustand 实例。跨物理窗口严禁试图通过 LocalStorage、BroadcastChannel 或 `window.opener` 直接通信，状态变更一律提交主进程，由主进程通过 `broadcast(channel, data)` 向全量注册窗口派发，保证数据单一事实源。
-- **辅助小窗口的内存释放原则与模块自治**：
-  - 更新弹窗等辅助性小窗口应当是**按需创建、关闭即销毁**（Destroy on Close），避免在后台常驻无谓消耗 Chromium 渲染进程内存。
-  - 各窗口模块（如 `HomeWindowModule` 与 `UpdaterWindowModule`）自治管理自身生命周期，严禁跨模块越权销毁其他窗口；所有原生窗口由生命周期注册表集中感知并清理。
-- **开发态路由穿透与 DevServer 联动**：
-  - 在开发模式下，主进程根据 Vite Dev Server 的基础 URL 拼接目标 HTML 的相对路径；在生产预览与安装包下，直接加载本地 `file://` 静态产物，两套时序完全独立。
-
----
-
-> 💡 **延伸阅读**：
-> 多物理窗口创建时的初始参数传递（URL Query、`additionalArguments` 进程注入、Preload 粘性事件重放与主动拉取）以及首屏生命周期防闪烁控制，详见 [窗口初始传参（Window-params）](/architecture/window-params)。
+- **MPA 跨物理窗口状态同步单一真源**：每个物理入口拥有独立的 Chromium 渲染进程、独立 JS 堆内存与独立 Zustand 实例。跨窗口严禁通过 `localStorage`、`BroadcastChannel` 或 `window.opener` 互传状态，变更一律提交主进程，由主进程经 `broadcast()` 向已注册窗口派发。
+- **辅助小窗口的按需销毁与模块自治**：更新弹窗等辅助性小窗应在关闭时释放渲染进程内存，不在后台空转；各窗口模块（`HomeWindowModule`、`UpdaterWindowModule`）仅管理自身生命周期，严禁跨模块越权销毁其他窗口。
+- **分包规则集中收敛**：`manualChunks` 路径正则过滤（隔离 `vendor-react` 与 `vendor-antd`）与体积门禁配置均以 [分包与体积门禁（Chunk + Asar）](/security/bundle-budget) 为准，避免多处改写导致匹配退化。
+- **开发态与生产态路径差异**：开发态主进程通过 `new URL(..., devServer)` 拼接相对路径走 HTTP 加载；生产态通过 `loadFile` 加载本地 `file://` 产物，辅助小窗内部不得引入依赖 History 路由的路径跳转（见 [路由（Wouter）](/ui/wouter)）。

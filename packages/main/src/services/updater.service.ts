@@ -17,7 +17,7 @@ import {
   PROGRESS_EMIT_THROTTLE_MS,
   UPDATE_CHECK_TIMEOUT_MS,
 } from '../constants/updater';
-import { bundledRepository, getEnv, isDev, isPackaged, isTest } from '../env';
+import { bundledRepository, isDev, isPackaged, isTest } from '../env';
 import { AppError } from '../errors/AppError';
 import { mainMessage } from '../i18n';
 import { getAppConfigStore } from '../modules/config.module';
@@ -26,9 +26,7 @@ import { getWindow, sendToWindow } from '../modules/window/window-registry';
 
 function isOtaSentryEnabled(): boolean {
   if (isTest || !isPackaged) return false;
-  const dsn =
-    typeof __SENTRY_DSN__ !== 'undefined' && __SENTRY_DSN__ ? __SENTRY_DSN__ : getEnv('SENTRY_DSN');
-  return Boolean(dsn);
+  return Boolean(process.env.EL_SENTRY_DSN);
 }
 
 /**
@@ -265,7 +263,7 @@ export class UpdaterService {
       updater.autoInstallOnAppQuit = false;
       updater.fullChangelog = true;
 
-      const channel = getEnv('DISTRIBUTION_CHANNEL');
+      const channel = process.env.EL_DISTRIBUTION_CHANNEL ?? '';
       if (channel) {
         updater.channel = channel;
       }

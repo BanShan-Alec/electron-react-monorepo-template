@@ -1,22 +1,24 @@
 ---
 
 title: 应用更新（Electron-updater）
-description: 采用显式快照状态机接管更新生命周期，禁用静默强装，退出时安全取消下载与节流推送。
+description: 采用 8 态显式快照状态机接管更新生命周期，禁用静默强装，支持中途取消（cancelled）与退出清理。
 ---
 
 # 应用更新（Electron-updater）
 
-> **TL;DR**：全面接管 `electron-updater`。刻意关闭 `autoDownload` 与 `autoInstallOnAppQuit`，通过 7 态受控快照状态机向渲染层节流推送进度，支持中途取消下载，并在应用退出时清理未完成临时包，杜绝后台僵尸进程与文件锁冲突。
+> **TL;DR**：全面接管 `electron-updater`。显式关闭 `autoDownload` 与 `autoInstallOnAppQuit`，通过 8 态受控快照状态机向渲染层节流推送进度，支持中途取消下载（置为 `cancelled` 并保留版本信息供重试），并在应用退出时先取消下载再退出，杜绝文件锁与无界面进程残留。
+
+> **本页职责边界**：本页负责主进程 `UpdaterService` 的 8 态快照状态机、`autoDownload = false` 受控下载、取消/退出协同与 `app-update.yml` 缺失兜底；不负责打包阶段 `afterPack` 补写 `app-update.yml` 与产物命名契约（见 [应用打包（Electron-builder）](/delivery/packaging)）、Release 资产与 `.blockmap` 上传（见 [发版流水线（Changelogen）](/delivery/release-pipeline)），以及 `verify:postbuild` 产物冒烟（见 [产物冒烟测试（Dist-smoke）](/testing/artifact-smoke)）。
 
 ## 1. 选型理由
 
-- **规避静默强装与卡顿**：官方默认行为是在后台静默全量下载并在应用退出时强制重启安装，若用户正处于未保存的关键工作流中将造成严重灾难。
-- **状态透明与节流推送**：通过统一的受控状态机（7 态），配合高频下载进度的节流（Throttle）广播，更新进度窗口始终保持 60fps 平滑流畅而不挤爆 IPC。
-- **全通道与差分更新支持**：物料由打包阶段一键产出 `.blockmap` 索引，`electron-updater` 客户端按需实现分块差量下载，节约带宽与等待耗时。
+- **规避静默强装与工作流中断**：官方默认会在后台静默下载并在退出时强制安装；禁用 `autoDownload` 与 `autoInstallOnAppQuit` 后，下载与重启安装全部交由用户显式确认。
+- **状态透明与节流广播**：通过统一的 8 态快照与 `PROGRESS_EMIT_THROTTLE_MS`（250ms）节流推送，避免高频 `download-progress` 挤爆 IPC 与渲染层。
+- **差分物料全通道就位**：打包阶段开启 `generateUpdatesFilesForAllChannels: true` 产出全通道元数据，Release 上传 `*.blockmap` 与 `latest*.yml` 后，`electron-updater` 自动执行块级差量下载。
 
 ## 2. 核心机制
 
-`UpdaterService` 用一份 `UpdaterSnapshot` 快照承载全部更新状态，7 个状态由 `@app/shared` 的 `updaterStateSchema` 统一定义（即 `UpdaterState` 的 7 个取值）；每次状态变更都经 `emitState()` 推送到更新窗口，渲染层只负责展示。
+`UpdaterService` 用一份 `UpdaterSnapshot` 承载全量状态，8 个状态由 `@app/shared` 的 `updaterStateSchema` 统一定义（`idle`、`checking`、`available`、`downloading`、`downloaded`、`cancelled`、`up-to-date`、`error`）；每次变更经 `emitState()` 推送给更新窗口，并在出口统一注入运行期 `currentVersion`。
 
 ```mermaid
 stateDiagram-v2
@@ -25,6 +27,7 @@ stateDiagram-v2
         state "检查中（checking）" as checking
         state "有可用更新（available）" as available
         state "下载中（downloading）" as downloading
+        state "已取消（cancelled）" as cancelled
         state "已下载（downloaded）" as downloaded
         state "已是最新（up-to-date）" as upToDate
         state "错误（error）" as error
@@ -36,36 +39,34 @@ stateDiagram-v2
         checking --> error: 检查失败或超时
         available --> downloading: download()
         downloading --> downloaded: update-downloaded
-        downloading --> available: cancel() 取消
+        downloading --> cancelled: cancel() 取消
         downloading --> error: 下载失败
-        error --> downloading: 重试下载
-        error --> checking: 重试检查
+        cancelled --> downloading: download() 重新下载
+        cancelled --> checking: check() 重新检查
+        error --> downloading: download() 重试下载
+        error --> checking: check() 重试检查
         downloaded --> [*]: install() 触发 quitAndInstall
 
         note right of idle
-            状态变更 emitState() → updater:event:state
-            进度 emitProgress() 经 PROGRESS_EMIT_THROTTLE_MS（250ms）节流 → updater:event:progress
+            emitState() → updater:event:state
+            emitProgress() 经 250ms 节流 → updater:event:progress
         end note
         note right of downloading
             退出分支：quitAfterCancellingUpdate()
             先 await cancel()（2s 超时兜底），再 app.quit()
-        end note
-        note left of downloaded
-            用户此前关闭更新窗口 → showDownloadedNotification()
-            点击通知再拉起更新窗口确认安装
         end note
     }
 ```
 
 → 源码：[packages/shared/src/schemas/updater.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/shared/src/schemas/updater.ts) · [packages/main/src/services/updater.service.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/services/updater.service.ts)
 
-初始化阶段显式关闭官方默认行为：`autoDownload = false`、`autoInstallOnAppQuit = false`，并开启 `fullChangelog`（`updater.service.ts:190`）。入口方法各自带状态守卫：`check()` 在 `checking` / `downloading` 态直接抛 `UPDATER_ALREADY_RUNNING`（:319-322），`download()` 只接受 `available` / `cancelled` / `error` 态（:479-488），`install()` 只接受 `downloaded` 态（:554-555）。因此安装永远需要用户显式确认：更新窗口存活时在窗口内确认；用户此前关闭过更新窗口时，`update-downloaded` 会降级为系统通知，点击通知再拉起更新窗口确认，不存在静默强装。
+`initElectronUpdater()` 在初始化时关闭 `autoDownload`、`autoInstallOnAppQuit` 并开启 `fullChangelog`。入口方法各自带状态守卫：`check()` 在 `checking` / `downloading` 态抛 `UPDATER_ALREADY_RUNNING`；`download()` 仅接受 `available` / `cancelled` / `error` 态；`install()` 仅接受 `downloaded` 态并调用 `updater.quitAndInstall(false, true)`。
 
-### 关键实现：取消下载
+### 关键实现：取消下载与退出协同
 
-`cancel()` 是取消分支的唯一入口：渲染层经 IPC `updater:cancel` 调用；主窗口关闭并触发退出时，`quitAfterCancellingUpdate()` 会先 `await` 它（2 秒超时兜底），再执行 `app.quit()`（其余窗口由原生退出生命周期与注册表自动清理）。
+`UpdaterService.cancel()` 是取消分支的唯一入口：除了渲染层经 IPC 主动触发外，主窗口关闭且未开启托盘驻留时，`HomeWindowModule.quitAfterCancellingUpdate()` 会先 `await cancel()`（2 秒超时兜底）再执行 `app.quit()`。
 
-**节选**：`UpdaterService.cancel()`（`packages/main/src/services/updater.service.ts:524`）
+→ 源码：[packages/main/src/services/updater.service.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/services/updater.service.ts)
 
 ```ts
 public async cancel(): Promise<UpdaterSnapshot> {
@@ -80,7 +81,8 @@ public async cancel(): Promise<UpdaterSnapshot> {
       }
       this.cancellationToken = null;
     }
-    this.snapshot.state = 'available';
+    // 取消后不再回退 available：保留 version/releaseNotes 供 cancelled 态展示与重新下载
+    this.snapshot.state = 'cancelled';
     this.snapshot.progress = null;
     this.snapshot.error = null;
     this.snapshot.code = null;
@@ -98,25 +100,21 @@ public async cancel(): Promise<UpdaterSnapshot> {
 }
 ```
 
-→ 源码：[packages/main/src/services/updater.service.ts](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/main/src/services/updater.service.ts)
+取消后状态置为 `cancelled`（保留版本与更新日志），渲染层可重新调用 `download()` 恢复下载；`download()` 内部用局部变量 `token` 持有 `CancellationToken`，避免 `cancel()` 将实例字段置空后 `catch` 分支把「已取消」误判成「下载失败」。
 
-取消后状态置为 `cancelled`（保留版本元数据，更新日志不随取消消失），主按钮回到「重试」，用户可以重新发起下载；退出流程最多等待取消 2 秒，随后继续关闭进程。若取消时主窗口已销毁且未开启托盘常驻，`cancel()` 内部会直接 `app.quit()`，避免留下无界面进程（`updater.service.ts:547`）。
+下载完成后的通知入口统一收敛：在 `update-downloaded` 监听与 `mockEmit('downloaded')` 分支中，若 `userDismissedWindow` 为真，调用 `showDownloadedNotification()` 发系统通知（点击通知再经 `windowDelegate.show()` 拉起更新窗口），否则直接展示更新窗口。OTA 各阶段（`OTA_STAGES`）异常由 `reportSentryOtaError` / `reportSentryOtaEvent` 上报 Sentry。
 
-下载完成后的入口分两路：`update-downloaded` 在 `userDismissedWindow` 为真时调用 `showDownloadedNotification()` 发系统通知，点击通知经 `windowDelegate.show()` 重新拉起更新窗口；否则直接拉起更新窗口。dev 模拟下载路径复用同一套判定（`updater.service.ts:278-286`、`:659-671`），通知文案与点击行为统一封装在 `showDownloadedNotification()`（`:590-604`）。已下载完成的安装包由 electron-updater 保留在缓存中（`pending/update-info.json`），下次启动重新检查到同一版本时可复用缓存、无需重新下载即可进入安装。
+未打包调试时，`check()` 与 `download()` 会按 `isDev` 自动进入模拟更新计时器流程，便于在本地完整走通 8 态转换与取消分支而不依赖真实 GitHub Release 产物。
 
-安装环节同理：用户在更新窗口确认后，`install()` 校验 `downloaded` 态并调用 `updater.quitAndInstall(false, true)`（`updater.service.ts:570`），进程退出后由安装器接管，全程没有静默强装。
-
-差分物料由打包阶段备齐：`build/electron-builder.ts` 开启 `generateUpdatesFilesForAllChannels: true` 生成全通道更新元数据；Release 流水线把 `*.blockmap` 与 `latest*.yml` 连同安装包一起上传（见 [发版流水线（Changelogen）](/delivery/release-pipeline)）。客户端按 blockmap 只下载差异块是 electron-updater 的内置行为，本仓库保证的是物料就位。OTA 各阶段（checking / downloading / downloaded / installing / electron-updater）由 `reportSentryOtaError` / `reportSentryOtaEvent` 打点 Sentry（`updater.service.ts:36-44`、`:274`、`:303`、`:401`、`:518`、`:574`）。
-
-发布配置文件同样属于打包物料：electron-builder 只在 nsis 这类 updater-aware target 的 `afterPack` 阶段写 `resources/app-update.yml`，目录构建（`build:unpack`）与便携分发会漏掉它。因此 `build/electron-builder.ts` 的 `afterPack` 钩子对所有打包形态补齐该文件（已存在则不覆盖，安装包由 electron-builder 写入的完整配置优先），`pnpm verify:postbuild` 在仓库声明了发布源时按硬门禁校验其存在。运行侧还有一层兜底：已打包形态下若该文件缺失，`UpdaterService` 回退到编译期注入的 `repository.url` 坐标 `setFeedURL` 并记一条 warn，不会把 ENOENT 直接抛给用户。
+- **官方文档**：[electron-builder Auto Update](https://www.electron.build/auto-update) — 读它能解决什么：了解 `autoUpdater` 事件模型、`CancellationToken`、`app-update.yml` 解析路径与 `.blockmap` 差量更新机制。
 
 ## 3. 桌面端避坑注意事项
 
-| 避坑要点                         | 事故表现与原因                                                                                                                                                                      | 本仓库对齐方案                                                                                                                                                                                                                                                            |
-| :------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **退出应用被文件锁卡死**         | 用户正在下载 200MB 安装包时突然关闭应用，未关闭的下载任务持有本地临时文件句柄，导致下次启动安装包损坏或进程挂起。                                                                   | 主窗口关闭且未开启托盘常驻时，进入 `quitAfterCancellingUpdate()`，先 `await cancel()` 取消未完成的流（2 秒超时兜底），再 `app.quit()`。                                                                                                                                   |
-| **发布配置 app-update.yml 缺失** | 已打包应用点击检查更新直接抛 `ENOENT: ... resources/app-update.yml`：electron-updater 打包态只认该文件，而 `build:unpack` 的目录构建不含 nsis target，electron-builder 不会写入它。 | 构建期 `afterPack` 统一补齐 `resources/app-update.yml`，`verify:postbuild` 硬门禁拦截漏带产物的安装包；运行期若文件仍缺失，未打包形态与已打包形态都回退到 `package.json` 的 `repository.url` 坐标合成更新源，两者都拿不到时才以 `UPDATER_NOT_CONFIGURED` 给出语义化报错。 |
-| **高频 Progress 冲垮渲染层**     | 宽带极速下载时，`download-progress` 事件每秒触发数百次，频繁触发 IPC 序列化与 React 重新渲染致使界面卡死。                                                                          | 在主进程内部引入 `PROGRESS_EMIT_THROTTLE_MS`（节流阀，值为 250ms），将推送频率严格限制在每 250ms 一次。                                                                                                                                                                   |
-| **错误分类与语义提示缺失**       | 报错仅显示 `Error: net::ERR_CONNECTION_TIMED_OUT` 等底层原始堆栈，用户无法理解。                                                                                                    | `UpdaterService` 内部错误分类只把 `AppError` 的既有 code 与 `net::ERR_*` 映射为语义码；哈希校验失败、文件占用等其余异常落到调用阶段的兜底码（检查失败 / 下载失败）。渲染层仅对 `UPDATER_NETWORK_ERROR`、`UPDATER_NOT_CONFIGURED` 给友好中文文案，原始错误保留为次要行。   |
+| 避坑要点                           | 事故表现与原因                                                                            | 本仓库对齐方案                                                                                                                                             |
+| :--------------------------------- | :---------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **退出应用被下载锁卡死**           | 下载进行中直接关闭主窗口，未取消的流持有临时文件句柄或残留无界面进程。                    | 主窗口关闭且未开启托盘常驻时进入 `quitAfterCancellingUpdate()`，先 `await cancel()`（2 秒超时兜底）再 `app.quit()`；`cancel()` 内无主窗也会主动退出。      |
+| **发布配置 `app-update.yml` 缺失** | 目录构建（`build:unpack`）不含 `nsis` 等目标，导致打包态启动后点击检查更新直报 `ENOENT`。 | 打包期 `afterPack` 补写 `resources/app-update.yml`，`verify:postbuild` 校存在；运行期 `initElectronUpdater()` 对缺失场景回退到编译期 `bundledRepository`。 |
+| **高频 Progress 冲垮渲染层**       | 高速下载每秒触发上百次 `download-progress`，频繁 IPC 序列化导致更新窗口卡顿。             | `emitProgress()` 结合 `PROGRESS_EMIT_THROTTLE_MS`（250ms）节流（100% 时立即放行）。                                                                        |
+| **底层错误堆栈直接透出**           | 网络超时或原始异常堆栈（`net::ERR_*`）直接显示给用户，缺少语义指引。                      | `classifyError()` 将 `AppError` 已有码与 `net::ERR_*` 映射为 `UPDATER_NETWORK_ERROR` 等语义码，其余落回阶段兜底码。                                        |
 
-- **不要绕过 `UpdaterService` 直调 `autoUpdater`**：channel、feedURL、取消下载、错误分类与快照推送都挂在 service 上，旁路调用会让状态机与窗口失步。
+- **严禁绕过 `UpdaterService` 直调 `autoUpdater`**：通道切换、feed URL 兜底、取消令牌、错误分类与进度节流均挂载在服务实例上，旁路调用会导致状态机与窗口失步。

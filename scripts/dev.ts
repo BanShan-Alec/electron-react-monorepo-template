@@ -4,14 +4,12 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import electronPath from 'electron';
 import { build, createServer, type Plugin, type ViteDevServer } from 'vite';
-import { applyRepoEnv, loadRepoEnv } from '../build/lib/env.ts';
+import { ensureRepoEnv } from '../build/lib/env.ts';
 import { ensureNoAppInstanceRunning } from './instance-guard.ts';
 import { ensurePortsAvailable, killProcessTree } from './port-guard.ts';
 
-// 统一从 build/lib/env.ts 加载根 .env（外部注入优先），并向上锁定仓库根
-const repoEnv = loadRepoEnv(__dirname);
-applyRepoEnv(repoEnv);
-const ROOT_DIR = repoEnv.rootDir;
+// 统一从 build/lib/env.ts 幂等注入根 .env 到 process.env（外部注入优先），并向上锁定仓库根
+const ROOT_DIR = ensureRepoEnv(__dirname);
 
 // MODE 由 package.json 脚本经 cross-env 注入(dev=development / preview=production)。
 // 未注入时归一为 production:主进程的 isDev / isProd 与窗口加载路径统一按生产语义,
@@ -37,10 +35,22 @@ if (process.platform === 'win32') {
   }
 }
 
+/** 从环境变量解析可选端口；未配置或留空返回 undefined，非法值打警告后忽略。 */
+function parseOptionalPort(key: string): number | undefined {
+  const raw = (process.env[key] ?? '').trim();
+  if (!raw) return undefined;
+  const port = Number(raw);
+  if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+    console.warn(`[dev] 环境变量 ${key}="${raw}" 不是合法端口（需为 1-65535 整数），已忽略。`);
+    return undefined;
+  }
+  return port;
+}
+
 /**
- * 默认配置。
- * mainInspectPort / rendererCdpPort 为「可注释开关」:注释掉对应属性即可关闭该功能,
- * 相关命令行参数与启动日志会一起被跳过(注释后该属性为 undefined,被 if 安全跳过)。
+ * 开发态编排配置（端口从根 .env / 外部环境变量读取，外部注入优先）。
+ * DEV_MAIN_INSPECT_PORT / DEV_RENDERER_CDP_PORT 为可选开关：
+ * 在 .env 中注释或留空即关闭对应能力，相关命令行参数、日志与端口预检同步跳过。
  */
 const config: {
   mode: string;
@@ -49,11 +59,9 @@ const config: {
   rendererCdpPort?: number;
 } = {
   mode: process.env.MODE ?? 'production',
-  rendererPort: 5173,
-
-  // 按需注释:注释掉即关闭对应能力
-  // mainInspectPort: 9229, // 主进程调试断点端口(--inspect-brk)
-  rendererCdpPort: 9222, // 渲染进程 CDP 端口(--remote-debugging-port)
+  rendererPort: parseOptionalPort('DEV_RENDERER_PORT') ?? 5173,
+  mainInspectPort: parseOptionalPort('DEV_MAIN_INSPECT_PORT'),
+  rendererCdpPort: parseOptionalPort('DEV_RENDERER_CDP_PORT'),
 };
 
 /** 组装 Electron 启动参数;对应端口被注释掉时自动跳过并关闭日志。 */

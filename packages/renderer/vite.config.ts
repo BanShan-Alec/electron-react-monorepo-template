@@ -5,13 +5,13 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { APP_DISPLAY, APP_IDENTITY } from '../../build/lib/app-identity.ts';
-import { findRepoRoot } from '../../build/lib/repo-paths.ts';
+import { ensureRepoEnv } from '../../build/lib/env.ts';
 import { getSentryBuildOptions } from '../../build/lib/sentry-options.ts';
 import { appTitlePlugin } from './plugins/app-title.ts';
 import { startupShellInlinePlugin } from './plugins/startup/shell-plugin.ts';
 
 const currentDir = import.meta.dirname;
-const rootDir = findRepoRoot(currentDir);
+const rootDir = ensureRepoEnv(currentDir);
 const sentryOptions = getSentryBuildOptions(currentDir);
 
 // https://vite.dev/config/
@@ -69,7 +69,7 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   server: {
-    // port 从 scripts/dev.ts 的 config.rendererPort 注入
+    // port 从 scripts/dev.ts 读取根 .env 的 DEV_RENDERER_PORT 后注入
     strictPort: true,
     host: true,
     hmr: {

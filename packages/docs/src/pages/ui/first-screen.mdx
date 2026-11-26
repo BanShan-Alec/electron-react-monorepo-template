@@ -10,6 +10,9 @@ import { StartupShellPreview } from '../../components/StartupShellPreview';
 
 > **TL;DR**：React 挂载前由轻量内联 HTML 启动壳顶住白屏；构建内联的启动协调器（Coordinator）等待 Logo 动画与 React 首帧两道门禁齐备后交叉揭幕，任一路失联均有超时兜底。
 
+- **本页负责**：内联启动壳 DOM/CSS 与双门禁启动协调器（`animation` / `react`）揭幕机制。
+- **本页不负责**：首帧主题色与 query 同步见 [主题链路](/ui/theme-pipeline)；生产 CSP 对 `'unsafe-inline'` 的放行见 [内容安全策略（CSP）](/security/csp)；产物揭幕冒烟断言见 [产物冒烟测试](/testing/artifact-smoke)。
+
 <StartupShellPreview />
 
 ## 1. 选型理由
@@ -73,10 +76,10 @@ const settleGate = (id: GateId) => {
 ## 3. 桌面端避坑注意事项
 
 - **首屏协调器与 CSP 生产策略协同**：
-  - 启动协调器是构建期直接内联到 `index.html` 的独立原生脚本。主进程在配置生产态 CSP 时，`script-src` 必须包含 `'unsafe-inline'`（或匹配 hash），否则协调器会被 Chromium 静默阻断，导致两道门禁永远无法结算揭幕，造成应用与自动化测试无死锁假死。
+  - 启动协调器是构建期直接内联到 `index.html` 的独立原生脚本。主进程在配置生产态 CSP 时，`script-src` 必须包含 `'unsafe-inline'`（或匹配 hash），否则协调器会被 Chromium 静默阻断，导致两道门禁永远无法结算揭幕，造成应用与自动化测试死锁假死（详见 [内容安全策略（CSP）](/security/csp)）。
 - **产物冒烟严禁断言静态 `#root` 假阳性**：
-  - 许多冒烟测试仅断言 HTML 包含 `<div id="root">` 便判定渲染成功，此时页面可能因 JS 语法错误处于彻底白屏。产物校验脚本必须等待 `page.waitForSelector('body.app-startup-ready')`，断言协调器真实完成揭幕。
+  - 许多冒烟测试仅断言 HTML 包含 `<div id="root">` 便判定渲染成功，此时页面可能因 JS 语法错误处于彻底白屏。产物校验脚本必须等待 `page.waitForSelector('body.app-startup-ready')`，断言协调器真实完成揭幕（详见 [产物冒烟测试](/testing/artifact-smoke)）。
 - **两道门禁超时兜底单一真源**：
   - `STARTUP_ANIMATION_FALLBACK_MS`（1s）、`STARTUP_REACT_FALLBACK_MS`（3s）常量统一定义在 `@app/shared`，严禁在渲染端与 E2E 断言分别硬编码数字。主进程装配耗时不是门禁，由 `app.initialization` span 的 `initMs` 属性记录，排障时看 `traces.ndjson`。
 - **裸 DOM 启动壳样式不引外部资源**：
-  - 启动壳 CSS 必须直接内联在 HTML `<style>` 标签中，严禁引用外部字体或外链图片，确保在最慢的物理磁盘上也能在首帧瞬间呈现。
+  - 启动壳 CSS 必须直接内联在 HTML `<style>` 标签中，严禁引用外部字体或外链图片，确保在低速磁盘环境下也能于首帧瞬间呈现。

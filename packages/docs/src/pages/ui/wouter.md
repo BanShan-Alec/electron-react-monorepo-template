@@ -6,19 +6,36 @@ description: 采用轻量级 Wouter 驱动，useHashLocation 深度适配本地 
 
 # 路由（Wouter）
 
-> **TL;DR**：采用体积仅约 2KB 的 Wouter 替代笨重的 React Router；在 Electron 桌面端使用 `useHashLocation`（Hash 路由）适配本地 `file://` 加载协议，未知路径统一兜底重定向，路由轨迹打入系统日志。
+> **TL;DR**：采用轻量级 Wouter 替代 React Router；在 Electron 桌面端使用 `useHashLocation`（Hash 路由）适配本地 `file://` 加载协议，未知路径用 `replace` 兜底重定向，路由切换轨迹自动写入系统日志。
+
+- **本页负责**：主窗口前端路由选型（Wouter + `useHashLocation`）、`file://` 协议适配、未知路径 `replace` 兜底及路由切换日志记录。
+- **本页不负责**：多窗口物理入口（MPA）拆分见 [多窗口入口](/architecture/multi-window)；功能域内部组件划分见 [功能域组织](/architecture/feature-domains)；文档站 iframe 的离线缓存与 keep-alive 策略见 [文档站离线缓存](/ui/docs-tab-offline)。
 
 ## 1. 选型理由
 
 桌面客户端内部的页面切换面临两大特定约束：
-1. **本地协议限制（`file://`）**：在生产打包态下，窗口通过 `file://` 协议加载本地静态 HTML。若使用传统的 Browser History API（路径路由），页面刷新或深层跳转时因缺乏后端 Web 服务器配合 rewrite，将直接触发物理文件 404 错误。Hash 路由（带有 `#`）完全在浏览器内存中解析，天然适配桌面端。
-2. **轻量与性能追求**：React Router 体积庞大且附带大量适用于 SSR 的上下文依赖。Wouter 极度轻巧（~2.1KB gzip），无侵入式 Provider，更适合资源敏感的客户端。
+
+1. **本地 `file://` 协议限制**：生产打包态窗口直接加载本地静态 HTML。若采用 Browser History API，页面刷新或深层跳转时因缺乏服务端 rewrite，将直接触发 `ERR_FILE_NOT_FOUND`。Hash 路由（`#/...`）完全在片段内解析，天然适配本地协议。
+2. **轻量体积与低侵入**：Wouter 无需侵入式路由配置树，更适合多窗口桌面应用的轻量壳层。
+
+官方参考：[Wouter 文档（自定义 Location Hook）](https://github.com/molefrog/wouter#customizing-the-location-hook)（读它能确认 `useHashLocation` 如何替换默认 History hook，以及 `Switch` / `Route` / `Redirect` 的匹配语义）。
 
 ## 2. 核心机制
 
+```mermaid
+flowchart LR
+  URL["file://index.html#/path"] --> Hook["Router hook={useHashLocation}"]
+  Hook --> NavLog["NavigationLogger<br/>logger.info('Route changed')"]
+  Hook --> Switch["Switch 路由匹配"]
+  Switch -->|"/dashboard"| Dash["DashboardFeature"]
+  Switch -->|"/architecture"| Arch["ArchitectureFeature"]
+  Switch -->|"/*"| Redir["Redirect to='/dashboard' replace"]
+  Hook -.->|"location.startsWith('/docs')"| Docs["DocsFeature<br/>首次访问挂载 + visibility keep-alive"]
+```
+
 ### 挂载 Hash 路由协议
 
-在页面顶层装配 `useHashLocation` 驱动：
+在主窗口入口根部挂载 `<Router hook={useHashLocation}>`，包住路由切换与全局壳层组件：
 
 → 源码：[packages/renderer/src/entries/home/index.tsx](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/entries/home/index.tsx)
 
@@ -36,13 +53,14 @@ createRoot(document.getElementById('root')!).render(
 );
 ```
 
-### 路由定义与未知路径兜底重定向
+### 路由日志与未知路径兜底重定向
 
-在 `App.tsx` 内部内聚 `NavigationLogger` 监听路径变更并记录落盘日志，同时使用 `replace` 收敛非法路径：
+`NavigationLogger` 监听 `useLocation()` 变化并落盘记录路由轨迹；主内容区由 `<Switch>` 匹配 `/dashboard` 与 `/architecture`，根路径及未知路径通过 `replace` 重定向到 `/dashboard`。`/docs` 路由在初次访问后保持挂载（`docsMounted`）并用 `invisible` 隐藏，避免切走再切回时重载文档站 iframe：
 
 → 源码：[packages/renderer/src/entries/home/App.tsx](https://github.com/BanShan-Alec/electron-react-monorepo-template/blob/main/packages/renderer/src/entries/home/App.tsx)
 
 ```tsx
+// 节选：路由轨迹日志与 Switch 路由表（省略外层布局与 /docs keep-alive 容器）
 function NavigationLogger() {
   const [location] = useLocation();
   useEffect(() => {
@@ -51,33 +69,23 @@ function NavigationLogger() {
   return null;
 }
 
-export const App = memo(() => (
-  <div className="h-screen flex flex-col bg-background text-foreground">
-    <Header />
-    <NavigationLogger />
-    <main className="flex-1 overflow-y-auto">
-      <Switch>
-        <Route path="/dashboard">
-          <DashboardFeature />
-        </Route>
-        <Route path="/architecture">
-          <ArchitectureFeature />
-        </Route>
-        {/* 根路径与未知非法路径统一收敛重定向至 /dashboard */}
-        <Route path="/*">
-          <Redirect to="/dashboard" replace />
-        </Route>
-      </Switch>
-    </main>
-  </div>
-));
+const MainRoutes = () => (
+  <Switch>
+    <Route path="/dashboard">
+      <DashboardFeature />
+    </Route>
+    <Route path="/architecture">
+      <ArchitectureFeature />
+    </Route>
+    <Route path="/*">
+      <Redirect to="/dashboard" replace />
+    </Route>
+  </Switch>
+);
 ```
 
 ## 3. 桌面端避坑注意事项
 
-- **生产打包严禁使用 Browser History API**：
-  - 切勿在主窗口或多窗口中切换回 HTML5 History 路由模式。一旦在无 Dev Server 托管的本地文件路径下触发跳转，Chromium 无法定位虚拟 URL，必定导致白屏或 `ERR_FILE_NOT_FOUND`。
-- **未知路径必须做 `replace` 重定向**：
-  - 兜底路由必须加上 `<Redirect to="/dashboard" replace />` 的 `replace` 属性，防止将无效路由压入 Hash 历史栈导致用户在界面上“后退”时陷入死循环。
-- **MPA 窗口不需要全局大路由**：
-  - 更新弹窗（Updater）等独立物理窗口拥有自己独立的 HTML 页面，不要把主应用的 Wouter 路由树引到辅助小窗口中。
+- **生产打包严禁切回 Browser History API**：切勿在主窗口或多窗口中使用 HTML5 History 路由；一旦在 `file://` 本地路径下触发刷新或路径跳转，Chromium 会报 `ERR_FILE_NOT_FOUND` 导致白屏。
+- **未知路径必须带 `replace` 属性**：兜底路由必须写 `<Redirect to="/dashboard" replace />`，防止把非法路径压入 Hash 历史栈导致用户后退时陷入重定向死循环。
+- **MPA 辅助窗口不引入主路由树**：更新窗口（Updater）等独立物理窗口拥有各自独立的 HTML 入口（见 [多窗口入口](/architecture/multi-window)），不要把主应用的 Wouter 路由树引到辅助窗口中。
